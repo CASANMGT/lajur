@@ -1,4 +1,4 @@
-﻿/** Permintaan Gudang / PO Internal â€” list, detail, approval, dispatch, receipt. */
+/** Permintaan Gudang / PO Internal — list, detail, approval, dispatch, receipt. */
 
 import {
   esc, icon, fmt, badge, toast, openModal, field, printDocument, promptText,
@@ -21,7 +21,7 @@ function progressLine(db, t) {
   return `<div class="meter" aria-hidden="true">
     <i class="done" style="width:${totals.requestedMm ? (totals.dispatchedMm / totals.requestedMm) * 100 : 0}%"></i>
   </div>
-  <div class="xs muted" style="margin-top:4px">${fmt.m(totals.dispatchedMm)} dikirim Â· ${fmt.m(totals.receivedMm)} diterima Â· ${fmt.m(totals.inTransitMm)} transit</div>`;
+  <div class="xs muted" style="margin-top:4px">${fmt.m(totals.dispatchedMm)} dikirim · ${fmt.m(totals.receivedMm)} diterima · ${fmt.m(totals.inTransitMm)} transit</div>`;
 }
 
 export function render(ctx) {
@@ -61,7 +61,7 @@ export function render(ctx) {
               const totals = transferTotals(t);
               return `<tr data-href="#/transfer/${t.id}" tabindex="0" role="link">
                 <td><span class="mono strong">${esc(t.id)}</span><div class="xs muted">${esc(t.reason).slice(0, 42)}</div></td>
-                <td>${esc(warehouseOf(db, t.fromWarehouseId)?.code)} â†’ ${esc(warehouseOf(db, t.toWarehouseId)?.code)}</td>
+                <td>${esc(warehouseOf(db, t.fromWarehouseId)?.code)} → ${esc(warehouseOf(db, t.toWarehouseId)?.code)}</td>
                 <td class="hide-sm">${esc(t.neededBy)}</td>
                 <td>${progressLine(db, t)}</td>
                 <td class="num">${fmt.m(totals.requestedMm)}</td>
@@ -76,8 +76,8 @@ export function render(ctx) {
           const totals = transferTotals(t);
           return `<a class="roll-card" href="#/transfer/${t.id}" style="color:inherit;text-decoration:none">
             <div class="top"><span class="id">${esc(t.id)}</span>${badge(TRANSFER_STATUS[t.status].label, TRANSFER_STATUS[t.status].tone)}</div>
-            <div class="small strong">${esc(warehouseOf(db, t.fromWarehouseId)?.code)} â†’ ${esc(warehouseOf(db, t.toWarehouseId)?.code)}</div>
-            <div class="xs muted">Butuh ${esc(t.neededBy)} Â· ${esc(t.reason).slice(0, 46)}</div>
+            <div class="small strong">${esc(warehouseOf(db, t.fromWarehouseId)?.code)} → ${esc(warehouseOf(db, t.toWarehouseId)?.code)}</div>
+            <div class="xs muted">Butuh ${esc(t.neededBy)} · ${esc(t.reason).slice(0, 46)}</div>
             ${progressLine(db, t)}
             <div class="grid3">
               <div class="kv"><span>Diminta</span><strong>${fmt.m(totals.requestedMm)}</strong></div>
@@ -130,12 +130,12 @@ function renderDetail(ctx) {
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/transfer">â† Semua permintaan</a>
+        <a class="small strong" href="#/transfer">← Semua permintaan</a>
         <div class="row" style="margin-top:6px">
           <h1 class="mono">${esc(t.id)}</h1>
           ${badge(TRANSFER_STATUS[t.status].label, TRANSFER_STATUS[t.status].tone)}
         </div>
-        <p class="sub">${esc(from?.name)} â†’ ${esc(to?.name)} Â· dibutuhkan ${esc(formatDateLong(t.neededBy))}</p>
+        <p class="sub">${esc(from?.name)} → ${esc(to?.name)} · dibutuhkan ${esc(formatDateLong(t.neededBy))}</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -157,7 +157,7 @@ function renderDetail(ctx) {
             ${statCard({ label: 'Diterima', value: fmt.m(totals.receivedMm), tone: 'accent' })}
             ${statCard({ label: 'Belum kirim', value: fmt.m(totals.outstandingMm), meta: `${fmt.m(totals.inTransitMm)} masih transit`, tone: 'warn' })}
           </div>
-          <p class="xs muted" style="margin-top:10px">Belum kirim = diminta âˆ’ dikirim (bukan dari jumlah diterima). Transit = dikirim âˆ’ diterima. Ini mencegah pengiriman ganda.</p>
+          <p class="xs muted" style="margin-top:10px">Belum kirim = diminta − dikirim (bukan dari jumlah diterima). Transit = dikirim − diterima. Ini mencegah pengiriman ganda.</p>
         </section>
 
         <section class="card">
@@ -171,7 +171,7 @@ function renderDetail(ctx) {
                 const canDispatch = ['approved', 'dispatched', 'partially_received'].includes(t.status) && s.outstandingMm > 0 && can(role, 'transfer.dispatch');
                 return `<tr>
                   <td><div class="cell-main"><div class="txt"><strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}</strong><span>${esc(sku?.code)}</span></div></div>
-                    ${line.allocations.length ? `<div class="xs muted" style="margin-top:4px">${line.allocations.map((a) => `<a class="mono" href="#/stok/${a.rollId}">${esc(a.rollId)}</a> ${fmt.m(a.dispatchedMm)}`).join(' Â· ')}</div>` : ''}
+                    ${line.allocations.length ? `<div class="xs muted" style="margin-top:4px">${line.allocations.map((a) => `<a class="mono" href="#/stok/${a.rollId}">${esc(a.rollId)}</a> ${fmt.m(a.dispatchedMm)}`).join(' · ')}</div>` : ''}
                   </td>
                   <td class="num">${fmt.m(line.requestedMm)}</td>
                   <td class="num">${fmt.m(line.dispatchedMm)}</td>
@@ -188,7 +188,7 @@ function renderDetail(ctx) {
         <section class="card card-pad">
           <h2>Jejak dokumen</h2>
           <ul class="timeline" style="margin-top:10px">
-            ${(t.history ?? []).map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by ?? '')}${h.note ? ` Â· ${esc(h.note)}` : ''}</div></li>`).join('')}
+            ${(t.history ?? []).map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by ?? '')}${h.note ? ` · ${esc(h.note)}` : ''}</div></li>`).join('')}
           </ul>
         </section>
       </div>
@@ -199,12 +199,12 @@ function renderDetail(ctx) {
           <div class="stack-sm" style="margin-top:10px">
             <div class="row-between"><span class="small muted">Diminta oleh</span><span class="small">${esc(t.requestedByName)}</span></div>
             <div class="row-between"><span class="small muted">Dibuat</span><span class="small">${esc(t.createdDate)}</span></div>
-            <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(t.approvedBy || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Proyek</span><span class="small">${project ? `<a href="#/proyek/${project.id}">${esc(project.name)}</a>` : 'â€”'}</span></div>
+            <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(t.approvedBy || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Proyek</span><span class="small">${project ? `<a href="#/proyek/${project.id}">${esc(project.name)}</a>` : '—'}</span></div>
           </div>
           <hr class="divider" />
           <div class="xs muted">Alasan</div>
-          <p class="small" style="margin-top:4px">${esc(t.reason || 'â€”')}</p>
+          <p class="small" style="margin-top:4px">${esc(t.reason || '—')}</p>
         </section>
 
         <section class="card card-pad">
@@ -212,7 +212,7 @@ function renderDetail(ctx) {
           <p class="xs muted" style="margin:4px 0 10px">Fisik berada di kendaraan, bukan di gudang asal maupun tujuan.</p>
           ${transit.length ? `<div class="stack-sm">${transit.map((r) => `<div class="row-between">
             <a class="mono small" href="#/stok/${r.id}">${esc(r.id)}</a>
-            <span class="small">${fmt.m(r.currentMm)} Â· lot ${esc(r.lot)}</span>
+            <span class="small">${fmt.m(r.currentMm)} · lot ${esc(r.lot)}</span>
           </div>`).join('')}</div>` : '<p class="small muted">Tidak ada barang transit.</p>'}
         </section>
 
@@ -252,7 +252,7 @@ function openDispatch(ctx, lineId = null) {
         <tbody>${rolls.map((r) => `<tr>
           <td class="mono">${esc(r.id)}</td>
           <td>${esc(r.lot)}</td>
-          <td>${esc(r.bin || 'â€”')}</td>
+          <td>${esc(r.bin || '—')}</td>
           <td class="num">${fmt.m(availableMmOf(r))}</td>
           <td><input class="input" style="min-height:36px;text-align:right" inputmode="decimal" name="roll:${r.id}" placeholder="0" aria-label="Kirim dari ${esc(r.id)}" /></td>
         </tr>`).join('')}</tbody>
@@ -303,7 +303,7 @@ function openReceive(ctx, lineId = null) {
       ${field('Jumlah diterima (m)', `<input class="input" name="qty" inputmode="decimal" value="${(s.inTransitMm / 1000).toLocaleString('id-ID')}" aria-describedby="receive-hint" />`, { hint: `Maksimum ${fmt.m(s.inTransitMm)}. Sisa tetap tercatat sebagai transit.` })}
       ${field('Rak tujuan (opsional)', `<input class="input" name="bin" placeholder="Contoh: B-01-03" />`)}
       ${field('Catatan', `<input class="input" name="note" placeholder="Kondisi barang, jumlah roll, dsb." />`)}
-      <div class="notice notice-info" style="margin-top:12px">${icon('box')}<div>Penerimaan tidak mengubah jumlah diminta. Outstanding pengiriman tetap dihitung dari jumlah diminta âˆ’ dikirim.</div></div>
+      <div class="notice notice-info" style="margin-top:12px">${icon('box')}<div>Penerimaan tidak mengubah jumlah diminta. Outstanding pengiriman tetap dihitung dari jumlah diminta − dikirim.</div></div>
     `,
     onSubmit(form, close) {
       const qty = parseM(form.qty.value);
@@ -328,8 +328,8 @@ export function openCreate(ctx) {
   const { db, role } = ctx;
   const defaultFrom = ctx.ui.warehouseId === 'all' ? db.warehouses[0].id : ctx.ui.warehouseId;
   const defaultTo = db.warehouses.find((w) => w.id !== defaultFrom)?.id ?? db.warehouses[1].id;
-  const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} â€” ${esc(s.code)}</option>`).join('');
-  const projectOptions = db.projects.filter((p) => ['draft', 'reserved'].includes(p.status)).map((p) => `<option value="${p.id}">${esc(p.id)} Â· ${esc(p.name)}</option>`).join('');
+  const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
+  const projectOptions = db.projects.filter((p) => ['draft', 'reserved'].includes(p.status)).map((p) => `<option value="${p.id}">${esc(p.id)} · ${esc(p.name)}</option>`).join('');
 
   const lineRow = () => `<div class="alloc-row" data-line-row style="grid-template-columns:1fr 110px 36px">
     <select class="select tl-sku" aria-label="Produk">${skuOptions}</select>
@@ -347,7 +347,7 @@ export function openCreate(ctx) {
         ${field('Gudang sumber', `<select class="select" name="from" required>${warehouseOptions(db, defaultFrom)}</select>`)}
         ${field('Gudang tujuan', `<select class="select" name="to" required>${warehouseOptions(db, defaultTo)}</select>`)}
         ${field('Dibutuhkan tanggal', `<input class="input" type="date" name="neededBy" value="${new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)}" />`)}
-        ${field('Proyek (opsional)', `<select class="select" name="projectId"><option value="">â€” Tanpa proyek â€”</option>${projectOptions}</select>`)}
+        ${field('Proyek (opsional)', `<select class="select" name="projectId"><option value="">— Tanpa proyek —</option>${projectOptions}</select>`)}
         ${field('Alasan / referensi', `<input class="input" name="reason" placeholder="Contoh: permintaan customer Bandung" />`, { full: true })}
       </div>
       <div class="section-title" style="margin:20px 0 8px"><h3>Material</h3><span class="xs muted">Satuan meter</span></div>

@@ -1,11 +1,11 @@
-﻿# PRD â€” Lajur v2.0
+# PRD — Lajur v2.0
 
-**Product:** Lajur â€” curtain & textile inventory management
+**Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
-**Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) Â· [README.md](./README.md) Â· [CHANGELOG.md](./CHANGELOG.md)
+**Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
 
 > **Brand line:** *Setiap roll, tercatat.*
 > Lajur is an internal working name from the brand guide; it can be replaced without changing the product model.
@@ -18,11 +18,11 @@ Curtain businesses sell fabric by the metre, but they buy and store fabric as **
 
 Lajur exists to keep one traceable chain:
 
-**collection â†’ colour variant/SKU â†’ lot â†’ physical roll â†’ warehouse / bin**
+**collection → colour variant/SKU → lot → physical roll → warehouse / bin**
 
 and one consistent set of quantities:
 
-**physical âˆ’ reserved = available**, with **quarantine** and **in-transit** shown separately.
+**physical − reserved = available**, with **quarantine** and **in-transit** shown separately.
 
 ### Goals
 
@@ -117,20 +117,20 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Inventory | Collections, SKUs, lots, rolls, bins; physical/reserved/available/quarantine/transit; search and filters; roll trace; split and cut; whole-roll sale; quarantine; movement ledger |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
 | Purchasing | Suppliers, price list, PO, approval, partial receiving with per-roll lengths and lots, duplicate receipt block, over-receipt block, auto supplier bill (demo simplification), payables, supplier returns |
-| Sales | Multi-line invoice, fabric + parts + service lines, draft â†’ post, snapshot description/price/cost, payments, deposit application, customer returns with credit and quarantine, print |
+| Sales | Multi-line invoice, fabric + parts + service lines, draft → post, snapshot description/price/cost, payments, deposit application, customer returns with credit and quarantine, print |
 | Projects | Create, requirements, FIFO auto-allocation, reservation, invoice/stock issue, handover, shortage, material cost, instructions print |
 | CRM | Contacts, stage, next action, follow-up, activity log, projects/invoices/samples/deposits |
 | Samples & deposits | Free / paid / refundable sample; roll cut; conversion link; deposit ledger; refund guards; indent deposit |
 | Opname | Session per warehouse, snapshot, blind count, save draft, completeness, review, variance, recount, approve/post, permanent history, freeze |
 | Reports | Stock by warehouse/SKU, valuation, movement, sales/margin, product performance, AR/AP aging, deposits, returns, samples, project shortage, slow-moving, audit |
-| Demo | Separate simulation dataset, banner, start/resume/reset/exit, guided 60â†’10â†’50â†’partial payment cycle, JSON backup/restore with reference validation |
+| Demo | Separate simulation dataset, banner, start/resume/reset/exit, guided 60→10→50→partial payment cycle, JSON backup/restore with reference validation |
 
 ### 4.2 Partial in the demo
 
 | Area | Limitation |
 |------|------------|
 | Supplier billing | Goods receipt and supplier invoice are created together; production separates them |
-| Quote â†’ order â†’ invoice | Invoice is the only sales document |
+| Quote → order → invoice | Invoice is the only sales document |
 | Project fulfilment | One invoice; no partial issue or multi-invoice project |
 | Permissions | UI role gating only; no server enforcement |
 | Attachments | File metadata only; bytes are not stored |
@@ -233,9 +233,9 @@ Authentication and server authorization; transactional posting with idempotency;
 
 **Canonical example**
 
-> Requested 15 m Â· dispatched 5 m Â· received 2 m
-> **Not yet dispatched = 10 m** (`requested âˆ’ dispatched`)
-> **Still in transit = 3 m** (`dispatched âˆ’ received`)
+> Requested 15 m · dispatched 5 m · received 2 m
+> **Not yet dispatched = 10 m** (`requested − dispatched`)
+> **Still in transit = 3 m** (`dispatched − received`)
 
 Outstanding dispatch is **never** derived from received quantity; doing so causes duplicate shipping.
 
@@ -245,7 +245,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 ### 6.4 Project fulfilment
 
-**Draft â†’ material reservation â†’ invoice/stock issue â†’ handover**
+**Draft → material reservation → invoice/stock issue → handover**
 
 - Requirements are fabric (SKU + metres) and parts (pcs + warehouse).
 - Fabric allocations point to exact rolls; FIFO auto-allocation is available.
@@ -259,7 +259,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 - **Deposit:** cut from a roll plus a refundable liability.
 - Every sample records customer, SKU, source roll, metres, date, mode and linked invoice.
 - Sample refund is only allowed after a qualifying linked posted purchase.
-- Deposit ledger records receive/apply/refund; `amount âˆ’ applied âˆ’ refunded` is the balance.
+- Deposit ledger records receive/apply/refund; `amount − applied − refunded` is the balance.
 - The same deposit amount can never be both applied and refunded.
 - Indent deposits are obligations, not revenue; they are applied once to an invoice and unused balances stay visible.
 
@@ -289,7 +289,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 | ID | Rule |
 |----|------|
-| BR-01 | Available = physical âˆ’ reserved; never negative. |
+| BR-01 | Available = physical − reserved; never negative. |
 | BR-02 | A cut may not consume reserved metres; whole-roll sale requires zero reservation. |
 | BR-03 | A split conserves length: parent after + child = parent before. |
 | BR-04 | Each cut piece keeps a parent reference and root roll ID. |
@@ -298,14 +298,14 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-07 | Parts accept integers only; metres and pieces are never added. |
 | BR-08 | Invoice posting issues stock exactly once; handover never issues. |
 | BR-09 | Posted invoice lines keep snapshotted description, qty, price and cost. |
-| BR-10 | Transfer outstanding = requested âˆ’ dispatched, not requested âˆ’ received. |
-| BR-11 | Transit = dispatched âˆ’ received; transit is not stock at either warehouse. |
+| BR-10 | Transfer outstanding = requested − dispatched, not requested − received. |
+| BR-11 | Transit = dispatched − received; transit is not stock at either warehouse. |
 | BR-12 | Internal transfers create no revenue, AR, or supplier AP. |
 | BR-13 | Approval does not reserve; dispatch re-checks availability. |
 | BR-14 | Transfer cancellation is only before dispatch. |
 | BR-15 | Receipt document refs are unique; over-receipt per PO line is rejected. |
 | BR-16 | Project issue requires complete allocation and reserves before invoicing. |
-| BR-17 | Deposit balance = amount âˆ’ applied âˆ’ refunded; refunds above balance are rejected. |
+| BR-17 | Deposit balance = amount − applied − refunded; refunds above balance are rejected. |
 | BR-18 | Sample refund requires a linked qualifying purchase. |
 | BR-19 | Opname blocks warehouse mutations while counting/reviewing. |
 | BR-20 | An adjustment below committed reservation requires allocation resolution first. |
@@ -322,21 +322,21 @@ Demo role switching is a **UX simulation**. Production must enforce the followin
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
-| View stock, roll trace | âœ“ | âœ“ | âœ“ |
-| Create/submit internal request | âœ“ | â€“ | âœ“ |
-| Dispatch / receive transfer | âœ“ | â€“ | âœ“ |
-| Approve / reject transfer | â€“ | â€“ | âœ“ |
-| Count opname | âœ“ | â€“ | âœ“ |
-| Approve / post opname | â€“ | â€“ | âœ“ |
-| Receive supplier PO | âœ“ | â€“ | âœ“ |
-| Create PO | â€“ | âœ“ | âœ“ |
-| Create/post invoice, payment | â€“ | âœ“ | âœ“ |
-| Create project / reserve / issue | â€“ | âœ“ | âœ“ |
-| Create customer / sample / deposit | â€“ | âœ“ | âœ“ |
-| Refund sample deposit | â€“ | â€“ | âœ“ |
-| Refund indent deposit | â€“ | â€“ | âœ“ |
-| Edit master data / suppliers | â€“ | â€“ | âœ“ |
-| Backup / restore | â€“ | â€“ | âœ“ |
+| View stock, roll trace | ✓ | ✓ | ✓ |
+| Create/submit internal request | ✓ | – | ✓ |
+| Dispatch / receive transfer | ✓ | – | ✓ |
+| Approve / reject transfer | – | – | ✓ |
+| Count opname | ✓ | – | ✓ |
+| Approve / post opname | – | – | ✓ |
+| Receive supplier PO | ✓ | – | ✓ |
+| Create PO | – | ✓ | ✓ |
+| Create/post invoice, payment | – | ✓ | ✓ |
+| Create project / reserve / issue | – | ✓ | ✓ |
+| Create customer / sample / deposit | – | ✓ | ✓ |
+| Refund sample deposit | – | – | ✓ |
+| Refund indent deposit | – | – | ✓ |
+| Edit master data / suppliers | – | – | ✓ |
+| Backup / restore | – | – | ✓ |
 
 **Production requirements:** deny-by-default policy, role + warehouse scope on queries, immutable audit of every mutation, idempotency keys on posting endpoints, and no trusting client-computed totals.
 
@@ -347,14 +347,14 @@ Demo role switching is a **UX simulation**. Production must enforce the followin
 | Report | Definition | Label |
 |--------|-----------|-------|
 | Stock by warehouse/SKU | Sum of physical rolls at location; reserved and available separated | **Current balance** |
-| Inventory value | Î£ `currentMm/1000 Ã— costPerM` + parts `qty Ã— buyPrice`; transit shown separately | Current |
+| Inventory value | Σ `currentMm/1000 × costPerM` + parts `qty × buyPrice`; transit shown separately | Current |
 | Movement history | Append-only view of `movement` records with ref/user/time | Historical |
 | Sales summary | Posted invoices; revenue, snapshotted COGS, gross margin | Period |
 | Receivables aging | Outstanding by due-date age buckets | As of today |
 | Payables aging | Supplier bill balance by due-date buckets | As of today |
-| Slow-moving | Stock with no posted sale in â‰¥ 90 days | Current |
-| Sample conversion | Converted samples Ã· total samples | Period |
-| Project shortage | Required âˆ’ allocated per requirement; material cost at cost | Current |
+| Slow-moving | Stock with no posted sale in ≥ 90 days | Current |
+| Sample conversion | Converted samples ÷ total samples | Period |
+| Project shortage | Required − allocated per requirement; material cost at cost | Current |
 | P&L | **Not provided.** Management margin only, not a ledger | Clearly labelled |
 
 No dashboard figure is hardcoded: all are computed from the same records.
@@ -390,9 +390,9 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-21 | Key screens render without console errors; no page-level horizontal overflow at 320/390/768/desktop | Pass |
 | AC-22 | Blind opname view exposes no expected balances | Pass |
 | AC-23 | Lighthouse accessibility = 100 on dashboard, stock detail, transfer detail, simulation | Pass |
-| AC-24 | Guided cycle: receive 60 â†’ sell 10 â†’ 50 remaining â†’ partial payment | Pass |
+| AC-24 | Guided cycle: receive 60 → sell 10 → 50 remaining → partial payment | Pass |
 
-Test evidence: `node --test` â†’ 23/23 passing; browser route sweep â†’ 17/17 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs.
+Test evidence: `node --test` → 23/23 passing; browser route sweep → 17/17 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs.
 
 ---
 
@@ -411,7 +411,7 @@ Test evidence: `node --test` â†’ 23/23 passing; browser route sweep â†�
 ### 12.1 Target stack
 
 - **API:** modular monolith (e.g., Node/NestJS or Laravel) with domain modules mirroring `src/domain`.
-- **Database:** PostgreSQL. Rolls, reservations and ledger as rows; unique constraints on receipt refs; `SELECT â€¦ FOR UPDATE` or serializable transactions.
+- **Database:** PostgreSQL. Rolls, reservations and ledger as rows; unique constraints on receipt refs; `SELECT … FOR UPDATE` or serializable transactions.
 - **Posting:** one transaction per document; idempotency key per submit; outbox for events; immutable posted rows (no updates, reversals only).
 - **Auth:** OIDC, server sessions, RBAC + warehouse scope; step-up approval for manager actions.
 - **Files:** object storage with signed URLs; virus scanning.
@@ -424,7 +424,7 @@ Test evidence: `node --test` â†’ 23/23 passing; browser route sweep â†�
 1. Freeze master data: SKUs, colours, widths, units, warehouses, bins.
 2. Import opening rolls with measured lengths and costs; validate totals against physical count.
 3. Import open AR/AP/deposits as opening balances, not as new transactions.
-4. Pilot one warehouse for 2â€“4 weeks with parallel counting.
+4. Pilot one warehouse for 2–4 weeks with parallel counting.
 5. Add barcode labels and scanner test.
 6. Train the freeze policy and the distinction between reserved/transit.
 7. Go-live with read-only legacy access for one period.
@@ -447,7 +447,7 @@ Test evidence: `node --test` â†’ 23/23 passing; browser route sweep â†�
 |------|------------|
 | Local data loss (browser cleared) | Demo discloses; export JSON; production uses Postgres + backups |
 | Role confusion (UI hides, server does not enforce) | Documented; production RBAC mandatory |
-| Double shipping on partial transfers | Outstanding = requested âˆ’ dispatched; tested |
+| Double shipping on partial transfers | Outstanding = requested − dispatched; tested |
 | Cost drift on splits | Child inherits `costPerM`; tested |
 | Opname freeze blocks urgent shipping | Freeze policy explicit; cancel session is available to manager |
 | Colour matching errors | Codes/lots shown; swatch marked as reference only |

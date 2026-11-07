@@ -1,4 +1,4 @@
-﻿/** Shared view helpers. */
+/** Shared view helpers. */
 
 import { esc, icon } from '../dom.js';
 import { byId } from '../../domain/core.js';
@@ -27,7 +27,7 @@ export function warehouseOptions(db, selected, { includeAll = false } = {}) {
     ? `<option value="all" ${selected === 'all' ? 'selected' : ''}>Semua gudang</option>`
     : '';
   return `${all}${db.warehouses
-    .map((w) => `<option value="${w.id}" ${selected === w.id ? 'selected' : ''}>${esc(w.code)} Â· ${esc(w.name)}</option>`)
+    .map((w) => `<option value="${w.id}" ${selected === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name)}</option>`)
     .join('')}`;
 }
 
@@ -37,7 +37,7 @@ export function skuOf(db, id) {
 
 export function skuLabel(db, id) {
   const sku = skuOf(db, id);
-  if (!sku) return id ?? 'â€”';
+  if (!sku) return id ?? '—';
   return `${sku.collectionName} ${sku.colourName || sku.colourCode} (${sku.code})`;
 }
 
@@ -100,13 +100,13 @@ export function movementRow(db, m) {
     issue_part: 'Keluar part', consume: 'Terpakai', quarantine: 'Karantina', sample: 'Sample',
   }[m.type] ?? m.type;
   return `<li class="${m.type === 'adjust' || m.type === 'quarantine' ? 'warn' : ''}">
-    <div class="t-head"><strong>${esc(label)}</strong><span class="mono">${esc(m.ref || 'â€”')}</span><time>${esc(new Date(m.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }))}</time></div>
+    <div class="t-head"><strong>${esc(label)}</strong><span class="mono">${esc(m.ref || '—')}</span><time>${esc(new Date(m.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }))}</time></div>
     <div class="t-body">
-      ${roll ? `<a href="#/stok/${roll.id}">${esc(roll.id)}</a> Â· ` : ''}
-      ${sku ? `${esc(sku.code)} Â· ${esc(sku.colourName || sku.colourCode)}` : part ? esc(part.name) : ''}
-      ${qty ? ` Â· <strong class="num">${esc(qty)}</strong>` : ''}
-      ${m.warehouseId ? ` Â· ${esc(byId(db.warehouses, m.warehouseId)?.code ?? m.warehouseId)}` : ''}
-      ${m.note ? ` Â· <span class="muted">${esc(m.note)}</span>` : ''}
+      ${roll ? `<a href="#/stok/${roll.id}">${esc(roll.id)}</a> · ` : ''}
+      ${sku ? `${esc(sku.code)} · ${esc(sku.colourName || sku.colourCode)}` : part ? esc(part.name) : ''}
+      ${qty ? ` · <strong class="num">${esc(qty)}</strong>` : ''}
+      ${m.warehouseId ? ` · ${esc(byId(db.warehouses, m.warehouseId)?.code ?? m.warehouseId)}` : ''}
+      ${m.note ? ` · <span class="muted">${esc(m.note)}</span>` : ''}
     </div>
   </li>`;
 }

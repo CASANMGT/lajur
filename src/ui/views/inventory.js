@@ -1,4 +1,4 @@
-﻿/** Stok & Roll: search, list, roll detail, traceability. */
+/** Stok & Roll: search, list, roll detail, traceability. */
 
 import { esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, downloadFile, toCsv, promptText } from '../dom.js';
 import { MM_PER_M, byId, formatDateLong } from '../../domain/core.js';
@@ -58,14 +58,14 @@ function rowsHtml(ctx) {
           ${swatch(sku)}
           <div class="txt">
             <strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')}</strong>
-            <span>${esc(sku?.code)}${sku?.widthCm ? ` Â· ${sku.widthCm} cm` : ''}</span>
+            <span>${esc(sku?.code)}${sku?.widthCm ? ` · ${sku.widthCm} cm` : ''}</span>
           </div>
         </div>
       </td>
-      <td class="hide-sm">${esc(wh?.code ?? 'â€”')}<div class="xs muted">${esc(roll.bin || 'â€”')}</div></td>
+      <td class="hide-sm">${esc(wh?.code ?? '—')}<div class="xs muted">${esc(roll.bin || '—')}</div></td>
       <td class="num">${fmt.m(roll.currentMm)}</td>
-      <td class="num ${roll.reservedMm ? 'strong' : 'muted'}">${roll.reservedMm ? fmt.m(roll.reservedMm) : 'â€”'}</td>
-      <td class="num ${avail === 0 ? 'muted' : ''}">${isSellable(roll) ? fmt.m(avail) : 'â€”'}</td>
+      <td class="num ${roll.reservedMm ? 'strong' : 'muted'}">${roll.reservedMm ? fmt.m(roll.reservedMm) : '—'}</td>
+      <td class="num ${avail === 0 ? 'muted' : ''}">${isSellable(roll) ? fmt.m(avail) : '—'}</td>
       <td>${badge(status.label, status.tone)}</td>
     </tr>`;
   }).join('');
@@ -88,11 +88,11 @@ function cardsHtml(ctx) {
         ${badge(status.label, status.tone)}
       </div>
       <div class="name">${swatch(sku)}<span>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')}</span></div>
-      <div class="xs muted">${esc(sku?.code)} Â· Lot ${esc(roll.lot)} Â· ${esc(wh?.code ?? 'â€”')} / ${esc(roll.bin || 'â€”')}</div>
+      <div class="xs muted">${esc(sku?.code)} · Lot ${esc(roll.lot)} · ${esc(wh?.code ?? '—')} / ${esc(roll.bin || '—')}</div>
       <div class="grid3">
         <div class="kv"><span>Fisik</span><strong>${fmt.m(roll.currentMm)}</strong></div>
-        <div class="kv"><span>Terpesan</span><strong>${roll.reservedMm ? fmt.m(roll.reservedMm) : 'â€”'}</strong></div>
-        <div class="kv"><span>Tersedia</span><strong>${isSellable(roll) ? fmt.m(avail) : 'â€”'}</strong></div>
+        <div class="kv"><span>Terpesan</span><strong>${roll.reservedMm ? fmt.m(roll.reservedMm) : '—'}</strong></div>
+        <div class="kv"><span>Tersedia</span><strong>${isSellable(roll) ? fmt.m(avail) : '—'}</strong></div>
       </div>
     </a>`;
   }).join('');
@@ -111,7 +111,7 @@ function summaryStrip(ctx) {
     ${statCard({ label: 'Terpesan', value: fmt.m(s.reservedMm), meta: 'Proyek & alokasi' })}
     ${statCard({ label: 'Karantina / transit', value: `${fmt.m(s.quarantineMm)} / ${fmt.m(s.incomingMm)}`, meta: 'Transit tidak dihitung stok gudang', tone: 'warn' })}
   </div>
-  <p class="xs muted" style="margin:-6px 0 12px">Spare part terpisah: <strong>${fmt.pcs(partsQty)} pcs</strong> â€” tidak pernah dijumlahkan dengan meter kain.</p>`;
+  <p class="xs muted" style="margin:-6px 0 12px">Spare part terpisah: <strong>${fmt.pcs(partsQty)} pcs</strong> — tidak pernah dijumlahkan dengan meter kain.</p>`;
 }
 
 export function render(ctx) {
@@ -123,7 +123,7 @@ export function render(ctx) {
     ${pageHead({
       eyebrow: 'Persediaan',
       title: 'Stok & Roll',
-      sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik âˆ’ reservasi, dan transit tidak dihitung di gudang mana pun.',
+      sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
       actions: `${can(role, 'stock.view') ? `<button class="btn" type="button" data-action="export">${icon('download')} Ekspor CSV</button>` : ''}
         <a class="btn btn-primary" href="#/pembelian">${icon('truck')} Terima stok</a>`,
     })}
@@ -131,7 +131,7 @@ export function render(ctx) {
     <div class="filterbar">
       <div class="search">
         ${icon('search')}
-        <input class="input" id="roll-search" type="search" placeholder="Cari roll, lot, warna, rakâ€¦" value="${esc(filters.q)}" aria-label="Cari roll" />
+        <input class="input" id="roll-search" type="search" placeholder="Cari roll, lot, warna, rak…" value="${esc(filters.q)}" aria-label="Cari roll" />
       </div>
       <div class="field"><label for="f-collection">Koleksi</label>
         <select class="select" id="f-collection">
@@ -174,7 +174,7 @@ function partsSection(ctx) {
     return qty > 0;
   });
   if (!parts.length) return '';
-  return `<div class="section-title"><h2>Spare part</h2><span class="small muted">Satuan pcs â€” terpisah dari meter</span></div>
+  return `<div class="section-title"><h2>Spare part</h2><span class="small muted">Satuan pcs — terpisah dari meter</span></div>
     <section class="card">
       <div class="table-wrap">
         <table class="data">
@@ -188,7 +188,7 @@ function partsSection(ctx) {
               <td>${esc(p.name)}</td>
               <td class="num">${fmt.pcs(qty)} pcs</td>
               <td class="num">${fmt.pcs(avail)} pcs</td>
-              <td class="small muted">${rows.map((r) => `${warehouseOf(db, r.warehouseId)?.code}: ${r.qty}`).join(' Â· ')}</td>
+              <td class="small muted">${rows.map((r) => `${warehouseOf(db, r.warehouseId)?.code}: ${r.qty}`).join(' · ')}</td>
             </tr>`;
           }).join('')}</tbody>
         </table>
@@ -217,13 +217,13 @@ function renderDetail(ctx) {
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/stok">â† Kembali ke stok</a>
+        <a class="small strong" href="#/stok">← Kembali ke stok</a>
         <div class="row" style="margin-top:6px">
           <h1 class="mono" style="font-family:var(--font-mono);font-size:1.5rem">${esc(roll.id)}</h1>
           ${badge(status.label, status.tone)}
           ${roll.condition !== 'good' ? badge(roll.condition === 'damaged' ? 'Rusak' : 'Cacat ringan', 'warn') : ''}
         </div>
-        <p class="sub">${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')} Â· ${esc(sku?.code)} Â· Lot ${esc(roll.lot)}</p>
+        <p class="sub">${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')} · ${esc(sku?.code)} · Lot ${esc(roll.lot)}</p>
       </div>
       <div class="page-actions">
         <button class="btn" type="button" data-action="print-label">${icon('printer')} Cetak label</button>
@@ -239,8 +239,8 @@ function renderDetail(ctx) {
             <div class="row">
               ${swatch(sku, 'lg')}
               <div>
-                <div class="strong">${esc(sku?.collectionName)} â€” ${esc(sku?.colourName || 'Tanpa nama warna')}</div>
-                <div class="small muted">Kode warna <strong>${esc(sku?.colourCode)}</strong> Â· Lot <strong>${esc(roll.lot)}</strong> Â· ${esc(sku?.widthCm)} cm</div>
+                <div class="strong">${esc(sku?.collectionName)} — ${esc(sku?.colourName || 'Tanpa nama warna')}</div>
+                <div class="small muted">Kode warna <strong>${esc(sku?.colourCode)}</strong> · Lot <strong>${esc(roll.lot)}</strong> · ${esc(sku?.widthCm)} cm</div>
               </div>
             </div>
             <div class="right">
@@ -252,10 +252,10 @@ function renderDetail(ctx) {
           <div class="grid grid-3">
             <div><div class="xs muted">Panjang awal</div><div class="strong num">${fmt.m(roll.originalMm)}</div></div>
             <div><div class="xs muted">Panjang aktual</div><div class="strong num" style="font-size:1.25rem">${fmt.m(roll.currentMm)}</div></div>
-            <div><div class="xs muted">Tersedia</div><div class="strong num">${isSellable(roll) ? fmt.m(avail) : 'â€”'}</div></div>
-            <div><div class="xs muted">Terpesan</div><div class="strong num">${roll.reservedMm ? fmt.m(roll.reservedMm) : 'â€”'}</div></div>
+            <div><div class="xs muted">Tersedia</div><div class="strong num">${isSellable(roll) ? fmt.m(avail) : '—'}</div></div>
+            <div><div class="xs muted">Terpesan</div><div class="strong num">${roll.reservedMm ? fmt.m(roll.reservedMm) : '—'}</div></div>
             <div><div class="xs muted">Harga pokok / m</div><div class="strong num">${fmt.money(roll.costPerM)}</div></div>
-            <div><div class="xs muted">Gudang / rak</div><div class="strong">${esc(wh?.code ?? 'â€”')} Â· ${esc(roll.bin || 'â€”')}</div></div>
+            <div><div class="xs muted">Gudang / rak</div><div class="strong">${esc(wh?.code ?? '—')} · ${esc(roll.bin || '—')}</div></div>
           </div>
           ${roll.reservedMm ? `<div class="notice notice-warn" style="margin-top:12px">${icon('clock')}<div><strong>${fmt.m(roll.reservedMm)} terpesan.</strong> ${esc((roll.reservations ?? []).map((r) => `${r.ref} (${fmt.m(r.qtyMm)})`).join(', '))}</div></div>` : ''}
           ${roll.transit ? `<div class="notice notice-info" style="margin-top:12px">${icon('truck')}<div><strong>Dalam perjalanan</strong> dari ${esc(warehouseOf(db, roll.transit.fromWarehouseId)?.name)} ke ${esc(warehouseOf(db, roll.transit.toWarehouseId)?.name)}. Tidak dihitung sebagai stok di gudang mana pun.</div></div>` : ''}
@@ -271,13 +271,13 @@ function renderDetail(ctx) {
         <section class="card card-pad">
           <h2>Asal & turunan</h2>
           <div class="stack-sm" style="margin-top:10px">
-            <div class="row-between"><span class="small muted">Penerimaan</span><span class="small strong">${esc(roll.receiptRef || 'â€”')}</span></div>
+            <div class="row-between"><span class="small muted">Penerimaan</span><span class="small strong">${esc(roll.receiptRef || '—')}</span></div>
             <div class="row-between"><span class="small muted">Tanggal terima</span><span class="small">${esc(formatDateLong(roll.receivedAt))}</span></div>
-            <div class="row-between"><span class="small muted">Induk</span><span class="small">${parent ? `<a class="mono" href="#/stok/${parent.id}">${esc(parent.id)}</a>` : 'â€”'}</span></div>
+            <div class="row-between"><span class="small muted">Induk</span><span class="small">${parent ? `<a class="mono" href="#/stok/${parent.id}">${esc(parent.id)}</a>` : '—'}</span></div>
             <div class="row-between"><span class="small muted">Roll akar</span><span class="small mono">${esc(roll.rootRollId || roll.id)}</span></div>
           </div>
           ${children.length ? `<hr class="divider" /><div class="small muted" style="margin-bottom:6px">Turunan (${children.length})</div>
-            <div class="stack-sm">${children.slice(0, 8).map((c) => `<a class="row-between small" href="#/stok/${c.id}"><span class="mono">${esc(c.id)}</span><span>${fmt.m(c.currentMm)} Â· ${esc(ROLL_STATUS[c.status]?.label ?? c.status)}</span></a>`).join('')}</div>` : ''}
+            <div class="stack-sm">${children.slice(0, 8).map((c) => `<a class="row-between small" href="#/stok/${c.id}"><span class="mono">${esc(c.id)}</span><span>${fmt.m(c.currentMm)} · ${esc(ROLL_STATUS[c.status]?.label ?? c.status)}</span></a>`).join('')}</div>` : ''}
         </section>
 
         <section class="card card-pad">
@@ -285,7 +285,7 @@ function renderDetail(ctx) {
           <p class="xs muted" style="margin:4px 0 10px">Cek gudang lain sebelum memutuskan transfer.</p>
           <div class="stack-sm">
             ${[...others.entries()].map(([whId, s]) => `<div class="row-between">
-              <span class="small">${esc(warehouseOf(db, whId)?.code)} Â· ${esc(warehouseOf(db, whId)?.name.replace('Gudang ', ''))}</span>
+              <span class="small">${esc(warehouseOf(db, whId)?.code)} · ${esc(warehouseOf(db, whId)?.name.replace('Gudang ', ''))}</span>
               <span class="small num ${s.availableMm ? 'strong' : 'muted'}">${fmt.m(s.availableMm)} tersedia</span>
             </div>`).join('') || '<p class="small muted">Tidak ada stok warna ini di gudang lain.</p>'}
           </div>

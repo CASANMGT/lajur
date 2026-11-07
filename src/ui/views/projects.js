@@ -1,4 +1,4 @@
-﻿/** Proyek: kebutuhan material, reservasi, faktur/keluar stok, serah terima. */
+/** Proyek: kebutuhan material, reservasi, faktur/keluar stok, serah terima. */
 
 import {
   esc, icon, fmt, badge, toast, openModal, field, confirmAction, printDocument,
@@ -32,7 +32,7 @@ export function render(ctx) {
     ${pageHead({
       eyebrow: 'Proyek',
       title: 'Material & serah terima',
-      sub: 'Draf â†’ reservasi â†’ faktur/keluar stok â†’ serah terima. Faktur adalah satu-satunya peristiwa pengurangan stok.',
+      sub: 'Draf → reservasi → faktur/keluar stok → serah terima. Faktur adalah satu-satunya peristiwa pengurangan stok.',
       actions: `${can(role, 'project.create') ? `<button class="btn btn-primary" type="button" data-act="new-project">${icon('plus')} Proyek baru</button>` : ''}`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
@@ -47,8 +47,8 @@ export function render(ctx) {
         <table class="data">
           <thead><tr><th>Proyek</th><th>Pelanggan</th><th class="hide-sm">Target</th><th>Status</th><th>Material</th><th class="num">HPP</th></tr></thead>
           <tbody>${rows.map(({ p, customer, short, cost, overdue }) => `<tr data-href="#/proyek/${p.id}" tabindex="0" role="link">
-            <td><strong>${esc(p.name)}</strong><div class="xs muted mono">${esc(p.id)} Â· ${esc(p.location)}</div></td>
-            <td>${esc(customer?.name ?? 'â€”')}</td>
+            <td><strong>${esc(p.name)}</strong><div class="xs muted mono">${esc(p.id)} · ${esc(p.location)}</div></td>
+            <td>${esc(customer?.name ?? '—')}</td>
             <td class="hide-sm ${overdue ? 'strong' : ''}">${esc(p.targetDate)}${overdue ? ` <span class="badge badge-danger no-dot">lewat</span>` : ''}</td>
             <td>${badge(PROJECT_STATUS[p.status].label, PROJECT_STATUS[p.status].tone)}</td>
             <td>${short.length ? badge(`${short.length} kurang`, 'warn') : badge('Siap', 'ok')}</td>
@@ -60,7 +60,7 @@ export function render(ctx) {
         ${rows.map(({ p, customer, short, cost, overdue }) => `<a class="roll-card" href="#/proyek/${p.id}" style="color:inherit;text-decoration:none">
           <div class="top"><span class="id">${esc(p.id)}</span>${badge(PROJECT_STATUS[p.status].label, PROJECT_STATUS[p.status].tone)}</div>
           <div class="small strong">${esc(p.name)}</div>
-          <div class="xs muted">${esc(customer?.name ?? '')} Â· target ${esc(p.targetDate)}${overdue ? ' Â· lewat' : ''}</div>
+          <div class="xs muted">${esc(customer?.name ?? '')} · target ${esc(p.targetDate)}${overdue ? ' · lewat' : ''}</div>
           <div class="grid3">
             <div class="kv"><span>Material</span><strong>${short.length ? `${short.length} kurang` : 'Siap'}</strong></div>
             <div class="kv"><span>HPP</span><strong>${fmt.money(cost)}</strong></div>
@@ -91,12 +91,12 @@ function renderDetail(ctx) {
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/proyek">â† Semua proyek</a>
+        <a class="small strong" href="#/proyek">← Semua proyek</a>
         <div class="row" style="margin-top:6px">
           <h1>${esc(p.name)}</h1>
           ${badge(PROJECT_STATUS[p.status].label, PROJECT_STATUS[p.status].tone)}
         </div>
-        <p class="sub">${esc(customer?.name ?? '')} Â· ${esc(p.location || 'Tanpa lokasi')} Â· target ${esc(formatDateLong(p.targetDate))}</p>
+        <p class="sub">${esc(customer?.name ?? '')} · ${esc(p.location || 'Tanpa lokasi')} · target ${esc(formatDateLong(p.targetDate))}</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -113,7 +113,7 @@ function renderDetail(ctx) {
     <div class="grid grid-main">
       <div class="stack">
         <section class="card">
-          <div class="card-head"><div><h2>Kebutuhan & alokasi</h2><p>Roll tertentu, lot tertentu â€” bukan saldo rata-rata.</p></div><span class="badge no-dot">${p.requirements.length} baris</span></div>
+          <div class="card-head"><div><h2>Kebutuhan & alokasi</h2><p>Roll tertentu, lot tertentu — bukan saldo rata-rata.</p></div><span class="badge no-dot">${p.requirements.length} baris</span></div>
           <div class="table-wrap">
             <table class="data">
               <thead><tr><th>Barang</th><th class="num">Butuh</th><th class="num">Dialokasikan</th><th>Roll sumber</th><th>Status</th></tr></thead>
@@ -128,7 +128,7 @@ function renderDetail(ctx) {
                   <td><strong>${esc(isFabric ? `${sku?.collectionName} ${sku?.colourName || sku?.colourCode}` : part?.name)}</strong><div class="xs muted">${esc(isFabric ? sku?.code : part?.sku)}</div></td>
                   <td class="num">${isFabric ? fmt.m(need) : `${fmt.pcs(need)} pcs`}</td>
                   <td class="num">${isFabric ? fmt.m(allocated) : `${fmt.pcs(allocated)} pcs`}</td>
-                  <td>${isFabric ? (req.allocations.map((a) => `<a class="mono xs" href="#/stok/${a.rollId}">${esc(a.rollId)}</a> <span class="xs">${fmt.m(a.qtyMm)}</span>`).join('<br>') || '<span class="muted">â€”</span>') : `<span class="xs muted">${esc(warehouseOf(db, req.warehouseId)?.code ?? 'â€”')}</span>`}</td>
+                  <td>${isFabric ? (req.allocations.map((a) => `<a class="mono xs" href="#/stok/${a.rollId}">${esc(a.rollId)}</a> <span class="xs">${fmt.m(a.qtyMm)}</span>`).join('<br>') || '<span class="muted">—</span>') : `<span class="xs muted">${esc(warehouseOf(db, req.warehouseId)?.code ?? '—')}</span>`}</td>
                   <td>${ok ? badge('Siap', 'ok') : badge(`Kurang ${isFabric ? fmt.m(need - allocated) : `${need - allocated} pcs`}`, 'warn')}</td>
                 </tr>`;
               }).join('')}</tbody>
@@ -141,17 +141,17 @@ function renderDetail(ctx) {
           <p class="small" style="white-space:pre-wrap;margin-top:10px">${esc(p.instructions || 'Belum ada instruksi.')}</p>
           <hr class="divider" />
           <div class="xs muted">Catatan proyek</div>
-          <p class="small" style="margin-top:4px">${esc(p.notes || 'â€”')}</p>
+          <p class="small" style="margin-top:4px">${esc(p.notes || '—')}</p>
         </section>
 
         <section class="card">
           <div class="card-head"><div><h2>Dokumen terkait</h2><p>Faktur adalah bukti stok keluar.</p></div></div>
           <div class="card-pad">
             ${invoice ? `<div class="row-between">
-              <div><a class="mono strong" href="#/penjualan/${invoice.id}">${esc(invoice.id)}</a><div class="xs muted">${esc(invoice.status)} Â· ${fmt.money(invoice.total)}</div></div>
+              <div><a class="mono strong" href="#/penjualan/${invoice.id}">${esc(invoice.id)}</a><div class="xs muted">${esc(invoice.status)} · ${fmt.money(invoice.total)}</div></div>
               ${badge(invoice.status === 'posted' ? 'Terbit' : invoice.status, invoice.status === 'posted' ? 'ok' : 'muted')}
             </div>` : '<p class="small muted">Belum ada faktur. Stok belum keluar.</p>'}
-            ${p.history?.length ? `<hr class="divider" /><ul class="timeline">${p.history.slice(-4).reverse().map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by ?? '')}${h.note ? ` Â· ${esc(h.note)}` : ''}</div></li>`).join('')}</ul>` : ''}
+            ${p.history?.length ? `<hr class="divider" /><ul class="timeline">${p.history.slice(-4).reverse().map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by ?? '')}${h.note ? ` · ${esc(h.note)}` : ''}</div></li>`).join('')}</ul>` : ''}
           </div>
         </section>
       </div>
@@ -183,7 +183,7 @@ function renderDetail(ctx) {
               const sku = byId(db.skus, req.skuId);
               return db.warehouses.map((wh) => {
                 const qty = db.rolls.filter((r) => r.skuId === req.skuId && r.warehouseId === wh.id && !r.transit && r.status === 'available').reduce((a, r) => a + availableMm(r), 0);
-                return qty > 0 ? `<div class="row-between"><span class="small">${esc(sku?.code)} Â· ${esc(wh.code)}</span><span class="small num">${fmt.m(qty)}</span></div>` : '';
+                return qty > 0 ? `<div class="row-between"><span class="small">${esc(sku?.code)} · ${esc(wh.code)}</span><span class="small num">${fmt.m(qty)}</span></div>` : '';
               });
             }).join('') || '<p class="small muted">Tidak ada alternatif.</p>'}
           </div>
@@ -199,8 +199,8 @@ function renderDetail(ctx) {
 export function openCreate(ctx) {
   const { db } = ctx;
   const customers = db.customers.filter((c) => c.stage !== 'dormant');
-  const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} â€” ${esc(s.code)}</option>`).join('');
-  const partOptions = db.parts.map((p) => `<option value="${p.id}">${esc(p.sku)} Â· ${esc(p.name)}</option>`).join('');
+  const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
+  const partOptions = db.parts.map((p) => `<option value="${p.id}">${esc(p.sku)} · ${esc(p.name)}</option>`).join('');
   const defaultWh = ctx.ui.warehouseId === 'all' ? 'wh-jkt' : ctx.ui.warehouseId;
 
   openModal({
@@ -211,7 +211,7 @@ export function openCreate(ctx) {
     body: `
       <div class="form-grid">
         ${field('Pelanggan', `<select class="select" name="customer">${customers.map((c) => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>`)}
-        ${field('Nama proyek', `<input class="input" name="name" placeholder="Contoh: Hotel Arunika â€” 24 kamar" required />`)}
+        ${field('Nama proyek', `<input class="input" name="name" placeholder="Contoh: Hotel Arunika — 24 kamar" required />`)}
         ${field('Lokasi', `<input class="input" name="location" placeholder="Kota / gedung" />`)}
         ${field('Target selesai', `<input class="input" type="date" name="targetDate" value="${new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)}" />`)}
         ${field('Instruksi potong / packing', `<textarea class="textarea" name="instructions" placeholder="Contoh: potong kelipatan 2,4 m; beri label per kamar."></textarea>`, { full: true })}

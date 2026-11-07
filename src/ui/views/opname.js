@@ -1,4 +1,4 @@
-﻿/** Stock opname: hitung buta, review, posting penyesuaian. */
+/** Stock opname: hitung buta, review, posting penyesuaian. */
 
 import { esc, icon, fmt, badge, toast, openModal, field, confirmAction, printDocument, promptText } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
@@ -24,12 +24,12 @@ export function render(ctx) {
       sub: 'Sesi per gudang, hitung buta, review selisih, lalu posting penyesuaian dengan alasan.',
       actions: `${can(role, 'opname.start') ? `<button class="btn btn-primary" type="button" data-act="new">${icon('plus')} Mulai opname</button>` : ''}`,
     })}
-    ${active.length ? active.map((s) => `<div class="notice notice-warn" style="margin-bottom:12px">${icon('clipboard')}<div><strong>${esc(s.id)} Â· ${esc(warehouseOf(db, s.warehouseId)?.name)}</strong><br>Gudang dibekukan untuk mutasi fisik sampai sesi selesai. <a href="#/opname/${s.id}">Buka sesi â†’</a></div></div>`).join('') : `<div class="notice notice-teal" style="margin-bottom:12px">${icon('check')}<div>Tidak ada sesi aktif. Mutasi gudang berjalan normal.</div></div>`}
+    ${active.length ? active.map((s) => `<div class="notice notice-warn" style="margin-bottom:12px">${icon('clipboard')}<div><strong>${esc(s.id)} · ${esc(warehouseOf(db, s.warehouseId)?.name)}</strong><br>Gudang dibekukan untuk mutasi fisik sampai sesi selesai. <a href="#/opname/${s.id}">Buka sesi →</a></div></div>`).join('') : `<div class="notice notice-teal" style="margin-bottom:12px">${icon('check')}<div>Tidak ada sesi aktif. Mutasi gudang berjalan normal.</div></div>`}
 
     <div class="kpi-strip" style="margin-bottom:16px">
       ${statCard({ label: 'Sesi aktif', value: String(active.length), meta: 'Membekukan mutasi fisik', tone: active.length ? 'warn' : 'accent', iconName: 'clipboard' })}
       ${statCard({ label: 'Sesi tersimpan', value: String(db.opnameSessions.length), meta: 'Riwayat permanen' })}
-      ${statCard({ label: 'Selisih terakhir', value: lastPosted ? fmt.m(opnameSummary(lastPosted).varianceMm, { signed: true }) : 'â€”', meta: lastPosted ? `disetujui ${esc(lastPosted.postedBy)}` : 'Belum ada' })}
+      ${statCard({ label: 'Selisih terakhir', value: lastPosted ? fmt.m(opnameSummary(lastPosted).varianceMm, { signed: true }) : '—', meta: lastPosted ? `disetujui ${esc(lastPosted.postedBy)}` : 'Belum ada' })}
       ${statCard({ label: 'Gudang', value: String(db.warehouses.length), meta: 'Satu sesi aktif per gudang' })}
     </div>
 
@@ -46,7 +46,7 @@ export function render(ctx) {
               <td class="hide-sm">${esc(s.startedDate)}</td>
               <td>${badge(OPNAME_STATUS[s.status].label, OPNAME_STATUS[s.status].tone)}</td>
               <td class="num">${sum.countedLines}/${sum.lines}</td>
-              <td class="num">${sum.complete ? fmt.m(sum.varianceMm, { signed: true }) : 'â€”'}</td>
+              <td class="num">${sum.complete ? fmt.m(sum.varianceMm, { signed: true }) : '—'}</td>
               <td class="num">${s.adjustments?.length ?? 0}</td>
             </tr>`;
           }).join('') || `<tr><td colspan="7"><div class="empty">${icon('clipboard')}<strong>Belum ada sesi</strong></div></td></tr>`}</tbody>
@@ -58,9 +58,9 @@ export function render(ctx) {
           return `<a class="roll-card" href="#/opname/${s.id}" style="color:inherit;text-decoration:none">
             <div class="top"><span class="id">${esc(s.id)}</span>${badge(OPNAME_STATUS[s.status].label, OPNAME_STATUS[s.status].tone)}</div>
             <div class="small strong">${esc(warehouseOf(db, s.warehouseId)?.name)}</div>
-            <div class="xs muted">${esc(s.startedDate)} Â· ${sum.countedLines}/${sum.lines} dihitung</div>
+            <div class="xs muted">${esc(s.startedDate)} · ${sum.countedLines}/${sum.lines} dihitung</div>
             <div class="grid3">
-              <div class="kv"><span>Selisih</span><strong>${sum.complete ? fmt.m(sum.varianceMm, { signed: true }) : 'â€”'}</strong></div>
+              <div class="kv"><span>Selisih</span><strong>${sum.complete ? fmt.m(sum.varianceMm, { signed: true }) : '—'}</strong></div>
               <div class="kv"><span>Penyesuaian</span><strong>${s.adjustments?.length ?? 0}</strong></div>
               <div class="kv"><span>Oleh</span><strong class="xs">${esc(s.countedBy)}</strong></div>
             </div>
@@ -87,17 +87,17 @@ function renderDetail(ctx) {
     return `<tr>
       <td><span class="mono strong">${esc(line.rollId)}</span><div class="xs muted">${esc(line.lot)}</div></td>
       <td>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}<div class="xs muted">${esc(sku?.code)}</div></td>
-      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="â€”" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? 'â€”' : fmt.m(line.countedMm)}</td>`}
-      ${reviewing || posted ? `<td class="num muted">${fmt.m(line.expectedMm)}</td><td class="num ${variance ? 'strong' : ''}">${variance === null ? 'â€”' : fmt.m(variance, { signed: true })}</td>` : ''}
+      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="—" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? '—' : fmt.m(line.countedMm)}</td>`}
+      ${reviewing || posted ? `<td class="num muted">${fmt.m(line.expectedMm)}</td><td class="num ${variance ? 'strong' : ''}">${variance === null ? '—' : fmt.m(variance, { signed: true })}</td>` : ''}
     </tr>`;
   }).join('');
 
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/opname">â† Semua opname</a>
+        <a class="small strong" href="#/opname">← Semua opname</a>
         <div class="row" style="margin-top:6px"><h1 class="mono">${esc(s.id)}</h1>${badge(OPNAME_STATUS[s.status].label, OPNAME_STATUS[s.status].tone)}</div>
-        <p class="sub">${esc(wh?.name)} Â· mulai ${esc(s.startedDate)} Â· dihitung ${esc(s.countedBy)}</p>
+        <p class="sub">${esc(wh?.name)} · mulai ${esc(s.startedDate)} · dihitung ${esc(s.countedBy)}</p>
       </div>
       <div class="page-actions">
         ${counting && can(role, 'opname.count') ? `<button class="btn" type="button" data-act="save">${icon('download')} Simpan draf</button><button class="btn btn-primary" type="button" data-act="submit">${icon('arrow')} Ajukan review</button>` : ''}
@@ -113,7 +113,7 @@ function renderDetail(ctx) {
     <div class="kpi-strip" style="margin-bottom:16px">
       ${statCard({ label: 'Baris', value: String(sum.lines), meta: `${sum.countedLines} sudah dihitung` })}
       ${statCard({ label: 'Progres', value: `${Math.round((sum.countedLines / Math.max(1, sum.lines)) * 100)}%`, meta: 'Kelengkapan wajib 100%' })}
-      ${statCard({ label: 'Selisih meter', value: sum.complete ? fmt.m(sum.varianceMm, { signed: true }) : 'â€”', meta: 'Tersembunyi saat hitung', tone: 'warn' })}
+      ${statCard({ label: 'Selisih meter', value: sum.complete ? fmt.m(sum.varianceMm, { signed: true }) : '—', meta: 'Tersembunyi saat hitung', tone: 'warn' })}
       ${statCard({ label: 'Penyesuaian', value: String(s.adjustments?.length ?? 0), meta: 'Baris diposting' })}
     </div>
 
@@ -149,7 +149,7 @@ function renderDetail(ctx) {
 export function openStart(ctx) {
   const { db, role } = ctx;
   const frozen = db.opnameSessions.filter((s) => ['counting', 'review'].includes(s.status)).map((s) => s.warehouseId);
-  const options = db.warehouses.map((w) => `<option value="${w.id}" ${frozen.includes(w.id) ? 'disabled' : ''}>${esc(w.name)}${frozen.includes(w.id) ? ' â€” sesi aktif' : ''}</option>`).join('');
+  const options = db.warehouses.map((w) => `<option value="${w.id}" ${frozen.includes(w.id) ? 'disabled' : ''}>${esc(w.name)}${frozen.includes(w.id) ? ' — sesi aktif' : ''}</option>`).join('');
   openModal({
     title: 'Mulai stock opname',
     description: 'Gudang akan dibekukan untuk mutasi fisik selama penghitungan dan review.',

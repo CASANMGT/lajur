@@ -1,7 +1,10 @@
-﻿# Lajur
+# Lajur
 
-**Inventory and business management for curtain fabric â€” traced to the last metre.**
+**Inventory and business management for curtain fabric — traced to the last metre.**
 *Setiap roll, tercatat.*
+
+**Live demo:** https://lajur-lake.vercel.app
+**Source:** https://github.com/CASANMGT/lajur
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
@@ -14,7 +17,7 @@ Lajur is an Indonesian-language ERP demo for a curtain company with **one compan
 ```bash
 cd Lajur
 npm run dev
-# â†’ http://127.0.0.1:8787
+# → http://127.0.0.1:8787
 ```
 
 No install and no build step. The app is plain ES modules, CSS and `localStorage`; serve the folder with any static server.
@@ -29,13 +32,13 @@ node tools/render-check.mjs   # render every view without a DOM
 
 ### Deploy
 
-The repository is Vercel-ready (`vercel.json`, static output):
+The repository is linked to Vercel (`lajur` project) and deploys `main` automatically.
 
 ```bash
 npx vercel --prod
 ```
 
-Or import the GitHub repository in Vercel with framework preset **Other**, build command empty, output directory `.`.
+Or import the GitHub repository in Vercel with framework preset **Other**, build command empty, output directory `.`. The current production alias is **https://lajur-lake.vercel.app**.
 
 ---
 
@@ -43,46 +46,46 @@ Or import the GitHub repository in Vercel with framework preset **Other**, build
 
 ```
 Lajur/
-â”œâ”€â”€ index.html
-â”œâ”€â”€ vercel.json
-â”œâ”€â”€ package.json
-â”œâ”€â”€ PRD.md                    product requirements, rules, roadmap
-â”œâ”€â”€ DESIGN-SYSTEM.md          brand, tokens, components, accessibility
-â”œâ”€â”€ CHANGELOG.md
-â”œâ”€â”€ assets/                   mark + favicon
-â”œâ”€â”€ src/
-â”‚   â”œâ”€â”€ domain/               pure business logic (no DOM)
-â”‚   â”‚   â”œâ”€â”€ core.js           units (mm), IDR, Jakarta dates, IDs, audit
-â”‚   â”‚   â”œâ”€â”€ inventory.js      rolls, availability, splits, parts, ledger
-â”‚   â”‚   â”œâ”€â”€ transfers.js      internal requests: approve/dispatch/receive
-â”‚   â”‚   â”œâ”€â”€ sales.js          invoices, posting, payments, returns
-â”‚   â”‚   â”œâ”€â”€ purchasing.js     suppliers, PO, receiving, payables
-â”‚   â”‚   â”œâ”€â”€ projects.js       allocation, reservation, issue, handover
-â”‚   â”‚   â”œâ”€â”€ crm.js            customers, samples, deposits, refunds
-â”‚   â”‚   â”œâ”€â”€ opname.js         blind count, review, adjustment
-â”‚   â”‚   â”œâ”€â”€ reports.js        derived metrics (no stored totals)
-â”‚   â”‚   â””â”€â”€ seed.js           realistic linked fixtures
-â”‚   â”œâ”€â”€ data/
-â”‚   â”‚   â”œâ”€â”€ store.js          main/sim persistence, clone-commit
-â”‚   â”‚   â”œâ”€â”€ backup.js         export/restore with reference validation
-â”‚   â”‚   â””â”€â”€ simulation.js     guided 60 â†’ 10 â†’ 50 cycle
-â”‚   â”œâ”€â”€ ui/
-â”‚   â”‚   â”œâ”€â”€ dom.js            escaping, icons, modal, toast, print
-â”‚   â”‚   â”œâ”€â”€ shell.js          sidebar, topbar, simulation banner
-â”‚   â”‚   â”œâ”€â”€ router.js         hash routes + error boundary
-â”‚   â”‚   â””â”€â”€ views/            dashboard, inventory, transfers, purchasing,
-â”‚   â”‚                         sales, projects, customers, opname, reports,
-â”‚   â”‚                         master, simulation, print documents
-â”‚   â””â”€â”€ styles/
-â”‚       â”œâ”€â”€ tokens.css
-â”‚       â””â”€â”€ app.css
-â”œâ”€â”€ tests/
-â”‚   â””â”€â”€ invariants.test.js    23 domain tests
-â””â”€â”€ tools/
-    â”œâ”€â”€ serve.mjs             tiny static server
-    â”œâ”€â”€ check.mjs             module import check
-    â”œâ”€â”€ render-check.mjs      server-side view render check
-    â””â”€â”€ seed-check.mjs        dataset sanity output
+├── index.html
+├── vercel.json
+├── package.json
+├── PRD.md                    product requirements, rules, roadmap
+├── DESIGN-SYSTEM.md          brand, tokens, components, accessibility
+├── CHANGELOG.md
+├── assets/                   mark + favicon
+├── src/
+│   ├── domain/               pure business logic (no DOM)
+│   │   ├── core.js           units (mm), IDR, Jakarta dates, IDs, audit
+│   │   ├── inventory.js      rolls, availability, splits, parts, ledger
+│   │   ├── transfers.js      internal requests: approve/dispatch/receive
+│   │   ├── sales.js          invoices, posting, payments, returns
+│   │   ├── purchasing.js     suppliers, PO, receiving, payables
+│   │   ├── projects.js       allocation, reservation, issue, handover
+│   │   ├── crm.js            customers, samples, deposits, refunds
+│   │   ├── opname.js         blind count, review, adjustment
+│   │   ├── reports.js        derived metrics (no stored totals)
+│   │   └── seed.js           realistic linked fixtures
+│   ├── data/
+│   │   ├── store.js          main/sim persistence, clone-commit
+│   │   ├── backup.js         export/restore with reference validation
+│   │   └── simulation.js     guided 60 → 10 → 50 cycle
+│   ├── ui/
+│   │   ├── dom.js            escaping, icons, modal, toast, print
+│   │   ├── shell.js          sidebar, topbar, simulation banner
+│   │   ├── router.js         hash routes + error boundary
+│   │   └── views/            dashboard, inventory, transfers, purchasing,
+│   │                         sales, projects, customers, opname, reports,
+│   │                         master, simulation, print documents
+│   └── styles/
+│       ├── tokens.css
+│       └── app.css
+├── tests/
+│   └── invariants.test.js    23 domain tests
+└── tools/
+    ├── serve.mjs             tiny static server
+    ├── check.mjs             module import check
+    ├── render-check.mjs      server-side view render check
+    └── seed-check.mjs        dataset sanity output
 ```
 
 ### Layer rules
@@ -96,19 +99,19 @@ Lajur/
 
 ## Demo walkthrough (8 minutes)
 
-1. **Dashboard** â€” manager defaults: inventory value, receivables, month margin, payables, exception feed.
-2. **Stok & Roll** â€” search `RL-0001`; open it. See 60 m physical, 0 reserved, 60 m available, lot `LOT-2608-A`, bin `A-01-01`, and the full movement trail.
-3. **Whole vs cut** â€” open `#/penjualan?new=1&roll=RL-0001`, add 10 m, post. The roll becomes 50 m and the sold piece is a separate traceable child. You can also choose **Roll utuh** (blocked when reserved).
-4. **Permintaan Gudang** â€” open `TRF-0001`. It is the canonical partial case:
-   **15 requested Â· 5 dispatched Â· 2 received Â· 10 not yet dispatched Â· 3 in transit.**
+1. **Dashboard** — manager defaults: inventory value, receivables, month margin, payables, exception feed.
+2. **Stok & Roll** — search `RL-0001`; open it. See 60 m physical, 0 reserved, 60 m available, lot `LOT-2608-A`, bin `A-01-01`, and the full movement trail.
+3. **Whole vs cut** — open `#/penjualan?new=1&roll=RL-0001`, add 10 m, post. The roll becomes 50 m and the sold piece is a separate traceable child. You can also choose **Roll utuh** (blocked when reserved).
+4. **Permintaan Gudang** — open `TRF-0001`. It is the canonical partial case:
+   **15 requested · 5 dispatched · 2 received · 10 not yet dispatched · 3 in transit.**
    Approve does not reserve; dispatch re-checks availability.
-5. **Pembelian** â€” open `PO-0001`. Receive 60 m as two rolls (e.g. `20, 40`), each with its own lot. Try the same receipt ref twice: it is rejected.
-6. **Proyek** â€” open `PRJ-001`. See reservations on an exact roll and parts. `PRJ-002` shows a shortage. Issue posts the invoice and deducts stock; handover does not deduct again.
-7. **Pelanggan** â€” open `CUS-0002`: projects, invoices, samples, deposits, activity. Samples record the source roll; sample deposit refund is blocked until a purchase is linked.
-8. **Stock Opname** â€” start a session for Bandung. Expected balances are hidden; save, submit, then approve as manager. The warehouse is frozen while counting.
-9. **Laporan** â€” stock by warehouse/SKU, valuation, AR/AP aging, slow-moving, sample conversion, project shortage, audit trail.
-10. **Simulasi Data** â€” click the copper button, start, then run the cycle:
-    **receive 60 m â†’ sell 10 m â†’ 50 m left â†’ 40% dummy payment.** Main data stays at 60 m.
+5. **Pembelian** — open `PO-0001`. Receive 60 m as two rolls (e.g. `20, 40`), each with its own lot. Try the same receipt ref twice: it is rejected.
+6. **Proyek** — open `PRJ-001`. See reservations on an exact roll and parts. `PRJ-002` shows a shortage. Issue posts the invoice and deducts stock; handover does not deduct again.
+7. **Pelanggan** — open `CUS-0002`: projects, invoices, samples, deposits, activity. Samples record the source roll; sample deposit refund is blocked until a purchase is linked.
+8. **Stock Opname** — start a session for Bandung. Expected balances are hidden; save, submit, then approve as manager. The warehouse is frozen while counting.
+9. **Laporan** — stock by warehouse/SKU, valuation, AR/AP aging, slow-moving, sample conversion, project shortage, audit trail.
+10. **Simulasi Data** — click the copper button, start, then run the cycle:
+    **receive 60 m → sell 10 m → 50 m left → 40% dummy payment.** Main data stays at 60 m.
 
 ### Demo accounts (role switch)
 
@@ -126,7 +129,7 @@ The selector is a **UX simulation**; it is not authentication.
 
 | Invariant | Where |
 |-----------|-------|
-| Available = physical âˆ’ reserved, never negative | `inventory.availableMm`, all issue paths |
+| Available = physical − reserved, never negative | `inventory.availableMm`, all issue paths |
 | Cut conserves length and keeps parent identity | `splitRoll`, `postInvoice`, `dispatchLine` |
 | Reserved metres cannot be sold | `splitRoll`, `postInvoice` |
 | Whole roll blocked when reserved | `sellWholeRoll` |
@@ -134,7 +137,7 @@ The selector is a **UX simulation**; it is not authentication.
 | Dormant SKU blocked | `buildFabricLine`, `postInvoice` |
 | Metres and pieces never summed | summary and report functions |
 | Invoice posts stock once | `postInvoice`; handover is status-only |
-| Transfer outstanding = requested âˆ’ dispatched | `lineStats`, tested as 10 with transit 3 |
+| Transfer outstanding = requested − dispatched | `lineStats`, tested as 10 with transit 3 |
 | Receipt over transit and dispatch over outstanding rejected | `receiveLine`, `dispatchLine` |
 | Duplicate receipt ref and over-receipt rejected | `receivePO` |
 | Returns cannot exceed sold quantity | `createCustomerReturn` |
@@ -149,7 +152,7 @@ The selector is a **UX simulation**; it is not authentication.
 
 ## Verification (actually run)
 
-**Date:** 7 November 2026 Â· Node 24.14.0 Â· Chromium via OpenCode browser
+**Date:** 7 November 2026 · Node 24.14.0 · Chromium via OpenCode browser
 
 | Check | Result |
 |-------|--------|
@@ -157,9 +160,9 @@ The selector is a **UX simulation**; it is not authentication.
 | Module import check | **28/28 modules** |
 | Server-side render of all views | **13/13 render, no exceptions** |
 | Browser route sweep | **17/17 routes**, zero console errors |
-| Guided cycle | receive 60 â†’ cut 10 â†’ **50 remaining**, payment **Rp 500.000** (40%) |
+| Guided cycle | receive 60 → cut 10 → **50 remaining**, payment **Rp 500.000** (40%) |
 | Simulation isolation | main `RL-0001` stayed **60 m** after sim mutations |
-| Mobile widths 320 / 390 / 768 | overflow **0 px**, inputs **16 px**, targets **â‰¥ 44 px** |
+| Mobile widths 320 / 390 / 768 | overflow **0 px**, inputs **16 px**, targets **≥ 44 px** |
 | Drawer | opens, scrim, focus inside, Esc closes |
 | Modal at 320/390 | fits viewport, footer/submit visible, body scrolls |
 | Blind opname | only `Hitungan` column; no expected balance in DOM |
@@ -179,7 +182,7 @@ node tools/render-check.mjs
 
 ### Implemented
 
-- Roll-level inventory with collection â†’ colour â†’ lot â†’ roll â†’ warehouse/bin.
+- Roll-level inventory with collection → colour → lot → roll → warehouse/bin.
 - Opening stock exactly as specified, each length separate.
 - Physical / reserved / available / quarantine / transit, with transit excluded from both warehouses.
 - Cut and whole-roll sales, mixed invoices, snapshotted lines, partial payments.
@@ -228,7 +231,7 @@ node tools/render-check.mjs
 - **Not accounting.** Reports are management summaries, not a ledger, tax invoice, or P&L.
 - **Single currency and time zone** (IDR, Asia/Jakarta) by design.
 
-Production requirements are defined in [PRD.md Â§12](./PRD.md#12-production-architecture).
+Production requirements are defined in [PRD.md §12](./PRD.md#12-production-architecture).
 
 ---
 
@@ -236,7 +239,7 @@ Production requirements are defined in [PRD.md Â§12](./PRD.md#12-production-ar
 
 - Brand from the Lajur guide: Midnight Navy, Warm Ivory, Muted Teal, Copper; Manrope + Inter; tabular numerals.
 - Status always has a text label; swatches never encode numeric codes.
-- Motion is limited to 120â€“260 ms, specific properties, and disabled under `prefers-reduced-motion`.
+- Motion is limited to 120–260 ms, specific properties, and disabled under `prefers-reduced-motion`.
 - Mobile: drawer navigation, 16 px inputs, 44 px targets, bottom-sheet dialogs, cards instead of wide tables.
 - Modal focus trap, Esc, focus restore; skip link; semantic headings; visible focus.
 - Lighthouse accessibility 100 on the four audited screens.

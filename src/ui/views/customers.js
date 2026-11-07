@@ -1,4 +1,4 @@
-﻿/** Pelanggan: CRM, sample, deposit, riwayat. */
+/** Pelanggan: CRM, sample, deposit, riwayat. */
 
 import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, confirmAction, amountCell,
@@ -46,22 +46,22 @@ export function render(ctx) {
         <table class="data">
           <thead><tr><th>Pelanggan</th><th>Stage</th><th class="hide-sm">Aksi berikutnya</th><th class="num">Piutang</th><th class="num">Deposit</th></tr></thead>
           <tbody>${rows.map(({ c, projects, samples, receivable, deposit }) => `<tr data-href="#/pelanggan/${c.id}" tabindex="0" role="link">
-            <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.company || c.city || '')} Â· ${projects.length} proyek Â· ${samples.length} sample</div></td>
+            <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.company || c.city || '')} · ${projects.length} proyek · ${samples.length} sample</div></td>
             <td>${badge(CRM_STAGE[c.stage]?.label ?? c.stage, CRM_STAGE[c.stage]?.tone ?? 'muted')}</td>
-            <td class="hide-sm">${esc(c.nextAction || 'â€”')}<div class="xs muted">${esc(c.followUpDate || '')}</div></td>
-            <td class="num ${receivable ? 'strong' : 'muted'}">${receivable ? fmt.money(receivable) : 'â€”'}</td>
-            <td class="num">${deposit ? fmt.money(deposit) : 'â€”'}</td>
+            <td class="hide-sm">${esc(c.nextAction || '—')}<div class="xs muted">${esc(c.followUpDate || '')}</div></td>
+            <td class="num ${receivable ? 'strong' : 'muted'}">${receivable ? fmt.money(receivable) : '—'}</td>
+            <td class="num">${deposit ? fmt.money(deposit) : '—'}</td>
           </tr>`).join('')}</tbody>
         </table>
       </div>
       <div class="mobile-cards">
         ${rows.map(({ c, projects, receivable, deposit }) => `<a class="roll-card" href="#/pelanggan/${c.id}" style="color:inherit;text-decoration:none">
           <div class="top"><span class="small strong">${esc(c.name)}</span>${badge(CRM_STAGE[c.stage]?.label ?? c.stage, CRM_STAGE[c.stage]?.tone ?? 'muted')}</div>
-          <div class="xs muted">${esc(c.company || '')} Â· ${projects.length} proyek</div>
+          <div class="xs muted">${esc(c.company || '')} · ${projects.length} proyek</div>
           <div class="grid3">
             <div class="kv"><span>Piutang</span><strong>${fmt.money(receivable)}</strong></div>
             <div class="kv"><span>Deposit</span><strong>${fmt.money(deposit)}</strong></div>
-            <div class="kv"><span>Follow-up</span><strong class="xs">${esc(c.followUpDate || 'â€”')}</strong></div>
+            <div class="kv"><span>Follow-up</span><strong class="xs">${esc(c.followUpDate || '—')}</strong></div>
           </div>
         </a>`).join('')}
       </div>
@@ -89,9 +89,9 @@ function renderDetail(ctx) {
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/pelanggan">â† Semua pelanggan</a>
+        <a class="small strong" href="#/pelanggan">← Semua pelanggan</a>
         <div class="row" style="margin-top:6px"><h1>${esc(c.name)}</h1>${badge(CRM_STAGE[c.stage]?.label ?? c.stage, CRM_STAGE[c.stage]?.tone ?? 'muted')}</div>
-        <p class="sub">${esc(c.company || '')} ${c.city ? `Â· ${esc(c.city)}` : ''} Â· PIC sales ${esc(byId(db.users, c.salespersonId)?.name ?? 'â€”')}</p>
+        <p class="sub">${esc(c.company || '')} ${c.city ? `· ${esc(c.city)}` : ''} · PIC sales ${esc(byId(db.users, c.salespersonId)?.name ?? '—')}</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -103,7 +103,7 @@ function renderDetail(ctx) {
           ${projects.length ? `<div class="table-wrap"><table class="data">
             <thead><tr><th>Proyek</th><th>Target</th><th>Status</th></tr></thead>
             <tbody>${projects.map((p) => `<tr data-href="#/proyek/${p.id}" tabindex="0" role="link">
-              <td><strong>${esc(p.name)}</strong><div class="xs muted">${esc(p.id)} Â· ${esc(p.location)}</div></td>
+              <td><strong>${esc(p.name)}</strong><div class="xs muted">${esc(p.id)} · ${esc(p.location)}</div></td>
               <td>${esc(p.targetDate)}</td>
               <td>${badge(PROJECT_STATUS[p.status]?.label ?? p.status, PROJECT_STATUS[p.status]?.tone ?? 'muted')}</td>
             </tr>`).join('')}</tbody>
@@ -131,7 +131,7 @@ function renderDetail(ctx) {
               const roll = db.rolls.find((r) => r.id === s.rollId);
               const linked = s.linkedInvoiceId;
               return `<tr>
-                <td><strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}</strong><div class="xs muted">${esc(s.id)} Â· ${esc(s.date)}</div></td>
+                <td><strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}</strong><div class="xs muted">${esc(s.id)} · ${esc(s.date)}</div></td>
                 <td><a class="mono xs" href="#/stok/${s.rollId}">${esc(s.rollId)}</a><div class="xs muted">${esc(roll?.lot ?? '')}</div></td>
                 <td class="num">${fmt.m(s.qtyMm)}</td>
                 <td>${badge(SAMPLE_MODE[s.mode].label, SAMPLE_MODE[s.mode].tone)}</td>
@@ -148,8 +148,8 @@ function renderDetail(ctx) {
             ${deposits.length ? `<div class="stack">
               ${deposits.map((d) => `<div>
                 <div class="row-between">
-                  <div><strong class="small">${esc(d.id)}</strong> Â· ${badge(d.kind === 'sample' ? 'Sample' : 'Indent', d.kind === 'sample' ? 'copper' : 'info')}
-                    <div class="xs muted">${esc(d.note)} Â· diterima ${esc(d.receivedAt)}</div>
+                  <div><strong class="small">${esc(d.id)}</strong> · ${badge(d.kind === 'sample' ? 'Sample' : 'Indent', d.kind === 'sample' ? 'copper' : 'info')}
+                    <div class="xs muted">${esc(d.note)} · diterima ${esc(d.receivedAt)}</div>
                   </div>
                   <div class="right">
                     <div class="strong num">${fmt.money(depositBalance(d))}</div>
@@ -158,7 +158,7 @@ function renderDetail(ctx) {
                 </div>
                 <div class="row" style="margin-top:6px">
                   ${depositBalance(d) > 0 && can(role, 'deposit.create') ? `<button class="btn btn-sm" data-act="refund" data-id="${d.id}">Refund</button>` : ''}
-                  <span class="xs muted">${d.ledger.map((l) => `${l.type} ${fmt.money(l.amount)}`).join(' Â· ')}</span>
+                  <span class="xs muted">${d.ledger.map((l) => `${l.type} ${fmt.money(l.amount)}`).join(' · ')}</span>
                 </div>
               </div>`).join('')}
             </div>` : '<p class="small muted">Belum ada deposit.</p>'}
@@ -168,7 +168,7 @@ function renderDetail(ctx) {
         <section class="card card-pad">
           <h2>Aktivitas</h2>
           <ul class="timeline" style="margin-top:10px">
-            ${(c.activities ?? []).map((a) => `<li><div class="t-head"><strong>${esc(a.type)}</strong><time>${esc(a.date)}</time></div><div class="t-body">${esc(a.note)} Â· ${esc(a.by)}</div></li>`).join('') || '<li class="muted small">Belum ada aktivitas.</li>'}
+            ${(c.activities ?? []).map((a) => `<li><div class="t-head"><strong>${esc(a.type)}</strong><time>${esc(a.date)}</time></div><div class="t-body">${esc(a.note)} · ${esc(a.by)}</div></li>`).join('') || '<li class="muted small">Belum ada aktivitas.</li>'}
           </ul>
         </section>
       </div>
@@ -181,12 +181,12 @@ function renderDetail(ctx) {
           </div>
           <hr class="divider" />
           <div class="stack-sm">
-            <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(c.phone || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Email</span><span class="small">${esc(c.email || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(c.address || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Kota</span><span class="small">${esc(c.city || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Aksi berikutnya</span><span class="small">${esc(c.nextAction || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Follow-up</span><span class="small">${esc(c.followUpDate || 'â€”')}</span></div>
+            <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(c.phone || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Email</span><span class="small">${esc(c.email || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(c.address || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Kota</span><span class="small">${esc(c.city || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Aksi berikutnya</span><span class="small">${esc(c.nextAction || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Follow-up</span><span class="small">${esc(c.followUpDate || '—')}</span></div>
           </div>
           ${c.notes ? `<hr class="divider" /><p class="small muted">${esc(c.notes)}</p>` : ''}
         </section>
@@ -250,10 +250,10 @@ function openEdit(ctx, c) {
 function openSample(ctx, c) {
   const { db } = ctx;
   const availableSkus = db.skus.filter((s) => s.active && db.rolls.some((r) => r.skuId === s.id && availableMm(r) > 0));
-  const skuOptions = availableSkus.map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} â€” ${esc(s.code)}</option>`).join('');
+  const skuOptions = availableSkus.map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
   const firstSku = availableSkus[0]?.id;
   const rollsFor = (skuId) => sellableRolls(db, skuId, ctx.ui.warehouseId === 'all' ? 'wh-jkt' : ctx.ui.warehouseId)
-    .map((r) => `<option value="${r.id}">${esc(r.id)} Â· lot ${esc(r.lot)} Â· ${fmt.m(availableMm(r))}</option>`).join('');
+    .map((r) => `<option value="${r.id}">${esc(r.id)} · lot ${esc(r.lot)} · ${fmt.m(availableMm(r))}</option>`).join('');
 
   openModal({
     title: 'Kirim sample',
@@ -353,7 +353,7 @@ function openLinkSample(ctx, c, sample) {
   openModal({
     title: `Kaitkan sample ${sample.id}`,
     description: 'Konversi sample ke pembelian yang benar-benar terjadi.',
-    body: field('Faktur', `<select class="select" name="invoice">${invoices.map((i) => `<option value="${i.id}">${esc(i.id)} Â· ${esc(i.date)} Â· ${fmt.money(i.total)}</option>`).join('')}</select>`),
+    body: field('Faktur', `<select class="select" name="invoice">${invoices.map((i) => `<option value="${i.id}">${esc(i.id)} · ${esc(i.date)} · ${fmt.money(i.total)}</option>`).join('')}</select>`),
     onSubmit(form, close) {
       ctx.store.update((db) => linkSampleToInvoice(db, { sampleId: sample.id, invoiceId: form.invoice.value, user: ctx.user }));
       close();

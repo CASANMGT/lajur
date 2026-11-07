@@ -1,4 +1,4 @@
-﻿/** Panel Simulasi Data â€” dataset terpisah, siklus 60 â†’ 10 â†’ 50 â†’ pembayaran. */
+/** Panel Simulasi Data — dataset terpisah, siklus 60 → 10 → 50 → pembayaran. */
 
 import { esc, icon, fmt, badge, toast, openModal } from '../dom.js';
 import { MM_PER_M } from '../../domain/core.js';
@@ -35,7 +35,7 @@ export function render(ctx) {
       <div class="stack">
         <section class="card card-pad">
           <div class="row-between">
-            <h2>Siklus wajib: 60 â†’ 10 â†’ 50 â†’ pembayaran</h2>
+            <h2>Siklus wajib: 60 → 10 → 50 → pembayaran</h2>
             ${badge(dataset === 'sim' ? 'Dataset simulasi' : 'Belum aktif', dataset === 'sim' ? 'copper' : 'muted')}
           </div>
           <div class="flow" style="margin-top:14px">
@@ -46,9 +46,9 @@ export function render(ctx) {
 
           ${summary ? `
             <div class="grid grid-3" style="margin-top:14px">
-              <div class="stat" style="box-shadow:none"><div class="label">Roll</div><div class="value" style="font-size:1.15rem">${summary.roll ? `<a href="#/stok/${summary.roll.id}">${esc(summary.roll.id)}</a>` : 'â€”'}</div><div class="meta">${summary.roll ? `${fmt.m(summary.roll.originalMm)} awal` : ''}</div></div>
-              <div class="stat" style="box-shadow:none"><div class="label">Sisa setelah potong</div><div class="value" style="font-size:1.15rem">${summary.remainingMm !== null ? fmt.m(summary.remainingMm) : 'â€”'}</div><div class="meta">${summary.remainingMm !== null ? 'fisik saat ini' : ''}</div></div>
-              <div class="stat" style="box-shadow:none"><div class="label">Faktur</div><div class="value" style="font-size:1.15rem">${summary.invoice ? `<a href="#/penjualan/${summary.invoice.id}">${esc(summary.invoice.id)}</a>` : 'â€”'}</div><div class="meta">${summary.invoice ? fmt.money(summary.total) : ''}</div></div>
+              <div class="stat" style="box-shadow:none"><div class="label">Roll</div><div class="value" style="font-size:1.15rem">${summary.roll ? `<a href="#/stok/${summary.roll.id}">${esc(summary.roll.id)}</a>` : '—'}</div><div class="meta">${summary.roll ? `${fmt.m(summary.roll.originalMm)} awal` : ''}</div></div>
+              <div class="stat" style="box-shadow:none"><div class="label">Sisa setelah potong</div><div class="value" style="font-size:1.15rem">${summary.remainingMm !== null ? fmt.m(summary.remainingMm) : '—'}</div><div class="meta">${summary.remainingMm !== null ? 'fisik saat ini' : ''}</div></div>
+              <div class="stat" style="box-shadow:none"><div class="label">Faktur</div><div class="value" style="font-size:1.15rem">${summary.invoice ? `<a href="#/penjualan/${summary.invoice.id}">${esc(summary.invoice.id)}</a>` : '—'}</div><div class="meta">${summary.invoice ? fmt.money(summary.total) : ''}</div></div>
             </div>
             ${summary.step >= 3 ? `<div class="notice notice-teal" style="margin-top:14px">${icon('check')}<div><strong>Siklus selesai.</strong> 60 m diterima, 10 m terjual, sisa 50 m, pembayaran ${fmt.money(summary.paymentAmount)} tercatat. Ulangi untuk menguji beberapa siklus.</div></div>` : ''}
             <hr class="divider" />
@@ -64,7 +64,7 @@ export function render(ctx) {
           <ul class="small muted" style="padding-left:16px;margin:8px 0 0;line-height:1.7">
             <li>Penerimaan 60 m membuat roll baru dengan lot dan harga pokok.</li>
             <li>Potongan 10 m mempertahankan identitas roll induk dan membuat piece terjual.</li>
-            <li>Sisa 50 m berasal dari record yang sama â€” bukan angka hardcode.</li>
+            <li>Sisa 50 m berasal dari record yang sama — bukan angka hardcode.</li>
             <li>Pembayaran sebagian 40% mengurangi sisa tagihan, bukan omzet baru.</li>
             <li>Data utama tidak berubah; kunci penyimpanan berbeda.</li>
           </ul>
@@ -107,7 +107,7 @@ export function openSimulationPrompt(ctx) {
     extraFooter: hasSim ? `<button class="btn" type="button" data-reset-sim>Mulai ulang</button>` : '',
     body: `
       <div class="stack-sm">
-        <div class="notice notice-teal">${icon('flask')}<div><strong>Siklus 60 â†’ 10 â†’ 50 â†’ pembayaran.</strong> Terima satu roll 60 m, jual 10 m, lihat sisa 50 m, lalu catat pembayaran sebagian.</div></div>
+        <div class="notice notice-teal">${icon('flask')}<div><strong>Siklus 60 → 10 → 50 → pembayaran.</strong> Terima satu roll 60 m, jual 10 m, lihat sisa 50 m, lalu catat pembayaran sebagian.</div></div>
         <p class="small muted">Simulasi memakai penyimpanan terpisah. Semua modul (stok, transfer, pembelian, proyek, sample, deposit, retur) memakai record yang saling terhubung di dataset simulasi.</p>
         ${hasSim ? `<p class="xs muted">Sesi simulasi sebelumnya ditemukan dan bisa dilanjutkan.</p>` : ''}
       </div>`,
@@ -145,7 +145,7 @@ export function mount(ctx) {
     try {
       const state = ctx.store.update((db) => runCycle(db, { user: ctx.user, manager: USERS.manager, restart: false }));
       const done = state.step >= 3;
-      toast(done ? 'Siklus selesai: 60 m â†’ 10 m â†’ 50 m â†’ pembayaran sebagian.' : 'Siklus dilanjutkan.', { tone: 'success' });
+      toast(done ? 'Siklus selesai: 60 m → 10 m → 50 m → pembayaran sebagian.' : 'Siklus dilanjutkan.', { tone: 'success' });
     } catch (err) {
       toast(err.message, { tone: 'error' });
     }

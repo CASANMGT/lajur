@@ -1,4 +1,4 @@
-﻿/** Ringkasan â€” role-specific dashboard. All metrics derive from records. */
+/** Ringkasan — role-specific dashboard. All metrics derive from records. */
 
 import { esc, icon, fmt, badge } from '../dom.js';
 import { byId, daysBetween, formatDateLong, todayJakarta } from '../../domain/core.js';
@@ -36,7 +36,7 @@ function exceptionList(ctx, limit = 6) {
       </div>
       <div class="right">
         ${ex.amount ? `<div class="amount strong num">${fmt.money(ex.amount)}</div>` : ''}
-        <a class="small strong" href="${esc(ex.href)}">Tinjau â†’</a>
+        <a class="small strong" href="${esc(ex.href)}">Tinjau →</a>
       </div>
     </li>`).join('')}</ul>`;
 }
@@ -52,7 +52,7 @@ function warehouseTable(db, activeId) {
           <td class="num">${fmt.m(r.physicalMm)}</td>
           <td class="num">${fmt.m(r.availableMm)}</td>
           <td class="num">${fmt.m(r.reservedMm)}</td>
-          <td class="num">${r.incomingMm ? fmt.m(r.incomingMm) : 'â€”'}</td>
+          <td class="num">${r.incomingMm ? fmt.m(r.incomingMm) : '—'}</td>
           <td class="num">${fmt.money(r.value)}</td>
         </tr>`).join('')}</tbody>
     </table>
@@ -67,9 +67,9 @@ function operatorQueue(ctx) {
   const opnames = activeSessions(db).filter((s) => s.warehouseId === ui.warehouseId);
   const items = [
     ...opnames.map((s) => ({ href: `#/opname/${s.id}`, icon: 'clipboard', title: `Opname ${s.id} berjalan`, detail: 'Gudang dibekukan sampai review selesai.' })),
-    ...receipts.map((t) => ({ href: `#/transfer/${t.id}`, icon: 'truck', title: `Terima kiriman ${t.id}`, detail: `${warehouseOf(db, t.fromWarehouseId)?.code} â†’ ${warehouseOf(db, t.toWarehouseId)?.code} Â· sebagian sudah di jalan.` })),
+    ...receipts.map((t) => ({ href: `#/transfer/${t.id}`, icon: 'truck', title: `Terima kiriman ${t.id}`, detail: `${warehouseOf(db, t.fromWarehouseId)?.code} → ${warehouseOf(db, t.toWarehouseId)?.code} · sebagian sudah di jalan.` })),
     ...dispatches.map((t) => ({ href: `#/transfer/${t.id}`, icon: 'transfer', title: `Siapkan kiriman ${t.id}`, detail: `Untuk ${warehouseOf(db, t.toWarehouseId)?.name}.` })),
-    ...poReady.map((p) => ({ href: `#/pembelian/${p.id}`, icon: 'truck', title: `PO ${p.id} siap diterima`, detail: `${p.supplierName} Â· estimasi ${p.expectedDate}.` })),
+    ...poReady.map((p) => ({ href: `#/pembelian/${p.id}`, icon: 'truck', title: `PO ${p.id} siap diterima`, detail: `${p.supplierName} · estimasi ${p.expectedDate}.` })),
   ];
   if (!items.length) {
     return `<div class="empty" style="padding:24px 16px">${icon('check')}<strong>Antrean bersih</strong><p>Belum ada pekerjaan gudang yang menunggu.</p></div>`;
@@ -78,7 +78,7 @@ function operatorQueue(ctx) {
     <li class="exc-item">
       <span class="exc-icon info">${icon(i.icon)}</span>
       <div class="exc-body"><strong>${esc(i.title)}</strong><span>${esc(i.detail)}</span></div>
-      <a class="small strong" href="${i.href}">Buka â†’</a>
+      <a class="small strong" href="${i.href}">Buka →</a>
     </li>`).join('')}</ul>`;
 }
 
@@ -97,7 +97,7 @@ function followUps(ctx) {
       <span class="exc-icon ${days < 0 ? 'danger' : 'info'}">${icon('clock')}</span>
       <div class="exc-body">
         <strong>${esc(c.name)}</strong>
-        <span>${esc(c.nextAction || 'Tanpa aksi berikutnya')} Â· ${esc(c.followUpDate)}</span>
+        <span>${esc(c.nextAction || 'Tanpa aksi berikutnya')} · ${esc(c.followUpDate)}</span>
       </div>
       <div class="right">
         ${days < 0 ? badge(`${Math.abs(days)} hari lewat`, 'danger') : badge(`${days} hari`, 'muted')}
@@ -115,7 +115,7 @@ export function render(ctx) {
 
   if (role === 'operator') {
     return `
-      ${pageHead({ eyebrow: 'Operator gudang', title: `${greeting()}, ${firstName}`, sub: `${wh?.name ?? 'Semua gudang'} Â· ${dateLabel}` })}
+      ${pageHead({ eyebrow: 'Operator gudang', title: `${greeting()}, ${firstName}`, sub: `${wh?.name ?? 'Semua gudang'} · ${dateLabel}` })}
       <div class="kpi-strip">
         ${statCard({ label: 'Stok fisik', value: fmt.m(metrics.stock.physicalMm), meta: 'Roll tersedia & karantina', tone: 'accent', iconName: 'box' })}
         ${statCard({ label: 'Tersedia', value: fmt.m(metrics.stock.availableMm), meta: 'Fisik dikurangi reservasi' })}
@@ -148,7 +148,7 @@ export function render(ctx) {
     const openDeposits = db.deposits.reduce((a, d) => a + depositBalance(d), 0);
     const invoices = postedInvoices(db).slice(0, 5);
     return `
-      ${pageHead({ eyebrow: 'Sales & customer service', title: `${greeting()}, ${firstName}`, sub: `${dateLabel} Â· angka penjualan bersifat perusahaan` })}
+      ${pageHead({ eyebrow: 'Sales & customer service', title: `${greeting()}, ${firstName}`, sub: `${dateLabel} · angka penjualan bersifat perusahaan` })}
       <div class="kpi-strip">
         ${statCard({ label: 'Piutang berjalan', value: fmt.money(metrics.receivables), meta: `${fmt.money(metrics.overdueReceivables)} lewat jatuh tempo`, tone: 'warn', iconName: 'wallet' })}
         ${statCard({ label: 'Penjualan bulan ini', value: fmt.money(metrics.monthSales), meta: 'Faktur terbit, bukan pesanan' })}
@@ -192,7 +192,7 @@ export function render(ctx) {
     ${pageHead({
       eyebrow: 'Ringkasan manajer',
       title: `${greeting()}, ${firstName}`,
-      sub: `${dateLabel} Â· ${db.meta.company}`,
+      sub: `${dateLabel} · ${db.meta.company}`,
       actions: `<a class="btn" href="#/laporan">${icon('chart')} Buka laporan</a><a class="btn btn-primary" href="#/transfer?new=1">${icon('plus')} Permintaan gudang</a>`,
     })}
     <div class="kpi-strip">
@@ -222,8 +222,8 @@ export function render(ctx) {
           ? `<ul class="exc-list">${projects.filter((p) => p.shortages.length || p.overdue).slice(0, 5).map((p) => `
               <li class="exc-item">
                 <span class="exc-icon ${p.overdue ? 'danger' : 'warn'}">${icon(p.overdue ? 'clock' : 'alert')}</span>
-                <div class="exc-body"><strong>${esc(p.project.name)}</strong><span>${esc(p.customer?.name ?? '')} Â· target ${esc(p.project.targetDate)}${p.shortages.length ? ` Â· ${p.shortages.length} kebutuhan kurang` : ''}</span></div>
-                <a class="small strong" href="#/proyek/${p.project.id}">Buka â†’</a>
+                <div class="exc-body"><strong>${esc(p.project.name)}</strong><span>${esc(p.customer?.name ?? '')} · target ${esc(p.project.targetDate)}${p.shortages.length ? ` · ${p.shortages.length} kebutuhan kurang` : ''}</span></div>
+                <a class="small strong" href="#/proyek/${p.project.id}">Buka →</a>
               </li>`).join('')}</ul>`
           : `<div class="empty" style="padding:24px">${icon('check')}<strong>Semua proyek siap</strong><p>Tidak ada kekurangan material.</p></div>`}
       </section>

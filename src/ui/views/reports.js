@@ -1,4 +1,4 @@
-﻿/** Laporan: persediaan, penjualan, keuangan, kontrol. Semua dari record yang sama. */
+/** Laporan: persediaan, penjualan, keuangan, kontrol. Semua dari record yang sama. */
 
 import { esc, icon, fmt, badge, downloadFile, toCsv } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
@@ -15,9 +15,9 @@ let tab = 'persediaan';
 
 const BUCKETS = [
   ['current', 'Belum jatuh tempo'],
-  ['d1_30', '1â€“30 hari'],
-  ['d31_60', '31â€“60 hari'],
-  ['d61_90', '61â€“90 hari'],
+  ['d1_30', '1–30 hari'],
+  ['d31_60', '31–60 hari'],
+  ['d61_90', '61–90 hari'],
   ['over90', '> 90 hari'],
 ];
 
@@ -61,7 +61,7 @@ function renderStock(ctx, value) {
     </div>
 
     <section class="card">
-      <div class="card-head"><div><h2>Stok per gudang</h2><p>Saldo saat ini Â· ${esc(todayJakarta())}</p></div></div>
+      <div class="card-head"><div><h2>Stok per gudang</h2><p>Saldo saat ini · ${esc(todayJakarta())}</p></div></div>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Gudang</th><th class="num">Roll</th><th class="num">Fisik</th><th class="num">Tersedia</th><th class="num">Terpesan</th><th class="num">Karantina</th><th class="num">Transit masuk</th><th class="num">Nilai</th></tr></thead>
         <tbody>${rows.map((r) => `<tr>
@@ -95,7 +95,7 @@ function renderStock(ctx, value) {
 
     <div class="grid grid-2" style="margin-top:16px">
       <section class="card">
-        <div class="card-head"><div><h2>Slow-moving & dormant</h2><p>Tidak terjual â‰¥ 90 hari.</p></div></div>
+        <div class="card-head"><div><h2>Slow-moving & dormant</h2><p>Tidak terjual ≥ 90 hari.</p></div></div>
         <div class="table-wrap"><table class="data">
           <thead><tr><th>Produk</th><th class="num">Stok</th><th>Terakhir jual</th></tr></thead>
           <tbody>${[...slow.fabric.map((s) => ({ label: `${s.sku.collectionName} ${s.sku.colourName || s.sku.colourCode}`, code: s.sku.code, qty: fmt.m(s.stockMm), last: s.lastSold })), ...slow.parts.map((s) => ({ label: s.part.name, code: s.part.sku, qty: `${fmt.pcs(s.qty)} pcs`, last: s.lastSold }))]
@@ -103,7 +103,7 @@ function renderStock(ctx, value) {
         </table></div>
       </section>
       <section class="card">
-        <div class="card-head"><div><h2>Riwayat mutasi</h2><p>30 entri terakhir Â· historis.</p></div></div>
+        <div class="card-head"><div><h2>Riwayat mutasi</h2><p>30 entri terakhir · historis.</p></div></div>
         <div class="card-pad"><ul class="timeline">${movementHistory(db, { limit: 8 }).map((m) => movementRow(db, m)).join('')}</ul></div>
       </section>
     </div>`;
@@ -176,14 +176,14 @@ function renderFinance(ctx, ar, ap) {
   return `
     <div class="grid grid-2">
       <section class="card">
-        <div class="card-head"><div><h2>Piutang pelanggan</h2><p>Umur dari tanggal jatuh tempo Â· ${esc(todayJakarta())}</p></div><span class="badge badge-warn no-dot">${fmt.money(ar.total)}</span></div>
+        <div class="card-head"><div><h2>Piutang pelanggan</h2><p>Umur dari tanggal jatuh tempo · ${esc(todayJakarta())}</p></div><span class="badge badge-warn no-dot">${fmt.money(ar.total)}</span></div>
         <div class="table-wrap"><table class="data">
           <thead><tr><th>Faktur</th><th>Pelanggan</th><th class="num">Sisa</th><th class="num">Lewat</th></tr></thead>
           <tbody>${ar.items.slice(0, 8).map((i) => `<tr>
             <td class="mono"><a href="#/penjualan/${i.invoice.id}">${esc(i.invoice.id)}</a></td>
             <td>${esc(i.invoice.customerName)}</td>
             <td class="num">${fmt.money(i.outstanding)}</td>
-            <td class="num">${i.daysLate ? `${i.daysLate} hr` : 'â€”'}</td>
+            <td class="num">${i.daysLate ? `${i.daysLate} hr` : '—'}</td>
           </tr>`).join('') || '<tr><td colspan="4" class="muted">Tidak ada piutang.</td></tr>'}</tbody>
         </table></div>
         <div class="card-pad">
@@ -194,14 +194,14 @@ function renderFinance(ctx, ar, ap) {
       </section>
 
       <section class="card">
-        <div class="card-head"><div><h2>Utang pemasok</h2><p>Umur tagihan Â· ${esc(todayJakarta())}</p></div><span class="badge badge-copper no-dot">${fmt.money(ap.total)}</span></div>
+        <div class="card-head"><div><h2>Utang pemasok</h2><p>Umur tagihan · ${esc(todayJakarta())}</p></div><span class="badge badge-copper no-dot">${fmt.money(ap.total)}</span></div>
         <div class="table-wrap"><table class="data">
           <thead><tr><th>Tagihan</th><th>Pemasok</th><th class="num">Sisa</th><th class="num">Lewat</th></tr></thead>
           <tbody>${ap.items.slice(0, 8).map((i) => `<tr>
             <td class="mono">${esc(i.bill.id)}</td>
             <td>${esc(byId(db.suppliers, i.bill.supplierId)?.name ?? '')}</td>
             <td class="num">${fmt.money(i.outstanding)}</td>
-            <td class="num">${i.daysLate ? `${i.daysLate} hr` : 'â€”'}</td>
+            <td class="num">${i.daysLate ? `${i.daysLate} hr` : '—'}</td>
           </tr>`).join('') || '<tr><td colspan="4" class="muted">Tidak ada utang.</td></tr>'}</tbody>
         </table></div>
         <div class="card-pad"><div class="grid grid-3">
@@ -252,7 +252,7 @@ function renderControl(ctx) {
             <td class="mono"><a href="#/stok/${m.rollId}">${esc(m.rollId)}</a></td>
             <td class="num">${fmt.m(m.qtyMm, { signed: true })}</td>
             <td class="num">${fmt.money(m.value)}</td>
-            <td class="small muted">${esc(m.ref)} Â· ${esc(m.userName)}</td>
+            <td class="small muted">${esc(m.ref)} · ${esc(m.userName)}</td>
           </tr>`).join('') || '<tr><td colspan="4" class="muted">Tidak ada penyesuaian.</td></tr>'}</tbody>
         </table></div>
       </section>
@@ -264,7 +264,7 @@ function renderControl(ctx) {
             <td class="mono"><a href="#/opname/${s.id}">${esc(s.id)}</a></td>
             <td>${esc(warehouseOf(db, s.warehouseId)?.code)}</td>
             <td>${badge(s.status, s.status === 'posted' ? 'ok' : 'warn')}</td>
-            <td class="num">${s.postedAt ? fmt.m(s.adjustments.reduce((a, x) => a + x.varianceMm, 0), { signed: true }) : 'â€”'}</td>
+            <td class="num">${s.postedAt ? fmt.m(s.adjustments.reduce((a, x) => a + x.varianceMm, 0), { signed: true }) : '—'}</td>
           </tr>`).join('') || '<tr><td colspan="4" class="muted">Belum ada sesi.</td></tr>'}</tbody>
         </table></div>
       </section>

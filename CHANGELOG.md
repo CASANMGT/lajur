@@ -1,17 +1,21 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
-## [2.0.0] â€” 2026-11-07
+## [2.0.0] — 2026-11-07
 
 First release of the **Lajur** version. This is a new project under the Lajur brand direction; the earlier *Lipit* prototype source was not available in the workspace and is not included here.
 
 ### Added
 
+**Delivery**
+- Vercel production deployment at `https://lajur-lake.vercel.app`, project linked to GitHub for automatic deploys from `main`.
+- GitHub repository `CASANMGT/lajur`.
+
 **Domain and data**
-- Roll-level inventory: collection â†’ colour SKU â†’ lot â†’ physical roll â†’ warehouse/bin.
+- Roll-level inventory: collection → colour SKU → lot → physical roll → warehouse/bin.
 - Integer-millimetre storage, IDR money, Asia/Jakarta business dates.
-- Availability rule `physical âˆ’ reserved`, with quarantine and transit kept separate.
+- Availability rule `physical − reserved`, with quarantine and transit kept separate.
 - Cut/split that preserves parent identity, root roll and length conservation.
 - 23 invariant tests covering cuts, reservations, transfers, receiving, returns, deposits, projects, opname, simulation and backup.
 
@@ -37,7 +41,7 @@ First release of the **Lajur** version. This is a new project under the Lajur br
 - Movement ledger with user, role, reference and financial impact.
 - Reports: stock by warehouse/SKU, valuation, movement, sales/margin, product performance, AR/AP aging, deposits, returns, sample conversion, project shortage, slow-moving, audit.
 - JSON export/restore with full referential validation.
-- Separate simulation dataset with a copper banner, start/resume/reset/exit, and the guided cycle **receive 60 m â†’ sell 10 m â†’ 50 m â†’ partial payment**.
+- Separate simulation dataset with a copper banner, start/resume/reset/exit, and the guided cycle **receive 60 m → sell 10 m → 50 m → partial payment**.
 
 **UI/UX**
 - Lajur brand implementation: Midnight Navy, Warm Ivory, Muted Teal, Copper; Manrope + Inter.
@@ -61,6 +65,7 @@ First release of the **Lajur** version. This is a new project under the Lajur br
 - Mobile modal footer could fall below a 390 px viewport because the form did not flex-shrink. Fixed with a min-height-0 flex form; footer now visible at 320/390 px.
 - Contrast failures on muted metadata, copper buttons/badges, simulation banner and current flow step. Adjusted tokens; Lighthouse accessibility now 100 on audited screens.
 - Heading levels skipped from `h1` to `h3` in cards. Reworked to `h2`/`h3` with matching styles.
+- UTF-8 double-encoding introduced by an automated bulk edit (em dashes and box-drawing characters). Repaired across views and docs; all files re-scanned clean.
 
 ### Known limitations
 
@@ -75,8 +80,8 @@ First release of the **Lajur** version. This is a new project under the Lajur br
 
 ## Versioning
 
-- **Major** â€” changes to the domain model or stock/financial rules.
-- **Minor** â€” new modules or screens.
-- **Patch** â€” fixes, copy, styling.
+- **Major** — changes to the domain model or stock/financial rules.
+- **Minor** — new modules or screens.
+- **Patch** — fixes, copy, styling.
 
 The dataset version is stored in `db.meta.version` (currently `2`). Backup files with a newer version are rejected.

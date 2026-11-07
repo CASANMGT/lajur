@@ -1,4 +1,4 @@
-﻿/** Master data, kategori, gudang, cadangan data, dan matriks peran. */
+/** Master data, kategori, gudang, cadangan data, dan matriks peran. */
 
 import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, confirmAction, downloadFile,
@@ -35,8 +35,8 @@ function renderProducts(ctx) {
       <tbody>${db.skus.map((s) => `<tr>
         <td class="mono strong">${esc(s.code)}<div class="xs muted">${esc(s.id)}</div></td>
         <td>${esc(s.collectionName)}</td>
-        <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || 'â€”')} <span class="muted xs">(${esc(s.colourCode)})</span></span></div></td>
-        <td class="num">${s.widthCm ? `${s.widthCm} cm` : 'â€”'}</td>
+        <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span></span></div></td>
+        <td class="num">${s.widthCm ? `${s.widthCm} cm` : '—'}</td>
         <td class="num">${fmt.money(s.buyPrice)}</td>
         <td class="num">${fmt.money(s.sellPrice)}</td>
         <td>${s.active === false ? badge('Nonaktif / dormant', 'danger') : badge('Aktif', 'ok')}</td>
@@ -57,7 +57,7 @@ function renderParts(ctx) {
         return `<tr>
           <td class="mono">${esc(p.sku)}<div class="xs muted">${esc(p.id)}</div></td>
           <td>${esc(p.name)}</td>
-          <td>${esc(byId(db.categories, p.categoryId)?.name ?? 'â€”')}</td>
+          <td>${esc(byId(db.categories, p.categoryId)?.name ?? '—')}</td>
           <td>${esc(p.unit)}</td>
           <td class="num">${fmt.money(p.buyPrice)}</td>
           <td class="num">${fmt.money(p.sellPrice)}</td>
@@ -91,7 +91,7 @@ function renderCategories(ctx) {
         <thead><tr><th>Koleksi</th><th>Kategori</th><th class="num">Warna</th></tr></thead>
         <tbody>${db.collections.map((c) => `<tr>
           <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.description)}</div></td>
-          <td>${esc(byId(db.categories, c.categoryId)?.name ?? 'â€”')}</td>
+          <td>${esc(byId(db.categories, c.categoryId)?.name ?? '—')}</td>
           <td class="num">${db.skus.filter((s) => s.collectionId === c.id).length}</td>
         </tr>`).join('')}</tbody>
       </table></div>
@@ -111,7 +111,7 @@ function renderWarehouses(ctx) {
         <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(w.phone)}</span></div>
         <div class="row-between"><span class="small muted">Roll fisik</span><span class="small">${db.rolls.filter((r) => r.warehouseId === w.id && !r.transit).length}</span></div>
       </div>
-      <p class="xs muted" style="margin-top:10px">Format lokasi: ${esc(w.binPrefix)}-01-02 (gudang â†’ zona â†’ rak â†’ posisi).</p>
+      <p class="xs muted" style="margin-top:10px">Format lokasi: ${esc(w.binPrefix)}-01-02 (gudang → zona → rak → posisi).</p>
     </section>`).join('')}
   </div>`;
 }
@@ -150,7 +150,7 @@ function renderData(ctx) {
           ['Buat proyek & sample', false, true, true],
           ['Refund deposit indent', false, false, true],
           ['Edit master & pemasok', false, false, true],
-        ].map(([label, a, b, c]) => `<tr><td>${esc(label)}</td><td>${a ? 'âœ“' : 'â€”'}</td><td>${b ? 'âœ“' : 'â€”'}</td><td>${c ? 'âœ“' : 'â€”'}</td></tr>`).join('')}</tbody>
+        ].map(([label, a, b, c]) => `<tr><td>${esc(label)}</td><td>${a ? '✓' : '—'}</td><td>${b ? '✓' : '—'}</td><td>${c ? '✓' : '—'}</td></tr>`).join('')}</tbody>
       </table></div>
       <div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div><strong>Hiding a button is not authorization.</strong> Produksi wajib menegakkan izin di server untuk setiap mutasi, bukan hanya di UI.</div></div>
     </section>
@@ -163,7 +163,7 @@ function renderData(ctx) {
         <div class="row-between"><span class="small muted">Perusahaan</span><span class="small">${esc(db.meta.company)}</span></div>
         <div class="row-between"><span class="small muted">Zona waktu</span><span class="small">${esc(db.meta.timezone)}</span></div>
         <div class="row-between"><span class="small muted">Roll / faktur / mutasi</span><span class="small">${db.rolls.length} / ${db.invoices.length} / ${db.movements.length}</span></div>
-        <div class="row-between"><span class="small muted">Seed</span><span class="small">${esc(db.meta.seededAt?.slice(0, 16).replace('T', ' ') ?? 'â€”')}</span></div>
+        <div class="row-between"><span class="small muted">Seed</span><span class="small">${esc(db.meta.seededAt?.slice(0, 16).replace('T', ' ') ?? '—')}</span></div>
       </div>
       <p class="xs muted" style="margin-top:10px">Backup memuat ${Object.keys(db).length} koleksi. Restore yang rusak ditolak dengan daftar referensi yang hilang.</p>
     </section>

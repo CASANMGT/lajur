@@ -1,4 +1,4 @@
-﻿/** Pembelian: PO pemasok, penerimaan, tagihan, pemasok. */
+/** Pembelian: PO pemasok, penerimaan, tagihan, pemasok. */
 
 import {
   esc, icon, fmt, badge, toast, openModal, field, printDocument,
@@ -69,7 +69,7 @@ function renderPoTab(ctx) {
       ${rows.map((po) => `<a class="roll-card" href="#/pembelian/${po.id}" style="color:inherit;text-decoration:none">
         <div class="top"><span class="id">${esc(po.id)}</span>${badge(PO_STATUS[po.status].label, PO_STATUS[po.status].tone)}</div>
         <div class="small strong">${esc(po.supplierName)}</div>
-        <div class="xs muted">Estimasi ${esc(po.expectedDate)} Â· ${esc(po.note || '')}</div>
+        <div class="xs muted">Estimasi ${esc(po.expectedDate)} · ${esc(po.note || '')}</div>
         <div class="grid3"><div class="kv"><span>Total</span><strong>${fmt.money(po.total)}</strong></div><div class="kv"><span>Baris</span><strong>${po.lines.length}</strong></div><div class="kv"><span>Status</span><strong>${esc(PO_STATUS[po.status].label)}</strong></div></div>
       </a>`).join('')}
     </div>
@@ -110,11 +110,11 @@ function renderSupplierTab(ctx) {
       const perf = supplierPerformance(db).find((p) => p.supplier.id === s.id);
       const prices = db.supplierPrices.filter((p) => p.supplierId === s.id);
       return `<section class="card card-pad">
-        <div class="row-between"><div><h2>${esc(s.name)}</h2><div class="xs muted">${esc(s.code)} Â· ${esc(s.address)}</div></div>${role === 'manager' ? `<button class="btn btn-sm" data-edit-supplier="${s.id}">Edit</button>` : ''}</div>
+        <div class="row-between"><div><h2>${esc(s.name)}</h2><div class="xs muted">${esc(s.code)} · ${esc(s.address)}</div></div>${role === 'manager' ? `<button class="btn btn-sm" data-edit-supplier="${s.id}">Edit</button>` : ''}</div>
         <div class="stack-sm" style="margin-top:10px">
-          <div class="row-between"><span class="small muted">Kontak</span><span class="small">${esc(s.contact)} Â· ${esc(s.phone)}</span></div>
-          <div class="row-between"><span class="small muted">Termin</span><span class="small">${esc(s.termsDays)} hari Â· lead ${esc(s.leadTimeDays)} hari</span></div>
-          <div class="row-between"><span class="small muted">Performa</span><span class="small">${perf?.receiptCount ?? 0} penerimaan Â· ${perf?.lateReceipts ?? 0} terlambat</span></div>
+          <div class="row-between"><span class="small muted">Kontak</span><span class="small">${esc(s.contact)} · ${esc(s.phone)}</span></div>
+          <div class="row-between"><span class="small muted">Termin</span><span class="small">${esc(s.termsDays)} hari · lead ${esc(s.leadTimeDays)} hari</span></div>
+          <div class="row-between"><span class="small muted">Performa</span><span class="small">${perf?.receiptCount ?? 0} penerimaan · ${perf?.lateReceipts ?? 0} terlambat</span></div>
         </div>
         <hr class="divider" />
         <div class="xs muted">Harga pemasok</div>
@@ -122,7 +122,7 @@ function renderSupplierTab(ctx) {
           ${prices.map((p) => {
             const sku = p.skuId ? byId(db.skus, p.skuId) : null;
             const part = p.partId ? byId(db.parts, p.partId) : null;
-            return `<div class="row-between"><span class="small">${esc(sku ? `${sku.code} â€” ${sku.colourName || sku.colourCode}` : part?.name ?? '')}</span><span class="small num">${fmt.money(p.price)} / ${esc(p.unit)}</span></div>`;
+            return `<div class="row-between"><span class="small">${esc(sku ? `${sku.code} — ${sku.colourName || sku.colourCode}` : part?.name ?? '')}</span><span class="small num">${fmt.money(p.price)} / ${esc(p.unit)}</span></div>`;
           }).join('') || '<span class="small muted">Belum ada daftar harga.</span>'}
         </div>
       </section>`;
@@ -149,9 +149,9 @@ function renderPoDetail(ctx) {
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/pembelian">â† Semua pembelian</a>
+        <a class="small strong" href="#/pembelian">← Semua pembelian</a>
         <div class="row" style="margin-top:6px"><h1 class="mono">${esc(po.id)}</h1>${badge(PO_STATUS[po.status].label, PO_STATUS[po.status].tone)}</div>
-        <p class="sub">${esc(supplier?.name)} Â· estimasi ${esc(po.expectedDate)} Â· termin ${esc(po.termsDays)} hari</p>
+        <p class="sub">${esc(supplier?.name)} · estimasi ${esc(po.expectedDate)} · termin ${esc(po.termsDays)} hari</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -186,7 +186,7 @@ function renderPoDetail(ctx) {
               <td>${esc(r.date)}</td>
               <td>${esc(warehouseOf(db, r.warehouseId)?.code)}</td>
               <td class="num">${fmt.money(r.total)}</td>
-              <td>${r.supplierInvoiceId ? `<a class="mono xs" href="#/pembelian?tab=tagihan">${esc(r.supplierInvoiceId)}</a>` : 'â€”'}</td>
+              <td>${r.supplierInvoiceId ? `<a class="mono xs" href="#/pembelian?tab=tagihan">${esc(r.supplierInvoiceId)}</a>` : '—'}</td>
             </tr>`).join('')}</tbody>
           </table></div>` : `<div class="empty" style="padding:24px">${icon('truck')}<strong>Belum diterima</strong><p>Terima sebagian atau lengkap saat barang tiba.</p></div>`}
         </section>
@@ -199,8 +199,8 @@ function renderPoDetail(ctx) {
             <div class="row-between"><span class="small muted">Pemasok</span><span class="small">${esc(supplier?.name)}</span></div>
             <div class="row-between"><span class="small muted">Kontak</span><span class="small">${esc(supplier?.contact)}</span></div>
             <div class="row-between"><span class="small muted">Dibuat</span><span class="small">${esc(po.date)}</span></div>
-            <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(po.approvedBy || 'â€”')}</span></div>
-            <div class="row-between"><span class="small muted">Tagihan</span><span class="small">${bill ? `${esc(bill.id)}` : 'â€”'}</span></div>
+            <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(po.approvedBy || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Tagihan</span><span class="small">${bill ? `${esc(bill.id)}` : '—'}</span></div>
           </div>
           ${po.note ? `<hr class="divider" /><p class="small muted">${esc(po.note)}</p>` : ''}
         </section>
@@ -222,8 +222,8 @@ function renderPoDetail(ctx) {
 
 export function openCreatePo(ctx) {
   const { db } = ctx;
-  const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} â€” ${esc(s.code)}</option>`).join('');
-  const partOptions = db.parts.map((p) => `<option value="${p.id}">${esc(p.sku)} Â· ${esc(p.name)}</option>`).join('');
+  const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
+  const partOptions = db.parts.map((p) => `<option value="${p.id}">${esc(p.sku)} · ${esc(p.name)}</option>`).join('');
   const row = () => `<div class="alloc-row" data-line style="grid-template-columns:1fr 1.3fr 90px 110px 34px">
     <select class="select l-kind"><option value="fabric">Kain</option><option value="part">Part</option></select>
     <select class="select l-product">${skuOptions}</select>

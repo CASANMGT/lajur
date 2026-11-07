@@ -1,4 +1,4 @@
-﻿/** Penjualan: faktur multi-baris, pembayaran, deposit, retur. */
+/** Penjualan: faktur multi-baris, pembayaran, deposit, retur. */
 
 import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, amountCell,
@@ -74,7 +74,7 @@ export function render(ctx) {
         ${invoices.map((inv) => `<a class="roll-card" href="#/penjualan/${inv.id}" style="color:inherit;text-decoration:none">
           <div class="top"><span class="id">${esc(inv.id)}</span>${badge(invoiceStatusLabel(inv), invoiceOutstanding(inv) ? 'warn' : 'ok')}</div>
           <div class="small strong">${esc(inv.customerName)}</div>
-          <div class="xs muted">${esc(inv.date)} Â· jatuh tempo ${esc(inv.dueDate)}</div>
+          <div class="xs muted">${esc(inv.date)} · jatuh tempo ${esc(inv.dueDate)}</div>
           <div class="grid3">
             <div class="kv"><span>Total</span><strong>${fmt.money(inv.total)}</strong></div>
             <div class="kv"><span>Sisa</span><strong>${fmt.money(invoiceOutstanding(inv))}</strong></div>
@@ -109,13 +109,13 @@ function renderDetail(ctx) {
   return `
     <div class="page-head">
       <div>
-        <a class="small strong" href="#/penjualan">â† Semua faktur</a>
+        <a class="small strong" href="#/penjualan">← Semua faktur</a>
         <div class="row" style="margin-top:6px">
           <h1 class="mono">${esc(inv.id)}</h1>
           ${badge(invoiceStatusLabel(inv), inv.status === 'void' ? 'danger' : out ? (days > 0 ? 'danger' : 'warn') : 'ok')}
           ${inv.status === 'draft' ? badge('Stok belum keluar', 'muted') : ''}
         </div>
-        <p class="sub">${esc(customer?.name ?? inv.customerName)} Â· ${esc(inv.date)} Â· jatuh tempo ${esc(inv.dueDate)}</p>
+        <p class="sub">${esc(customer?.name ?? inv.customerName)} · ${esc(inv.date)} · jatuh tempo ${esc(inv.dueDate)}</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -132,7 +132,7 @@ function renderDetail(ctx) {
               <tbody>${inv.lines.map((l) => `<tr>
                 <td>
                   <strong>${esc(l.description)}</strong>
-                  ${l.lot ? `<div class="xs muted">Lot ${esc(l.lot)} Â· <a class="mono" href="#/stok/${l.rollId}">${esc(l.rollId)}</a> Â· ${l.mode === 'whole' ? 'roll utuh' : 'potongan'}</div>` : ''}
+                  ${l.lot ? `<div class="xs muted">Lot ${esc(l.lot)} · <a class="mono" href="#/stok/${l.rollId}">${esc(l.rollId)}</a> · ${l.mode === 'whole' ? 'roll utuh' : 'potongan'}</div>` : ''}
                 </td>
                 <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : l.kind === 'part' ? `${fmt.pcs(l.qtyPcs)} pcs` : '1 jasa'}</td>
                 <td class="num">${fmt.money(l.unitPrice)}</td>
@@ -142,10 +142,10 @@ function renderDetail(ctx) {
           </div>
           <div class="card-pad">
             <div class="doc-total"><dt>Subtotal</dt><dd>${fmt.money(inv.subtotal)}</dd></div>
-            ${inv.discount ? `<div class="doc-total"><dt>Diskon</dt><dd>âˆ’${fmt.money(inv.discount)}</dd></div>` : ''}
+            ${inv.discount ? `<div class="doc-total"><dt>Diskon</dt><dd>−${fmt.money(inv.discount)}</dd></div>` : ''}
             <div class="doc-total"><dt>Total</dt><dd>${fmt.money(inv.total)}</dd></div>
-            ${inv.depositApplied ? `<div class="doc-total"><dt>Deposit</dt><dd>âˆ’${fmt.money(inv.depositApplied)}</dd></div>` : ''}
-            ${inv.credited ? `<div class="doc-total"><dt>Retur</dt><dd>âˆ’${fmt.money(inv.credited)}</dd></div>` : ''}
+            ${inv.depositApplied ? `<div class="doc-total"><dt>Deposit</dt><dd>−${fmt.money(inv.depositApplied)}</dd></div>` : ''}
+            ${inv.credited ? `<div class="doc-total"><dt>Retur</dt><dd>−${fmt.money(inv.credited)}</dd></div>` : ''}
             <div class="doc-total"><dt>Dibayar</dt><dd>${fmt.money(inv.payments?.reduce((a, p) => a + p.amount, 0) ?? 0)}</dd></div>
             <div class="doc-total" style="font-size:15px"><dt class="strong">Sisa tagihan</dt><dd>${fmt.money(out)}</dd></div>
           </div>
@@ -155,7 +155,7 @@ function renderDetail(ctx) {
           <div class="card-head"><div><h2>Pembayaran</h2><p>Sebagian diterima; tidak ada aksi bank nyata di demo.</p></div></div>
           ${inv.payments?.length ? `<div class="table-wrap"><table class="data">
             <thead><tr><th>ID</th><th>Tanggal</th><th>Metode</th><th>Referensi</th><th class="num">Nominal</th></tr></thead>
-            <tbody>${inv.payments.map((p) => `<tr><td class="mono">${esc(p.id)}</td><td>${esc(p.date)}</td><td>${esc(p.method)}</td><td>${esc(p.reference || 'â€”')}</td><td class="num">${fmt.money(p.amount)}</td></tr>`).join('')}</tbody>
+            <tbody>${inv.payments.map((p) => `<tr><td class="mono">${esc(p.id)}</td><td>${esc(p.date)}</td><td>${esc(p.method)}</td><td>${esc(p.reference || '—')}</td><td class="num">${fmt.money(p.amount)}</td></tr>`).join('')}</tbody>
           </table></div>` : `<div class="empty" style="padding:24px">${icon('wallet')}<strong>Belum ada pembayaran</strong><p>Terima pembayaran sebagian atau penuh.</p></div>`}
         </section>
 
@@ -164,7 +164,7 @@ function renderDetail(ctx) {
           ${db.returns.filter((r) => r.type === 'customer' && r.invoiceId === inv.id).length
             ? `<div class="stack-sm" style="margin-top:10px">${db.returns.filter((r) => r.type === 'customer' && r.invoiceId === inv.id).map((r) => `<div class="row-between">
                 <div><strong class="small">${esc(r.id)}</strong><div class="xs muted">${esc(r.reason)}</div></div>
-                <div class="right"><div class="small num">âˆ’${fmt.money(r.credit)}</div>${badge(r.status === 'posted' ? 'Diposting' : r.status, r.status === 'posted' ? 'ok' : 'warn')}</div>
+                <div class="right"><div class="small num">−${fmt.money(r.credit)}</div>${badge(r.status === 'posted' ? 'Diposting' : r.status, r.status === 'posted' ? 'ok' : 'warn')}</div>
               </div>`).join('')}</div>`
             : '<p class="small muted" style="margin-top:8px">Belum ada retur untuk faktur ini.</p>'}
         </section>
@@ -175,8 +175,8 @@ function renderDetail(ctx) {
           <h2>Ringkasan</h2>
           <div class="stack-sm" style="margin-top:10px">
             <div class="row-between"><span class="small muted">Pelanggan</span><a class="small" href="#/pelanggan/${inv.customerId}">${esc(inv.customerName)}</a></div>
-            <div class="row-between"><span class="small muted">Proyek</span><span class="small">${inv.projectId ? `<a href="#/proyek/${inv.projectId}">${esc(inv.projectId)}</a>` : 'â€”'}</span></div>
-            <div class="row-between"><span class="small muted">Sales</span><span class="small">${esc(byId(db.users, inv.salespersonId)?.name ?? 'â€”')}</span></div>
+            <div class="row-between"><span class="small muted">Proyek</span><span class="small">${inv.projectId ? `<a href="#/proyek/${inv.projectId}">${esc(inv.projectId)}</a>` : '—'}</span></div>
+            <div class="row-between"><span class="small muted">Sales</span><span class="small">${esc(byId(db.users, inv.salespersonId)?.name ?? '—')}</span></div>
             <div class="row-between"><span class="small muted">Margin kotor</span><span class="small num">${fmt.money(margin.margin)}</span></div>
             <div class="row-between"><span class="small muted">HPP</span><span class="small num">${fmt.money(margin.cost)}</span></div>
           </div>
@@ -187,7 +187,7 @@ function renderDetail(ctx) {
         <section class="card card-pad">
           <h2>Deposit pelanggan</h2>
           ${deposits.length ? `<div class="stack-sm" style="margin-top:10px">${deposits.map((d) => `<div class="row-between">
-            <div><strong class="small">${esc(d.id)}</strong><div class="xs muted">${d.kind} Â· ${esc(d.note)}</div></div>
+            <div><strong class="small">${esc(d.id)}</strong><div class="xs muted">${d.kind} · ${esc(d.note)}</div></div>
             <span class="small num">${fmt.money(depositBalance(d))}</span>
           </div>`).join('')}</div>` : '<p class="small muted" style="margin-top:8px">Tidak ada saldo deposit terbuka.</p>'}
           <a class="btn btn-sm btn-block" style="margin-top:10px" href="#/pelanggan/${inv.customerId}">${icon('users')} Profil pelanggan</a>
@@ -213,12 +213,12 @@ export function openInvoice(ctx, presetRollId = null) {
   const rollOptions = rolls.map((r) => {
     const s = byId(db.skus, r.skuId);
     const whole = (r.reservedMm || 0) === 0;
-    return `<option value="${r.id}" data-price="${s?.sellPrice ?? 0}" data-current="${r.currentMm}" data-avail="${availableMm(r)}" data-reserved="${r.reservedMm || 0}" ${presetRollId === r.id ? 'selected' : ''}>${esc(r.id)} Â· ${esc(s?.code)} Â· ${esc(r.lot)} Â· ${fmt.m(availableMm(r))} tersedia</option>`;
+    return `<option value="${r.id}" data-price="${s?.sellPrice ?? 0}" data-current="${r.currentMm}" data-avail="${availableMm(r)}" data-reserved="${r.reservedMm || 0}" ${presetRollId === r.id ? 'selected' : ''}>${esc(r.id)} · ${esc(s?.code)} · ${esc(r.lot)} · ${fmt.m(availableMm(r))} tersedia</option>`;
   }).join('');
 
   const partOptions = db.parts
     .filter((p) => partAvailable(db, p.id, defaultWh) > 0)
-    .map((p) => `<option value="${p.id}" data-price="${p.sellPrice}" data-avail="${partAvailable(db, p.id, defaultWh)}">${esc(p.sku)} Â· ${esc(p.name)} Â· ${fmt.pcs(partAvailable(db, p.id, defaultWh))} pcs</option>`)
+    .map((p) => `<option value="${p.id}" data-price="${p.sellPrice}" data-avail="${partAvailable(db, p.id, defaultWh)}">${esc(p.sku)} · ${esc(p.name)} · ${fmt.pcs(partAvailable(db, p.id, defaultWh))} pcs</option>`)
     .join('');
 
   const fabricRow = (selected = '') => `<div class="alloc-row" data-fab style="grid-template-columns:1.5fr .7fr .6fr .8fr 34px">
@@ -238,7 +238,7 @@ export function openInvoice(ctx, presetRollId = null) {
 
   const customerOptions = db.customers
     .filter((c) => c.stage !== 'dormant')
-    .map((c) => `<option value="${c.id}" ${sku && c.id === 'CUS-0002' ? 'selected' : ''}>${esc(c.name)}${c.company ? ` â€” ${esc(c.company)}` : ''}</option>`)
+    .map((c) => `<option value="${c.id}" ${sku && c.id === 'CUS-0002' ? 'selected' : ''}>${esc(c.name)}${c.company ? ` — ${esc(c.company)}` : ''}</option>`)
     .join('');
 
   const modal = openModal({
@@ -416,7 +416,7 @@ function openPayment(ctx, inv) {
         user: ctx.user,
       }));
       close();
-      toast('Pembayaran dicatat. Ini simulasi â€” tidak ada transaksi bank nyata.', { tone: 'success' });
+      toast('Pembayaran dicatat. Ini simulasi — tidak ada transaksi bank nyata.', { tone: 'success' });
     },
   });
 }
@@ -485,7 +485,7 @@ function openApplyDeposit(ctx, inv) {
     description: 'Deposit hanya dapat dialokasikan sekali dan tidak boleh sekaligus direfund.',
     submitLabel: 'Alokasikan',
     body: `
-      ${field('Deposit', `<select class="select" name="deposit">${deposits.map((d) => `<option value="${d.id}">${esc(d.id)} Â· ${d.kind} Â· saldo ${fmt.money(depositBalance(d))}</option>`).join('')}</select>`)}
+      ${field('Deposit', `<select class="select" name="deposit">${deposits.map((d) => `<option value="${d.id}">${esc(d.id)} · ${d.kind} · saldo ${fmt.money(depositBalance(d))}</option>`).join('')}</select>`)}
       ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="${String(Math.min(depositBalance(deposits[0]), invoiceOutstanding(inv)))}" />`, { hint: `Sisa tagihan ${fmt.money(invoiceOutstanding(inv))}.` })}
     `,
     onSubmit(form, close) {
