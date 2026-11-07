@@ -274,6 +274,8 @@ export function createDeposit(db, { customerId, kind = 'indent', amount, date = 
 export function applyDepositToInvoice(db, { depositId, invoiceId, amount, user }) {
   const deposit = getDeposit(db, depositId);
   assert(deposit, 'DEPOSIT_NOT_FOUND', 'Deposit tidak ditemukan.');
+  assert(deposit.kind !== 'sample', 'DEPOSIT_REFUND_ONLY',
+    'Deposit sample hanya dapat direfund setelah pembelian terkait; tidak dapat dialokasikan ke faktur.');
   const inv = requireInvoice(db, invoiceId);
   assert(inv.status === 'posted', 'INVALID_STATUS', 'Deposit hanya dapat dialokasikan ke faktur terbit.');
   assert(inv.customerId === deposit.customerId, 'CUSTOMER_MISMATCH', 'Deposit milik pelanggan lain.');

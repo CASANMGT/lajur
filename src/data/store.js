@@ -5,6 +5,7 @@
 
 import { clone } from '../domain/core.js';
 import { buildSeed } from '../domain/seed.js';
+import { SCHEMA_VERSION } from '../version.js';
 import { exportBackup, importBackup as restoreBackup } from './backup.js';
 
 const PREFIX = 'lajur.v2';
@@ -59,6 +60,21 @@ function persist(dataset = state.dataset) {
   }
 }
 
+/** Forward-compatible migration for datasets created before v2.1. */
+export function migrate(db) {
+  if (!db || typeof db !== 'object') return db;
+  db.meta = db.meta ?? {};
+  db.meta.version = SCHEMA_VERSION;
+  db.warehouses = db.warehouses ?? [];
+  for (const wh of db.warehouses) {
+    if (wh.active === undefined) wh.active = true;
+  }
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'returns', 'opnameSessions', 'audit']) {
+    if (!Array.isArray(db[key])) db[key] = [];
+  }
+  return db;
+}
+
 function loadDataset(dataset) {
   let db = readJson(keys[dataset]);
   if (!db) {
@@ -70,6 +86,8 @@ function loadDataset(dataset) {
         storage.lastError = err;
       }
     }
+  } else {
+    db = migrate(db);
   }
   return db;
 }
@@ -171,7 +189,7 @@ export const store = {
   },
 
   restore(payload) {
-    const db = restoreBackup(payload);
+    const db = migrate(restoreBackup(payload));
     const dataset = db.meta?.dataset === 'sim' ? 'sim' : 'main';
     state.db = db;
     state.dataset = dataset;

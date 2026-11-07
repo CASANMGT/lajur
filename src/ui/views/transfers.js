@@ -164,7 +164,7 @@ function renderDetail(ctx) {
           <div class="card-head"><div><h2>Baris material</h2><p>Roll sumber dan sisa per baris.</p></div></div>
           <div class="table-wrap">
             <table class="data">
-              <thead><tr><th>Produk</th><th class="num">Diminta</th><th class="num">Dikirim</th><th class="num">Diterima</th><th class="num">Belum kirim</th><th class="num">Transit</th><th></th></tr></thead>
+              <thead><tr><th>Produk</th><th class="num">Diminta</th><th class="num">Dikirim</th><th class="num">Diterima</th><th class="num">Belum kirim</th><th class="num">Transit</th><th><span class="sr-only">Aksi</span></th></tr></thead>
               <tbody>${t.lines.map((line) => {
                 const sku = byId(db.skus, line.skuId);
                 const s = lineStats(line);
@@ -326,8 +326,15 @@ function openReceive(ctx, lineId = null) {
 
 export function openCreate(ctx) {
   const { db, role } = ctx;
-  const defaultFrom = ctx.ui.warehouseId === 'all' ? db.warehouses[0].id : ctx.ui.warehouseId;
-  const defaultTo = db.warehouses.find((w) => w.id !== defaultFrom)?.id ?? db.warehouses[1].id;
+  const active = db.warehouses.filter((w) => w.active !== false);
+  if (!active.length) {
+    toast('Tidak ada gudang aktif. Aktifkan gudang di Master Data.', { tone: 'error' });
+    return;
+  }
+  const defaultFrom = ctx.ui.warehouseId === 'all' || !active.some((w) => w.id === ctx.ui.warehouseId)
+    ? active[0].id
+    : ctx.ui.warehouseId;
+  const defaultTo = active.find((w) => w.id !== defaultFrom)?.id ?? active[1]?.id ?? defaultFrom;
   const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
   const projectOptions = db.projects.filter((p) => ['draft', 'reserved'].includes(p.status)).map((p) => `<option value="${p.id}">${esc(p.id)} · ${esc(p.name)}</option>`).join('');
 

@@ -22,11 +22,12 @@ export function statCard({ label, value, meta = '', tone = '', iconName = '' }) 
   </div>`;
 }
 
-export function warehouseOptions(db, selected, { includeAll = false } = {}) {
+export function warehouseOptions(db, selected, { includeAll = false, includeInactive = false } = {}) {
   const all = includeAll
     ? `<option value="all" ${selected === 'all' ? 'selected' : ''}>Semua gudang</option>`
     : '';
   return `${all}${db.warehouses
+    .filter((w) => includeInactive || w.active !== false)
     .map((w) => `<option value="${w.id}" ${selected === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name)}</option>`)
     .join('')}`;
 }
@@ -52,7 +53,7 @@ export function customerOf(db, id) {
 const CAPS = {
   operator: [
     'transfer.create', 'transfer.submit', 'transfer.dispatch', 'transfer.receive',
-    'opname.start', 'opname.count', 'po.receive', 'stock.view', 'stock.quarantine',
+    'opname.start', 'opname.count', 'po.receive', 'stock.view', 'stock.quarantine', 'stock.add',
   ],
   sales: [
     'invoice.create', 'invoice.post', 'invoice.pay', 'return.create',
@@ -94,7 +95,7 @@ export function movementRow(db, m) {
       ? `${m.qtyPcs > 0 ? '+' : ''}${m.qtyPcs} pcs`
       : '';
   const label = {
-    receive: 'Penerimaan', receive_po: 'Terima PO', sale: 'Penjualan', sale_whole: 'Jual roll utuh',
+    receive: 'Penerimaan', receive_po: 'Terima PO', adhoc_receive: 'Tambah stok', sale: 'Penjualan', sale_whole: 'Jual roll utuh',
     cut: 'Potong', transfer_out: 'Kirim transfer', transfer_in: 'Terima transfer', adjust: 'Penyesuaian',
     reserve: 'Reservasi', release: 'Lepas reservasi', return_in: 'Retur masuk', supplier_return: 'Retur pemasok',
     issue_part: 'Keluar part', consume: 'Terpakai', quarantine: 'Karantina', sample: 'Sample',

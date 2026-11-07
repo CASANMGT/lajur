@@ -125,7 +125,7 @@ function renderDetail(ctx) {
         <section class="card">
           <div class="card-head"><div><h2>Sample</h2><p>Dari roll mana, untuk siapa, dan apakah berujung pembelian.</p></div><span class="badge no-dot">${samples.length}</span></div>
           ${samples.length ? `<div class="table-wrap"><table class="data">
-            <thead><tr><th>Sample</th><th>Roll / lot</th><th class="num">Qty</th><th>Jenis</th><th>Hasil</th><th></th></tr></thead>
+            <thead><tr><th>Sample</th><th>Roll / lot</th><th class="num">Qty</th><th>Jenis</th><th>Hasil</th><th><span class="sr-only">Aksi</span></th></tr></thead>
             <tbody>${samples.map((s) => {
               const sku = byId(db.skus, s.skuId);
               const roll = db.rolls.find((r) => r.id === s.rollId);

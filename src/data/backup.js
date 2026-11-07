@@ -7,9 +7,10 @@
  */
 
 import { clone } from '../domain/core.js';
+import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 
 export function exportBackup(db) {
   return {
@@ -34,6 +35,7 @@ export function validateBackup(payload) {
   if (payload.format !== BACKUP_FORMAT) errors.push('Format berkas tidak dikenali.');
   if (!payload.data || typeof payload.data !== 'object') errors.push('Data tidak ditemukan.');
   if (payload.version > BACKUP_VERSION) errors.push(`Versi backup ${payload.version} lebih baru dari aplikasi.`);
+  if (payload.data?.meta?.version > SCHEMA_VERSION) errors.push(`Skema data ${payload.data.meta.version} lebih baru dari aplikasi (${SCHEMA_VERSION}).`);
   const db = payload.data;
   if (!db) return { valid: false, errors };
 
@@ -92,7 +94,8 @@ export function validateBackup(payload) {
   for (const po of db.purchaseOrders) need(suppliers, po.supplierId, 'Pemasok', `PO ${po.id}`);
   for (const gr of db.goodsReceipts) {
     need(warehouses, gr.warehouseId, 'Gudang', `Penerimaan ${gr.id}`);
-    need(suppliers, gr.supplierId, 'Pemasok', `Penerimaan ${gr.id}`);
+    if (gr.supplierId) need(suppliers, gr.supplierId, 'Pemasok', `Penerimaan ${gr.id}`);
+    if (!['adhoc'].includes(gr.kind) && !gr.supplierId) errors.push(`Penerimaan ${gr.id}: pemasok wajib untuk penerimaan PO.`);
   }
   for (const bill of db.supplierInvoices) {
     need(suppliers, bill.supplierId, 'Pemasok', `Tagihan ${bill.id}`);

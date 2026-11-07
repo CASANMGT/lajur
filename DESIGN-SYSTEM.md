@@ -1,4 +1,4 @@
-# Design System — Lajur v2.0
+# Design System — Lajur v2.1
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -162,7 +162,18 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - Banner includes "Kembali ke data utama" and "Panel simulasi".
 - Simulated dataset is separated at the persistence layer, not by a flag on records.
 
-### 5.8 Empty, loading, error
+### 5.8 Authentication and account
+
+- Full-screen split: navy brand panel + ivory sign-in card; stacked on ≤900 px.
+- Three account cards show initials, name, role and a one-line scope. Selection uses `role="radio"` + `aria-checked`.
+- PIN field: 4–6 digits, masked by default, show/hide toggle, `inputmode="numeric"`, 16 px+.
+- Errors are inline and specific: remaining attempts, lock countdown, format.
+- Demo PINs live in a collapsed `<details>` and disappear per account after a PIN change.
+- Session is 8 hours; account menu exposes role, remaining session, **Ganti PIN** and **Keluar**.
+- Changing a PIN requires the current PIN, blocks weak/duplicate PINs, and never echoes the PIN.
+- Honest copy: the PIN gate is local; production needs server auth.
+
+### 5.9 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.
@@ -182,7 +193,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 | ≤ 700 px | Mobile cards, single-column forms, bottom-sheet modals, full-width toasts |
 | ≤ 380 px | Single-column KPI, tighter page padding |
 
-Verified widths: **320, 390, 768 px and desktop**. At all three: page-level horizontal overflow = 0, inputs 16 px, touch targets ≥ 44 px.
+Verified widths: **320, 390, 768 px and desktop**. At all three: page-level horizontal overflow = 0, inputs 16 px, touch targets ≥ 44 px. The login screen follows the same rule: brand panel collapses, card becomes full width, PIN input ≥ 16 px.
 
 ---
 
@@ -220,7 +231,7 @@ Rules:
 - Icons are `aria-hidden`; icon-only controls have accessible names.
 - Target sizes: 44 px minimum on touch (≤ 820 px), 40 px desktop.
 - Reduced motion respected.
-- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on dashboard, stock detail, transfer detail and simulation.
+- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, stock detail, master and simulation.
 
 Known gaps: no full screen-reader manual pass; no forced-colours/high-contrast theme yet; print documents are not tagged PDFs.
 

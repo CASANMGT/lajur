@@ -3,15 +3,17 @@ import assert from 'node:assert/strict';
 
 import { buildSeed } from '../src/domain/seed.js';
 import {
-  availableMm, createRoll, partQty, quarantineRoll, reserveRoll, stockSummary,
+  availableMm, createRoll, partQty, quarantineRoll, receiveAdhocStock, reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
+import { saveWarehouse, renameCollection } from '../src/domain/master.js';
 import { createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
 import { createPO, receivePO } from '../src/domain/purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
-import { createSample, refundDeposit } from '../src/domain/crm.js';
+import { createSample, refundDeposit, applyDepositToInvoice } from '../src/domain/crm.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
+import { migrate } from '../src/data/store.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
 
 const OP = { id: 'u-op', name: 'Rani', role: 'operator' };
@@ -433,7 +435,126 @@ test('backup validates references and refuses a broken restore', () => {
   assert.throws(() => importBackup(broken));
 });
 
-test('creating a roll with zero length is rejected', () => {
+test('warehouse master keeps IDs stable, rejects duplicates, guards deactivation', () => {
+  const db = buildSeed();
+  expectError(() => saveWarehouse(db, { code: 'JKT', name: 'Duplikat', binPrefix: 'Z', user: MGR }), 'DUPLICATE_CODE');
+  const created = saveWarehouse(db, { code: 'MDN', name: 'Gudang Medan', binPrefix: 'D', address: 'Medan', phone: '061', user: MGR });
+  assert.match(created.id, /^wh-/);
+  assert.equal(created.active, true);
+
+  const renamed = saveWarehouse(db, { id: created.id, code: 'MDN2', name: 'Gudang Medan Baru', binPrefix: 'D', active: true, user: MGR });
+  assert.equal(renamed.id, created.id);
+  assert.equal(renamed.code, 'MDN2');
+
+  expectError(
+    () => saveWarehouse(db, { id: 'wh-jkt', code: 'JKT', name: 'Gudang Pusat Jakarta', binPrefix: 'A', active: false, user: MGR }),
+    'WAREHOUSE_IN_USE',
+  );
+
+  saveWarehouse(db, { id: created.id, code: 'MDN2', name: 'Gudang Medan Baru', binPrefix: 'D', active: false, user: MGR });
+  assert.equal(db.warehouses.find((w) => w.id === created.id).active, false);
+});
+
+test('collection rename keeps SKU labels and internal IDs in sync', () => {
+  const db = buildSeed();
+  const skuId = db.skus.find((s) => s.collectionId === 'col-luna').id;
+  renameCollection(db, { id: 'col-luna', name: 'Luna Signature', description: 'Uji', user: MGR });
+  assert.equal(db.collections.find((c) => c.id === 'col-luna').name, 'Luna Signature');
+  assert.equal(db.skus.find((s) => s.id === skuId).collectionName, 'Luna Signature');
+  assert.equal(db.skus.find((s) => s.id === skuId).id, skuId);
+});
+
+test('direct stock intake creates traceable rolls, lots, cost and unique refs', () => {
+  const db = buildSeed();
+  const { receipt, rolls } = receiveAdhocStock(db, {
+    warehouseId: 'wh-jkt',
+    ref: 'ADH-TEST-1',
+    kind: 'fabric',
+    skuId: 'sku-luna-01',
+    lot: 'LOT-ADH-1',
+    lengthsMm: [10000, 12000],
+    unitCost: 70000,
+    reason: 'Saldo awal uji',
+    user: OP,
+  });
+  assert.equal(rolls.length, 2);
+  assert.equal(rolls.reduce((a, r) => a + r.currentMm, 0), 22000);
+  assert.equal(receipt.kind, 'adhoc');
+  assert.equal(receipt.supplierId, null);
+  assert.equal(receipt.lines[0].lot, 'LOT-ADH-1');
+  assert.equal(rolls[0].costPerM, 70000);
+  assert.ok(db.movements.some((m) => m.type === 'adhoc_receive' && m.ref === 'ADH-TEST-1'));
+
+  expectError(
+    () => receiveAdhocStock(db, {
+      warehouseId: 'wh-jkt', ref: 'ADH-TEST-1', kind: 'fabric', skuId: 'sku-luna-01',
+      lengthsMm: [1000], reason: 'Duplikat', user: OP,
+    }),
+    'DUPLICATE_RECEIPT',
+  );
+
+  const before = partQty(db, 'part-bracket', 'wh-jkt');
+  receiveAdhocStock(db, {
+    warehouseId: 'wh-jkt', ref: 'ADH-PART-1', kind: 'part', partId: 'part-bracket',
+    qtyPcs: 5, unitCost: 15000, reason: 'Koreksi part', user: OP,
+  });
+  assert.equal(partQty(db, 'part-bracket', 'wh-jkt'), before + 5);
+
+  const backup = exportBackup(db);
+  assert.equal(validateBackup(backup).valid, true, validateBackup(backup).errors.join(' '));
+});
+
+test('legacy datasets migrate forward without losing warehouses', () => {
+  const legacy = {
+    meta: { version: 2, dataset: 'main' },
+    warehouses: [{ id: 'wh-x', code: 'X', name: 'Gudang X', binPrefix: 'X' }],
+    goodsReceipts: [],
+    supplierInvoices: [],
+    returns: [],
+    opnameSessions: [],
+    audit: [],
+  };
+  const migrated = migrate(legacy);
+  assert.equal(migrated.meta.version, 3);
+  assert.equal(migrated.warehouses[0].active, true);
+  assert.deepEqual(migrated.goodsReceipts, []);
+});
+
+test('whole-roll draft is rejected if the roll changed before posting', () => {
+  const db = buildSeed();
+  const whole = createInvoice(db, {
+    customerId: 'CUS-0002',
+    lines: [{ kind: 'fabric', rollId: 'RL-0001', mode: 'whole' }],
+    user: SALES,
+  });
+  const cut = createInvoice(db, {
+    customerId: 'CUS-0002',
+    lines: [{ kind: 'fabric', rollId: 'RL-0001', qtyMm: 1000 }],
+    user: SALES,
+  });
+  postInvoice(db, { id: cut.id, user: SALES });
+  expectError(() => postInvoice(db, { id: whole.id, user: SALES }), 'ROLL_CHANGED');
+});
+
+test('refundable sample deposit cannot be applied to an invoice', () => {
+  const db = buildSeed();
+  const sample = createSample(db, {
+    customerId: 'CUS-0003', skuId: 'sku-aria-01', rollId: 'RL-0011',
+    qtyMm: 500, mode: 'deposit', amount: 200000, user: SALES,
+  });
+  const inv = createInvoice(db, {
+    customerId: 'CUS-0003',
+    lines: [{ kind: 'part', partId: 'part-bracket', qtyPcs: 1, warehouseId: 'wh-jkt' }],
+    user: SALES,
+  });
+  postInvoice(db, { id: inv.id, user: SALES });
+  expectError(
+    () => applyDepositToInvoice(db, { depositId: sample.depositId, invoiceId: inv.id, amount: 1000, user: MGR }),
+    'DEPOSIT_REFUND_ONLY',
+  );
+});
+
+test('acting on a roll with zero length is rejected', () => {
   const db = buildSeed();
   expectError(
     () => createRoll(db, { skuId: 'sku-luna-01', currentMm: 0, warehouseId: 'wh-jkt', lot: 'X' }),

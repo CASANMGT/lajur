@@ -36,10 +36,10 @@ export function render(ctx) {
     </div>
 
     <div class="tabs" role="tablist">
-      ${[['po', 'Purchase order'], ['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${[['po', 'Purchase order'], ['penerimaan', 'Penerimaan'], ['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
 
-    ${tab === 'po' ? renderPoTab(ctx) : tab === 'tagihan' ? renderBillTab(ctx) : renderSupplierTab(ctx)}`;
+    ${tab === 'po' ? renderPoTab(ctx) : tab === 'penerimaan' ? renderReceiptTab(ctx) : tab === 'tagihan' ? renderBillTab(ctx) : renderSupplierTab(ctx)}`;
 }
 
 function renderPoTab(ctx) {
@@ -76,15 +76,37 @@ function renderPoTab(ctx) {
   </section>`;
 }
 
-function renderBillTab(ctx) {
-  const { db, role } = ctx;
+function renderReceiptTab(ctx) {
+  const { db } = ctx;
+  const rows = [...db.goodsReceipts].sort((a, b) => (a.date < b.date ? 1 : -1));
+  return `<div class="notice notice-info" style="margin-bottom:12px">${icon('box')}<div>Semua penerimaan barang — dari PO maupun <strong>Tambah stok</strong> langsung. Penerimaan langsung tidak membuat utang pemasok.</div></div>
+    <section class="card">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Dokumen</th><th>Jenis</th><th>Asal</th><th class="hide-sm">Gudang</th><th class="hide-sm">Tanggal</th><th class="num">Nilai</th></tr></thead>
+        <tbody>${rows.map((r) => {
+          const adhoc = r.kind === 'adhoc';
+          const po = r.poId ? db.purchaseOrders.find((p) => p.id === r.poId) : null;
+          return `<tr>
+            <td class="mono">${esc(r.id)}<div class="xs muted">${esc(r.ref)}</div></td>
+            <td>${adhoc ? badge('Tambah stok', 'copper') : badge('PO pemasok', 'teal')}</td>
+            <td>${adhoc ? `<span class="small muted">${esc(r.note)}</span>` : `${po ? `<a class="small" href="#/pembelian/${po.id}">${esc(po.id)}</a> · ` : ''}${esc(byId(db.suppliers, r.supplierId)?.name ?? '—')}`}</td>
+            <td class="hide-sm">${esc(warehouseOf(db, r.warehouseId)?.code ?? '—')}</td>
+            <td class="hide-sm">${esc(r.date)}</td>
+            <td class="num">${fmt.money(r.total)}</td>
+          </tr>`;
+        }).join('') || `<tr><td colspan="6"><div class="empty">${icon('box')}<strong>Belum ada penerimaan</strong></div></td></tr>`}</tbody>
+      </table></div>
+    </section>`;
+}
+
+function renderBillTab(ctx) {  const { db, role } = ctx;
   const ap = payablesAging(db);
   const bills = [...db.supplierInvoices].sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1));
   return `<div class="notice notice-info" style="margin-bottom:12px">${icon('alert')}<div><strong>Demo menggabungkan penerimaan dan tagihan.</strong> Produksi harus memisahkan GR dan supplier invoice, lalu merekonsiliasi sebelum utang diposting.</div></div>
     <section class="card">
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th>Tagihan</th><th>Pemasok</th><th class="hide-sm">Jatuh tempo</th><th class="num">Nilai</th><th class="num">Dibayar</th><th class="num">Sisa</th><th></th></tr></thead>
+          <thead><tr><th>Tagihan</th><th>Pemasok</th><th class="hide-sm">Jatuh tempo</th><th class="num">Nilai</th><th class="num">Dibayar</th><th class="num">Sisa</th><th><span class="sr-only">Aksi</span></th></tr></thead>
           <tbody>${bills.map((b) => {
             const out = b.amount - b.paid;
             const late = daysBetween(b.dueDate, todayJakarta());

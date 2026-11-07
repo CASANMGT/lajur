@@ -2,6 +2,69 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.1.0] — 2026-11-08
+
+**Release name: Akses & Gudang.** Adds per-role PIN login, editable warehouses, direct stock intake, schema migration and CI.
+
+### Added
+
+- **Per-role login:** three accounts (manager, operator, sales), each with its own 4–6 digit PIN.
+  - PBKDF2-SHA256 hashing with a per-user random salt (120 000 iterations).
+  - 8-hour session in `sessionStorage`; logout from the account menu.
+  - Five failed attempts lock the account for 60 seconds with a countdown message.
+  - PIN change requires the current PIN and rejects weak/duplicate PINs.
+  - Demo PINs (`2468`, `1357`, `8642`) are shown only while an account still uses its default.
+  - Account menu shows name, role, session time, “Ganti PIN” and “Keluar”.
+- **Role-derived experience:** no role switcher; the signed-in account determines permissions and home route.
+- **Editable warehouses:** create, edit code/name/bin prefix/contact/address, activate or deactivate.
+  - Unique code and bin prefix.
+  - Deactivation is refused while physical rolls, transit, part stock, active requests or an active opname reference the warehouse.
+  - Inactive warehouses stay in history but disappear from operational selectors.
+- **Editable collections:** create and rename collections; SKU `collectionName` labels stay in sync while internal IDs remain stable.
+- **Direct stock intake (“Tambah stok”):** opening balance, correction or consignment without a PO.
+  - Unique receipt reference, warehouse, date, reason.
+  - Fabric: lot, each roll length separately, cost per metre; each roll gets an ID and movement.
+  - Parts: integer pcs and cost.
+  - Creates a `goodsReceipt` with `kind: "adhoc"` and no supplier payable.
+- **Versioning:** `APP_VERSION`/`SCHEMA_VERSION` in `src/version.js`, version shown in sidebar and Master Data.
+- **CI:** GitHub Actions runs the test suite, module check and render check on push/PR.
+- **Schema migration:** `store.migrate` upgrades older local datasets and adds `warehouse.active`.
+- **Backup v3:** accepts v2 data, validates ad-hoc receipts without a supplier, rejects newer schemas.
+
+### Changed
+
+- Default home route: manager/operator → summary; sales → invoices.
+- Login screen, account modal and version label added to the design system.
+- Warehouse selectors only show active sites.
+- Documentation updated for auth, warehouse master, direct intake and versioning.
+
+### Fixed
+
+- Whole-roll invoice lines now fail with `ROLL_CHANGED` if the roll length changed after the draft; previously the invoice amount and the issued quantity could diverge.
+- Refundable **sample deposits can no longer be applied** to invoice credit (`DEPOSIT_REFUND_ONLY`); they remain refund-only after a linked purchase.
+- Stock mutations during opname now also block sample cuts, quarantine, customer returns and supplier returns.
+- Project issue no longer leaves part reservations behind, overstating part availability.
+- Modal key handlers and shell key handlers are removed when replaced, avoiding duplicate Esc/focus behaviour.
+- Mobile account and warehouse controls meet 44 px; PIN toggle is 44 px on touch.
+- Accessibility: single `<main>` on login, skip-link target, table action headers, account/warehouse accessible names, contrast — Lighthouse 100 on login, dashboard, stock, master and simulation.
+
+### Verification
+
+- `node --test`: **31 passed** (29 business + 2 auth).
+- Module imports: 32/32.
+- Render check: 14/14 views (including login).
+- Browser route sweep: 18/18, zero console errors.
+- PIN login, lockout messaging, PIN change, warehouse CRUD/deactivation, direct intake and guided simulation cycle exercised in Chromium.
+
+### Known limitations
+
+- PIN authentication is client-side and resets when site data is cleared; it is not a security boundary.
+- No server, shared sessions, concurrency control or audit immutability.
+- Return credit above the remaining invoice balance is not carried as a customer credit.
+- Direct intake is not a substitute for supplier receiving and creates no payable.
+
+---
+
 ## [2.0.0] — 2026-11-07
 
 First release of the **Lajur** version. This is a new project under the Lajur brand direction; the earlier *Lipit* prototype source was not available in the workspace and is not included here.

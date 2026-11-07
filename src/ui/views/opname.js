@@ -148,8 +148,13 @@ function renderDetail(ctx) {
 
 export function openStart(ctx) {
   const { db, role } = ctx;
+  const active = db.warehouses.filter((w) => w.active !== false);
+  if (!active.length) {
+    toast('Tidak ada gudang aktif. Aktifkan gudang di Master Data.', { tone: 'error' });
+    return;
+  }
   const frozen = db.opnameSessions.filter((s) => ['counting', 'review'].includes(s.status)).map((s) => s.warehouseId);
-  const options = db.warehouses.map((w) => `<option value="${w.id}" ${frozen.includes(w.id) ? 'disabled' : ''}>${esc(w.name)}${frozen.includes(w.id) ? ' — sesi aktif' : ''}</option>`).join('');
+  const options = db.warehouses.filter((w) => w.active !== false).map((w) => `<option value="${w.id}" ${frozen.includes(w.id) ? 'disabled' : ''}>${esc(w.name)}${frozen.includes(w.id) ? ' — sesi aktif' : ''}</option>`).join('');
   openModal({
     title: 'Mulai stock opname',
     description: 'Gudang akan dibekukan untuk mutasi fisik selama penghitungan dan review.',

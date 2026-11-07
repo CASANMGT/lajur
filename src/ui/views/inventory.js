@@ -1,12 +1,12 @@
 /** Stok & Roll: search, list, roll detail, traceability. */
 
 import { esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, downloadFile, toCsv, promptText } from '../dom.js';
-import { MM_PER_M, byId, formatDateLong } from '../../domain/core.js';
+import { MM_PER_M, byId, formatDateLong, parseM, todayJakarta } from '../../domain/core.js';
 import {
-  ROLL_STATUS, availableMm, isSellable, partAvailable, quarantineRoll, rollChildren, rollTrail,
-  skuStockByWarehouse, stockSummary, summarizeRolls,
+  ROLL_STATUS, availableMm, isSellable, partAvailable, quarantineRoll, receiveAdhocStock,
+  rollChildren, rollTrail, skuStockByWarehouse, stockSummary, summarizeRolls,
 } from '../../domain/inventory.js';
-import { pageHead, statCard, warehouseOf, can, roleHint, movementRow } from './common.js';
+import { pageHead, statCard, warehouseOf, can, roleHint, movementRow, warehouseOptions } from './common.js';
 import { printLabelHtml } from './print.js';
 
 const filters = { q: '', collection: '', status: 'all', available: false };
@@ -51,7 +51,7 @@ function rowsHtml(ctx) {
     const status = rollStatus(roll);
     const wh = roll.transit ? byId(db.warehouses, roll.transit.toWarehouseId) : byId(db.warehouses, roll.warehouseId);
     const avail = availableMm(roll);
-    return `<tr data-href="#/stok/${roll.id}" tabindex="0" role="link" aria-label="Roll ${roll.id}">
+    return `<tr data-href="#/stok/${roll.id}" tabindex="0" role="link">
       <td><span class="mono strong">${esc(roll.id)}</span><div class="xs muted">${esc(roll.lot)}</div></td>
       <td>
         <div class="cell-main">
@@ -124,8 +124,9 @@ export function render(ctx) {
       eyebrow: 'Persediaan',
       title: 'Stok & Roll',
       sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
-      actions: `${can(role, 'stock.view') ? `<button class="btn" type="button" data-action="export">${icon('download')} Ekspor CSV</button>` : ''}
-        <a class="btn btn-primary" href="#/pembelian">${icon('truck')} Terima stok</a>`,
+      actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok</button>` : ''}
+        <a class="btn" href="#/pembelian">${icon('truck')} Terima PO</a>
+        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
     })}
     ${summaryStrip(ctx)}
     <div class="filterbar">
@@ -302,6 +303,108 @@ function renderDetail(ctx) {
     </div>`;
 }
 
+function openAddStock(ctx) {
+  const { db } = ctx;
+  const active = db.warehouses.filter((w) => w.active !== false);
+  const defaultWh = ctx.ui.warehouseId === 'all' ? active[0]?.id : ctx.ui.warehouseId;
+  if (!active.length) {
+    toast('Tidak ada gudang aktif. Aktifkan gudang di Master Data.', { tone: 'error' });
+    return;
+  }
+  const skuOptions = db.skus.filter((s) => s.active !== false && !s.dormant)
+    .map((s) => `<option value="${s.id}" data-price="${s.buyPrice}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
+  const partOptions = db.parts
+    .map((p) => `<option value="${p.id}" data-price="${p.buyPrice}">${esc(p.sku)} · ${esc(p.name)}</option>`).join('');
+  const ref = `ADH-${todayJakarta().replaceAll('-', '')}-${String(Math.floor(Math.random() * 900) + 100)}`;
+
+  openModal({
+    title: 'Tambah stok',
+    description: 'Penerimaan tanpa PO untuk saldo awal, koreksi, atau barang konsinyasi. Tetap membuat dokumen, lot, roll, dan jejak audit.',
+    wide: true,
+    submitLabel: 'Posting penerimaan',
+    body: `
+      <div class="form-grid">
+        ${field('Jenis', `<select class="select" name="kind"><option value="fabric">Kain (roll)</option><option value="part">Spare part (pcs)</option></select>`)}
+        ${field('Gudang tujuan', `<select class="select" name="warehouse">${warehouseOptions(db, defaultWh)}</select>`)}
+        ${field('Nomor dokumen', `<input class="input" name="ref" value="${ref}" required />`, { hint: 'Harus unik terhadap semua penerimaan.' })}
+        ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
+      </div>
+
+      <div data-fabric-block>
+        <div class="section-title" style="margin:18px 0 6px"><h3>Detail kain</h3><span class="xs muted">Setiap panjang menjadi roll</span></div>
+        <div class="form-grid">
+          ${field('SKU / warna', `<select class="select" name="sku">${skuOptions}</select>`)}
+          ${field('Lot / dye lot', `<input class="input" name="lot" placeholder="LOT-2611-A" />`)}
+          ${field('Panjang roll (m, pisah koma)', `<input class="input" name="lengths" inputmode="decimal" placeholder="Contoh: 60, 61,2" />`, { full: true, hint: 'Jangan memasukkan rata-rata. Satu angka = satu roll fisik.' })}
+          ${field('Harga pokok / m', `<input class="input" name="fabricCost" inputmode="numeric" placeholder="0" />`)}
+        </div>
+      </div>
+
+      <div data-part-block hidden>
+        <div class="section-title" style="margin:18px 0 6px"><h3>Detail spare part</h3><span class="xs muted">Bilangan bulat pcs</span></div>
+        <div class="form-grid">
+          ${field('Spare part', `<select class="select" name="part">${partOptions}</select>`)}
+          ${field('Jumlah (pcs)', `<input class="input" name="qtyPcs" inputmode="numeric" placeholder="0" />`)}
+          ${field('Harga pokok / pcs', `<input class="input" name="partCost" inputmode="numeric" placeholder="0" />`)}
+        </div>
+      </div>
+
+      ${field('Alasan / referensi', `<input class="input" name="reason" placeholder="Saldo awal, koreksi hitung, atau barang konsinyasi" required />`, { full: true })}
+      <div class="notice notice-warn" style="margin-top:12px">${icon('alert')}<div><strong>Gunakan dengan disiplin.</strong> Penerimaan langsung tidak membuat utang pemasok. Barang dari pemasok tetap harus lewat PO dan penerimaan PO.</div></div>
+    `,
+    onMount(form) {
+      const fabric = form.querySelector('[data-fabric-block]');
+      const part = form.querySelector('[data-part-block]');
+      const syncKind = () => {
+        const isFabric = form.kind.value === 'fabric';
+        fabric.hidden = !isFabric;
+        part.hidden = isFabric;
+        form.fabricCost.value = form.sku.selectedOptions[0]?.dataset.price ?? '';
+        form.partCost.value = form.part.selectedOptions[0]?.dataset.price ?? '';
+      };
+      form.kind.addEventListener('change', syncKind);
+      form.sku.addEventListener('change', () => { form.fabricCost.value = form.sku.selectedOptions[0]?.dataset.price ?? ''; });
+      form.part.addEventListener('change', () => { form.partCost.value = form.part.selectedOptions[0]?.dataset.price ?? ''; });
+      syncKind();
+    },
+    onSubmit(form, close) {
+      const kind = form.kind.value;
+      const common = {
+        warehouseId: form.warehouse.value,
+        ref: form.ref.value,
+        date: form.date.value,
+        reason: form.reason.value,
+        user: ctx.user,
+      };
+      let result;
+      if (kind === 'fabric') {
+        const lengthsMm = String(form.lengths.value).split(',').map((s) => s.trim()).filter(Boolean).map((s) => parseM(s));
+        if (!lengthsMm.length) throw new Error('Isi minimal satu panjang roll.');
+        result = ctx.store.update((db) => receiveAdhocStock(db, {
+          ...common,
+          kind: 'fabric',
+          skuId: form.sku.value,
+          lot: form.lot.value,
+          lengthsMm,
+          unitCost: Number(String(form.fabricCost.value).replace(/\D/g, '')) || 0,
+        }));
+      } else {
+        result = ctx.store.update((db) => receiveAdhocStock(db, {
+          ...common,
+          kind: 'part',
+          partId: form.part.value,
+          qtyPcs: Number(form.qtyPcs.value),
+          unitCost: Number(String(form.partCost.value).replace(/\D/g, '')) || 0,
+        }));
+      }
+      close();
+      const rolls = result.rolls?.length ?? 0;
+      toast(rolls ? `${rolls} roll dicatat melalui ${result.receipt.ref}.` : `Stok part dicatat melalui ${result.receipt.ref}.`, { tone: 'success' });
+      if (rolls === 1) window.location.hash = `#/stok/${result.rolls[0].id}`;
+    },
+  });
+}
+
 export function mount(ctx) {
   if (ctx.route.id) {
     document.querySelector('[data-action="print-label"]')?.addEventListener('click', () => {
@@ -365,8 +468,8 @@ export function mount(ctx) {
     // Force a full view re-render via store emit.
     ctx.store.emit();
   });
-  document.querySelector('[data-action="export"]')?.addEventListener('click', () => {
-    const { db, ui } = ctx;
+  document.querySelector('[data-act="add-stock"]')?.addEventListener('click', () => openAddStock(ctx));
+  document.querySelector('[data-action="export"]')?.addEventListener('click', () => {    const { db, ui } = ctx;
     const list = db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId }));
     const rows = [
       ['Roll', 'SKU', 'Koleksi', 'Kode warna', 'Nama warna', 'Lot', 'Gudang', 'Rak', 'Fisik (mm)', 'Terpesan (mm)', 'Tersedia (mm)', 'Status', 'Harga pokok/m'],

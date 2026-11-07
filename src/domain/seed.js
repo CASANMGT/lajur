@@ -26,9 +26,9 @@ export const USERS = {
 
 export const MASTER = {
   warehouses: [
-    { id: 'wh-jkt', code: 'JKT', name: 'Gudang Pusat Jakarta', binPrefix: 'A', address: 'Jl. Industri Raya 12, Cakung, Jakarta Timur', phone: '021-555-0101' },
-    { id: 'wh-bdg', code: 'BDG', name: 'Gudang Bandung', binPrefix: 'B', address: 'Jl. Soekarno-Hatta 288, Bandung', phone: '022-555-0202' },
-    { id: 'wh-sby', code: 'SBY', name: 'Gudang Surabaya', binPrefix: 'C', address: 'Jl. Rungkut Industri 8, Surabaya', phone: '031-555-0303' },
+    { id: 'wh-jkt', code: 'JKT', name: 'Gudang Pusat Jakarta', binPrefix: 'A', active: true, address: 'Jl. Industri Raya 12, Cakung, Jakarta Timur', phone: '021-555-0101' },
+    { id: 'wh-bdg', code: 'BDG', name: 'Gudang Bandung', binPrefix: 'B', active: true, address: 'Jl. Soekarno-Hatta 288, Bandung', phone: '022-555-0202' },
+    { id: 'wh-sby', code: 'SBY', name: 'Gudang Surabaya', binPrefix: 'C', active: true, address: 'Jl. Rungkut Industri 8, Surabaya', phone: '031-555-0303' },
   ],
   categories: [
     { id: 'cat-blackout', name: 'Blackout' },
@@ -68,7 +68,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 2,
+      version: 3,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),

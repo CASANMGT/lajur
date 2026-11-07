@@ -15,6 +15,7 @@ import * as opname from '../src/ui/views/opname.js';
 import * as reports from '../src/ui/views/reports.js';
 import * as master from '../src/ui/views/master.js';
 import * as simulation from '../src/ui/views/simulation.js';
+import * as login from '../src/ui/views/login.js';
 
 const db = buildSeed({ dataset: 'main' });
 const views = { ringkasan: dashboard, stok: inventory, transfer: transfers, pembelian: purchasing, penjualan: sales, proyek: projects, pelanggan: customers, opname, laporan: reports, master, simulasi: simulation };
@@ -55,4 +56,14 @@ for (const [name, id] of Object.entries(samples)) {
 }
 
 if (failed) process.exit(1);
+
+try {
+  const html = login.render();
+  if (!html.includes('Pilih akun')) throw new Error('login render tidak lengkap');
+  console.log('ok   login screen', `${html.length}b`);
+} catch (err) {
+  console.error('FAIL login\n', err);
+  process.exit(1);
+}
+
 console.log('\nSemua view merender.');

@@ -1,8 +1,9 @@
-# PRD — Lajur v2.0
+# PRD — Lajur v2.1
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
+**Version:** 2.1.0 (schema 3)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -38,7 +39,7 @@ and one consistent set of quantities:
 ### Non-goals (v2 demo)
 
 - It is **not** an accounting ledger, tax invoice, or payroll system.
-- It does **not** authenticate users or enforce server-side authorization.
+- It does **not** provide server-side authentication or authorization; the PIN gate is a local demo, not a security boundary.
 - It does **not** model multi-company ownership or profit per warehouse.
 - It does **not** support partial project fulfilment (one invoice per project).
 
@@ -63,6 +64,8 @@ and one consistent set of quantities:
 ---
 
 ## 3. Personas and role-specific defaults
+
+Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -114,7 +117,9 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 
 | Area | What works |
 |------|------------|
-| Inventory | Collections, SKUs, lots, rolls, bins; physical/reserved/available/quarantine/transit; search and filters; roll trace; split and cut; whole-roll sale; quarantine; movement ledger |
+| Inventory | Collections, SKUs, lots, rolls, bins; physical/reserved/available/quarantine/transit; search and filters; roll trace; split and cut; whole-roll sale; quarantine; movement ledger; direct intake (opening/correction) with unique doc, lot, cost and reason |
+| Access | Per-role login (manager/operator/sales) with PBKDF2 PIN, 8-hour session, 5-attempt lockout, PIN change, logout; role-specific home and action gating |
+| Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products; parts; suppliers |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
 | Purchasing | Suppliers, price list, PO, approval, partial receiving with per-roll lengths and lots, duplicate receipt block, over-receipt block, auto supplier bill (demo simplification), payables, supplier returns |
 | Sales | Multi-line invoice, fabric + parts + service lines, draft → post, snapshot description/price/cost, payments, deposit application, customer returns with credit and quarantine, print |
@@ -132,7 +137,7 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Supplier billing | Goods receipt and supplier invoice are created together; production separates them |
 | Quote → order → invoice | Invoice is the only sales document |
 | Project fulfilment | One invoice; no partial issue or multi-invoice project |
-| Permissions | UI role gating only; no server enforcement |
+| Permissions | PIN session gates the UI; no server enforcement, no shared session |
 | Attachments | File metadata only; bytes are not stored |
 | Barcode | Label is printable; no scanner integration |
 | Payments | Recorded locally; no gateway, bank or reconciliation |
@@ -313,6 +318,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-22 | Simulation writes to a different storage key and never mutates main data. |
 | BR-23 | Restore validates every reference before replacing data. |
 | BR-24 | Financial reports are company-level; warehouse profit needs an explicit policy. |
+| BR-25 | Warehouse code and bin prefix are unique; deactivation is refused while physical stock, transit, parts, active requests, or an active opname reference it. |
+| BR-26 | Direct stock intake requires a unique document reference, warehouse, lot (fabric), individual lengths, cost, reason, and audit; it creates no supplier payable. |
+| BR-27 | A whole-roll invoice line may only post if the roll length still equals the draft snapshot. |
+| BR-28 | Sample deposits are refund-only; they cannot be applied as invoice credit. |
+| BR-29 | PINs are stored as salted PBKDF2 hashes; sessions expire after 8 hours; five failures lock the account for 60 seconds. Demo only, not production auth. |
 
 ---
 
@@ -320,9 +330,12 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
+In v2.1 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
 | View stock, roll trace | ✓ | ✓ | ✓ |
+| Direct stock intake (no PO) | ✓ | – | ✓ |
 | Create/submit internal request | ✓ | – | ✓ |
 | Dispatch / receive transfer | ✓ | – | ✓ |
 | Approve / reject transfer | – | – | ✓ |
@@ -336,6 +349,8 @@ Demo role switching is a **UX simulation**. Production must enforce the followin
 | Refund sample deposit | – | – | ✓ |
 | Refund indent deposit | – | – | ✓ |
 | Edit master data / suppliers | – | – | ✓ |
+| Create/edit warehouses | – | – | ✓ |
+| Login and change own PIN | ✓ | ✓ | ✓ |
 | Backup / restore | – | – | ✓ |
 
 **Production requirements:** deny-by-default policy, role + warehouse scope on queries, immutable audit of every mutation, idempotency keys on posting endpoints, and no trusting client-computed totals.
@@ -391,8 +406,14 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-22 | Blind opname view exposes no expected balances | Pass |
 | AC-23 | Lighthouse accessibility = 100 on dashboard, stock detail, transfer detail, simulation | Pass |
 | AC-24 | Guided cycle: receive 60 → sell 10 → 50 remaining → partial payment | Pass |
+| AC-25 | Each role logs in with its own PIN; wrong PIN reduces attempts; 5 failures lock 60 s | Pass |
+| AC-26 | PIN can be changed after verifying the current PIN; weak/duplicate PINs are rejected | Pass |
+| AC-27 | Warehouse can be created/edited; duplicate code/prefix rejected; deactivation blocked while in use | Pass |
+| AC-28 | Direct intake creates individual rolls/parts with unique ref, lot, cost, reason and movements | Pass |
+| AC-29 | Whole-roll draft with changed length is rejected | Pass |
+| AC-30 | Sample deposit cannot be applied to an invoice | Pass |
 
-Test evidence: `node --test` → 23/23 passing; browser route sweep → 17/17 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs.
+Test evidence: `node --test` → 31/31 passing; browser route sweep → 18/18 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, stock, master and simulation.
 
 ---
 
@@ -433,7 +454,7 @@ Test evidence: `node --test` → 23/23 passing; browser route sweep → 17/17 ro
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Interactive demo, domain invariants, PRD, design system | 23/23 tests, a11y 100 |
+| P0 (done) | Interactive demo, domain invariants, PRD, design system, PIN login, warehouse master | 31/31 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

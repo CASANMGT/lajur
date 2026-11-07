@@ -1,11 +1,12 @@
 /** Hash router + error boundary. */
 
 import store, { storage } from '../data/store.js';
-import { USERS } from '../domain/seed.js';
-import { dashboardMetrics, exceptionFeed } from '../domain/reports.js';
+import { ROLE_HOME, ensureAccounts, sessionUser } from '../data/auth.js';
+import { dashboardMetrics } from '../domain/reports.js';
 import { invoiceOutstanding } from '../domain/sales.js';
 import { renderShell, mountShell, ROUTE_META } from './shell.js';
-import { icon, toast } from './dom.js';
+import { icon, toast, closeModal } from './dom.js';
+import * as login from './views/login.js';
 import * as dashboard from './views/dashboard.js';
 import * as inventory from './views/inventory.js';
 import * as transfers from './views/transfers.js';
@@ -40,10 +41,9 @@ export function parseHash(hash = window.location.hash) {
   return { name: VIEWS[name] ? name : 'ringkasan', id, query };
 }
 
-function ctxFor(route) {
+function ctxFor(route, user = sessionUser()) {
   const state = store.state;
-  const role = state.ui.role;
-  const user = USERS[role] ?? USERS.manager;
+  const role = user.role;
   const db = store.db;
   return {
     db,
@@ -59,7 +59,7 @@ function ctxFor(route) {
     get metrics() {
       return dashboardMetrics(db, { warehouseId: state.ui.warehouseId });
     },
-    openSimulationPrompt: () => simulation.openSimulationPrompt(ctxFor(route)),
+    openSimulationPrompt: () => simulation.openSimulationPrompt(ctxFor(route, user)),
   };
 }
 
@@ -74,10 +74,36 @@ function errorPanel(err) {
 }
 
 export function renderApp() {
-  const route = parseHash();
-  const ctx = ctxFor(route);
-  const view = VIEWS[route.name];
   const app = document.getElementById('app');
+  const user = sessionUser();
+
+  if (!user) {
+    closeModal();
+    try {
+      app.innerHTML = login.render();
+      login.mount({
+        onAuthenticated: (u) => {
+          store.setUi({ role: u.role }, { rerender: false });
+          const home = ROLE_HOME[u.role] ?? '#/ringkasan';
+          if (window.location.hash === home) renderApp();
+          else window.location.hash = home;
+        },
+      });
+      document.title = 'Masuk — Lajur';
+    } catch (err) {
+      console.error(err);
+      app.innerHTML = `<div class="content">${errorPanel(err)}</div>`;
+    }
+    return;
+  }
+
+  const route = parseHash();
+  const activeWh = store.db.warehouses.filter((w) => w.active !== false);
+  if (store.ui.warehouseId !== 'all' && !activeWh.some((w) => w.id === store.ui.warehouseId)) {
+    store.setUi({ warehouseId: activeWh[0]?.id ?? 'all' }, { rerender: false });
+  }
+  const ctx = ctxFor(route, user);
+  const view = VIEWS[route.name];
 
   let content = '';
   try {
@@ -98,12 +124,6 @@ export function renderApp() {
   }
 
   document.querySelector('[data-action="reload-app"]')?.addEventListener('click', () => window.location.reload());
-
-  // Close any stale modal when the route changes.
-  const modalRoot = document.getElementById('modal-root');
-  if (modalRoot && modalRoot.innerHTML && !document.querySelector('.modal-wrap [data-keep]')) {
-    // Modals opened by a view re-open themselves on mount; leave those alone.
-  }
 }
 
 export function go(hash) {
@@ -114,21 +134,27 @@ export function go(hash) {
   window.location.hash = hash;
 }
 
-export function start() {
+export async function start() {
   store.init();
+  await ensureAccounts();
   if (!window.location.hash) window.location.hash = '#/ringkasan';
+  const user = sessionUser();
+  if (user) store.setUi({ role: user.role }, { rerender: false });
   store.subscribe(() => renderApp());
   window.addEventListener('hashchange', () => {
     renderApp();
     document.getElementById('main')?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    window.scrollTo({ top: 0, behavior: 'auto' });
   });
+  window.setInterval(() => {
+    if (!sessionUser() && !document.querySelector('.auth-screen')) renderApp();
+  }, 60_000);
   renderApp();
 
   if (storage.lastError) {
     toast('Penyimpanan lokal penuh atau diblokir. Perubahan hanya bertahan selama tab terbuka.', { tone: 'error', title: 'Penyimpanan' });
   }
-  if (!store.state.db.audit?.length) {
+  if (!store.state.db.audit?.length && user) {
     toast('Dataset contoh dimuat. Gunakan Simulasi Data untuk mencoba siklus 60 → 10 → 50.', { title: 'Selamat datang di Lajur' });
   }
 }

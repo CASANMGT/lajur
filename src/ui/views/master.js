@@ -4,7 +4,8 @@ import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, confirmAction, downloadFile,
 } from '../dom.js';
 import { byId, uid, todayJakarta } from '../../domain/core.js';
-import { pageHead, statCard, can } from './common.js';
+import { activeWarehouses, createCollection, renameCollection, saveWarehouse } from '../../domain/master.js';
+import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';import { pageHead, statCard, can } from './common.js';
 
 let tab = 'produk';
 
@@ -31,7 +32,7 @@ function renderProducts(ctx) {
   const { db, role } = ctx;
   return `<section class="card">
     <div class="table-wrap"><table class="data">
-      <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.skus.map((s) => `<tr>
         <td class="mono strong">${esc(s.code)}<div class="xs muted">${esc(s.id)}</div></td>
         <td>${esc(s.collectionName)}</td>
@@ -51,7 +52,7 @@ function renderParts(ctx) {
   const { db, role } = ctx;
   return `<section class="card">
     <div class="table-wrap"><table class="data">
-      <thead><tr><th>SKU</th><th>Nama</th><th>Kategori</th><th>Satuan</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok total</th><th></th></tr></thead>
+      <thead><tr><th>SKU</th><th>Nama</th><th>Kategori</th><th>Satuan</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok total</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.parts.map((p) => {
         const qty = db.partStock.filter((s) => s.partId === p.id).reduce((a, s) => a + s.qty, 0);
         return `<tr>
@@ -76,7 +77,7 @@ function renderCategories(ctx) {
     <section class="card">
       <div class="card-head"><div><h2>Kategori</h2><p>Nama dapat diubah; ID tetap.</p></div>${role === 'manager' ? `<button class="btn btn-sm" data-act="new-category">Tambah</button>` : ''}</div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>ID</th><th>Nama</th><th class="num">Produk</th><th></th></tr></thead>
+        <thead><tr><th>ID</th><th>Nama</th><th class="num">Produk</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${db.categories.map((c) => {
           const count = db.skus.filter((s) => db.collections.find((x) => x.id === s.collectionId)?.categoryId === c.id).length
             + db.parts.filter((p) => p.categoryId === c.id).length;
@@ -86,13 +87,14 @@ function renderCategories(ctx) {
       </table></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Koleksi</h2><p>Grup warna dalam satu seri kain.</p></div></div>
+      <div class="card-head"><div><h2>Koleksi</h2><p>Grup warna dalam satu seri kain. Nama dapat diubah; ID dan riwayat tetap.</p></div>${role === 'manager' ? `<button class="btn btn-sm" data-act="new-collection">Tambah</button>` : ''}</div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Koleksi</th><th>Kategori</th><th class="num">Warna</th></tr></thead>
+        <thead><tr><th>Koleksi</th><th>Kategori</th><th class="num">Warna</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${db.collections.map((c) => `<tr>
           <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.description)}</div></td>
           <td>${esc(byId(db.categories, c.categoryId)?.name ?? '—')}</td>
           <td class="num">${db.skus.filter((s) => s.collectionId === c.id).length}</td>
+          <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-collection="${c.id}">Ubah</button>` : ''}</td>
         </tr>`).join('')}</tbody>
       </table></div>
     </section>
@@ -100,20 +102,37 @@ function renderCategories(ctx) {
 }
 
 function renderWarehouses(ctx) {
+  const { db, role } = ctx;
+  if (role !== 'manager') {
+    return `<div class="notice notice-info">${icon('alert')}<div>Hanya manajer yang dapat menambah atau mengubah gudang.</div></div>
+      <div class="grid grid-3" style="margin-top:12px">${db.warehouses.map((w) => warehouseCard(ctx, w, false)).join('')}</div>`;
+  }
+  return `<div class="row-between" style="margin-bottom:12px">
+      <div><h2>Gudang & lokasi</h2><p class="xs muted">Gudang nonaktif tetap menyimpan riwayat, tetapi tidak muncul di pemilih operasional.</p></div>
+      <button class="btn btn-primary" type="button" data-act="new-warehouse">${icon('plus')} Tambah gudang</button>
+    </div>
+    <div class="grid grid-3">${db.warehouses.map((w) => warehouseCard(ctx, w, true)).join('')}</div>`;
+}
+
+function warehouseCard(ctx, w, editable) {
   const { db } = ctx;
-  return `<div class="grid grid-3">
-    ${db.warehouses.map((w) => `<section class="card card-pad">
-      <div class="row-between"><h2>${esc(w.name)}</h2><span class="badge badge-teal no-dot">${esc(w.code)}</span></div>
-      <p class="small muted" style="margin-top:6px">${esc(w.address)}</p>
-      <hr class="divider" />
-      <div class="stack-sm">
-        <div class="row-between"><span class="small muted">Prefiks rak</span><span class="small mono">${esc(w.binPrefix)}</span></div>
-        <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(w.phone)}</span></div>
-        <div class="row-between"><span class="small muted">Roll fisik</span><span class="small">${db.rolls.filter((r) => r.warehouseId === w.id && !r.transit).length}</span></div>
-      </div>
-      <p class="xs muted" style="margin-top:10px">Format lokasi: ${esc(w.binPrefix)}-01-02 (gudang → zona → rak → posisi).</p>
-    </section>`).join('')}
-  </div>`;
+  const active = w.active !== false;
+  return `<section class="card card-pad" ${active ? '' : 'style="opacity:.82"'}>
+    <div class="row-between">
+      <h2>${esc(w.name)}</h2>
+      ${active ? badge(w.code, 'teal') : badge('Nonaktif', 'muted')}
+    </div>
+    <p class="small muted" style="margin-top:6px">${esc(w.address || 'Alamat belum diisi')}</p>
+    <hr class="divider" />
+    <div class="stack-sm">
+      <div class="row-between"><span class="small muted">Kode gudang</span><span class="small mono">${esc(w.code)}</span></div>
+      <div class="row-between"><span class="small muted">Prefiks rak</span><span class="small mono">${esc(w.binPrefix)}</span></div>
+      <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(w.phone || '—')}</span></div>
+      <div class="row-between"><span class="small muted">Roll fisik</span><span class="small">${db.rolls.filter((r) => r.warehouseId === w.id && !r.transit && ['available', 'quarantine'].includes(r.status)).length}</span></div>
+    </div>
+    <p class="xs muted" style="margin-top:10px">Format lokasi: ${esc(w.binPrefix)}-01-02 (gudang → zona → rak → posisi).</p>
+    ${editable ? `<div class="row" style="margin-top:10px"><button class="btn btn-sm" type="button" data-edit-warehouse="${w.id}">${icon('settings')} Edit</button></div>` : ''}
+  </section>`;
 }
 
 function renderData(ctx) {
@@ -158,8 +177,9 @@ function renderData(ctx) {
     <section class="card card-pad">
       <h2>Informasi dataset</h2>
       <div class="stack-sm" style="margin-top:10px">
+        <div class="row-between"><span class="small muted">Aplikasi</span><span class="small">v${esc(APP_VERSION)}</span></div>
+        <div class="row-between"><span class="small muted">Skema data</span><span class="small">v${esc(SCHEMA_VERSION)}</span></div>
         <div class="row-between"><span class="small muted">Dataset</span><span class="small">${esc(db.meta.label)}</span></div>
-        <div class="row-between"><span class="small muted">Versi</span><span class="small">v${db.meta.version}</span></div>
         <div class="row-between"><span class="small muted">Perusahaan</span><span class="small">${esc(db.meta.company)}</span></div>
         <div class="row-between"><span class="small muted">Zona waktu</span><span class="small">${esc(db.meta.timezone)}</span></div>
         <div class="row-between"><span class="small muted">Roll / faktur / mutasi</span><span class="small">${db.rolls.length} / ${db.invoices.length} / ${db.movements.length}</span></div>
@@ -296,6 +316,66 @@ function openRenameCategory(ctx, category) {
   });
 }
 
+function openWarehouse(ctx, warehouse = null) {
+  const editing = Boolean(warehouse);
+  openModal({
+    title: editing ? `Edit ${warehouse.name}` : 'Gudang baru',
+    description: 'Kode tampilan boleh berubah; ID internal dan riwayat tetap. Nonaktifkan hanya jika stok sudah kosong.',
+    sub: undefined,
+    submitLabel: editing ? 'Simpan gudang' : 'Buat gudang',
+    body: `<div class="form-grid">
+      ${field('Kode gudang', `<input class="input" name="code" maxlength="6" value="${esc(warehouse?.code ?? '')}" placeholder="JKT" required />`, { hint: '2–6 huruf/angka, unik.' })}
+      ${field('Nama gudang', `<input class="input" name="name" value="${esc(warehouse?.name ?? '')}" placeholder="Gudang Pusat Jakarta" required />`)}
+      ${field('Prefiks rak', `<input class="input" name="binPrefix" maxlength="3" value="${esc(warehouse?.binPrefix ?? '')}" placeholder="A" required />`, { hint: 'Dipakai label lokasi, mis. A-01-02.' })}
+      ${field('Telepon', `<input class="input" name="phone" value="${esc(warehouse?.phone ?? '')}" />`)}
+      ${field('Alamat', `<input class="input" name="address" value="${esc(warehouse?.address ?? '')}" />`, { full: true })}
+      ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${warehouse.active !== false ? 'checked' : ''} /> Gudang aktif dan dapat dipilih untuk transaksi</label>` : ''}
+    </div>`,
+    onSubmit(form, close) {
+      const saved = ctx.store.update((db) => saveWarehouse(db, {
+        id: warehouse?.id ?? null,
+        code: form.code.value,
+        name: form.name.value,
+        binPrefix: form.binPrefix.value,
+        phone: form.phone.value,
+        address: form.address.value,
+        active: editing ? form.active.checked : true,
+        user: ctx.user,
+      }));
+      close();
+      if (ctx.ui.warehouseId === saved.id && saved.active === false) {
+        const next = activeWarehouses(ctx.store.db).find((w) => w.id !== saved.id);
+        if (next) ctx.store.setUi({ warehouseId: next.id });
+      }
+      toast(editing ? 'Gudang diperbarui.' : 'Gudang baru dibuat.', { tone: 'success' });
+    },
+  });
+}
+
+function openCollection(ctx, collection = null) {
+  const editing = Boolean(collection);
+  openModal({
+    title: editing ? `Edit ${collection.name}` : 'Koleksi baru',
+    submitLabel: editing ? 'Simpan' : 'Buat koleksi',
+    body: `<div class="form-grid">
+      ${field('Nama koleksi', `<input class="input" name="name" value="${esc(collection?.name ?? '')}" required />`)}
+      ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${collection?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
+      ${field('Deskripsi', `<input class="input" name="description" value="${esc(collection?.description ?? '')}" />`, { full: true })}
+    </div>`,
+    onSubmit(form, close) {
+      ctx.store.update((db) => {
+        if (editing) {
+          renameCollection(db, { id: collection.id, name: form.name.value, description: form.description.value, user: ctx.user });
+        } else {
+          createCollection(db, { name: form.name.value, categoryId: form.category.value, description: form.description.value, user: ctx.user });
+        }
+      });
+      close();
+      toast(editing ? 'Koleksi diperbarui; label SKU ikut menyesuaikan.' : 'Koleksi dibuat.', { tone: 'success' });
+    },
+  });
+}
+
 export function mount(ctx) {
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => {
     tab = btn.dataset.tab;
@@ -311,6 +391,16 @@ export function mount(ctx) {
     if (part) openPart(ctx, part);
   }));
   document.querySelector('[data-act="new-category"]')?.addEventListener('click', () => openCategory(ctx));
+  document.querySelector('[data-act="new-warehouse"]')?.addEventListener('click', () => openWarehouse(ctx));
+  document.querySelectorAll('[data-edit-warehouse]').forEach((btn) => btn.addEventListener('click', () => {
+    const wh = ctx.db.warehouses.find((w) => w.id === btn.dataset.editWarehouse);
+    if (wh) openWarehouse(ctx, wh);
+  }));
+  document.querySelector('[data-act="new-collection"]')?.addEventListener('click', () => openCollection(ctx));
+  document.querySelectorAll('[data-edit-collection]').forEach((btn) => btn.addEventListener('click', () => {
+    const col = ctx.db.collections.find((c) => c.id === btn.dataset.editCollection);
+    if (col) openCollection(ctx, col);
+  }));
   document.querySelectorAll('[data-rename-category]').forEach((btn) => btn.addEventListener('click', () => {
     const cat = ctx.db.categories.find((c) => c.id === btn.dataset.renameCategory);
     if (cat) openRenameCategory(ctx, cat);

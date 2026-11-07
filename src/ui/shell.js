@@ -1,10 +1,12 @@
 /** Application shell: sidebar, topbar, simulation banner, mobile drawer. */
 
-import { esc, icon, toast } from './dom.js';
+import { esc, icon, toast, openModal, field, closeModal } from './dom.js';
 import { activeSessions } from '../domain/opname.js';
 import { lateTransfers, pendingApprovals } from '../domain/transfers.js';
 import { byId } from '../domain/core.js';
-import { USERS } from '../domain/seed.js';
+import { activeWarehouses } from '../domain/master.js';
+import { changePin, logout, sessionRemainingMs } from '../data/auth.js';
+import { APP_VERSION } from '../version.js';
 
 export const NAV = [
   {
@@ -101,6 +103,7 @@ export function renderShell(ctx, contentHtml) {
         <div class="sidebar-foot">
           <strong>${esc(db.meta.company)}</strong>
           <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
+          <p class="xs" style="margin-top:6px">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])}</p>
         </div>
       </aside>
 
@@ -116,21 +119,21 @@ export function renderShell(ctx, contentHtml) {
             <span>${esc(ROUTE_META[ctx.route.name]?.sub ?? '')}</span>
           </div>
           <div class="topbar-actions">
-            <label class="warehouse-pick" title="Gudang aktif">
+            <div class="warehouse-pick" title="Gudang aktif">
               ${icon('pin')}
-              <select data-action="warehouse-select" aria-label="Pilih gudang">
-                ${db.warehouses.map((w) => `<option value="${w.id}" ${ui.warehouseId === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name.replace('Gudang ', ''))}</option>`).join('')}
+              <label class="sr-only" for="warehouse-select">Gudang aktif</label>
+              <select id="warehouse-select" data-action="warehouse-select">
+                ${activeWarehouses(db).map((w) => `<option value="${w.id}" ${ui.warehouseId === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name.replace('Gudang ', ''))}</option>`).join('')}
                 <option value="all" ${ui.warehouseId === 'all' ? 'selected' : ''}>Semua gudang</option>
               </select>
-            </label>
-            <label class="sr-only" for="role-select">Peran demo</label>
-            <select class="role-select" id="role-select" data-action="role-select" title="Peran demo (bukan otorisasi server)">
-              ${Object.entries(ROLE_LABEL).map(([key, label]) => `<option value="${key}" ${role === key ? 'selected' : ''}>${label}</option>`).join('')}
-            </select>
+            </div>
             <button class="btn ${dataset === 'sim' ? 'btn-copper' : 'btn-navy'} btn-sm hide-sm" type="button" data-action="open-sim">
               ${icon('flask')} ${dataset === 'sim' ? 'Simulasi aktif' : 'Simulasi Data'}
             </button>
-            <span class="badge badge-navy no-dot hide-sm" title="Peran demo: ${esc(ROLE_LABEL[role])}">${esc((USERS[role]?.name ?? 'Demo').split(' ')[0])}</span>
+            <button class="account-btn" type="button" data-action="account" title="Akun ${esc(ctx.user.name)}">
+              <span class="avatar">${esc(ctx.user.name.split(' ').slice(0, 2).map((n) => n[0]).join(''))}</span>
+              <span class="hide-sm">${esc(ctx.user.name.split(' ')[0])}</span>
+            </button>
           </div>
         </header>
         ${banner}
@@ -139,6 +142,51 @@ export function renderShell(ctx, contentHtml) {
         </main>
       </div>
     </div>`;
+}
+
+function openAccount(ctx) {
+  const user = ctx.user;
+  const mins = Math.max(0, Math.round(sessionRemainingMs() / 60000));
+  openModal({
+    title: 'Akun & keamanan',
+    description: 'PIN membatasi peran di demo ini. Otorisasi produksi tetap harus di server.',
+    submitLabel: 'Simpan PIN baru',
+    body: `
+      <div class="account-meta">
+        <div class="row-between"><span>Nama</span><strong>${esc(user.name)}</strong></div>
+        <div class="row-between"><span>Peran</span><strong>${esc(ROLE_LABEL[user.role])}</strong></div>
+        <div class="row-between"><span>Sesi berakhir</span><span>${mins} menit lagi</span></div>
+      </div>
+      <hr class="divider" />
+      <h3>Ganti PIN</h3>
+      <div class="form-grid" style="margin-top:8px">
+        ${field('PIN saat ini', `<input class="input" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" name="pinCurrent" />`)}
+        ${field('PIN baru', `<input class="input" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" name="pinNext" />`)}
+        ${field('Ulangi PIN baru', `<input class="input" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" name="pinRepeat" />`)}
+      </div>
+      <p class="xs muted" style="margin-top:8px">4–6 angka. Hindari 1234, 0000, atau angka berulang.</p>
+    `,
+    extraFooter: `<button class="btn btn-danger" type="button" data-logout>${icon('logout')} Keluar</button>`,
+    onMount(form) {
+      form.querySelector('[data-logout]')?.addEventListener('click', () => {
+        closeModal();
+        logout();
+        goToLogin();
+      });
+    },
+    onSubmit: async (form, close) => {
+      if (form.pinNext.value !== form.pinRepeat.value) throw new Error('Ulangi PIN baru dengan benar.');
+      await changePin(user.id, form.pinCurrent.value, form.pinNext.value);
+      close();
+      toast('PIN diperbarui. Gunakan PIN baru pada login berikutnya.', { tone: 'success' });
+    },
+  });
+}
+
+function goToLogin() {
+  const target = '#/login';
+  if (window.location.hash === target) window.dispatchEvent(new HashChangeEvent('hashchange'));
+  else window.location.hash = target;
 }
 
 export function mountShell(ctx) {
@@ -168,11 +216,7 @@ export function mountShell(ctx) {
   document.querySelector('[data-action="warehouse-select"]')?.addEventListener('change', (e) => {
     ctx.store.setUi({ warehouseId: e.target.value });
   });
-  document.querySelector('[data-action="role-select"]')?.addEventListener('change', (e) => {
-    const role = e.target.value;
-    ctx.store.setUi({ role });
-    toast(`Peran demo: ${ROLE_LABEL[role]}. Tombol mengikuti peran; otorisasi sebenarnya harus di server.`);
-  });
+  document.querySelector('[data-action="account"]')?.addEventListener('click', () => openAccount(ctx));
   document.querySelectorAll('[data-action="open-sim"]').forEach((btn) =>
     btn.addEventListener('click', () => {
       if (ctx.dataset === 'sim') window.location.hash = '#/simulasi';

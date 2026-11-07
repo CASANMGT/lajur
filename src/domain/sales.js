@@ -209,6 +209,8 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
       if (line.mode === 'whole') {
         assert((roll.reservedMm || 0) === 0, 'ROLL_RESERVED', `Roll ${roll.id} terpesan untuk dokumen lain.`);
         assert(roll.status === 'available', 'ROLL_NOT_AVAILABLE', `Roll ${roll.id} tidak tersedia.`);
+        assert(roll.currentMm === line.qtyMm, 'ROLL_CHANGED',
+          `Panjang ${roll.id} berubah sejak draf (${line.qtyMm / MM_PER_M} m → ${roll.currentMm / MM_PER_M} m). Buat ulang baris faktur.`);
       } else {
         const held = reservedFor(roll, reservationRef);
         assert(line.qtyMm <= availableMm(roll) + held, 'INSUFFICIENT_AVAILABLE',

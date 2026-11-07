@@ -97,12 +97,13 @@ function renderDetail(ctx) {
   const customer = byId(db.customers, inv.customerId);
   const margin = invoiceMargin(inv);
   const deposits = db.deposits.filter((d) => d.customerId === inv.customerId && depositBalance(d) > 0);
+  const applicableDeposits = deposits.filter((d) => d.kind === 'indent');
   const days = daysBetween(inv.dueDate, todayJakarta());
 
   const actions = [];
   if (inv.status === 'draft' && can(role, 'invoice.post')) actions.push(`<button class="btn btn-primary" data-act="post">${icon('check')} Terbitkan & keluarkan stok</button>`);
   if (inv.status === 'posted' && out > 0 && can(role, 'invoice.pay')) actions.push(`<button class="btn btn-primary" data-act="pay">${icon('wallet')} Terima pembayaran</button>`);
-  if (inv.status === 'posted' && out > 0 && deposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
+  if (inv.status === 'posted' && out > 0 && applicableDeposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
   if (inv.status === 'posted' && can(role, 'return.create')) actions.push(`<button class="btn" data-act="return">${icon('refresh')} Retur</button>`);
   actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak</button>`);
 
@@ -478,7 +479,7 @@ function openReturn(ctx, inv) {
 }
 
 function openApplyDeposit(ctx, inv) {
-  const deposits = ctx.db.deposits.filter((d) => d.customerId === inv.customerId && depositBalance(d) > 0);
+  const deposits = ctx.db.deposits.filter((d) => d.customerId === inv.customerId && d.kind === 'indent' && depositBalance(d) > 0);
   if (!deposits.length) return;
   openModal({
     title: 'Pakai deposit',

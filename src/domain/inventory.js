@@ -432,8 +432,7 @@ export function receiveFabricRolls(db, { skuId, warehouseId, lot, receivedAt, re
   return created;
 }
 
-export function receiveParts(db, { partId, warehouseId, qty, user, ref = '', unitCost = null }) {
-  assertWarehouseOpen(db, warehouseId, 'Penerimaan barang');
+export function receiveParts(db, { partId, warehouseId, qty, user, ref = '', unitCost = null }) {  assertWarehouseOpen(db, warehouseId, 'Penerimaan barang');
   const part = byId(db.parts, partId);
   assert(part, 'PART_NOT_FOUND', 'Spare part tidak ditemukan.');
   const n = Math.round(Number(qty));
@@ -479,6 +478,121 @@ export function issueParts(db, { partId, warehouseId, qty, user, ref = '', note 
     note,
   });
   return row;
+}
+
+/**
+ * Direct stock intake without a PO (opening balance, correction, consignment).
+ * It still creates a receipt document with a unique reference, individual roll
+ * IDs, lot, cost and movements, so no stock appears without a trace.
+ */
+export function receiveAdhocStock(db, {
+  warehouseId, ref, date = todayJakarta(), kind = 'fabric', skuId, partId,
+  lot, lengthsMm = [], qtyPcs = 0, unitCost = 0, reason, user,
+}) {
+  const wh = byId(db.warehouses, warehouseId);
+  assert(wh, 'WAREHOUSE_NOT_FOUND', 'Gudang tidak ditemukan.');
+  assert(wh.active !== false, 'WAREHOUSE_INACTIVE', 'Gudang nonaktif tidak dapat menerima stok.');
+  assertWarehouseOpen(db, warehouseId, 'Penerimaan stok');
+
+  const cleanRef = String(ref ?? '').trim();
+  assert(cleanRef.length >= 3, 'REF_REQUIRED', 'Nomor dokumen wajib diisi (minimal 3 karakter).');
+  const duplicate = db.goodsReceipts.find((r) => r.ref.toLowerCase() === cleanRef.toLowerCase());
+  assert(!duplicate, 'DUPLICATE_RECEIPT', `Nomor ${cleanRef} sudah dipakai (${duplicate?.id ?? ''}).`);
+  assert(reason && reason.trim().length >= 3, 'REASON_REQUIRED', 'Alasan penerimaan wajib diisi.');
+
+  const lines = [];
+  let rolls = [];
+  let total = 0;
+
+  if (kind === 'fabric') {
+    const sku = byId(db.skus, skuId);
+    assert(sku, 'SKU_NOT_FOUND', 'SKU kain tidak ditemukan.');
+    assert(sku.active !== false && !sku.dormant, 'DORMANT_PRODUCT', 'SKU nonaktif tidak dapat menerima stok baru.');
+    const lengths = (lengthsMm ?? []).map((x) => Math.round(Number(x))).filter((x) => x > 0);
+    assert(lengths.length > 0, 'EMPTY_RECEIPT', 'Minimal satu panjang roll harus diisi.');
+    const cost = Math.max(0, Math.round(Number(unitCost) || 0)) || sku.buyPrice;
+    const lotCode = String(lot ?? '').trim() || `ADH-${date.replaceAll('-', '')}`;
+
+    rolls = lengths.map((len, idx) => {
+      const roll = createRoll(db, {
+        skuId: sku.id,
+        lot: lotCode,
+        receivedAt: date,
+        receiptRef: cleanRef,
+        originalMm: len,
+        currentMm: len,
+        warehouseId,
+        bin: `${wh.binPrefix}-AD${String(idx + 1).padStart(2, '0')}`,
+        costPerM: cost,
+        user,
+        notes: reason.trim(),
+      });
+      recordMovement(db, {
+        type: 'adhoc_receive',
+        ref: cleanRef,
+        date,
+        warehouseId,
+        skuId: sku.id,
+        rollId: roll.id,
+        qtyMm: len,
+        beforeMm: 0,
+        afterMm: len,
+        unitCost: cost,
+        value: Math.round((len / MM_PER_M) * cost),
+        user,
+        note: reason.trim(),
+      });
+      return roll;
+    });
+    const qtyMm = lengths.reduce((a, b) => a + b, 0);
+    total = Math.round((qtyMm / MM_PER_M) * cost);
+    lines.push({
+      kind: 'fabric',
+      skuId: sku.id,
+      description: `${sku.collectionName} — ${sku.colourName || sku.colourCode} (${sku.code})`,
+      lot: lotCode,
+      lengthsMm: lengths,
+      rollIds: rolls.map((r) => r.id),
+      qtyMm,
+      unitCost: cost,
+    });
+  } else if (kind === 'part') {
+    const part = byId(db.parts, partId);
+    assert(part, 'PART_NOT_FOUND', 'Spare part tidak ditemukan.');
+    const qty = Math.round(Number(qtyPcs));
+    assert(Number.isInteger(qty) && qty > 0, 'INVALID_QTY', 'Jumlah part harus bilangan bulat lebih dari 0.');
+    const cost = Math.max(0, Math.round(Number(unitCost) || 0)) || part.buyPrice;
+    receiveParts(db, { partId: part.id, warehouseId, qty, user, ref: cleanRef, unitCost: cost });
+    total = qty * cost;
+    lines.push({
+      kind: 'part',
+      partId: part.id,
+      description: part.name,
+      qtyPcs: qty,
+      unitCost: cost,
+    });
+  } else {
+    throw new DomainError('INVALID_KIND', 'Jenis penerimaan tidak dikenal.');
+  }
+
+  const receipt = {
+    id: nextId(db, 'goodsReceipt', 'GR', 4),
+    ref: cleanRef,
+    kind: 'adhoc',
+    poId: null,
+    supplierId: null,
+    date,
+    warehouseId,
+    lines,
+    total,
+    note: reason.trim(),
+    supplierInvoiceId: null,
+    createdAt: isoNow(),
+    createdBy: user?.name ?? 'Sistem',
+  };
+  db.goodsReceipts.unshift(receipt);
+  audit(db, user, 'terima_stok_langsung', 'goodsReceipt', receipt.id, `${cleanRef} · ${lines.length} baris · ${total}`);
+  return { receipt, rolls };
 }
 
 export function whBinPrefix(db, warehouseId) {

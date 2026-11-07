@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-23%2F23-brightgreen) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-31%2F31-brightgreen) ![Version](https://img.shields.io/badge/version-2.1.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -40,6 +40,28 @@ npx vercel --prod
 
 Or import the GitHub repository in Vercel with framework preset **Other**, build command empty, output directory `.`. The current production alias is **https://lajur-lake.vercel.app**.
 
+### Sign in (demo)
+
+Each role has its own account and PIN. The PIN is hashed with PBKDF2-SHA256 and kept in local storage; a session lasts 8 hours (per browser tab). Five wrong attempts lock that account for 60 seconds.
+
+| Akun | Peran | PIN awal |
+|------|-------|----------|
+| Arif Wibowo | Manajer / pemilik | `2468` |
+| Rani Pratama | Operator gudang | `1357` |
+| Dimas Anggara | Sales & customer service | `8642` |
+
+Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN hint disappears once a PIN is changed. Resetting site data restores the defaults.
+
+> This is still a browser demo: PINs gate the UI and the demo session, not a server. Production authorization must be enforced by the API.
+
+### Versioning
+
+- Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
+- Git tags: `v2.0.0`, `v2.1.0`.
+- `CHANGELOG.md` records every release and review fix.
+- `.github/workflows/ci.yml` runs the 31 tests, module check and render check on every push/PR.
+- Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
+
 ---
 
 ## What is inside
@@ -52,11 +74,13 @@ Lajur/
 ├── PRD.md                    product requirements, rules, roadmap
 ├── DESIGN-SYSTEM.md          brand, tokens, components, accessibility
 ├── CHANGELOG.md
+├── .github/workflows/ci.yml  tests on every push and PR
 ├── assets/                   mark + favicon
 ├── src/
+│   ├── version.js            app version + schema version
 │   ├── domain/               pure business logic (no DOM)
 │   │   ├── core.js           units (mm), IDR, Jakarta dates, IDs, audit
-│   │   ├── inventory.js      rolls, availability, splits, parts, ledger
+│   │   ├── inventory.js      rolls, availability, splits, parts, direct intake
 │   │   ├── transfers.js      internal requests: approve/dispatch/receive
 │   │   ├── sales.js          invoices, posting, payments, returns
 │   │   ├── purchasing.js     suppliers, PO, receiving, payables
@@ -64,23 +88,26 @@ Lajur/
 │   │   ├── crm.js            customers, samples, deposits, refunds
 │   │   ├── opname.js         blind count, review, adjustment
 │   │   ├── reports.js        derived metrics (no stored totals)
+│   │   ├── master.js         warehouse + collection invariants
 │   │   └── seed.js           realistic linked fixtures
 │   ├── data/
-│   │   ├── store.js          main/sim persistence, clone-commit
+│   │   ├── store.js          main/sim persistence, migration, clone-commit
 │   │   ├── backup.js         export/restore with reference validation
+│   │   ├── auth.js           PIN hashing, sessions, lockout
 │   │   └── simulation.js     guided 60 → 10 → 50 cycle
 │   ├── ui/
 │   │   ├── dom.js            escaping, icons, modal, toast, print
-│   │   ├── shell.js          sidebar, topbar, simulation banner
-│   │   ├── router.js         hash routes + error boundary
-│   │   └── views/            dashboard, inventory, transfers, purchasing,
+│   │   ├── shell.js          sidebar, topbar, account menu, simulation banner
+│   │   ├── router.js         auth gate, hash routes, error boundary
+│   │   └── views/            login, dashboard, inventory, transfers, purchasing,
 │   │                         sales, projects, customers, opname, reports,
 │   │                         master, simulation, print documents
 │   └── styles/
 │       ├── tokens.css
 │       └── app.css
 ├── tests/
-│   └── invariants.test.js    23 domain tests
+│   ├── invariants.test.js    29 business invariant tests
+│   └── auth.test.js          2 PIN hashing / policy tests
 └── tools/
     ├── serve.mjs             tiny static server
     ├── check.mjs             module import check
@@ -99,6 +126,7 @@ Lajur/
 
 ## Demo walkthrough (8 minutes)
 
+0. **Masuk** — choose an account and enter its PIN (manager `2468`, operator `1357`, sales `8642`). Change it from the avatar menu.
 1. **Dashboard** — manager defaults: inventory value, receivables, month margin, payables, exception feed.
 2. **Stok & Roll** — search `RL-0001`; open it. See 60 m physical, 0 reserved, 60 m available, lot `LOT-2608-A`, bin `A-01-01`, and the full movement trail.
 3. **Whole vs cut** — open `#/penjualan?new=1&roll=RL-0001`, add 10 m, post. The roll becomes 50 m and the sold piece is a separate traceable child. You can also choose **Roll utuh** (blocked when reserved).
@@ -112,16 +140,18 @@ Lajur/
 9. **Laporan** — stock by warehouse/SKU, valuation, AR/AP aging, slow-moving, sample conversion, project shortage, audit trail.
 10. **Simulasi Data** — click the copper button, start, then run the cycle:
     **receive 60 m → sell 10 m → 50 m left → 40% dummy payment.** Main data stays at 60 m.
+11. **Tambah stok** — on Stok, “Tambah stok” records opening stock or a correction without a PO: unique document, lot, each roll length, cost, reason, and a movement per roll.
+12. **Master Data → Gudang** — add or rename a warehouse, change its code/prefix/contact, or deactivate an empty one. Deactivation is refused while stock, transit, parts, active requests, or an opname still reference it. Collection names can be renamed without changing SKU IDs.
 
-### Demo accounts (role switch)
+### Role experience
 
-| Role | Name | What changes |
-|------|------|--------------|
-| Manajer | Arif Wibowo | approvals, master edit, refunds, all screens |
-| Operator Gudang | Rani Pratama | receiving, transfer dispatch/receive, opname counting |
-| Sales / CS | Dimas Anggara | invoices, projects, customers, samples, deposits |
+| Role | Sees | Cannot do |
+|------|------|-----------|
+| Manajer | Approvals, all reports, master, refunds | — |
+| Operator Gudang | Stock, receiving, dispatch/receive, opname counting, direct intake | Create invoices, edit master, approve |
+| Sales / CS | Invoices, projects, customers, samples, deposits | Approve transfers/opname, edit master, count stock |
 
-The selector is a **UX simulation**; it is not authentication.
+Log in as each account to see the difference. Hiding a button is still not server authorization.
 
 ---
 
@@ -135,6 +165,10 @@ The selector is a **UX simulation**; it is not authentication.
 | Whole roll blocked when reserved | `sellWholeRoll` |
 | Quarantine / transit cannot be sold | `isSellable`, `postInvoice` |
 | Dormant SKU blocked | `buildFabricLine`, `postInvoice` |
+| Whole-roll draft cannot post if its length changed | `postInvoice` (`ROLL_CHANGED`) |
+| Direct intake is documented, unique and traceable | `receiveAdhocStock` |
+| Warehouse codes/prefixes are unique; deactivation requires empty stock | `master.saveWarehouse` |
+| Sample deposits are refund-only, never invoice credit | `applyDepositToInvoice` |
 | Metres and pieces never summed | summary and report functions |
 | Invoice posts stock once | `postInvoice`; handover is status-only |
 | Transfer outstanding = requested − dispatched | `lineStats`, tested as 10 with transit 3 |
@@ -147,26 +181,32 @@ The selector is a **UX simulation**; it is not authentication.
 | Adjustment below reservation rejected | `approveOpname` |
 | Simulation is isolated | separate storage key + test |
 | Restore validates references | `backup.validateBackup` |
+| PINs are salted PBKDF2 hashes; sessions expire; 5 failures lock | `data/auth.js` (demo only) |
 
 ---
 
 ## Verification (actually run)
 
-**Date:** 7 November 2026 · Node 24.14.0 · Chromium via OpenCode browser
+**Date:** 8 November 2026 · Node 24.14.0 · Chromium via OpenCode browser
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **23 passed, 0 failed** |
-| Module import check | **28/28 modules** |
-| Server-side render of all views | **13/13 render, no exceptions** |
-| Browser route sweep | **17/17 routes**, zero console errors |
+| `node --test` | **31 passed, 0 failed** (29 business + 2 auth) |
+| Module import check | **32/32 modules** |
+| Server-side render of all views | **14/14 render, no exceptions** (incl. login) |
+| Browser route sweep | **18/18 routes**, zero console errors |
+| PIN login | wrong PIN shows remaining attempts; correct PIN reaches role home |
+| PIN change | manager changed PIN, logged out, logged in with the new PIN |
+| PIN lockout | 5 failures → 60 s account lock (logic + message) |
+| Warehouse editing | created MDN, edited code, deactivated empty site; JKT deactivation refused with stock reasons |
+| Direct stock intake | 2 rolls (`12 m + 8 m`) created with lot, cost, receipt and movements |
 | Guided cycle | receive 60 → cut 10 → **50 remaining**, payment **Rp 500.000** (40%) |
 | Simulation isolation | main `RL-0001` stayed **60 m** after sim mutations |
 | Mobile widths 320 / 390 / 768 | overflow **0 px**, inputs **16 px**, targets **≥ 44 px** |
-| Drawer | opens, scrim, focus inside, Esc closes |
+| Drawer / account button | opens, focus moves inside, Esc closes; account 44 px on touch |
 | Modal at 320/390 | fits viewport, footer/submit visible, body scrolls |
 | Blind opname | only `Hitungan` column; no expected balance in DOM |
-| Lighthouse (dashboard, stock detail, transfer detail, simulation) | **Accessibility 100, Best Practices 100, SEO 100** |
+| Lighthouse (login, dashboard, stock, master, simulation) | **Accessibility 100, Best Practices 100, SEO 100** |
 
 Reproduce:
 
@@ -182,6 +222,10 @@ node tools/render-check.mjs
 
 ### Implemented
 
+- Per-role login with PBKDF2-hashed PIN, 8-hour session, 5-attempt lockout, PIN change, logout.
+- Role-specific navigation defaults and action gating for manager, operator, sales.
+- Editable warehouses (create, rename, recoordinate, deactivate with usage guard) and editable collections.
+- Direct stock intake without PO (opening balance/correction) with unique document, lot, per-roll lengths, cost, reason and audit.
 - Roll-level inventory with collection → colour → lot → roll → warehouse/bin.
 - Opening stock exactly as specified, each length separate.
 - Physical / reserved / available / quarantine / transit, with transit excluded from both warehouses.
@@ -194,7 +238,8 @@ node tools/render-check.mjs
 - Blind stock opname with freeze, variance, recount, posting, permanent history.
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
-- JSON backup/export/restore with referential validation.
+- JSON backup/export/restore with referential validation and schema migration.
+- Versioned release (`v2.1.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
@@ -204,8 +249,9 @@ node tools/render-check.mjs
 - Paid sample uses a service invoice; no separate sample price list.
 - As-of inventory balances are not reconstructed; movement history is.
 - Barcode labels are visual; no scanner integration.
-- Permissions are UI-level only.
+- Permissions are UI-level only; PIN is a local gate, not server authorization.
 - Quote/order documents are not separate from invoices.
+- Return credit above the remaining invoice balance is not carried as a customer credit balance.
 
 ### Planned
 
@@ -223,11 +269,11 @@ node tools/render-check.mjs
 
 ## Limitations (browser-only demo)
 
-- **No real authentication.** Role switching is a demo; every domain rule can be bypassed by editing local storage.
-- **No secure multi-user authorization.** Two browsers do not share data.
+- **PIN login is local, not real authentication.** PINs are hashed, but everything runs in the browser; anyone with the device can clear storage. There is no server, no shared session, and no secure multi-user authorization.
+- **No secure multi-user authorization.** Two browsers do not share data; sessions are per tab.
 - **No shared transactional backend.** No concurrency control, no idempotency, no server audit.
 - **No actual payments, bank messages, or supplier communication.** Payment records are local.
-- **Local persistence only.** Clearing site data deletes the demo; the backup JSON is the escape hatch.
+- **Local persistence only.** Clearing site data deletes the demo (and resets PINs); the backup JSON is the escape hatch.
 - **Not accounting.** Reports are management summaries, not a ledger, tax invoice, or P&L.
 - **Single currency and time zone** (IDR, Asia/Jakarta) by design.
 
