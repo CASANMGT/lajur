@@ -109,7 +109,7 @@ export function printPoHtml(db, po) {
       <div><span>Tanggal</span><strong>${esc(po.date)}</strong></div>
       <div><span>Estimasi tiba</span><strong>${esc(po.expectedDate)}</strong></div>
       <div><span>Termin</span><strong>${esc(po.termsDays)} hari</strong></div>
-      <div><span>Total</span><strong>${fmt.money(po.total)}</strong></div>
+      <div><span>Total</span><strong>${po.currency && po.currency !== 'IDR' ? `${esc(po.currency)} ${po.totalForeign.toLocaleString('id-ID')} ≈ ${fmt.money(po.total)}` : fmt.money(po.total)}</strong></div>
     </div>
     <table>
       <thead><tr><th>Barang</th><th class="num">Dipesan</th><th class="num">Diterima</th><th class="num">Harga</th><th class="num">Jumlah</th></tr></thead>
@@ -117,8 +117,10 @@ export function printPoHtml(db, po) {
         <td>${esc(l.description)}</td>
         <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : `${fmt.pcs(l.qtyPcs)} pcs`}</td>
         <td class="num">${l.kind === 'fabric' ? fmt.m(l.receivedMm) : `${fmt.pcs(l.receivedPcs)} pcs`}</td>
-        <td class="num">${fmt.money(l.unitPrice)}</td>
-        <td class="num">${fmt.money(Math.round((l.qtyMm ? l.qtyMm / 1000 : l.qtyPcs) * l.unitPrice))}</td>
+        <td class="num">${l.unitPrice.toLocaleString('id-ID')}${po.currency !== 'IDR' ? ` ${esc(po.currency)}<br><small>${fmt.money(l.unitCostIdr ?? l.unitPrice)}</small>` : ''}</td>
+        <td class="num">${po.currency !== 'IDR'
+          ? `${esc(po.currency)} ${(((l.qtyMm ? l.qtyMm / 1000 : l.qtyPcs) * l.unitPrice)).toLocaleString('id-ID')}<br><small>${fmt.money(Math.round((l.qtyMm ? l.qtyMm / 1000 : l.qtyPcs) * (l.unitCostIdr ?? l.unitPrice)))}</small>`
+          : fmt.money(Math.round((l.qtyMm ? l.qtyMm / 1000 : l.qtyPcs) * l.unitPrice))}</td>
       </tr>`).join('')}</tbody>
     </table>
     ${po.note ? `<p class="note">${esc(po.note)}</p>` : ''}`;

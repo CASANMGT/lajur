@@ -69,8 +69,29 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'returns', 'opnameSessions', 'audit']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'returns', 'opnameSessions', 'audit']) {
     if (!Array.isArray(db[key])) db[key] = [];
+  }
+  for (const s of db.suppliers ?? []) {
+    if (!s.origin) s.origin = 'local';
+    if (!s.currency) s.currency = 'IDR';
+    if (!s.fxRate) s.fxRate = 1;
+    if (!s.country) s.country = 'ID';
+  }
+  for (const po of db.purchaseOrders ?? []) {
+    if (!po.currency) po.currency = 'IDR';
+    if (!po.fxRate) po.fxRate = 1;
+    if (po.totalForeign === undefined) po.totalForeign = po.total ?? 0;
+    for (const line of po.lines ?? []) {
+      if (line.unitCostIdr === undefined) line.unitCostIdr = line.unitPrice ?? 0;
+      if (!line.currency) line.currency = po.currency;
+    }
+  }
+  for (const bill of db.supplierInvoices ?? []) {
+    if (!bill.currency) bill.currency = 'IDR';
+    if (!bill.fxRate) bill.fxRate = 1;
+    if (bill.amountForeign === undefined) bill.amountForeign = bill.amount ?? 0;
+    if (bill.paidForeign === undefined) bill.paidForeign = bill.paid ?? 0;
   }
   return db;
 }

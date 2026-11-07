@@ -54,12 +54,13 @@ const CAPS = {
   operator: [
     'transfer.create', 'transfer.submit', 'transfer.dispatch', 'transfer.receive',
     'opname.start', 'opname.count', 'po.receive', 'stock.view', 'stock.quarantine', 'stock.add',
+    'task.create', 'task.complete', 'shipment.update',
   ],
   sales: [
     'invoice.create', 'invoice.post', 'invoice.pay', 'return.create',
     'project.create', 'project.reserve', 'project.issue', 'project.handover',
     'customer.create', 'customer.edit', 'sample.create', 'deposit.create', 'deposit.apply',
-    'stock.view',
+    'stock.view', 'task.create', 'task.complete', 'shipment.create',
   ],
   manager: ['*'],
 };

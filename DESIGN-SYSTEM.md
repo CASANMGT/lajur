@@ -1,4 +1,4 @@
-# Design System — Lajur v2.1
+# Design System — Lajur v2.2
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -173,7 +173,18 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - Changing a PIN requires the current PIN, blocks weak/duplicate PINs, and never echoes the PIN.
 - Honest copy: the PIN gate is local; production needs server auth.
 
-### 5.9 Empty, loading, error
+### 5.9 Tasks, mobile navigation, import
+
+- **Task card:** icon tile 38 px, title, status badge, type, warehouse, qty/roll, assignee, due date, priority, proof count. Overdue = copper left border; done = reduced opacity.
+- **Task board:** status filters (Aktif / Selesai / Semua), type filter, “Hanya tugas saya”, cutting-queue notice. Actions: Mulai, Terhambat, Selesai, Tugaskan, Batalkan.
+- **Completion:** note + optional photo/PDF; proof count appears on the card; metadata only in the demo.
+- **Bottom navigation (≤700 px):** Beranda, Tugas, Stok, Akun; 52 px targets, safe-area padding; account opens the account modal.
+- **Mobile dashboard:** 2×2 task tiles (Terima Barang, Picking, Potong Kain, Opname), then task list and KPIs.
+- **Icons:** one outline set, 1.7 stroke; 18 px default, 14 px inside stat labels, 20–22 px in task tiles. No icon may render at SVG default size (the v2.1 dashboard bug).
+- **Import / CNY:** currency shown next to every foreign amount with the IDR equivalent on a second line; CNY badge in copper; shipment status uses info/copper/ok tones; landed cost displayed as a money total.
+- **Proof:** file inputs are optional, labelled “Bukti fisik (opsional)”, and never claim the file was uploaded.
+
+### 5.10 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.
@@ -231,7 +242,7 @@ Rules:
 - Icons are `aria-hidden`; icon-only controls have accessible names.
 - Target sizes: 44 px minimum on touch (≤ 820 px), 40 px desktop.
 - Reduced motion respected.
-- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, stock detail, master and simulation.
+- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, stock, purchasing, samples, master and simulation.
 
 Known gaps: no full screen-reader manual pass; no forced-colours/high-contrast theme yet; print documents are not tagged PDFs.
 

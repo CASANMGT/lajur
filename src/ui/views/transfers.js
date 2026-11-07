@@ -3,6 +3,7 @@
 import {
   esc, icon, fmt, badge, toast, openModal, field, printDocument, promptText,
 } from '../dom.js';
+import { attachmentMeta } from '../../domain/attachments.js';
 import { byId, formatDateLong, parseM } from '../../domain/core.js';
 import {
   TRANSFER_STATUS, approveTransfer, cancelTransfer, createTransfer, dispatchLine,
@@ -303,13 +304,15 @@ function openReceive(ctx, lineId = null) {
       ${field('Jumlah diterima (m)', `<input class="input" name="qty" inputmode="decimal" value="${(s.inTransitMm / 1000).toLocaleString('id-ID')}" aria-describedby="receive-hint" />`, { hint: `Maksimum ${fmt.m(s.inTransitMm)}. Sisa tetap tercatat sebagai transit.` })}
       ${field('Rak tujuan (opsional)', `<input class="input" name="bin" placeholder="Contoh: B-01-03" />`)}
       ${field('Catatan', `<input class="input" name="note" placeholder="Kondisi barang, jumlah roll, dsb." />`)}
+      ${field('Bukti fisik (opsional)', `<input class="input" type="file" name="proof" accept="image/*,.pdf" />`, { hint: 'Foto surat jalan / barang diterima. Demo menyimpan metadata saja.' })}
       <div class="notice notice-info" style="margin-top:12px">${icon('box')}<div>Penerimaan tidak mengubah jumlah diminta. Outstanding pengiriman tetap dihitung dari jumlah diminta − dikirim.</div></div>
     `,
     onSubmit(form, close) {
       const qty = parseM(form.qty.value);
       if (!qty) throw new Error('Jumlah terima wajib diisi.');
+      const proof = form.proof.files?.[0] ? attachmentMeta(form.proof.files[0], { note: 'Bukti penerimaan transfer' }) : null;
       ctx.store.update((db) => {
-        receiveLine(db, {
+        const updated = receiveLine(db, {
           transferId: t.id,
           lineId: line.id,
           qtyMm: qty,
@@ -317,6 +320,12 @@ function openReceive(ctx, lineId = null) {
           bin: form.bin?.value ?? '',
           note: form.note?.value ?? '',
         });
+        if (proof) {
+          const target = db.transfers.find((x) => x.id === t.id);
+          target.attachments = target.attachments ?? [];
+          target.attachments.push({ ...proof, at: new Date().toISOString(), by: ctx.user.name });
+        }
+        return updated;
       });
       close();
       toast('Penerimaan dicatat. Stok fisik bertambah di gudang tujuan.', { tone: 'success' });

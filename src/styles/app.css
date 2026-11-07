@@ -24,6 +24,17 @@ body {
   overflow-x: clip;
 }
 
+.ico {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  display: inline-block;
+  vertical-align: -3px;
+}
+
+.stat .label .ico { width: 14px; height: 14px; vertical-align: -2px; }
+.stat .label { gap: 5px; }
+
 h1,
 h2,
 h3,
@@ -1255,6 +1266,110 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
 .mobile-only { display: none; }
 
 /* --------------------------------------------------------------------------
+   Tasks & mobile navigation
+   -------------------------------------------------------------------------- */
+
+.task-list { display: grid; gap: 8px; padding: var(--s-3); }
+
+.task-card {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--dur-1) ease, background-color var(--dur-1) ease;
+}
+.task-card:hover { border-color: var(--line-strong); background: var(--ivory-50); }
+.task-card.is-overdue { border-left: 3px solid var(--copper); }
+.task-card.is-done { opacity: 0.72; }
+
+.task-ico {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--teal-50);
+  color: var(--teal-700);
+}
+.task-ico .ico { width: 20px; height: 20px; }
+.task-main { flex: 1; min-width: 0; display: grid; gap: 3px; }
+.task-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.task-top strong { font-size: 13.5px; line-height: 1.35; }
+.task-meta { font-size: 11.5px; color: var(--muted); }
+.task-foot { display: flex; gap: 10px; flex-wrap: wrap; font-size: 10.5px; color: var(--muted); }
+.task-proof { display: inline-flex; align-items: center; gap: 3px; color: var(--teal-700); }
+.task-proof .ico { width: 12px; height: 12px; }
+
+.task-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 92px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--paper);
+  color: var(--ink);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+}
+.task-tile:hover { border-color: var(--teal); }
+.task-tile .ico { width: 22px; height: 22px; color: var(--teal-700); }
+.task-tile strong { font-size: 12.5px; }
+.task-tile span { font-size: 10.5px; color: var(--muted); }
+
+.task-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 700px) { .task-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  border-top: 1px solid var(--line);
+  padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+  backdrop-filter: blur(10px);
+}
+.bottom-nav a,
+.bottom-nav button {
+  flex: 1;
+  min-height: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: var(--r-md);
+}
+.bottom-nav .ico { width: 20px; height: 20px; }
+.bottom-nav a[aria-current="page"] { color: var(--teal-700); background: var(--teal-50); }
+.bottom-nav button:hover { color: var(--ink); }
+
+@media (max-width: 700px) {
+  .bottom-nav { display: flex; }
+  .content { padding-bottom: 104px; }
+  .task-list { padding: 8px; }
+  .task-card { padding: 10px; }
+}
+
+/* --------------------------------------------------------------------------
    Authentication
    -------------------------------------------------------------------------- */
 
@@ -1558,7 +1673,7 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   .filterbar { grid-template-columns: 1fr; gap: 8px; padding: 10px; }
   .filterbar .search { grid-column: auto; }
 
-  .toast-region { left: 12px; right: 12px; bottom: 12px; max-width: none; }
+  .toast-region { left: 12px; right: 12px; bottom: 76px; max-width: none; }
 
   .drawer { width: 100vw; border-left: 0; }
   .drawer-body { padding: 12px; }

@@ -1,9 +1,9 @@
-# PRD — Lajur v2.1
+# PRD — Lajur v2.2
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.1.0 (schema 3)
+**Version:** 2.2.0 (schema 4)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -118,6 +118,8 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Area | What works |
 |------|------------|
 | Inventory | Collections, SKUs, lots, rolls, bins; physical/reserved/available/quarantine/transit; search and filters; roll trace; split and cut; whole-roll sale; quarantine; movement ledger; direct intake (opening/correction) with unique doc, lot, cost and reason |
+| Tasks | Receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname, sample; assign/start/block/resume/complete/cancel; priority, due date, cutting queue, manager monitor, optional proof |
+| Import purchasing | Local and Chinese suppliers; CNY prices and locked FX; PO value in CNY + IDR; CNY bills and payments; landed cost (freight/insurance/duty) in roll HPP; shipment BL/container, ETD/ETA, customs, arrival, documents |
 | Access | Per-role login (manager/operator/sales) with PBKDF2 PIN, 8-hour session, 5-attempt lockout, PIN change, logout; role-specific home and action gating |
 | Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products; parts; suppliers |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
@@ -164,9 +166,12 @@ Authentication and server authorization; transactional posting with idempotency;
 | `movement` | id, at, type, ref, warehouse from/to, sku/part/roll, qty, before/after, unit cost, value, user, role, note |
 | `transfer` | id, from/to warehouse, neededBy, reason, projectId, status, lines[] |
 | `transfer line` | skuId, requestedMm, dispatchedMm, receivedMm, allocations[{rollId, dispatchedMm, receivedMm}] |
-| `purchase order` | id, supplier, dates, terms, status, lines[] |
-| `goods receipt` | id, unique ref, kind `po`/`adhoc`, PO, supplier (nullable for adhoc), date, warehouse, lines with lot/lengths/rollIds, total |
-| `supplier invoice` | id, supplier, PO, receipt, dueDate, amount, paid, payments[] |
+| `supplier` | id, name, contact, country, origin local/import, currency, fxRate, incoterm, port, terms, leadTime, notes |
+| `purchase order` | id, supplier, currency, fxRate, dates, terms, status, lines[] with foreign price + IDR cost, totalForeign, total IDR |
+| `goods receipt` | id, unique ref, kind `po`/`adhoc`, PO, supplier (nullable for adhoc), date, warehouse, currency/fx, lines with lot/lengths/rollIds, total, attachments |
+| `supplier invoice` | id, supplier, PO, receipt, currency, fxRate, amountForeign, amount IDR, paid, paidForeign, payments[] |
+| `shipment` | id, PO, supplier, mode, BL/AWB ref, container, ETD, ETA, status, history[], costs{freight,insurance,duty,other}, landedCostIdr, attachments |
+| `task` | id, type, title, warehouse, assignee, priority, status, dueDate, project, roll, qtyMm, notes, history[], attachments |
 | `customer` | id, name, company, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discount, total, credited, depositApplied, payments[] |
@@ -288,6 +293,25 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 - Supplier return is against received stock and reduces the linked payable.
 - Duplicate credits are blocked by the cumulative quantity check.
 
+### 6.8 Import suppliers, CNY and shipments
+
+1. Supplier master marks **local** or **import**, with currency (IDR/CNY), FX rate, incoterm and port.
+2. Purchase order stores the **currency and FX at PO time**; line prices stay in the supplier currency and each line gets an IDR cost.
+3. A shipment records BL/AWB, container, mode, ETD/ETA, and costs: freight, insurance, duty, other. Statuses: preparing → in transit → customs → arrived → received.
+4. Receiving uses the PO FX for goods cost and allocates **landed cost** by line value, adding it to each received roll's cost per metre (parts: per piece).
+5. The supplier bill is in CNY with an IDR equivalent; payments record the CNY amount, FX snapshot and IDR value. Payables aging remains IDR.
+6. Duplicate shipment references and duplicate receipt references are rejected.
+7. Landed cost is not a stock quantity, revenue or payable; it is part of inventory cost.
+
+### 6.9 Operational tasks
+
+- Task types: receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname, sample.
+- Any task can link a warehouse, assignee, project, roll, target metres, priority and due date.
+- Lifecycle: open → in progress → blocked/resumed → done, or cancelled.
+- **Tasks never post stock.** Cutting is completed as a task, but the actual cut is recorded through an invoice/project issue.
+- Managers see all tasks and the cutting queue; operators default to their own tasks; sales can create sample tasks.
+- Completion accepts a note and optional physical proof metadata.
+
 ---
 
 ## 7. Business rules (normative)
@@ -323,6 +347,12 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-27 | A whole-roll invoice line may only post if the roll length still equals the draft snapshot. |
 | BR-28 | Sample deposits are refund-only; they cannot be applied as invoice credit. |
 | BR-29 | PINs are stored as salted PBKDF2 hashes; sessions expire after 8 hours; five failures lock the account for 60 seconds. Demo only, not production auth. |
+| BR-30 | Operational tasks coordinate work but never change stock; stock changes only through receipts, transfers, invoices, samples and opname adjustments. |
+| BR-31 | Import POs store the supplier currency and the FX rate at PO time; receipt cost and supplier bill store the resulting IDR at that rate. |
+| BR-32 | Landed cost (freight, insurance, duty, other) is allocated proportionally by line value and added to received unit cost; it is not revenue or a separate stock quantity. |
+| BR-33 | Shipment reference (BL/AWB) is unique per PO; ETA must be after ETD; status changes are kept in a timeline. |
+| BR-34 | Physical proof is optional and stored as metadata (name, type, size, note, user, time); file bytes are not persisted in the demo. |
+| BR-35 | A manager must be able to see open/overdue tasks, cutting queue, sales and receivables from the dashboard. |
 
 ---
 
@@ -330,7 +360,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.1 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.2 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -412,8 +442,15 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-28 | Direct intake creates individual rolls/parts with unique ref, lot, cost, reason and movements | Pass |
 | AC-29 | Whole-roll draft with changed length is rejected | Pass |
 | AC-30 | Sample deposit cannot be applied to an invoice | Pass |
+| AC-31 | Task can be created, assigned, started, blocked/resumed and completed; stock unchanged | Pass |
+| AC-32 | Manager sees overdue tasks and cutting queue on the dashboard | Pass |
+| AC-33 | Import PO in CNY stores FX, converts to IDR, and records a CNY payable | Pass |
+| AC-34 | Landed cost increases received roll cost per metre | Pass |
+| AC-35 | Shipment tracks ETD/ETA/status and rejects duplicate reference | Pass |
+| AC-36 | Optional proof metadata is stored on task/receipt/shipment | Pass |
+| AC-37 | Mobile bottom navigation and 2-column task tiles work at 320/390 | Pass |
 
-Test evidence: `node --test` → 31/31 passing; browser route sweep → 18/18 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, stock, master and simulation.
+Test evidence: `node --test` → 35/35 passing; browser route sweep → 20/20 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, stock, purchasing, samples, master and simulation.
 
 ---
 
@@ -454,7 +491,7 @@ Test evidence: `node --test` → 31/31 passing; browser route sweep → 18/18 ro
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Interactive demo, domain invariants, PRD, design system, PIN login, warehouse master | 31/31 tests, a11y 100 |
+| P0 (done) | Interactive demo, domain invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments | 35/35 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

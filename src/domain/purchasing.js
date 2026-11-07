@@ -15,6 +15,7 @@ import {
 import {
   assertWarehouseOpen, createRoll, receiveParts, recordMovement, requireRoll,
 } from './inventory.js';
+import { landedAddPerUnit } from './shipments.js';
 
 export const PO_STATUS = {
   draft: { label: 'Draf', tone: 'muted' },
@@ -43,6 +44,9 @@ export function poLineOpen(line) {
 export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, lines, note = '', termsDays = 30, user }) {
   const supplier = byId(db.suppliers, supplierId);
   assert(supplier, 'SUPPLIER_NOT_FOUND', 'Pemasok tidak ditemukan.');
+  const currency = supplier.currency ?? 'IDR';
+  const fxRate = currency === 'IDR' ? 1 : Number(supplier.fxRate ?? 0);
+  assert(fxRate > 0, 'INVALID_FX', 'Kurs pemasok harus lebih dari 0.');
   assert(Array.isArray(lines) && lines.length > 0, 'EMPTY_LINES', 'PO harus memiliki minimal satu baris.');
   const built = lines.map((l) => {
     if (l.kind === 'part') {
@@ -50,27 +54,34 @@ export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, 
       assert(part, 'PART_NOT_FOUND', 'Spare part tidak ditemukan.');
       const qty = Math.round(Number(l.qtyPcs));
       assert(qty > 0, 'INVALID_QTY', 'Jumlah harus lebih dari 0.');
+      const rawPrice = l.unitPrice ?? (currency === 'IDR' ? part.buyPrice : part.buyPrice / fxRate);
+      const unitPrice = Math.round(Number(rawPrice) * 100) / 100;
       return {
         id: nextId(db, 'poLine', 'PL', 5), kind: 'part', partId: part.id, skuId: null,
         description: part.name, qtyPcs: qty, qtyMm: null, receivedPcs: 0, receivedMm: 0,
-        unitPrice: money(l.unitPrice ?? part.buyPrice), unit: 'pcs',
+        unitPrice, unitCostIdr: money(unitPrice * fxRate), unit: 'pcs', currency,
       };
     }
     const sku = byId(db.skus, l.skuId);
     assert(sku, 'SKU_NOT_FOUND', 'SKU kain tidak ditemukan.');
     const qtyMm = Math.round(Number(l.qtyMm));
     assert(qtyMm > 0, 'INVALID_LENGTH', 'Jumlah kain harus lebih dari 0 m.');
+    const rawPrice = l.unitPrice ?? (currency === 'IDR' ? sku.buyPrice : sku.buyPrice / fxRate);
+    const unitPrice = Math.round(Number(rawPrice) * 100) / 100;
     return {
       id: nextId(db, 'poLine', 'PL', 5), kind: 'fabric', skuId: sku.id, partId: null,
       description: `${sku.collectionName ?? sku.code} — ${sku.colourName || sku.colourCode} (${sku.code})`,
       qtyMm, qtyPcs: null, receivedMm: 0, receivedPcs: 0,
-      unitPrice: money(l.unitPrice ?? sku.buyPrice), unit: 'm',
+      unitPrice, unitCostIdr: money(unitPrice * fxRate), unit: 'm', currency,
     };
   });
+  const totalForeign = built.reduce((acc, l) => acc + (l.qtyMm ? l.qtyMm / MM_PER_M : l.qtyPcs) * l.unitPrice, 0);
   const po = {
     id: nextId(db, 'po', 'PO', 4),
     supplierId,
     supplierName: supplier.name,
+    currency,
+    fxRate,
     date,
     expectedDate: expectedDate || date,
     termsDays,
@@ -82,10 +93,11 @@ export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, 
     approvedBy: null,
     approvedAt: null,
     receipts: [],
-    total: built.reduce((acc, l) => acc + Math.round((l.qtyMm ? l.qtyMm / MM_PER_M : l.qtyPcs) * l.unitPrice), 0),
+    totalForeign: Math.round(totalForeign * 100) / 100,
+    total: money(totalForeign * fxRate),
   };
   db.purchaseOrders.unshift(po);
-  audit(db, user, 'buat_po', 'po', po.id, supplier.name);
+  audit(db, user, 'buat_po', 'po', po.id, `${supplier.name} · ${currency}`);
   return po;
 }
 
@@ -117,11 +129,20 @@ export function receivePO(db, { poId, ref, date = todayJakarta(), warehouseId, l
 
   const receiptLines = [];
   let total = 0;
+  let totalForeign = 0;
+  const fxRate = po.fxRate ?? 1;
+  const landed = landedAddPerUnit(db, po.id);
+  const costOf = (line) => {
+    const base = line.unitCostIdr ?? money(line.unitPrice * fxRate);
+    const add = landed?.totals.get(line.id) ?? 0;
+    return { base, add, cost: Math.round(base + add) };
+  };
 
   for (const input of lines) {
     const line = po.lines.find((l) => l.id === input.poLineId);
     assert(line, 'LINE_NOT_FOUND', 'Baris PO tidak ditemukan.');
     if (line.kind === 'fabric') {
+      const costs = costOf(line);
       const lengths = (input.lots ?? []).flatMap((lot) => (lot.lengthsMm ?? []).map((len) => ({ lot: lot.lot, len: Math.round(len) })));
       const receivedMm = lengths.reduce((acc, l) => acc + l.len, 0);
       assert(receivedMm > 0, 'EMPTY_RECEIPT', 'Tidak ada panjang roll yang dicatat.');
@@ -144,21 +165,22 @@ export function receivePO(db, { poId, ref, date = todayJakarta(), warehouseId, l
             currentMm: len,
             warehouseId,
             bin: `${byId(db.warehouses, warehouseId)?.binPrefix ?? 'A'}-${String(db.rolls.length + 1).padStart(2, '0')}`,
-            costPerM: line.unitPrice,
+            costPerM: costs.cost,
             user,
-            notes: `PO ${po.id}`,
+            notes: `PO ${po.id}${landed ? ` · landed ${landed.shipmentId}` : ''}`,
           });
           recordMovement(db, {
             type: 'receive_po', ref: ref.trim(), warehouseId, skuId: line.skuId, rollId: roll.id,
-            qtyMm: len, beforeMm: 0, afterMm: len, unitCost: line.unitPrice,
-            value: Math.round((len / MM_PER_M) * line.unitPrice), user, note: `Penerimaan ${po.id} lot ${lot}`,
+            qtyMm: len, beforeMm: 0, afterMm: len, unitCost: costs.cost,
+            value: Math.round((len / MM_PER_M) * costs.cost), user, note: `Penerimaan ${po.id} lot ${lot}`,
           });
           return roll;
         });
         rollIds.push(...rolls.map((r) => r.id));
       }
       line.receivedMm += receivedMm;
-      total += Math.round((receivedMm / MM_PER_M) * line.unitPrice);
+      total += Math.round((receivedMm / MM_PER_M) * costs.cost);
+      totalForeign += (receivedMm / MM_PER_M) * line.unitPrice;
       receiptLines.push({
         poLineId: line.id,
         kind: 'fabric',
@@ -168,19 +190,25 @@ export function receivePO(db, { poId, ref, date = todayJakarta(), warehouseId, l
         lengthsMm: lengths.map((l) => l.len),
         rollIds,
         qtyMm: receivedMm,
-        unitCost: line.unitPrice,
+        unitCost: costs.cost,
+        unitPriceForeign: line.unitPrice,
+        landedPerUnit: Math.round(costs.add),
+        currency: po.currency ?? 'IDR',
       });
     } else {
+      const costs = costOf(line);
       const qty = Math.round(Number(input.qtyPcs));
       assert(qty > 0, 'EMPTY_RECEIPT', 'Jumlah spare part harus lebih dari 0.');
       assert(qty <= poLineOpen(line), 'OVER_RECEIPT',
         `${line.description}: menerima ${qty} dari sisa ${poLineOpen(line)} pcs.`);
-      receiveParts(db, { partId: line.partId, warehouseId, qty, user, ref: ref.trim(), unitCost: line.unitPrice });
+      receiveParts(db, { partId: line.partId, warehouseId, qty, user, ref: ref.trim(), unitCost: costs.cost });
       line.receivedPcs += qty;
-      total += qty * line.unitPrice;
+      total += qty * costs.cost;
+      totalForeign += qty * line.unitPrice;
       receiptLines.push({
         poLineId: line.id, kind: 'part', partId: line.partId, description: line.description,
-        qtyPcs: qty, unitCost: line.unitPrice,
+        qtyPcs: qty, unitCost: costs.cost, unitPriceForeign: line.unitPrice,
+        landedPerUnit: Math.round(costs.add), currency: po.currency ?? 'IDR',
       });
     }
   }
@@ -190,10 +218,15 @@ export function receivePO(db, { poId, ref, date = todayJakarta(), warehouseId, l
   const receipt = {
     id: nextId(db, 'goodsReceipt', 'GR', 4),
     ref: ref.trim(),
+    kind: 'po',
     poId: po.id,
     supplierId: po.supplierId,
     date,
     warehouseId,
+    currency: po.currency ?? 'IDR',
+    fxRate,
+    amountForeign: Math.round(totalForeign * 100) / 100,
+    landedCostIdr: landed?.landedCostIdr ?? 0,
     lines: receiptLines,
     total,
     note,
@@ -216,6 +249,9 @@ export function receivePO(db, { poId, ref, date = todayJakarta(), warehouseId, l
       date,
       dueDate: addDaysLocal(date, po.termsDays ?? 30),
       amount: total,
+      currency: po.currency ?? 'IDR',
+      fxRate,
+      amountForeign: Math.round(totalForeign * 100) / 100,
       note: `Gabungan penerimaan ${receipt.id} (demo)`,
       user,
     });
@@ -236,16 +272,23 @@ function addDaysLocal(dateStr, days) {
 /* Supplier invoices & payables                                               */
 /* -------------------------------------------------------------------------- */
 
-export function createSupplierInvoice(db, { supplierId, poId = null, receiptId = null, date = todayJakarta(), dueDate, amount, note = '', user }) {
+export function createSupplierInvoice(db, {
+  supplierId, poId = null, receiptId = null, date = todayJakarta(), dueDate, amount,
+  currency = 'IDR', fxRate = 1, amountForeign = null, note = '', user,
+}) {
+  const rate = currency === 'IDR' ? 1 : Number(fxRate || 1);
+  const idr = money(amount);
   const bill = {
     id: nextId(db, 'supplierInvoice', 'SINV', 4),
     supplierId,
     poId,
     receiptId,
-    date,
-    dueDate: dueDate ?? addDaysLocal(date, 30),
-    amount: money(amount),
+    currency,
+    fxRate: rate,
+    amount: idr,
+    amountForeign: amountForeign ?? Math.round((idr / rate) * 100) / 100,
     paid: 0,
+    paidForeign: 0,
     payments: [],
     note,
     status: 'open',
@@ -255,18 +298,24 @@ export function createSupplierInvoice(db, { supplierId, poId = null, receiptId =
   return bill;
 }
 
-export function paySupplierInvoice(db, { id, amount, date = todayJakarta(), method = 'transfer', user, note = '' }) {
+export function paySupplierInvoice(db, { id, amount, amountForeign = null, date = todayJakarta(), method = 'transfer', user, note = '' }) {
   const bill = db.supplierInvoices.find((b) => b.id === id);
   assert(bill, 'BILL_NOT_FOUND', 'Tagihan pemasok tidak ditemukan.');
   const value = money(amount);
   const outstanding = bill.amount - bill.paid;
   assert(value > 0, 'INVALID_AMOUNT', 'Nominal pembayaran harus lebih dari 0.');
   assert(value <= outstanding, 'OVERPAYMENT', `Pembayaran melebihi sisa tagihan (${outstanding}).`);
+  const rate = bill.fxRate || 1;
+  const foreign = amountForeign ?? Math.round((value / rate) * 100) / 100;
   bill.paid += value;
-  const payment = { id: nextId(db, 'supplierPayment', 'SPAY', 4), date, amount: value, method, note, at: isoNow(), by: user?.name ?? 'Sistem' };
+  bill.paidForeign = Math.round(((bill.paidForeign ?? 0) + foreign) * 100) / 100;
+  const payment = {
+    id: nextId(db, 'supplierPayment', 'SPAY', 4), date, amount: value, amountForeign: foreign,
+    currency: bill.currency ?? 'IDR', fxRate: rate, method, note, at: isoNow(), by: user?.name ?? 'Sistem',
+  };
   bill.payments.push(payment);
   bill.status = bill.paid >= bill.amount ? 'paid' : 'partial';
-  audit(db, user, 'bayar_pemasok', 'supplierInvoice', bill.id, `${value}`);
+  audit(db, user, 'bayar_pemasok', 'supplierInvoice', bill.id, `${value}${bill.currency !== 'IDR' ? ` · ${foreign} ${bill.currency}` : ''}`);
   return payment;
 }
 

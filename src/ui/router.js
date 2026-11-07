@@ -18,15 +18,19 @@ import * as opname from './views/opname.js';
 import * as reports from './views/reports.js';
 import * as master from './views/master.js';
 import * as simulation from './views/simulation.js';
+import * as tasks from './views/tasks.js';
+import * as samples from './views/samples.js';
 
 const VIEWS = {
   ringkasan: dashboard,
+  tugas: tasks,
   stok: inventory,
   transfer: transfers,
   pembelian: purchasing,
   penjualan: sales,
   proyek: projects,
   pelanggan: customers,
+  sampel: samples,
   opname,
   laporan: reports,
   master,

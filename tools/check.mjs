@@ -4,6 +4,7 @@ const modules = [
   '../src/domain/sales.js', '../src/domain/purchasing.js', '../src/domain/projects.js',
   '../src/domain/crm.js', '../src/domain/opname.js', '../src/domain/reports.js',
   '../src/domain/seed.js', '../src/domain/master.js', '../src/version.js',
+  '../src/domain/tasks.js', '../src/domain/shipments.js', '../src/domain/attachments.js',
   '../src/data/store.js', '../src/data/backup.js', '../src/data/auth.js',
   '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js',
   '../src/ui/views/common.js', '../src/ui/views/print.js', '../src/ui/views/dashboard.js',
@@ -11,6 +12,7 @@ const modules = [
   '../src/ui/views/sales.js', '../src/ui/views/projects.js', '../src/ui/views/customers.js',
   '../src/ui/views/opname.js', '../src/ui/views/reports.js', '../src/ui/views/master.js',
   '../src/ui/views/simulation.js', '../src/ui/views/login.js',
+  '../src/ui/views/tasks.js', '../src/ui/views/samples.js',
 ];
 
 let failed = 0;

@@ -23,6 +23,7 @@ export const fmt = {
 const PATHS = {
   home: '<path d="M3 11.2 12 4l9 7.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   box: '<path d="m3 7.5 9-4 9 4v9l-9 4-9-4z"/><path d="m3 7.5 9 4 9-4"/><path d="M12 11.5V20"/>',
+  package: '<path d="m3 7.5 9-4 9 4v9l-9 4-9-4z"/><path d="m3 7.5 9 4 9-4"/><path d="M12 11.5V20"/>',
   transfer: '<path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/>',
   cart: '<path d="M3 4h2l2.2 10.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 7H6"/><circle cx="9" cy="19" r="1.4"/><circle cx="17" cy="19" r="1.4"/>',
   clipboard: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M9 5V3h6v2"/><path d="M8 11h8M8 15h5"/>',
@@ -55,6 +56,18 @@ const PATHS = {
   phone: '<path d="M5 3h3.5l1.5 4L8 9a12 12 0 0 0 7 7l2-2 4 1.5V19a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/>',
   chevron: '<path d="m9 5 7 7-7 7"/>',
   spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18"/>',
+  checkCircle: '<circle cx="12" cy="12" r="9"/><path d="m8 12 2.8 2.8L16.5 9"/>',
+  needle: '<path d="M4 20 20 4"/><path d="M14 4h6v6"/><path d="m11 13 3 3"/>',
+  ship: '<path d="M3 15h18l-2 5H5z"/><path d="M6 15V9h9l3 6"/><path d="M9 9V6h4v3"/><path d="M12 3v3"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
+  yuan: '<path d="m6 4 6 8 6-8"/><path d="M12 12v8M8 14h8M8 18h8"/>',
+  camera: '<path d="M4 8h4l2-2h4l2 2h4v11H4z"/><circle cx="12" cy="13" r="3.2"/>',
+  calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/>',
+  listCheck: '<path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.5 1.5L7 5M3 12l1.5 1.5L7 11M3 18l1.5 1.5L7 17"/>',
+  userCheck: '<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="m16 12 2 2 4-4"/>',
+  spool: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 4a8 8 0 0 0 8 8"/>',
+  boxOpen: '<path d="m3 9 9-5 9 5-9 5z"/><path d="M3 9v9l9 5 9-5V9"/><path d="M12 14v9"/>',
+  route: '<circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h6a4 4 0 0 0 0-8H9a4 4 0 0 1 0-8h7"/>',
 };
 
 export function icon(name, className = 'ico') {

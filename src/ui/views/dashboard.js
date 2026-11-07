@@ -7,6 +7,7 @@ import {
 } from '../../domain/reports.js';
 import { depositBalance } from '../../domain/crm.js';
 import { activeSessions } from '../../domain/opname.js';
+import { cuttingQueue, isOverdue, taskList, taskStats, TASK_TYPE } from '../../domain/tasks.js';
 import { pageHead, statCard, barChart, movementRow, warehouseOf } from './common.js';
 
 const ICON_BY_NAME = {
@@ -112,6 +113,13 @@ export function render(ctx) {
   const dateLabel = formatDateLong(todayJakarta());
   const salesSeries = monthlySales(db, 6);
   const recent = db.movements.filter((m) => !wh || m.warehouseId === wh.id || m.warehouseToId === wh.id).slice(0, 6);
+  const ops = taskStats(db, { warehouseId: wh?.id ?? null });
+  const myTasks = taskList(db, {
+    warehouseId: wh?.id ?? null,
+    assigneeId: role === 'operator' ? ctx.user.id : null,
+    status: 'open',
+  }).slice(0, 4);
+  const cutting = cuttingQueue(db).filter((c) => !wh || c.task.warehouseId === wh.id).slice(0, 3);
 
   if (role === 'operator') {
     return `
@@ -122,6 +130,14 @@ export function render(ctx) {
         ${statCard({ label: 'Terpesan', value: fmt.m(metrics.stock.reservedMm), meta: 'Proyek & alokasi aktif' })}
         ${statCard({ label: 'Transit masuk', value: fmt.m(metrics.stock.incomingMm), meta: 'Belum dihitung sebagai stok gudang', tone: 'warn' })}
       </div>
+
+      <div class="task-tiles" style="margin-top:12px" aria-label="Tugas cepat">
+        <a class="task-tile" href="#/pembelian">${icon('truck')}<strong>Terima Barang</strong><span>${db.purchaseOrders.filter((p) => ['approved', 'partial'].includes(p.status)).length} PO siap</span></a>
+        <a class="task-tile" href="#/transfer">${icon('package')}<strong>Picking</strong><span>${db.transfers.filter((t) => ['approved', 'dispatched'].includes(t.status)).length} permintaan</span></a>
+        <a class="task-tile" href="#/tugas">${icon('cut')}<strong>Potong Kain</strong><span>${ops.cutting} antrean</span></a>
+        <a class="task-tile" href="#/opname?new=1">${icon('clipboard')}<strong>Opname</strong><span>${activeSessions(db).length ? 'Sesi aktif' : 'Mulai hitung'}</span></a>
+      </div>
+
       <div class="grid grid-main" style="margin-top:16px">
         <section class="card">
           <div class="card-head"><div><h2>Antrean kerja</h2><p>Aksi yang paling dekat dengan lantai gudang.</p></div><span class="badge badge-teal no-dot">${esc(wh?.code ?? 'ALL')}</span></div>
@@ -136,6 +152,16 @@ export function render(ctx) {
           <p class="xs muted" style="margin-top:4px">Peran demo membatasi tombol; otorisasi produksi harus dicek di server.</p>
         </section>
       </div>
+      <div class="section-title"><h2>Tugas saya</h2><a href="#/tugas">Semua tugas</a></div>
+      <section class="card">
+        <div class="task-list">
+          ${myTasks.map((t) => `<a class="task-card" href="#/tugas">
+            <span class="task-ico">${icon(TASK_TYPE[t.type]?.icon ?? 'listCheck')}</span>
+            <span class="task-main"><span class="task-top"><strong>${esc(t.title)}</strong>${badge(t.status === 'in_progress' ? 'Dikerjakan' : 'Baru', t.status === 'in_progress' ? 'info' : 'muted')}</span>
+            <span class="task-meta">${esc(TASK_TYPE[t.type]?.label ?? t.type)} · ${esc(t.dueDate)}${t.qtyMm ? ` · ${fmt.m(t.qtyMm)}` : ''}</span></span>
+          </a>`).join('') || `<div class="empty" style="padding:20px">${icon('checkCircle')}<strong>Tidak ada tugas aktif</strong><p>Antrean bersih.</p></div>`}
+        </div>
+      </section>
       <div class="section-title"><h2>Aktivitas terakhir</h2><a href="#/stok">Lihat stok</a></div>
       <section class="card card-pad">
         <ul class="timeline">${recent.map((m) => movementRow(db, m)).join('') || '<li class="muted">Belum ada mutasi.</li>'}</ul>
@@ -226,6 +252,21 @@ export function render(ctx) {
                 <a class="small strong" href="#/proyek/${p.project.id}">Buka →</a>
               </li>`).join('')}</ul>`
           : `<div class="empty" style="padding:24px">${icon('check')}<strong>Semua proyek siap</strong><p>Tidak ada kekurangan material.</p></div>`}
+      </section>
+      <section class="card">
+        <div class="card-head"><div><h2>Operasi gudang</h2><p>Antrean potong, tugas terlambat, dan beban kerja.</p></div><a class="small strong" href="#/tugas">Semua tugas</a></div>
+        <div class="card-pad">
+          <div class="grid grid-3" style="gap:8px">
+            <div><div class="xs muted">Aktif</div><div class="strong num">${ops.active}</div></div>
+            <div><div class="xs muted">Terlambat</div><div class="strong num">${ops.overdue}</div></div>
+            <div><div class="xs muted">Potong kain</div><div class="strong num">${ops.cutting}</div></div>
+          </div>
+          <hr class="divider" />
+          ${cutting.length ? `<div class="stack-sm">${cutting.map((c) => `<div class="row-between">
+            <div><strong class="small">${esc(c.task.title)}</strong><div class="xs muted">${esc(c.roll?.id ?? '')} · ${fmt.m(c.task.qtyMm ?? 0)} · ${esc(c.assignee?.name ?? 'Belum ditugaskan')}</div></div>
+            ${isOverdue(c.task) ? badge('Lewat', 'danger') : badge(c.task.dueDate, 'muted')}
+          </div>`).join('')}</div>` : `<p class="small muted">Tidak ada antrean potong.</p>`}
+        </div>
       </section>
       <section class="card">
         <div class="card-head"><div><h2>Aktivitas gudang terakhir</h2><p>Dari buku mutasi yang sama dengan stok.</p></div></div>

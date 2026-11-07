@@ -16,12 +16,14 @@ import * as reports from '../src/ui/views/reports.js';
 import * as master from '../src/ui/views/master.js';
 import * as simulation from '../src/ui/views/simulation.js';
 import * as login from '../src/ui/views/login.js';
+import * as tasks from '../src/ui/views/tasks.js';
+import * as samples from '../src/ui/views/samples.js';
 
 const db = buildSeed({ dataset: 'main' });
-const views = { ringkasan: dashboard, stok: inventory, transfer: transfers, pembelian: purchasing, penjualan: sales, proyek: projects, pelanggan: customers, opname, laporan: reports, master, simulasi: simulation };
-const samples = {
-  ringkasan: null, stok: 'RL-0001', transfer: 'TRF-0001', pembelian: 'PO-0001', penjualan: 'INV-0003',
-  proyek: 'PRJ-001', pelanggan: 'CUS-0002', opname: 'OPN-001', laporan: null, master: null, simulasi: null,
+const views = { ringkasan: dashboard, tugas: tasks, stok: inventory, transfer: transfers, pembelian: purchasing, penjualan: sales, proyek: projects, pelanggan: customers, sampel: samples, opname, laporan: reports, master, simulasi: simulation };
+const samplesById = {
+  ringkasan: null, tugas: null, stok: 'RL-0001', transfer: 'TRF-0001', pembelian: 'PO-0001', penjualan: 'INV-0003',
+  proyek: 'PRJ-001', pelanggan: 'CUS-0002', sampel: null, opname: 'OPN-001', laporan: null, master: null, simulasi: null,
 };
 
 let failed = 0;
@@ -37,8 +39,9 @@ function ctxFor(route, role) {
   return base;
 }
 
-for (const [name, id] of Object.entries(samples)) {
-  for (const role of name === 'ringkasan' ? ['manager', 'operator', 'sales'] : ['manager']) {
+for (const [name, id] of Object.entries(samplesById)) {
+  const roles = ['ringkasan', 'tugas', 'sampel'].includes(name) ? ['manager', 'operator', 'sales'] : ['manager'];
+  for (const role of roles) {
     const route = { name, id, query: {} };
     try {
       const html = views[name].render(ctxFor(route, role));

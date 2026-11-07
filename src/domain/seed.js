@@ -17,6 +17,8 @@ import { createProject, issueProject, handoverProject, reserveProject } from './
 import { approveTransfer, createTransfer, dispatchLine, receiveLine, submitTransfer } from './transfers.js';
 import { approvePO, createPO, createSupplierInvoice, paySupplierInvoice, receivePO } from './purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname } from './opname.js';
+import { createShipment, updateShipmentStatus } from './shipments.js';
+import { completeTask, createTask, startTask } from './tasks.js';
 
 export const USERS = {
   operator: { id: 'u-op', name: 'Rani Pratama', role: 'operator' },
@@ -68,7 +70,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 3,
+      version: 4,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -97,6 +99,8 @@ function skeleton(dataset) {
     purchaseOrders: [],
     goodsReceipts: [],
     supplierInvoices: [],
+    shipments: [],
+    tasks: [],
     returns: [],
     opnameSessions: [],
     audit: [],
@@ -147,9 +151,10 @@ export function buildSeed({ dataset = 'main' } = {}) {
 
   /* ---------------------------------------------------------------- master */
   db.suppliers.push(
-    { id: 'SUP-001', code: 'SINAR', name: 'PT Sinar Tekstil', contact: 'Budiman', phone: '021-777-1001', email: 'sales@sinartekstil.co.id', address: 'Jl. Mangga Dua Raya 40, Jakarta', termsDays: 30, leadTimeDays: 14, notes: 'Pemasok blackout utama.' },
-    { id: 'SUP-002', code: 'MEGA', name: 'CV Mega Aksen', contact: 'Lestari', phone: '021-777-2002', email: 'order@megaaksen.co.id', address: 'Jl. Gajah Mada 88, Jakarta', termsDays: 30, leadTimeDays: 7, notes: 'Rel, aksesori, motor.' },
-    { id: 'SUP-003', code: 'KILAU', name: 'PT Kilau Sheer', contact: 'Yosef', phone: '022-777-3003', email: 'yosef@kilausheer.co.id', address: 'Jl. Cigondewah 12, Bandung', termsDays: 21, leadTimeDays: 10, notes: 'Sheer dan dimout.' },
+    { id: 'SUP-001', code: 'SINAR', name: 'PT Sinar Tekstil', contact: 'Budiman', phone: '021-777-1001', email: 'sales@sinartekstil.co.id', address: 'Jl. Mangga Dua Raya 40, Jakarta', country: 'ID', origin: 'local', currency: 'IDR', fxRate: 1, incoterm: '', port: '', termsDays: 30, leadTimeDays: 14, notes: 'Pemasok blackout utama.' },
+    { id: 'SUP-002', code: 'MEGA', name: 'CV Mega Aksen', contact: 'Lestari', phone: '021-777-2002', email: 'order@megaaksen.co.id', address: 'Jl. Gajah Mada 88, Jakarta', country: 'ID', origin: 'local', currency: 'IDR', fxRate: 1, incoterm: '', port: '', termsDays: 30, leadTimeDays: 7, notes: 'Rel, aksesori, motor.' },
+    { id: 'SUP-003', code: 'KILAU', name: 'PT Kilau Sheer', contact: 'Yosef', phone: '022-777-3003', email: 'yosef@kilausheer.co.id', address: 'Jl. Cigondewah 12, Bandung', country: 'ID', origin: 'local', currency: 'IDR', fxRate: 1, incoterm: '', port: '', termsDays: 21, leadTimeDays: 10, notes: 'Sheer dan dimout.' },
+    { id: 'SUP-004', code: 'NINGBO', name: 'Ningbo Lajur Textiles Co.', contact: 'Chen Wei', phone: '+86 574 8888 1000', email: 'export@ningbolajur.cn', address: 'No. 88 Textile Road, Ningbo, Zhejiang', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2250, incoterm: 'FOB Ningbo', port: 'Ningbo → Tanjung Priok', termsDays: 45, leadTimeDays: 40, notes: 'Pemasok impor. Pembayaran CNY via TT; kurs dikunci saat PO.' },
   );
 
   db.supplierPrices.push(
@@ -159,6 +164,8 @@ export function buildSeed({ dataset = 'main' } = {}) {
     { id: 'SP-004', supplierId: 'SUP-003', skuId: 'sku-aria-02', price: 56000, unit: 'm', moqMm: 45000, validFrom: '2026-09-01', validTo: '2027-01-31' },
     { id: 'SP-005', supplierId: 'SUP-002', partId: 'part-rel-3', price: 52000, unit: 'pcs', moqPcs: 20, validFrom: '2026-06-01', validTo: '2026-12-31' },
     { id: 'SP-006', supplierId: 'SUP-002', partId: 'part-motor', price: 1250000, unit: 'pcs', moqPcs: 5, validFrom: '2026-01-01', validTo: '2026-12-31' },
+    { id: 'SP-007', supplierId: 'SUP-004', skuId: 'sku-luna-01', price: 27, unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-03-31' },
+    { id: 'SP-008', supplierId: 'SUP-004', skuId: 'sku-luna-02', price: 27.5, unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-03-31' },
   );
 
   /* ------------------------------------------------------------- customers */
@@ -219,7 +226,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   });
   reserveProject(db, { id: p1.id, user: sales });
 
-  createProject(db, {
+  const p2 = createProject(db, {
     customerId: c2.id,
     name: 'Rumah Sari Wijaya — ruang tamu',
     location: 'Jakarta, Kemang',
@@ -426,6 +433,99 @@ export function buildSeed({ dataset = 'main' } = {}) {
 
   const bill = db.supplierInvoices[0];
   if (bill) paySupplierInvoice(db, { id: bill.id, amount: 1000000, method: 'transfer', reference: 'BCA-2810', user: mgr });
+
+  /* -------------------------------------------------------- import supplier */
+  const poCn = createPO(db, {
+    supplierId: 'SUP-004',
+    date: '2026-10-10',
+    expectedDate: '2026-11-25',
+    termsDays: 45,
+    lines: [
+      { kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 300000, unitPrice: 27 },
+      { kind: 'fabric', skuId: 'sku-luna-02', qtyMm: 120000, unitPrice: 27.5 },
+    ],
+    note: 'Impor Luna dari Ningbo — FOB, kurs 2.250.',
+    user: op,
+  });
+  approvePO(db, { id: poCn.id, user: mgr });
+  const ship1 = createShipment(db, {
+    poId: poCn.id,
+    mode: 'sea',
+    reference: 'MSCU-7788123',
+    container: 'MSCU 1234567',
+    etd: '2026-10-18',
+    eta: '2026-11-25',
+    costs: { freightIdr: 4500000, insuranceIdr: 600000, dutyIdr: 1800000, otherIdr: 300000 },
+    notes: 'FOB Ningbo, 1×40HC. Dokumen BL/CI/PL menyusul.',
+    user: op,
+  });
+  updateShipmentStatus(db, { id: ship1.id, status: 'in_transit', date: '2026-10-18', note: 'Berangkat dari Ningbo.', location: 'Laut China Selatan', user: op });
+
+  const poCn2 = createPO(db, {
+    supplierId: 'SUP-004',
+    date: '2026-09-01',
+    expectedDate: '2026-10-15',
+    termsDays: 45,
+    lines: [{ kind: 'fabric', skuId: 'sku-luna-02', qtyMm: 100000, unitPrice: 27.5 }],
+    note: 'Impor contoh yang sudah diterima — untuk landed COGS.',
+    user: op,
+  });
+  approvePO(db, { id: poCn2.id, user: mgr });
+  const ship2 = createShipment(db, {
+    poId: poCn2.id,
+    mode: 'sea',
+    reference: 'COSU-5511900',
+    container: 'COSU 9988776',
+    etd: '2026-09-12',
+    eta: '2026-10-18',
+    costs: { freightIdr: 800000, insuranceIdr: 100000, dutyIdr: 100000, otherIdr: 0 },
+    notes: 'Landed cost dialokasikan ke harga pokok roll.',
+    user: op,
+  });
+  updateShipmentStatus(db, { id: ship2.id, status: 'received', date: '2026-10-18', note: 'Diterima di Gudang Jakarta.', location: 'Tanjung Priok', user: op });
+  const { receipt: cnReceipt } = receivePO(db, {
+    poId: poCn2.id,
+    ref: 'GR-IMP-001',
+    date: '2026-10-20',
+    warehouseId: 'wh-jkt',
+    lines: [{ poLineId: poCn2.lines[0].id, lots: [{ lot: 'LOT-CN-01', lengthsMm: [50000, 50000] }] }],
+    user: op,
+    note: 'Impor diterima; landed cost masuk HPP.',
+  });
+  const cnBill = db.supplierInvoices.find((b) => b.poId === poCn2.id);
+  if (cnBill) paySupplierInvoice(db, { id: cnBill.id, amount: 2250000, amountForeign: 1000, method: 'transfer', reference: 'TT-CNY-1000', user: mgr });
+
+  /* --------------------------------------------------------------- tasks */
+  const taskCut = createTask(db, {
+    type: 'cutting', title: 'Potong 10 m Luna-01 untuk ruang tamu', warehouseId: 'wh-jkt',
+    assigneeId: 'u-op', priority: 'high', dueDate: '2026-11-08', projectId: p2.id, rollId: roll(1), qtyMm: 10000,
+    notes: 'Cek lot dan arah motif sebelum potong. Sisa roll 50 m.', user: sales,
+  });
+  startTask(db, { id: taskCut.id, user: op });
+
+  createTask(db, {
+    type: 'receive', title: 'Terima PO-0001 — Luna-01 60 m', warehouseId: 'wh-jkt',
+    assigneeId: 'u-op', priority: 'normal', dueDate: '2026-11-09', notes: 'Periksa dua roll dan lot.', user: mgr,
+  });
+  createTask(db, {
+    type: 'picking', title: 'Siapkan kiriman TRF-0001 ke Bandung', warehouseId: 'wh-jkt',
+    assigneeId: 'u-op', priority: 'urgent', dueDate: '2026-11-08', notes: 'Sisa 10 m belum dikirim.', user: mgr,
+  });
+  const shipTask = createTask(db, {
+    type: 'shipment', title: 'Pantau impor MSCU-7788123', warehouseId: 'wh-jkt',
+    assigneeId: 'u-op', priority: 'high', dueDate: '2026-11-25', notes: 'ETA 25 Nov; siapkan bea cukai.', user: mgr,
+  });
+  startTask(db, { id: shipTask.id, user: op });
+  createTask(db, {
+    type: 'sample', title: 'Kirim sample Nova ke Klinik Sehat', warehouseId: 'wh-jkt',
+    assigneeId: 'u-sales', priority: 'normal', dueDate: '2026-11-10', notes: '0,5 m dari RL-0014.', user: sales,
+  });
+  const qc = createTask(db, {
+    type: 'qc', title: 'QC hasil potong Aria-01', warehouseId: 'wh-jkt',
+    assigneeId: 'u-op', priority: 'normal', dueDate: '2026-11-05', notes: 'Periksa tepi dan panjang.', user: mgr,
+  });
+  startTask(db, { id: qc.id, user: op });
+  completeTask(db, { id: qc.id, note: 'Lolos QC; tepi rapi.', user: op });
 
   /* ------------------------------------------------------ customer return */
   const invRumahLine = invRumah.lines.find((l) => l.kind === 'fabric');

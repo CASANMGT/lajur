@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 3;
+export const BACKUP_VERSION = 4;
 
 export function exportBackup(db) {
   return {
@@ -26,7 +26,7 @@ const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
   'movements', 'customers', 'suppliers', 'supplierPrices', 'projects', 'invoices', 'payments',
   'samples', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
-  'returns', 'opnameSessions', 'audit', 'sequences',
+  'shipments', 'tasks', 'returns', 'opnameSessions', 'audit', 'sequences',
 ];
 
 export function validateBackup(payload) {
@@ -40,7 +40,10 @@ export function validateBackup(payload) {
   if (!db) return { valid: false, errors };
 
   for (const key of COLLECTIONS) {
-    if (!Array.isArray(db[key]) && key !== 'sequences') errors.push(`Koleksi ${key} hilang atau bukan array.`);
+    if (!Array.isArray(db[key]) && key !== 'sequences') {
+      if (key === 'tasks' || key === 'shipments') continue;
+      errors.push(`Koleksi ${key} hilang atau bukan array.`);
+    }
   }
   if (errors.length) return { valid: false, errors };
 
@@ -131,6 +134,24 @@ export function validateBackup(payload) {
   for (const r of db.returns) {
     if (r.invoiceId) need(invoiceIds, r.invoiceId, 'Faktur', `Retur ${r.id}`);
     if (r.receiptId) need(receiptIds, r.receiptId, 'Penerimaan', `Retur ${r.id}`);
+  }
+  for (const task of db.tasks ?? []) {
+    need(warehouses, task.warehouseId, 'Gudang', `Tugas ${task.id}`);
+    if (task.assigneeId) need(new Set(db.users.map((u) => u.id)), task.assigneeId, 'Pengguna', `Tugas ${task.id}`);
+    if (task.projectId) need(projectIds, task.projectId, 'Proyek', `Tugas ${task.id}`);
+    if (task.rollId) need(rollIds, task.rollId, 'Roll', `Tugas ${task.id}`);
+  }
+  for (const shipment of db.shipments ?? []) {
+    const po = db.purchaseOrders.find((p) => p.id === shipment.poId);
+    if (!po) errors.push(`Pengiriman ${shipment.id}: PO ${shipment.poId} hilang.`);
+    need(suppliers, shipment.supplierId, 'Pemasok', `Pengiriman ${shipment.id}`);
+    if (shipment.costs && shipment.costs.totalIdr !== shipment.landedCostIdr) {
+      errors.push(`Pengiriman ${shipment.id}: total landed cost tidak konsisten.`);
+    }
+  }
+  for (const s of db.suppliers) {
+    if (s.currency && !['IDR', 'CNY', 'USD'].includes(s.currency)) errors.push(`Pemasok ${s.id}: mata uang tidak dikenal.`);
+    if (s.currency !== 'IDR' && !(Number(s.fxRate) > 0)) errors.push(`Pemasok ${s.id}: kurs harus lebih dari 0.`);
   }
   for (const a of db.audit) {
     if (a.userId && a.userId !== 'system' && !db.users.some((u) => u.id === a.userId)) {

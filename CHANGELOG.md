@@ -2,6 +2,66 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.2.0] — 2026-11-08
+
+**Release name: Operasi & Impor.** Adds task operations, a dedicated sample workspace, Chinese import suppliers with CNY/FX, shipment tracking, landed COGS, physical-proof metadata, mobile bottom navigation and an icon-system fix.
+
+### Added
+
+- **Tugas Operasi** (`#/tugas`):
+  - Types: receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname, sample.
+  - Create, assign/reassign, start, block, resume, complete, cancel; priority, due date, project/roll link, target metres, notes.
+  - Manager board with active/overdue/cutting counts; operator “my tasks” default; cutting queue warning.
+  - Completion note + optional physical proof; history timeline; stock is never posted by a task.
+- **Sample & Deposit workspace** (`#/sampel`): samples by customer/source roll, conversion linking, deposit balances and ledger, refunds.
+- **Import suppliers**:
+  - Supplier `origin` (local/import), country, currency (IDR/CNY), FX rate, incoterm and port.
+  - Seed Chinese supplier **Ningbo Lajur Textiles** with CNY price list.
+  - PO in CNY, line price in CNY, IDR cost at locked FX, PO total in both currencies.
+  - CNY supplier bills and TT payments with FX snapshot and `paidForeign`.
+  - Shipment tracking: unique BL/AWB, mode, container, ETD/ETA, status timeline (preparing → transit → customs → arrived → received), freight/insurance/duty/other.
+  - **Landed COGS:** shipment costs allocated by line value and added to received roll cost per metre/piece.
+- **Optional physical proof** on supplier receipts, internal transfer receipts, tasks and shipments; metadata only (name/type/size/note/user/time).
+- **Mobile workspace**: bottom navigation (Beranda/Tugas/Stok/Akun), 2-column task tiles, task-first operator home, 44 px targets and safe-area padding.
+- **Icon system**: all icons inherit an 18 px size; stat icons 14 px. Fixes oversized SVG icons and “missing” icons in dashboard stat labels.
+- **Manager monitor**: dashboard shows sales, receivables, active/overdue tasks, cutting queue and shipment alerts.
+- `GAP-ANALYSIS.md`: requirement-by-requirement status against the PRD and design-system v2.
+
+### Changed
+
+- Purchasing now has tabs: PO, Penerimaan, Pengiriman impor, Tagihan, Pemasok.
+- Supplier prices and PO lines display foreign currency with IDR equivalent.
+- Payable payments for import bills accept CNY and convert at the bill FX.
+- Mobile content bottom padding accounts for the fixed navigation.
+- Schema upgraded to 4; backups to v4 (v2/v3 accepted and migrated).
+
+### Fixed
+
+- Dashboard stat icons rendered at SVG default dimensions because no global `.ico` size existed.
+- Shipment/landed allocation initially divided by millimetres instead of metres, understating HPP; corrected.
+- Foreign unit prices were rounded to whole CNY; now stored with 2 decimals before IDR conversion.
+- Task completion “today” compared UTC date to Jakarta date; now uses the business date.
+- Sales users no longer see a refund button for indent deposits they cannot refund.
+- Task “mine” filter resets correctly when switching roles.
+
+### Verification
+
+- `node --test`: **35 passed** (29 invariants + 4 operations + 2 auth).
+- Module imports: 37/37; render check: 20/20 (including 3 roles and login).
+- Browser route sweep: 20/20, zero console errors.
+- Import test: 26.5 CNY × 2,250 FX + Rp 600,000 landed → roll HPP **Rp 71,625/m**, bill **CNY 1,325**.
+- Task lifecycle and proof metadata; shipment status/progress; mobile bottom nav at 320/390.
+- Lighthouse accessibility 100 on dashboard, tasks, purchasing, samples, master, simulation and login.
+
+### Known limitations
+
+- Tasks coordinate production; there is no full WIP production order (cutting → sewing → QC per piece), payroll or machine capacity.
+- File proof stores metadata only.
+- Landed cost is allocated at receipt time; later shipment cost changes are not automatically revalued.
+- Server auth, shared sessions, concurrency and immutable posting remain production work.
+
+---
+
 ## [2.1.0] — 2026-11-08
 
 **Release name: Akses & Gudang.** Adds per-role PIN login, editable warehouses, direct stock intake, schema migration and CI.

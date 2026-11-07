@@ -13,6 +13,7 @@ export const NAV = [
     group: 'Operasi gudang',
     items: [
       { id: 'ringkasan', label: 'Ringkasan', icon: 'home' },
+      { id: 'tugas', label: 'Tugas Operasi', icon: 'listCheck' },
       { id: 'stok', label: 'Stok & Roll', icon: 'box' },
       { id: 'transfer', label: 'Permintaan Gudang', icon: 'transfer' },
       { id: 'pembelian', label: 'Pembelian', icon: 'truck' },
@@ -25,6 +26,7 @@ export const NAV = [
       { id: 'penjualan', label: 'Penjualan', icon: 'receipt' },
       { id: 'proyek', label: 'Proyek', icon: 'layers' },
       { id: 'pelanggan', label: 'Pelanggan', icon: 'users' },
+      { id: 'sampel', label: 'Sample & Deposit', icon: 'spark' },
     ],
   },
   {
@@ -39,12 +41,14 @@ export const NAV = [
 
 export const ROUTE_META = {
   ringkasan: { title: 'Ringkasan', sub: 'Kondisi operasi hari ini' },
+  tugas: { title: 'Tugas Operasi', sub: 'Antrean potong, terima, picking, QC, dan kirim' },
   stok: { title: 'Stok & Roll', sub: 'Fisik, terpesan, tersedia, karantina, dan transit' },
   transfer: { title: 'Permintaan Gudang', sub: 'PO internal antar gudang — tanpa pemasok' },
   pembelian: { title: 'Pembelian', sub: 'PO pemasok, penerimaan, dan utang' },
   penjualan: { title: 'Penjualan', sub: 'Faktur, pembayaran, dan retur' },
   proyek: { title: 'Proyek', sub: 'Reservasi material sampai serah terima' },
   pelanggan: { title: 'Pelanggan', sub: 'CRM, sample, deposit, dan riwayat' },
+  sampel: { title: 'Sample & Deposit', sub: 'Sample pelanggan, konversi, dan saldo deposit' },
   opname: { title: 'Stock Opname', sub: 'Hitung buta, review, dan penyesuaian' },
   laporan: { title: 'Laporan', sub: 'Saldo saat ini dan riwayat — bukan buku besar' },
   master: { title: 'Master Data', sub: 'Produk, kategori, pemasok, dan cadangan data' },
@@ -140,6 +144,12 @@ export function renderShell(ctx, contentHtml) {
         <main id="main" class="content" tabindex="-1">
           ${contentHtml}
         </main>
+        <nav class="bottom-nav" aria-label="Navigasi cepat">
+          <a href="#/ringkasan" ${ctx.route.name === 'ringkasan' ? 'aria-current="page"' : ''}>${icon('home')}<span>Beranda</span></a>
+          <a href="#/tugas" ${ctx.route.name === 'tugas' ? 'aria-current="page"' : ''}>${icon('listCheck')}<span>Tugas</span></a>
+          <a href="#/stok" ${ctx.route.name === 'stok' ? 'aria-current="page"' : ''}>${icon('box')}<span>Stok</span></a>
+          <button type="button" data-action="account">${icon('users')}<span>Akun</span></button>
+        </nav>
       </div>
     </div>`;
 }
@@ -216,7 +226,7 @@ export function mountShell(ctx) {
   document.querySelector('[data-action="warehouse-select"]')?.addEventListener('change', (e) => {
     ctx.store.setUi({ warehouseId: e.target.value });
   });
-  document.querySelector('[data-action="account"]')?.addEventListener('click', () => openAccount(ctx));
+  document.querySelectorAll('[data-action="account"]').forEach((btn) => btn.addEventListener('click', () => openAccount(ctx)));
   document.querySelectorAll('[data-action="open-sim"]').forEach((btn) =>
     btn.addEventListener('click', () => {
       if (ctx.dataset === 'sim') window.location.hash = '#/simulasi';
