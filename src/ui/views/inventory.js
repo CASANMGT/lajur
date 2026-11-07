@@ -1,6 +1,6 @@
 ﻿/** Stok & Roll: search, list, roll detail, traceability. */
 
-import { esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, downloadFile, toCsv } from '../dom.js';
+import { esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, downloadFile, toCsv, promptText } from '../dom.js';
 import { MM_PER_M, byId, formatDateLong } from '../../domain/core.js';
 import {
   ROLL_STATUS, availableMm, isSellable, partAvailable, quarantineRoll, rollChildren, rollTrail,
@@ -310,8 +310,15 @@ export function mount(ctx) {
       const wh = warehouseOf(ctx.db, roll.transit?.toWarehouseId ?? roll.warehouseId);
       printDocument(`Label ${roll.id}`, printLabelHtml(roll, sku, wh));
     });
-    document.querySelector('[data-action="quarantine"]')?.addEventListener('click', () => {
-      const reason = window.prompt('Alasan karantina (wajib):', 'Kain cacat / perlu pemeriksaan');
+    document.querySelector('[data-action="quarantine"]')?.addEventListener('click', async () => {
+      const reason = await promptText({
+        title: 'Karantina roll',
+        label: 'Alasan karantina',
+        value: 'Kain cacat / perlu pemeriksaan',
+        hint: 'Roll tidak bisa dijual selama karantina.',
+        submitLabel: 'Karantina',
+        tone: 'danger',
+      });
       if (!reason) return;
       try {
         ctx.store.update((db) => {

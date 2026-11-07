@@ -266,6 +266,7 @@ export function issueProject(db, { id, user, discount = 0, dueDays = 14, notes =
     dueDays,
     notes: notes || `Material proyek ${p.name}`,
     user,
+    reservationRef: p.id,
   });
   postInvoice(db, { id: inv.id, user, reservationRef: p.id });
   releaseAllReservations(db, p.id, user, 'Reservasi dikonsumsi proyek');

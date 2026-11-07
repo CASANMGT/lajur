@@ -1,7 +1,7 @@
 ﻿/** Permintaan Gudang / PO Internal â€” list, detail, approval, dispatch, receipt. */
 
 import {
-  esc, icon, fmt, badge, toast, openModal, field, printDocument,
+  esc, icon, fmt, badge, toast, openModal, field, printDocument, promptText,
 } from '../dom.js';
 import { byId, formatDateLong, parseM } from '../../domain/core.js';
 import {
@@ -401,7 +401,7 @@ export function mount(ctx) {
   if (ctx.route.id) {
     const t = getTransfer(ctx.db, ctx.route.id);
     if (!t) return;
-    const act = (name) => document.querySelectorAll(`[data-act="${name}"]`).forEach((btn) => btn.addEventListener('click', () => {
+    const act = (name) => document.querySelectorAll(`[data-act="${name}"]`).forEach((btn) => btn.addEventListener('click', async () => {
       try {
         if (name === 'submit') {
           ctx.store.update((db) => submitTransfer(db, { id: t.id, user: ctx.user }));
@@ -410,7 +410,7 @@ export function mount(ctx) {
           ctx.store.update((db) => approveTransfer(db, { id: t.id, user: ctx.user, note: 'Disetujui dari demo.' }));
           toast('Permintaan disetujui. Stok belum dipesan; cek saat kirim.', { tone: 'success' });
         } else if (name === 'reject') {
-          const note = window.prompt('Alasan penolakan:');
+          const note = await promptText({ title: 'Tolak permintaan', label: 'Alasan penolakan', hint: 'Alasan terlihat oleh gudang peminta.', submitLabel: 'Tolak permintaan', tone: 'danger' });
           if (!note) return;
           ctx.store.update((db) => rejectTransfer(db, { id: t.id, user: ctx.user, note }));
           toast('Permintaan ditolak.', { tone: 'success' });

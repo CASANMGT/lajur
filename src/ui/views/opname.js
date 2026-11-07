@@ -1,6 +1,6 @@
 ﻿/** Stock opname: hitung buta, review, posting penyesuaian. */
 
-import { esc, icon, fmt, badge, toast, openModal, field, confirmAction, printDocument } from '../dom.js';
+import { esc, icon, fmt, badge, toast, openModal, field, confirmAction, printDocument, promptText } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
 import {
   OPNAME_STATUS, approveOpname, cancelOpname, getSession, opnameSummary, saveCounts, startOpname,
@@ -195,8 +195,14 @@ export function mount(ctx) {
     document.querySelector('[data-act="submit"]')?.addEventListener('click', () => {
       try { save(ctx, s, { submit: true }); } catch (err) { toast(err.message, { tone: 'error' }); }
     });
-    document.querySelector('[data-act="approve"]')?.addEventListener('click', () => {
-      const reason = window.prompt('Alasan persetujuan / selisih (wajib):', 'Diverifikasi oleh manajer.');
+    document.querySelector('[data-act="approve"]')?.addEventListener('click', async () => {
+      const reason = await promptText({
+        title: 'Setujui & posting opname',
+        label: 'Alasan persetujuan / selisih',
+        value: 'Diverifikasi oleh manajer.',
+        hint: 'Tersimpan permanen pada sesi dan setiap penyesuaian.',
+        submitLabel: 'Posting penyesuaian',
+      });
       if (!reason) return;
       try {
         ctx.store.update((db) => approveOpname(db, { sessionId: s.id, user: ctx.user, reason }));
@@ -208,7 +214,13 @@ export function mount(ctx) {
     document.querySelector('[data-act="recount"]')?.addEventListener('click', async () => {
       const ok = await confirmAction({ title: 'Minta hitung ulang?', message: 'Semua hitungan akan dikosongkan dan status kembali ke penghitungan. Gudang tetap dibekukan.', confirmLabel: 'Hitung ulang' });
       if (!ok) return;
-      const reason = window.prompt('Alasan hitung ulang:', 'Selisih perlu diverifikasi ulang.');
+      const reason = await promptText({
+        title: 'Hitung ulang',
+        label: 'Alasan hitung ulang',
+        value: 'Selisih perlu diverifikasi ulang.',
+        submitLabel: 'Minta hitung ulang',
+        tone: 'danger',
+      });
       if (!reason) return;
       try {
         ctx.store.update((db) => approveOpname(db, { sessionId: s.id, user: ctx.user, reason, recount: true }));

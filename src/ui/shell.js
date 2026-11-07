@@ -159,9 +159,11 @@ export function mountShell(ctx) {
   toggle?.addEventListener('click', () => setNav(!sidebar.classList.contains('open')));
   scrim?.addEventListener('click', () => setNav(false));
   sidebar?.querySelectorAll('.nav-link').forEach((link) => link.addEventListener('click', () => setNav(false)));
-  document.addEventListener('keydown', (e) => {
+  if (window.__lajurNavKey) document.removeEventListener('keydown', window.__lajurNavKey);
+  window.__lajurNavKey = (e) => {
     if (e.key === 'Escape' && sidebar?.classList.contains('open')) setNav(false);
-  });
+  };
+  document.addEventListener('keydown', window.__lajurNavKey);
 
   document.querySelector('[data-action="warehouse-select"]')?.addEventListener('change', (e) => {
     ctx.store.setUi({ warehouseId: e.target.value });

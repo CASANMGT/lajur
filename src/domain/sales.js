@@ -58,7 +58,7 @@ export function invoiceStatusLabel(invoice) {
 /* Draft                                                                      */
 /* -------------------------------------------------------------------------- */
 
-function buildFabricLine(db, input) {
+function buildFabricLine(db, input, reservationRef = null) {
   const roll = requireRoll(db, input.rollId);
   const sku = byId(db.skus, roll.skuId);
   assert(sku, 'SKU_NOT_FOUND', 'SKU kain tidak ditemukan.');
@@ -72,7 +72,8 @@ function buildFabricLine(db, input) {
   } else {
     qtyMm = Math.round(Number(input.qtyMm));
     assert(qtyMm > 0, 'INVALID_LENGTH', 'Panjang potong harus lebih dari 0 m.');
-    assert(qtyMm <= availableMm(roll), 'INSUFFICIENT_AVAILABLE',
+    const held = reservedFor(roll, reservationRef);
+    assert(qtyMm <= availableMm(roll) + held, 'INSUFFICIENT_AVAILABLE',
       `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
   }
   const unitPrice = input.unitPrice != null ? money(input.unitPrice) : sku.sellPrice;
@@ -137,14 +138,14 @@ function buildServiceLine(db, input) {
   };
 }
 
-export function createInvoice(db, { customerId, projectId = null, lines, discount = 0, date = todayJakarta(), dueDays = 14, notes = '', user, salespersonId = null }) {
+export function createInvoice(db, { customerId, projectId = null, lines, discount = 0, date = todayJakarta(), dueDays = 14, notes = '', user, salespersonId = null, reservationRef = null }) {
   const customer = byId(db.customers, customerId);
   assert(customer, 'CUSTOMER_NOT_FOUND', 'Pelanggan tidak ditemukan.');
   assert(Array.isArray(lines) && lines.length > 0, 'EMPTY_LINES', 'Faktur harus memiliki minimal satu baris.');
   const built = lines.map((l) => {
     if (l.kind === 'part') return buildPartLine(db, l);
     if (l.kind === 'service') return buildServiceLine(db, l);
-    return buildFabricLine(db, l);
+    return buildFabricLine(db, l, reservationRef);
   });
   const subtotal = built.reduce((acc, l) => acc + l.amount, 0);
   const disc = Math.min(money(discount), subtotal);
@@ -435,6 +436,7 @@ export function postCustomerReturn(db, { id, user, disposition = 'quarantine' })
         note: `Retur pelanggan (${disposition})`,
       });
     } else if (disposition === 'good') {
+      assertWarehouseOpen(db, ret.warehouseId, 'Retur');
       const row = partStockRow(db, line.partId, ret.warehouseId);
       if (row) row.qty += line.qtyPcs;
       else db.partStock.push({ partId: line.partId, warehouseId: ret.warehouseId, qty: line.qtyPcs, reserved: 0 });

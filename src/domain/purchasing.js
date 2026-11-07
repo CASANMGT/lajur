@@ -291,6 +291,7 @@ export function payablesAging(db, today = todayJakarta()) {
 export function createSupplierReturn(db, { receiptId, rollIds = [], partLines = [], reason, user, date = todayJakarta() }) {
   const receipt = db.goodsReceipts.find((r) => r.id === receiptId) ?? db.goodsReceipts.find((r) => r.ref === receiptId);
   assert(receipt, 'RECEIPT_NOT_FOUND', 'Dokumen penerimaan tidak ditemukan.');
+  assertWarehouseOpen(db, receipt.warehouseId, 'Retur pemasok');
   assert(reason && reason.trim().length >= 3, 'REASON_REQUIRED', 'Alasan retur pemasok wajib diisi.');
   assert(rollIds.length > 0 || partLines.length > 0, 'EMPTY_LINES', 'Pilih barang yang diretur.');
 

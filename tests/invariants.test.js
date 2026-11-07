@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 
 import { buildSeed } from '../src/domain/seed.js';
 import {
-  availableMm, createRoll, partQty, reserveRoll, stockSummary,
+  availableMm, createRoll, partQty, quarantineRoll, reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
 import { createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
 import { createPO, receivePO } from '../src/domain/purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
-import { refundDeposit } from '../src/domain/crm.js';
+import { createSample, refundDeposit } from '../src/domain/crm.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
 
@@ -325,6 +325,40 @@ test('project issue releases part reservations exactly once', () => {
   issueProject(db, { id: project.id, user: SALES });
   assert.equal(bracket.qty, 17);
   assert.equal(bracket.reserved || 0, 0);
+});
+
+test('project can issue a fully reserved roll without tripping availability', () => {
+  const db = buildSeed();
+  const project = createProject(db, {
+    customerId: 'CUS-0002',
+    name: 'Uji roll penuh',
+    targetDate: '2026-12-05',
+    user: SALES,
+    requirements: [{ kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 60000, allocations: [{ rollId: 'RL-0001', qtyMm: 60000 }] }],
+  });
+  reserveProject(db, { id: project.id, user: SALES });
+  const roll = rollOf(db, 'RL-0001');
+  assert.equal(roll.reservedMm, 60000);
+  const result = issueProject(db, { id: project.id, user: SALES });
+  assert.equal(result.invoice.status, 'posted');
+  assert.equal(roll.currentMm, 0);
+  assert.equal(roll.reservedMm, 0);
+});
+
+test('stock opname freeze also blocks sample cuts and quarantine', () => {
+  const db = buildSeed();
+  const session = startOpname(db, { warehouseId: 'wh-jkt', user: OP });
+  expectError(
+    () => createSample(db, {
+      customerId: 'CUS-0002', skuId: 'sku-luna-01', rollId: 'RL-0001', qtyMm: 500, mode: 'free', user: SALES,
+    }),
+    'WAREHOUSE_FROZEN',
+  );
+  expectError(
+    () => quarantineRoll(db, { rollId: 'RL-0001', user: MGR, reason: 'Uji', ref: 'T' }),
+    'WAREHOUSE_FROZEN',
+  );
+  cancelOpname(db, { sessionId: session.id, user: MGR, reason: 'Selesai uji' });
 });
 
 test('stock opname freezes the warehouse and blocks conflicting adjustments', () => {

@@ -275,6 +275,7 @@ export function splitRoll(db, { rollId, qtyMm, user, ref = '', reason = '', piec
   const roll = requireRoll(db, rollId);
   const qty = Math.round(Number(qtyMm));
   assert(Number.isFinite(qty) && qty > 0, 'INVALID_LENGTH', 'Panjang potong harus lebih dari 0 m.');
+  if (!roll.transit && roll.warehouseId) assertWarehouseOpen(db, roll.warehouseId, 'Pemotongan roll');
   assert(isSellable(roll) || (roll.status === 'quarantine' && pieceStatus === 'quarantine'), 'ROLL_NOT_AVAILABLE', `Roll ${roll.id} tidak dapat dipotong (${ROLL_STATUS[roll.status]?.label ?? roll.status}).`);
   assert(roll.currentMm >= qty, 'CUT_EXCEEDS_ROLL', `Potongan ${qty / MM_PER_M} m melebihi panjang roll ${roll.currentMm / MM_PER_M} m.`);
   assert(availableMm(roll) >= qty, 'CUT_RESERVED', `Potongan melebihi stok tersedia. ${(roll.reservedMm || 0) / MM_PER_M} m pada roll ini terpesan.`);
@@ -373,6 +374,7 @@ export function markRollConsumed(db, { rollId, user, ref, note = '' }) {
 export function quarantineRoll(db, { rollId, user, reason, ref }) {
   const roll = requireRoll(db, rollId);
   assert(!roll.transit, 'ROLL_IN_TRANSIT', 'Roll dalam perjalanan tidak dapat dikarantina.');
+  if (roll.warehouseId) assertWarehouseOpen(db, roll.warehouseId, 'Karantina');
   const before = roll.status;
   roll.status = 'quarantine';
   roll.condition = 'damaged';

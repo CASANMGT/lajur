@@ -130,6 +130,8 @@ export function toast(message, { tone = 'info', title = '' } = {}) {
 
 let lastFocus = null;
 let activeModal = null;
+let activeKeyHandler = null;
+let activeOnClose = null;
 
 export function closeModal() {
   const root = document.getElementById('modal-root');
@@ -137,7 +139,14 @@ export function closeModal() {
   root.innerHTML = '';
   activeModal = null;
   document.body.style.overflow = '';
-  if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+  if (activeKeyHandler) {
+    document.removeEventListener('keydown', activeKeyHandler);
+    activeKeyHandler = null;
+  }
+  const onClose = activeOnClose;
+  activeOnClose = null;
+  if (onClose) onClose();
+  if (lastFocus && typeof lastFocus.focus === 'function' && document.contains(lastFocus)) lastFocus.focus();
 }
 
 export function openModal({
@@ -148,6 +157,7 @@ export function openModal({
   cancelLabel = 'Batal',
   onSubmit = null,
   onMount = null,
+  onClose = null,
   wide = false,
   danger = false,
   extraFooter = '',
@@ -156,6 +166,7 @@ export function openModal({
   if (!root) return null;
   closeModal();
   lastFocus = document.activeElement;
+  activeOnClose = onClose;
   root.innerHTML = `
     <div class="modal-wrap" data-modal-wrap>
       <div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -174,7 +185,8 @@ export function openModal({
           <div class="modal-foot">
             <a class="btn btn-ghost" data-modal-close href="javascript:void(0)">${esc(cancelLabel)}</a>
             ${extraFooter}
-            <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" type="submit">${esc(submitLabel)}</button>          </div>
+            <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" type="submit">${esc(submitLabel)}</button>
+          </div>
         </form>
       </div>
     </div>`;
@@ -197,7 +209,6 @@ export function openModal({
     if (e.key === 'Escape') {
       e.preventDefault();
       close();
-      document.removeEventListener('keydown', onKey);
       return;
     }
     if (e.key === 'Tab') {
@@ -216,6 +227,7 @@ export function openModal({
     }
   };
   document.addEventListener('keydown', onKey);
+  activeKeyHandler = onKey;
 
   const firstField = modal.querySelector('input:not([type=hidden]), select, textarea');
   if (firstField) window.setTimeout(() => firstField.focus(), 30);
@@ -245,29 +257,39 @@ export function openModal({
   return { form, close, modal };
 }
 
+export function promptText({ title = 'Masukkan data', label = 'Nilai', value = '', hint = '', placeholder = '', required = true, submitLabel = 'Simpan', tone = 'primary' }) {
+  return new Promise((resolve) => {
+    let result = null;
+    const modal = openModal({
+      title,
+      submitLabel,
+      danger: tone === 'danger',
+      body: field(label, `<input class="input" name="value" value="${esc(value)}" placeholder="${esc(placeholder)}" />`, { hint }),
+      onClose: () => resolve(result),
+      onSubmit(form, close) {
+        const v = form.value.value.trim();
+        if (required && !v) throw new Error(`${label} wajib diisi.`);
+        result = v;
+        close();
+      },
+    });
+    if (!modal) resolve(null);
+  });
+}
+
 export function confirmAction({ title = 'Konfirmasi', message, confirmLabel = 'Lanjutkan', tone = 'primary' }) {
   return new Promise((resolve) => {
+    let confirmed = false;
     openModal({
       title,
       body: `<p class="small">${esc(message)}</p>`,
       submitLabel: confirmLabel,
       danger: tone === 'danger',
-      onSubmit: (form, close) => {
+      onSubmit(form, close) {
+        confirmed = true;
         close();
-        resolve(true);
       },
-      onMount: (form, close) => {
-        form.closest('.modal-wrap').addEventListener('mousedown', (e) => {
-          if (e.target === form.closest('.modal-wrap')) resolve(false);
-        });
-        document.addEventListener(
-          'keydown',
-          (e) => {
-            if (e.key === 'Escape') resolve(false);
-          },
-          { once: true },
-        );
-      },
+      onClose: () => resolve(confirmed),
     });
   });
 }
