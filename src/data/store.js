@@ -87,7 +87,15 @@ function loadDataset(dataset) {
       }
     }
   } else {
+    const previous = db.meta?.version;
     db = migrate(db);
+    if (db.meta.version !== previous && storage.available) {
+      try {
+        localStorage.setItem(keys[dataset], JSON.stringify(db));
+      } catch (err) {
+        storage.lastError = err;
+      }
+    }
   }
   return db;
 }

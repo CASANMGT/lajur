@@ -156,7 +156,7 @@ Authentication and server authorization; transactional posting with idempotency;
 
 | Entity | Key fields |
 |--------|-----------|
-| `warehouse` | id, code, name, bin prefix, address, phone |
+| `warehouse` | id, code, name, bin prefix, address, phone, **active** |
 | `collection` | id, name, category, description |
 | `sku` (colour variant) | id, collectionId, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, active/dormant |
 | `part` | id, SKU, name, category, unit `pcs`, buy/sell price |
@@ -165,7 +165,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `transfer` | id, from/to warehouse, neededBy, reason, projectId, status, lines[] |
 | `transfer line` | skuId, requestedMm, dispatchedMm, receivedMm, allocations[{rollId, dispatchedMm, receivedMm}] |
 | `purchase order` | id, supplier, dates, terms, status, lines[] |
-| `goods receipt` | id, unique ref, PO, supplier, date, warehouse, lines with lot/lengths/rollIds, total |
+| `goods receipt` | id, unique ref, kind `po`/`adhoc`, PO, supplier (nullable for adhoc), date, warehouse, lines with lot/lengths/rollIds, total |
 | `supplier invoice` | id, supplier, PO, receipt, dueDate, amount, paid, payments[] |
 | `customer` | id, name, company, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
