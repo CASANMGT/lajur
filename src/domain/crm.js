@@ -113,6 +113,8 @@ export function createSample(db, { customerId, skuId, rollId, qtyMm, mode = 'fre
   assert(qty <= availableMm(roll), 'INSUFFICIENT_AVAILABLE',
     `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
   assert(['free', 'paid', 'deposit'].includes(mode), 'INVALID_MODE', 'Jenis sample tidak dikenal.');
+  assert(!db.settings?.sampleDepositRequired || mode !== 'free', 'SAMPLE_DEPOSIT_REQUIRED',
+    'Sample gratis dinonaktifkan oleh Pengaturan. Gunakan sample berbayar atau deposit.');
 
   const sampleId = nextId(db, 'sample', 'SMP', 4);
   const { piece } = splitRoll(db, {

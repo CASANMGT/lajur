@@ -11,6 +11,7 @@ import {
 import { invoiceOutstanding, invoiceStatusLabel } from '../../domain/sales.js';
 import { availableMm, sellableRolls } from '../../domain/inventory.js';
 import { PROJECT_STATUS } from '../../domain/projects.js';
+import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, can } from './common.js';
 
 export function render(ctx) {
@@ -262,7 +263,7 @@ function openSample(ctx, c) {
       ${field('SKU / warna', `<select class="select" name="sku">${skuOptions}</select>`)}
       ${field('Roll sumber', `<select class="select" name="roll">${rollsFor(firstSku)}</select>`)}
       ${field('Panjang sample (m)', `<input class="input" name="qty" inputmode="decimal" value="0,5" />`)}
-      ${field('Jenis sample', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit">Deposit refundable</option></select>`)}
+      ${field('Jenis sample', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit" ${settingsOf(db).sampleDepositRequired ? 'selected' : ''}>Deposit refundable</option></select>`)}
       ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" placeholder="0" />`, { hint: 'Wajib untuk berbayar / deposit.' })}
       ${field('Catatan', `<input class="input" name="notes" placeholder="Warna yang diminta, ruangan, dsb." />`)}
     `,

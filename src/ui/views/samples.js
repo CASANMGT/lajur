@@ -8,6 +8,7 @@ import {
   SAMPLE_MODE, createSample, depositBalance, linkSampleToInvoice, refundDeposit,
 } from '../../domain/crm.js';
 import { availableMm, sellableRolls } from '../../domain/inventory.js';
+import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, can, warehouseOf } from './common.js';
 
 let filter = { status: 'all' };
@@ -124,7 +125,7 @@ function openNewSample(ctx) {
       ${field('SKU / warna', `<select class="select" name="sku">${skus.map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)}</option>`).join('')}</select>`)}
       ${field('Roll sumber', `<select class="select" name="roll">${rollsFor(skus[0].id)}</select>`)}
       ${field('Panjang (m)', `<input class="input" name="qty" inputmode="decimal" value="0,5" />`)}
-      ${field('Jenis', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit">Deposit refundable</option></select>`)}
+      ${field('Jenis', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit" ${settingsOf(db).sampleDepositRequired ? 'selected' : ''}>Deposit refundable</option></select>`)}
       ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" placeholder="0" />`)}
       ${field('Catatan', `<input class="input" name="notes" />`, { full: true })}
     `,
