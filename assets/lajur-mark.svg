@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lajur">
+  <rect width="64" height="64" rx="12" fill="#172B3A"/>
+  <path d="M18 15h11v25h17v9H18z" fill="#F6F3ED"/>
+  <path d="M31 15h7v7h-7z" fill="#4D7A78"/>
+  <path d="M38 24h8v7h-8z" fill="#B87552" opacity=".9"/>
+</svg>

@@ -1,0 +1,15 @@
+{
+  "name": "lajur",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Lajur — sistem inventori dan operasi bisnis gorden (demo interaktif).",
+  "scripts": {
+    "dev": "node tools/serve.mjs",
+    "test": "node --test",
+    "check": "node tools/check.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

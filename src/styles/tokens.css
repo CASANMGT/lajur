@@ -1,0 +1,94 @@
+/* Lajur design tokens — see DESIGN-SYSTEM.md */
+:root {
+  /* Brand */
+  --navy-950: #0d1a23;
+  --navy-900: #10212d;
+  --navy-800: #172b3a;
+  --navy-700: #24404f;
+  --navy-600: #33525f;
+
+  --ivory-50: #fbf9f4;
+  --ivory: #f6f3ed;
+  --ivory-200: #efe9df;
+  --paper: #fffdf8;
+
+  --teal-700: #3d6765;
+  --teal: #4d7a78;
+  --teal-600: #447170;
+  --teal-100: #e2ecea;
+  --teal-50: #eef4f2;
+
+  --copper-700: #96603f;
+  --copper: #b87552;
+  --copper-100: #f5e6db;
+
+  --ink: #172b3a;
+  --ink-soft: #3c4f5c;
+  --muted: #5a6973;
+  --muted-2: #67747c;
+
+  --line: #e4ded2;
+  --line-strong: #cfc6b6;
+  --line-dark: #2b4553;
+
+  --ok: #3c6b4f;
+  --ok-bg: #e5efe6;
+  --warn: #8a6224;
+  --warn-bg: #f6ecd8;
+  --danger: #9d4238;
+  --danger-bg: #f7e5e1;
+  --info: #2f5f73;
+  --info-bg: #e3eef2;
+
+  /* Type */
+  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-ui: "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "SFMono-Regular", ui-monospace, "Cascadia Mono", monospace;
+
+  --text-xs: 0.75rem;    /* 12 */
+  --text-sm: 0.8125rem;  /* 13 */
+  --text-base: 0.875rem; /* 14 */
+  --text-md: 0.9375rem;  /* 15 */
+  --text-lg: 1.0625rem;  /* 17 */
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+
+  /* Space (4/8/12/16/24/32/48) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+
+  /* Shape */
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-full: 999px;
+
+  --shadow-1: 0 1px 2px rgba(23, 43, 58, 0.06);
+  --shadow-2: 0 6px 18px -8px rgba(23, 43, 58, 0.22), 0 2px 6px rgba(23, 43, 58, 0.05);
+  --shadow-3: 0 24px 60px -24px rgba(13, 26, 35, 0.45), 0 4px 14px rgba(13, 26, 35, 0.12);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 260ms;
+
+  --sidebar-w: 252px;
+  --topbar-h: 64px;
+  --focus: 0 0 0 3px rgba(77, 122, 120, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-1: 0ms;
+    --dur-2: 0ms;
+    --dur-3: 0ms;
+  }
+}
