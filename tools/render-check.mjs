@@ -18,12 +18,14 @@ import * as simulation from '../src/ui/views/simulation.js';
 import * as login from '../src/ui/views/login.js';
 import * as tasks from '../src/ui/views/tasks.js';
 import * as samples from '../src/ui/views/samples.js';
+import * as orders from '../src/ui/views/orders.js';
+import * as settings from '../src/ui/views/settings.js';
 
 const db = buildSeed({ dataset: 'main' });
-const views = { ringkasan: dashboard, tugas: tasks, stok: inventory, transfer: transfers, pembelian: purchasing, penjualan: sales, proyek: projects, pelanggan: customers, sampel: samples, opname, laporan: reports, master, simulasi: simulation };
+const views = { ringkasan: dashboard, tugas: tasks, stok: inventory, transfer: transfers, pembelian: purchasing, penjualan: sales, pesanan: orders, proyek: projects, pelanggan: customers, sampel: samples, opname, laporan: reports, master, pengaturan: settings, simulasi: simulation };
 const samplesById = {
   ringkasan: null, tugas: null, stok: 'RL-0001', transfer: 'TRF-0001', pembelian: 'PO-0001', penjualan: 'INV-0003',
-  proyek: 'PRJ-001', pelanggan: 'CUS-0002', sampel: null, opname: 'OPN-001', laporan: null, master: null, simulasi: null,
+  pesanan: null, proyek: 'PRJ-001', pelanggan: 'CUS-0002', sampel: null, opname: 'OPN-001', laporan: null, master: null, pengaturan: null, simulasi: null,
 };
 
 let failed = 0;

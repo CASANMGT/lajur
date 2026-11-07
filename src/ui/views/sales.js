@@ -9,6 +9,8 @@ import {
   invoiceStatusLabel, postCustomerReturn, postInvoice, recordPayment, returnedQty,
 } from '../../domain/sales.js';
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
+import { createSalesOrder } from '../../domain/orders.js';
+import { settingsOf } from '../../domain/settings.js';
 import { availableMm, partAvailable, sellableRolls, totalParts } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
 import { printInvoiceHtml } from './print.js';
@@ -36,7 +38,8 @@ export function render(ctx) {
       eyebrow: 'Penjualan',
       title: 'Faktur & pembayaran',
       sub: 'Kain dipotong dari roll tertentu; spare part memakai pcs. Stok keluar satu kali saat faktur diterbitkan.',
-      actions: `${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
+      actions: `${settingsOf(db).salesOrderEnabled !== false ? `<a class="btn" href="#/pesanan">${icon('clipboard')} Pesanan</a>` : ''}
+        ${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
     })}
     ${roleHint(role, 'invoice.create', 'Membuat faktur adalah wewenang sales/CS atau manajer.')}
     <div class="kpi-strip" style="margin-bottom:16px">
@@ -201,7 +204,8 @@ function renderDetail(ctx) {
 /* Create invoice                                                             */
 /* -------------------------------------------------------------------------- */
 
-export function openInvoice(ctx, presetRollId = null) {
+export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
+  const isOrder = docType === 'order';
   const { db } = ctx;
   const presetRoll = presetRollId ? db.rolls.find((r) => r.id === presetRollId) : null;
   const defaultWh = presetRoll?.warehouseId ?? (ctx.ui.warehouseId === 'all' ? 'wh-jkt' : ctx.ui.warehouseId);
@@ -243,11 +247,13 @@ export function openInvoice(ctx, presetRollId = null) {
     .join('');
 
   const modal = openModal({
-    title: 'Buat faktur',
-    description: 'Kain dipotong dari roll tertentu; spare part memakai pcs. Total dihitung dari baris yang sama dengan stok.',
+    title: isOrder ? 'Buat pesanan penjualan' : 'Buat faktur',
+    description: isOrder
+      ? 'Pesanan tidak mengeluarkan stok. Stok keluar saat pesanan dikonversi menjadi faktur.'
+      : 'Kain dipotong dari roll tertentu; spare part memakai pcs. Total dihitung dari baris yang sama dengan stok.',
     wide: true,
-    submitLabel: 'Terbitkan faktur',
-    extraFooter: `<button class="btn" type="button" data-draft>Simpan draf</button>`,
+    submitLabel: isOrder ? 'Simpan pesanan' : 'Terbitkan faktur',
+    extraFooter: isOrder ? '' : `<button class="btn" type="button" data-draft>Simpan draf</button>`,
     body: `
       <div class="form-grid">
         ${field('Pelanggan', `<select class="select" name="customer">${customerOptions}</select>`)}
@@ -266,7 +272,7 @@ export function openInvoice(ctx, presetRollId = null) {
         <div class="row-between"><span class="small muted">Subtotal</span><strong id="inv-subtotal" class="num">Rp 0</strong></div>
         <div class="row-between" style="margin-top:4px"><span class="small muted">Total setelah diskon</span><strong id="inv-total" class="num" style="font-size:1.1rem">Rp 0</strong></div>
       </div>
-      <div class="notice notice-info" style="margin-top:12px">${icon('alert')}<div>Faktur terbit mengeluarkan stok satu kali. Roll utuh hanya bisa dipilih jika tidak ada reservasi.</div></div>
+      <div class="notice notice-info" style="margin-top:12px">${icon('alert')}<div>${isOrder ? 'Pesanan tidak mengeluarkan stok. Konversi ke faktur adalah satu-satunya peristiwa pengeluaran stok.' : 'Faktur terbit mengeluarkan stok satu kali. Roll utuh hanya bisa dipilih jika tidak ada reservasi.'}</div></div>
     `,
     onMount(form, close) {
       const fabRows = form.querySelector('#fab-rows');
@@ -355,6 +361,18 @@ export function openInvoice(ctx, presetRollId = null) {
         try {
           const lines = collect();
           const discount = Number(String(form.discount.value ?? '').replace(/\D/g, '')) || 0;
+          if (isOrder) {
+            const order = ctx.store.update((db) => createSalesOrder(db, {
+              customerId: form.customer.value,
+              lines,
+              notes: form.notes.value,
+              user: ctx.user,
+            }));
+            close();
+            window.location.hash = '#/pesanan';
+            toast(`Pesanan ${order.id} disimpan. Stok belum keluar.`, { tone: 'success' });
+            return;
+          }
           const created = ctx.store.update((db) => {
             const inv = createInvoice(db, {
               customerId: form.customer.value,
@@ -379,10 +397,10 @@ export function openInvoice(ctx, presetRollId = null) {
         }
       };
 
-      form.querySelector('[data-draft]').addEventListener('click', () => save(false));
+      form.querySelector('[data-draft]')?.addEventListener('click', () => save(false));
       form.addEventListener('submit', (e) => {
         e.preventDefault();
-        save(true);
+        save(isOrder ? false : true);
       });
     },
     onSubmit: null,

@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-35%2F35-brightgreen) ![Version](https://img.shields.io/badge/version-2.2.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-42%2F42-brightgreen) ![Version](https://img.shields.io/badge/version-2.3.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -57,9 +57,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 35 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ---
@@ -87,6 +87,8 @@ Lajur/
 │   │   ├── purchasing.js     suppliers, PO, receiving, payables, FX
 │   │   ├── shipments.js      import shipment tracking + landed cost
 │   │   ├── tasks.js          receive/pick/cut/sew/QC/opname tasks
+│   │   ├── orders.js         sales orders before invoice
+│   │   ├── settings.js       operational preferences
 │   │   ├── attachments.js    optional physical-proof metadata
 │   │   ├── projects.js       allocation, reservation, issue, handover
 │   │   ├── crm.js            customers, samples, deposits, refunds
@@ -104,14 +106,15 @@ Lajur/
 │   │   ├── shell.js          sidebar, topbar, account menu, simulation banner
 │   │   ├── router.js         auth gate, hash routes, error boundary
 │   │   └── views/            login, dashboard, tasks, inventory, transfers, purchasing,
-│   │                         sales, projects, customers, samples, opname, reports,
-│   │                         master, simulation, print documents
+│   │                         sales, orders, projects, customers, samples, opname, reports,
+│   │                         master, settings, simulation, print documents
 │   └── styles/
 │       ├── tokens.css
 │       └── app.css
 ├── tests/
 │   ├── invariants.test.js    29 business invariant tests
 │   ├── operations.test.js    4 import/task/shipment tests
+│   ├── admin.test.js         7 master/user/order/settings tests
 │   └── auth.test.js          2 PIN hashing / policy tests
 └── tools/
     ├── serve.mjs             tiny static server
@@ -150,14 +153,17 @@ Lajur/
 13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Rani, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
 14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty.
 15. **Sample & Deposit** — sample conversion, deposit ledger and refunds in one workspace.
+16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, edit preferences, see master audit, export/restore.
+17. **Pesanan** (`#/pesanan`) — create a sales order, confirm, convert to invoice; stock moves only at conversion.
+18. **Master data** — add/edit spare part with brand + optional image, product images, supplier local/import; each edit writes to audit.
 
 ### Role experience
 
 | Role | Sees | Cannot do |
 |------|------|-----------|
-| Manajer | Approvals, all reports, master, refunds | — |
-| Operator Gudang | Stock, receiving, dispatch/receive, opname counting, direct intake | Create invoices, edit master, approve |
-| Sales / CS | Invoices, projects, customers, samples, deposits | Approve transfers/opname, edit master, count stock |
+| Manajer | Approvals, all reports, master, settings, refunds | — |
+| Operator Gudang | Stock, receiving, dispatch/receive, opname counting, direct intake, tasks | Invoices/orders, sales/CRM, reports, master/settings, approvals |
+| Sales / CS | Invoices, orders, projects, customers, samples, deposits, read-only stock | Purchasing, opname, master/settings, approvals, dispatch |
 
 Log in as each account to see the difference. Hiding a button is still not server authorization.
 
@@ -199,10 +205,10 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **35 passed, 0 failed** (33 business + 2 auth) |
-| Module import check | **37/37 modules** |
-| Server-side render of all views | **20/20 render, no exceptions** (incl. login and 3 roles) |
-| Browser route sweep | **20/20 routes**, zero console errors |
+| `node --test` | **42 passed, 0 failed** (40 business + 2 auth) |
+| Module import check | **39/39 modules** |
+| Server-side render of all views | **22/22 render, no exceptions** (incl. login and 3 roles) |
+| Browser route sweep | **22/22 routes**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
 | Import CNY | PO `26.5 CNY × 2.250`, landed `Rp 600.000`, roll HPP `Rp 71.625/m`; bill `CNY 1.325` |
 | Shipment tracking | ETD/ETA, in-transit → received, landed cost, progress |
@@ -219,7 +225,11 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Drawer / account button | opens, focus moves inside, Esc closes; account 44 px on touch |
 | Modal at 320/390 | fits viewport, footer/submit visible, body scrolls |
 | Blind opname | only `Hitungan` column; no expected balance in DOM |
-| Lighthouse (login, dashboard, tasks, stock, purchasing, samples, master, simulation) | **Accessibility 100, Best Practices 100, SEO 100** |
+| Staff account | created “Sinta” with PIN; appeared on login; sales nav enforced; direct purchasing URL redirected |
+| Sales order | created 5 m order, stock unchanged; converted to invoice, stock 60 → 55 m once |
+| Master product/part | part with brand `Somfy`, prices and audit entry; product image field |
+| Preferences | disabling sales orders removed the Pesanan menu; re-enabled |
+| Lighthouse (login, dashboard, tasks, stock, purchasing, orders, samples, master, settings, simulation) | **Accessibility 100, Best Practices 100, SEO 100** |
 
 Reproduce:
 
@@ -236,7 +246,12 @@ node tools/render-check.mjs
 ### Implemented
 
 - Per-role login with PBKDF2-hashed PIN, 8-hour session, 5-attempt lockout, PIN change, logout.
-- Role-specific navigation defaults and action gating for manager, operator, sales.
+- **Settings workspace:** account/PIN, staff user management (add, edit role, activate/deactivate, reset PIN), preferences, audit and data.
+- **Dynamic users:** new staff accounts appear on the login screen; role changes and deactivation apply immediately.
+- **Role-restricted navigation:** operator sees only warehouse work; sales sees sales/CRM/sample; manager sees all, settings and master.
+- **Sales orders:** draft/confirmed orders, convert to invoice (stock issues once), customer/available-product checks.
+- **Product & part master:** create/edit SKU with brand, optional image, notes and active flag; audit history per record.
+- **Supplier master:** create/edit local or import supplier, CNY/FX/incoterm/port, with audit trail.
 - Editable warehouses (create, rename, recoordinate, deactivate with usage guard) and editable collections.
 - Direct stock intake without PO (opening balance/correction) with unique document, lot, per-roll lengths, cost, reason and audit.
 - **Task operations:** receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname and sample tasks; assign, start, block, resume, complete, cancel; due dates, priority, cutting queue, manager board; completion note and optional physical proof.
@@ -258,7 +273,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.2.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.3.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
@@ -297,7 +312,8 @@ node tools/render-check.mjs
 - **Local persistence only.** Clearing site data deletes the demo (and resets PINs); the backup JSON is the escape hatch.
 - **Not accounting.** Reports are management summaries, not a ledger, tax invoice, or P&L.
 - **Production is task-based, not a WIP production order.** Cutting/sewing/QC are tracked as tasks; per-piece routing, payroll and capacity are planned.
-- **Proof is metadata only.** Photos/documents are not uploaded or stored.
+- **Proof and product images are local metadata/data URLs.** Production needs object storage.
+- **No shared settings across devices.** Settings live in the local dataset; restore does not include PIN hashes.
 - **Single currency and time zone** (IDR, Asia/Jakarta) by design.
 
 Production requirements are defined in [PRD.md §12](./PRD.md#12-production-architecture).

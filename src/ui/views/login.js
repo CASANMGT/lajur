@@ -10,15 +10,17 @@ const ROLE_TEXT = {
   sales: 'Sales & customer service',
 };
 
+const ROLE_NOTE = {
+  manager: 'Persetujuan, laporan, master',
+  operator: 'Stok, transfer, opname',
+  sales: 'Faktur, pesanan, proyek, pelanggan',
+};
+
 const initials = (name) => name.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('').toUpperCase();
 
-export function render() {
-  const users = demoCredentials();
-  const accounts = [
-    { id: 'u-mgr', name: 'Arif Wibowo', role: 'manager', note: 'Persetujuan, laporan, master' },
-    { id: 'u-op', name: 'Rani Pratama', role: 'operator', note: 'Stok, transfer, opname' },
-    { id: 'u-sales', name: 'Dimas Anggara', role: 'sales', note: 'Faktur, proyek, pelanggan' },
-  ];
+export function render({ users = [] } = {}) {
+  const active = users.filter((u) => u.active !== false);
+  const demo = demoCredentials(active);
 
   return `
     <div class="auth-screen">
@@ -49,16 +51,16 @@ export function render() {
           <p class="sub">Setiap peran punya akses dan PIN sendiri. Sesi berakhir dalam 8 jam.</p>
 
           <div class="auth-users" role="radiogroup" aria-label="Pilih pengguna">
-            ${accounts.map((u, idx) => `
+            ${active.map((u, idx) => `
               <button class="auth-user" type="button" role="radio" aria-checked="${idx === 0}" data-user="${u.id}">
                 <span class="avatar avatar-lg">${esc(initials(u.name))}</span>
                 <span class="auth-user-text">
                   <strong>${esc(u.name)}</strong>
-                  <span>${esc(ROLE_TEXT[u.role])}</span>
-                  <small>${esc(u.note)}</small>
+                  <span>${esc(ROLE_TEXT[u.role] ?? u.role)}</span>
+                  <small>${esc(ROLE_NOTE[u.role] ?? 'Akses sesuai peran')}</small>
                 </span>
                 <span class="auth-check">${icon('check')}</span>
-              </button>`).join('')}
+              </button>`).join('') || `<div class="notice notice-warn">${icon('alert')}<div>Tidak ada akun aktif. Hubungi manajer.</div></div>`}
           </div>
 
           <form class="auth-form" novalidate>
@@ -72,10 +74,10 @@ export function render() {
             <button class="btn btn-primary btn-lg btn-block" type="submit" data-submit>Masuk</button>
           </form>
 
-          ${users.length ? `<details class="auth-demo">
+          ${demo.length ? `<details class="auth-demo">
             <summary>PIN demo</summary>
             <p>Hanya untuk mencoba. Ganti PIN setelah masuk.</p>
-            <ul>${users.map((u) => `<li><span>${esc(u.name)}</span><code>${esc(u.pin)}</code></li>`).join('')}</ul>
+            <ul>${demo.map((u) => `<li><span>${esc(u.name)}</span><code>${esc(u.pin)}</code></li>`).join('')}</ul>
           </details>` : ''}
 
           <p class="auth-legal">Login ini berjalan di browser dan bukan batas keamanan produksi. Data tersimpan lokal pada perangkat ini.</p>
@@ -84,12 +86,12 @@ export function render() {
     </div>`;
 }
 
-export function mount({ onAuthenticated }) {
+export function mount({ users = [], onAuthenticated }) {
   const form = document.querySelector('.auth-form');
   const error = document.getElementById('login-error');
   const input = document.getElementById('login-pin');
   const submit = document.querySelector('[data-submit]');
-  let selected = 'u-mgr';
+  let selected = users.find((u) => u.active !== false)?.id ?? null;
 
   const setSelected = (id) => {
     selected = id;
@@ -139,7 +141,7 @@ export function mount({ onAuthenticated }) {
     submit.setAttribute('disabled', 'disabled');
     submit.textContent = 'Memeriksa…';
     try {
-      const user = await login(selected, pin);
+      const user = await login(selected, pin, users);
       input.value = '';
       onAuthenticated(user);
     } catch (err) {

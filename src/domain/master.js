@@ -130,3 +130,125 @@ export function createCollection(db, { name, categoryId, description = '', user 
   audit(db, user, 'buat_koleksi', 'collection', collection.id, clean);
   return collection;
 }
+
+/* -------------------------------------------------------------------------- */
+/* Users                                                                      */
+/* -------------------------------------------------------------------------- */
+
+const ROLES = new Set(['manager', 'operator', 'sales']);
+
+export function saveUser(db, { id = null, name, role, active = true, user }) {
+  const clean = String(name ?? '').trim();
+  assert(clean.length >= 2, 'INVALID_NAME', 'Nama pengguna minimal 2 karakter.');
+  assert(ROLES.has(role), 'INVALID_ROLE', 'Peran pengguna tidak dikenal.');
+  if (id) {
+    const existing = byId(db.users, id);
+    if (existing) {
+      if (existing.role === 'manager' && (role !== 'manager' || active === false)) {
+        const managers = db.users.filter((u) => u.role === 'manager' && u.active !== false && u.id !== id);
+        assert(managers.length > 0, 'LAST_MANAGER', 'Minimal satu manajer aktif harus tersisa.');
+      }
+      Object.assign(existing, { name: clean, role, active, updatedAt: isoNow() });
+      audit(db, user, active ? 'ubah_pengguna' : 'nonaktifkan_pengguna', 'user', id, `${clean} · ${role}`);
+      return existing;
+    }
+  }
+  const created = {
+    id: id ?? `u-${uid('').slice(1, 9)}`,
+    name: clean,
+    role,
+    active,
+    createdAt: isoNow(),
+  };
+  db.users.push(created);
+  audit(db, user, 'buat_pengguna', 'user', created.id, `${clean} · ${role}`);
+  return created;
+}
+
+export function auditTrail(db, entity, entityId, limit = 12) {
+  return db.audit.filter((a) => a.entity === entity && a.entityId === entityId).slice(0, limit);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Products and spare parts                                                   */
+/* -------------------------------------------------------------------------- */
+
+export function saveSku(db, {
+  id = null, collectionId, code, colourCode, colourName = '', swatch = null,
+  widthCm = 280, buyPrice = 0, sellPrice = 0, active = true, image = '', notes = '', user,
+}) {
+  const collection = byId(db.collections, collectionId);
+  assert(collection, 'COLLECTION_NOT_FOUND', 'Koleksi tidak ditemukan.');
+  const cleanCode = String(code ?? '').trim();
+  const cleanColour = String(colourCode ?? '').trim();
+  assert(cleanCode.length >= 2, 'INVALID_CODE', 'Kode produk minimal 2 karakter.');
+  assert(cleanColour.length >= 1, 'INVALID_CODE', 'Kode warna wajib diisi.');
+  assert(!db.skus.some((s) => s.id !== id && s.code.toLowerCase() === cleanCode.toLowerCase()), 'DUPLICATE_CODE', `Kode ${cleanCode} sudah dipakai.`);
+
+  const patch = {
+    collectionId,
+    collectionName: collection.name,
+    code: cleanCode,
+    colourCode: cleanColour,
+    colourName: String(colourName ?? '').trim() || null,
+    swatch: swatch || null,
+    widthCm: Number(widthCm) || 0,
+    buyPrice: Math.round(Number(buyPrice) || 0),
+    sellPrice: Math.round(Number(sellPrice) || 0),
+    active,
+    dormant: !active,
+    image: image || '',
+    notes: String(notes ?? '').trim(),
+    updatedAt: isoNow(),
+  };
+
+  if (id) {
+    const sku = byId(db.skus, id);
+    assert(sku, 'SKU_NOT_FOUND', 'Produk tidak ditemukan.');
+    Object.assign(sku, patch);
+    audit(db, user, 'ubah_produk', 'sku', id, `${cleanCode} · ${collection.name}`);
+    return sku;
+  }
+  const sku = { id: `sku-${uid('').slice(1, 9)}`, unit: 'm', createdAt: isoNow(), ...patch };
+  db.skus.push(sku);
+  audit(db, user, 'buat_produk', 'sku', sku.id, `${cleanCode} · ${collection.name}`);
+  return sku;
+}
+
+export function savePart(db, {
+  id = null, sku, name, categoryId, brand = '', unit = 'pcs', buyPrice = 0, sellPrice = 0,
+  active = true, image = '', notes = '', user,
+}) {
+  const cleanSku = String(sku ?? '').trim().toUpperCase();
+  const cleanName = String(name ?? '').trim();
+  assert(cleanSku.length >= 2, 'INVALID_SKU', 'SKU part minimal 2 karakter.');
+  assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama part minimal 2 karakter.');
+  assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
+  assert(!db.parts.some((p) => p.id !== id && p.sku.toLowerCase() === cleanSku.toLowerCase()), 'DUPLICATE_SKU', `SKU ${cleanSku} sudah dipakai.`);
+
+  const patch = {
+    sku: cleanSku,
+    name: cleanName,
+    categoryId,
+    brand: String(brand ?? '').trim(),
+    unit: unit || 'pcs',
+    buyPrice: Math.round(Number(buyPrice) || 0),
+    sellPrice: Math.round(Number(sellPrice) || 0),
+    active,
+    image: image || '',
+    notes: String(notes ?? '').trim(),
+    updatedAt: isoNow(),
+  };
+
+  if (id) {
+    const part = byId(db.parts, id);
+    assert(part, 'PART_NOT_FOUND', 'Spare part tidak ditemukan.');
+    Object.assign(part, patch);
+    audit(db, user, 'ubah_part', 'part', id, `${cleanSku} · ${cleanName}`);
+    return part;
+  }
+  const part = { id: `part-${uid('').slice(1, 9)}`, createdAt: isoNow(), ...patch };
+  db.parts.push(part);
+  audit(db, user, 'buat_part', 'part', part.id, `${cleanSku} · ${cleanName}`);
+  return part;
+}

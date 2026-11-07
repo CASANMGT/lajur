@@ -1,10 +1,12 @@
 /** Master data, kategori, gudang, cadangan data, dan matriks peran. */
 
 import {
-  esc, icon, fmt, badge, swatch, toast, openModal, field, confirmAction, downloadFile,
+  esc, icon, fmt, badge, swatch, toast, openModal, field, confirmAction, downloadFile, imageToDataUrl,
 } from '../dom.js';
 import { byId, uid, todayJakarta } from '../../domain/core.js';
-import { activeWarehouses, createCollection, renameCollection, saveWarehouse } from '../../domain/master.js';
+import {
+  activeWarehouses, auditTrail, createCollection, renameCollection, savePart, saveSku, saveWarehouse,
+} from '../../domain/master.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';import { pageHead, statCard, can } from './common.js';
 
 let tab = 'produk';
@@ -30,11 +32,15 @@ export function render(ctx) {
 
 function renderProducts(ctx) {
   const { db, role } = ctx;
-  return `<section class="card">
+  return `<div class="row-between" style="margin-bottom:12px">
+      <div><h2>Produk kain</h2><p class="xs muted">Gambar, swatch, harga, dan status. ID internal tetap.</p></div>
+      ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-product">${icon('plus')} Produk kain</button>` : ''}
+    </div>
+    <section class="card">
     <div class="table-wrap"><table class="data">
       <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.skus.map((s) => `<tr>
-        <td class="mono strong">${esc(s.code)}<div class="xs muted">${esc(s.id)}</div></td>
+        <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
         <td>${esc(s.collectionName)}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span></span></div></td>
         <td class="num">${s.widthCm ? `${s.widthCm} cm` : '—'}</td>
@@ -50,19 +56,23 @@ function renderProducts(ctx) {
 
 function renderParts(ctx) {
   const { db, role } = ctx;
-  return `<section class="card">
+  return `<div class="row-between" style="margin-bottom:12px">
+      <div><h2>Spare part</h2><p class="xs muted">Brand, gambar, kategori, harga, dan status aktif. Stok selalu pcs.</p></div>
+      ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-part">${icon('plus')} Tambah spare part</button>` : ''}
+    </div>
+    <section class="card">
     <div class="table-wrap"><table class="data">
-      <thead><tr><th>SKU</th><th>Nama</th><th>Kategori</th><th>Satuan</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok total</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+      <thead><tr><th>SKU / brand</th><th>Nama</th><th>Kategori</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.parts.map((p) => {
         const qty = db.partStock.filter((s) => s.partId === p.id).reduce((a, s) => a + s.qty, 0);
         return `<tr>
-          <td class="mono">${esc(p.sku)}<div class="xs muted">${esc(p.id)}</div></td>
-          <td>${esc(p.name)}</td>
+          <td><div class="cell-main">${p.image ? `<img src="${esc(p.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${icon('box')}</span>`}<div class="txt"><strong class="mono">${esc(p.sku)}</strong><span>${esc(p.brand || 'Tanpa brand')}</span></div></div></td>
+          <td>${esc(p.name)}<div class="xs muted">${esc(p.id)}</div></td>
           <td>${esc(byId(db.categories, p.categoryId)?.name ?? '—')}</td>
-          <td>${esc(p.unit)}</td>
           <td class="num">${fmt.money(p.buyPrice)}</td>
           <td class="num">${fmt.money(p.sellPrice)}</td>
           <td class="num">${fmt.pcs(qty)} pcs</td>
+          <td>${p.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
           <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-part="${p.id}">Edit</button>` : ''}</td>
         </tr>`;
       }).join('')}</tbody>
@@ -199,6 +209,7 @@ function openSku(ctx, sku = null) {
   const isNew = !sku;
   const collections = db.collections.filter((c) => c.id !== 'col-rel' && c.id !== 'col-motor');
   const setSwatch = Boolean(sku?.swatch);
+  const trail = sku ? auditTrail(db, 'sku', sku.id, 6) : [];
   openModal({
     title: isNew ? 'Produk kain baru' : `Edit ${sku.code}`,
     description: 'ID internal dibuat sekali dan tidak berubah saat kode tampilan diedit.',
@@ -220,66 +231,111 @@ function openSku(ctx, sku = null) {
           <span class="xs muted">Swatch hanya referensi tampilan. Jangan menurunkan warna dari kode angka.</span>
         </div>
       </div>
-    </div>`,
+      <div class="span-2">
+        <div class="row-between"><span class="field-label">Foto produk (opsional)</span><img data-image-preview src="${esc(sku?.image ?? '')}" alt="" class="thumb-lg" ${sku?.image ? '' : 'hidden'} /></div>
+        <input class="input" type="file" name="imageFile" accept="image/*" style="margin-top:6px" />
+        <input type="hidden" name="image" value="${esc(sku?.image ?? '')}" />
+        <span class="hint">Gambar disimpan sebagai data URL kecil di perangkat ini (maks. 250 KB).</span>
+      </div>
+      ${field('Catatan produk', `<textarea class="textarea" name="notes" placeholder="Komposisi, instruksi cuci, atau catatan QC.">${esc(sku?.notes ?? '')}</textarea>`, { full: true })}
+    </div>
+    ${trail.length ? `<hr class="divider" /><div class="xs muted">Riwayat perubahan</div><ul class="timeline" style="margin-top:8px">${trail.map((a) => `<li><div class="t-head"><strong>${esc(a.action)}</strong><time>${esc(new Date(a.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(a.userName)} · ${esc(a.detail)}</div></li>`).join('')}</ul>` : ''}`,
     onMount(form) {
       const checkbox = form.useSwatch;
       const color = form.swatch;
       const sync = () => { color.disabled = !checkbox.checked; };
       checkbox.addEventListener('change', sync);
       sync();
+      form.imageFile.addEventListener('change', async () => {
+        try {
+          const data = await imageToDataUrl(form.imageFile.files?.[0]);
+          if (data) {
+            form.image.value = data;
+            form.querySelector('[data-image-preview]').src = data;
+            form.querySelector('[data-image-preview]').hidden = false;
+          }
+        } catch (err) {
+          toast(err.message, { tone: 'error' });
+        }
+      });
     },
     onSubmit(form, close) {
       const useSwatch = form.useSwatch.checked;
-      const patch = {
+      ctx.store.update((d) => saveSku(d, {
+        id: sku?.id ?? null,
         collectionId: form.collection.value,
-        collectionName: byId(db.collections, form.collection.value)?.name ?? '',
-        code: form.code.value.trim(),
-        colourCode: form.colourCode.value.trim(),
-        colourName: form.colourName.value.trim() || null,
+        code: form.code.value,
+        colourCode: form.colourCode.value,
+        colourName: form.colourName.value,
         swatch: useSwatch ? form.swatch.value : null,
         widthCm: Number(form.widthCm.value || 0),
         buyPrice: Number(String(form.buyPrice.value).replace(/\D/g, '')) || 0,
         sellPrice: Number(String(form.sellPrice.value).replace(/\D/g, '')) || 0,
         active: form.active.value === '1',
-        dormant: form.active.value !== '1',
-      };
-      if (!patch.code || !patch.colourCode) throw new Error('Kode dan kode warna wajib diisi.');
-      ctx.store.update((d) => {
-        if (isNew) {
-          d.skus.push({ id: uid('sku'), unit: 'm', ...patch });
-        } else {
-          const target = d.skus.find((s) => s.id === sku.id);
-          Object.assign(target, patch);
-        }
-      });
+        image: form.image.value,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
       close();
-      toast(isNew ? 'Produk kain dibuat.' : 'Produk diperbarui; riwayat tetap memakai ID yang sama.', { tone: 'success' });
+      toast(isNew ? 'Produk kain dibuat.' : 'Produk diperbarui; ID dan riwayat tetap.', { tone: 'success' });
     },
   });
 }
 
-function openPart(ctx, part) {
+function openPart(ctx, part = null) {
+  const isNew = !part;
+  const trail = part ? auditTrail(ctx.db, 'part', part.id, 6) : [];
   openModal({
-    title: `Edit ${part.name}`,
-    submitLabel: 'Simpan',
+    title: isNew ? 'Spare part baru' : `Edit ${part.name}`,
+    description: 'Brand, gambar, harga, dan status aktif. SKU adalah identitas tampilan; ID internal tetap.',
+    wide: true,
+    submitLabel: isNew ? 'Buat spare part' : 'Simpan',
     body: `<div class="form-grid">
-      ${field('SKU', `<input class="input" name="sku" value="${esc(part.sku)}" />`)}
-      ${field('Nama', `<input class="input" name="name" value="${esc(part.name)}" />`)}
-      ${field('Harga beli', `<input class="input" name="buyPrice" inputmode="numeric" value="${part.buyPrice}" />`)}
-      ${field('Harga jual', `<input class="input" name="sellPrice" inputmode="numeric" value="${part.sellPrice}" />`)}
-    </div>`,
-    onSubmit(form, close) {
-      ctx.store.update((db) => {
-        const p = db.parts.find((x) => x.id === part.id);
-        Object.assign(p, {
-          sku: form.sku.value.trim(),
-          name: form.name.value.trim(),
-          buyPrice: Number(String(form.buyPrice.value).replace(/\D/g, '')) || 0,
-          sellPrice: Number(String(form.sellPrice.value).replace(/\D/g, '')) || 0,
-        });
+      ${field('SKU', `<input class="input" name="sku" value="${esc(part?.sku ?? '')}" placeholder="REL-300" required />`)}
+      ${field('Nama', `<input class="input" name="name" value="${esc(part?.name ?? '')}" required />`)}
+      ${field('Brand', `<input class="input" name="brand" value="${esc(part?.brand ?? '')}" placeholder="Contoh: Somfy / lokal" />`)}
+      ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${part?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
+      ${field('Harga beli / pcs', `<input class="input" name="buyPrice" inputmode="numeric" value="${part?.buyPrice ?? ''}" />`)}
+      ${field('Harga jual / pcs', `<input class="input" name="sellPrice" inputmode="numeric" value="${part?.sellPrice ?? ''}" />`)}
+      ${field('Status', `<select class="select" name="active"><option value="1" ${part?.active !== false ? 'selected' : ''}>Aktif</option><option value="0" ${part?.active === false ? 'selected' : ''}>Nonaktif</option></select>`)}
+      <div class="span-2">
+        <div class="row-between"><span class="field-label">Foto part (opsional)</span><img data-image-preview src="${esc(part?.image ?? '')}" alt="" class="thumb-lg" ${part?.image ? '' : 'hidden'} /></div>
+        <input class="input" type="file" name="imageFile" accept="image/*" style="margin-top:6px" />
+        <input type="hidden" name="image" value="${esc(part?.image ?? '')}" />
+      </div>
+      ${field('Catatan teknis', `<textarea class="textarea" name="notes" placeholder="Material, ukuran, kompatibilitas rel/motor.">${esc(part?.notes ?? '')}</textarea>`, { full: true })}
+    </div>
+    ${trail.length ? `<hr class="divider" /><div class="xs muted">Riwayat perubahan</div><ul class="timeline" style="margin-top:8px">${trail.map((a) => `<li><div class="t-head"><strong>${esc(a.action)}</strong><time>${esc(new Date(a.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(a.userName)} · ${esc(a.detail)}</div></li>`).join('')}</ul>` : ''}`,
+    onMount(form) {
+      form.imageFile.addEventListener('change', async () => {
+        try {
+          const data = await imageToDataUrl(form.imageFile.files?.[0]);
+          if (data) {
+            form.image.value = data;
+            form.querySelector('[data-image-preview]').src = data;
+            form.querySelector('[data-image-preview]').hidden = false;
+          }
+        } catch (err) {
+          toast(err.message, { tone: 'error' });
+        }
       });
+    },
+    onSubmit(form, close) {
+      ctx.store.update((db) => savePart(db, {
+        id: part?.id ?? null,
+        sku: form.sku.value,
+        name: form.name.value,
+        brand: form.brand.value,
+        categoryId: form.category.value,
+        buyPrice: Number(String(form.buyPrice.value).replace(/\D/g, '')) || 0,
+        sellPrice: Number(String(form.sellPrice.value).replace(/\D/g, '')) || 0,
+        active: form.active.value === '1',
+        image: form.image.value,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
       close();
-      toast('Spare part diperbarui.', { tone: 'success' });
+      toast(isNew ? 'Spare part dibuat.' : 'Spare part diperbarui.', { tone: 'success' });
     },
   });
 }
@@ -382,6 +438,7 @@ export function mount(ctx) {
     ctx.store.emit();
   }));
   document.querySelector('[data-act="new-product"]')?.addEventListener('click', () => openSku(ctx));
+  document.querySelector('[data-act="new-part"]')?.addEventListener('click', () => openPart(ctx));
   document.querySelectorAll('[data-edit-sku]').forEach((btn) => btn.addEventListener('click', () => {
     const sku = ctx.db.skus.find((s) => s.id === btn.dataset.editSku);
     if (sku) openSku(ctx, sku);

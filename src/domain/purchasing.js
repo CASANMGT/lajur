@@ -101,6 +101,43 @@ export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, 
   return po;
 }
 
+export function saveSupplier(db, {
+  id = null, code, name, contact = '', phone = '', email = '', address = '',
+  country = 'ID', origin = 'local', currency = 'IDR', fxRate = 1,
+  incoterm = '', port = '', termsDays = 30, leadTimeDays = 7, notes = '', user,
+}) {
+  const cleanCode = String(code ?? '').trim().toUpperCase();
+  const cleanName = String(name ?? '').trim();
+  assert(cleanCode.length >= 2, 'INVALID_CODE', 'Kode pemasok minimal 2 karakter.');
+  assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama pemasok minimal 2 karakter.');
+  assert(['local', 'import'].includes(origin), 'INVALID_ORIGIN', 'Asal pemasok tidak dikenal.');
+  assert(['IDR', 'CNY', 'USD'].includes(currency), 'INVALID_CURRENCY', 'Mata uang tidak dikenal.');
+  const rate = currency === 'IDR' ? 1 : Number(fxRate);
+  assert(rate > 0, 'INVALID_FX', 'Kurs harus lebih dari 0.');
+  assert(!db.suppliers.some((s) => s.id !== id && s.code.toUpperCase() === cleanCode), 'DUPLICATE_CODE', `Kode ${cleanCode} sudah dipakai.`);
+
+  const patch = {
+    code: cleanCode, name: cleanName, contact, phone, email, address,
+    country: origin === 'import' ? country || 'CN' : 'ID',
+    origin, currency, fxRate: rate, incoterm, port,
+    termsDays: Number(termsDays) || 0,
+    leadTimeDays: Number(leadTimeDays) || 0,
+    notes,
+    updatedAt: isoNow(),
+  };
+  if (id) {
+    const supplier = byId(db.suppliers, id);
+    assert(supplier, 'SUPPLIER_NOT_FOUND', 'Pemasok tidak ditemukan.');
+    Object.assign(supplier, patch);
+    audit(db, user, 'ubah_pemasok', 'supplier', id, `${cleanCode} · ${currency}`);
+    return supplier;
+  }
+  const supplier = { id: `SUP-${String(db.suppliers.length + 1).padStart(3, '0')}`, ...patch, createdAt: isoNow() };
+  db.suppliers.push(supplier);
+  audit(db, user, 'buat_pemasok', 'supplier', supplier.id, `${cleanCode} · ${currency}`);
+  return supplier;
+}
+
 export function approvePO(db, { id, user }) {
   const po = requirePO(db, id);
   assert(user?.role === 'manager', 'FORBIDDEN', 'Hanya manajer yang dapat menyetujui PO.');

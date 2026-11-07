@@ -94,18 +94,19 @@ export function weakPin(pin) {
   return false;
 }
 
-export async function ensureAccounts() {
+export async function ensureAccounts(users = Object.values(USERS)) {
   const data = readJson(AUTH_KEY) ?? { version: 1, users: {} };
   if (!data.users) data.users = {};
   let changed = false;
-  for (const user of ACCOUNTS) {
+  for (const user of users) {
     if (!data.users[user.id]) {
       const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
-      const hash = await hashPin(DEFAULT_PINS[user.id], salt);
+      const seedPin = DEFAULT_PINS[user.id] ?? String(Math.floor(100000 + Math.random() * 900000));
+      const hash = await hashPin(seedPin, salt);
       data.users[user.id] = {
         salt,
         hash,
-        defaultPin: true,
+        defaultPin: Boolean(DEFAULT_PINS[user.id]),
         updatedAt: new Date().toISOString(),
         failed: 0,
         lockedUntil: 0,
@@ -131,8 +132,8 @@ function writeAttempts(value) {
   writeJson(ATTEMPT_KEY, value);
 }
 
-function userRecord(userId) {
-  return ACCOUNTS.find((u) => u.id === userId) ?? null;
+function userRecord(userId, users = ACCOUNTS) {
+  return users.find((u) => u.id === userId) ?? null;
 }
 
 export function pendingLock(userId) {
@@ -150,11 +151,16 @@ export async function verifyPin(userId, pin) {
   return hash === account.hash;
 }
 
-export async function login(userId, pin) {
-  const user = userRecord(userId);
+export async function login(userId, pin, users = ACCOUNTS) {
+  const user = userRecord(userId, users);
   if (!user) {
     const err = new Error('Pilih pengguna terlebih dahulu.');
     err.code = 'USER_REQUIRED';
+    throw err;
+  }
+  if (user.active === false) {
+    const err = new Error('Akun ini dinonaktifkan. Hubungi manajer.');
+    err.code = 'USER_INACTIVE';
     throw err;
   }
   const locked = pendingLock(userId);
@@ -201,15 +207,15 @@ export async function login(userId, pin) {
   return { ...user, pinChanged: !accountOf(userId)?.defaultPin };
 }
 
-export function sessionUser() {
+export function sessionUser(users = ACCOUNTS) {
   const session = readSession();
   if (!session?.userId) return null;
   if (!session.expiresAt || session.expiresAt < Date.now()) {
     writeSession(null);
     return null;
   }
-  const user = userRecord(session.userId);
-  if (!user) {
+  const user = userRecord(session.userId, users);
+  if (!user || user.active === false) {
     writeSession(null);
     return null;
   }
@@ -236,7 +242,7 @@ export async function changePin(userId, currentPin, nextPin) {
     throw err;
   }
   if (!validPinFormat(nextPin)) {
-    const err = new Error('PIN baru harus 4â€“6 angka.');
+    const err = new Error('PIN baru harus 4-6 angka.');
     err.code = 'PIN_FORMAT';
     throw err;
   }
@@ -250,25 +256,63 @@ export async function changePin(userId, currentPin, nextPin) {
     err.code = 'PIN_WEAK';
     throw err;
   }
-  const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
-  const hash = await hashPin(nextPin, salt);
-  account.salt = salt;
-  account.hash = hash;
-  account.defaultPin = false;
-  account.updatedAt = new Date().toISOString();
-  persistAccounts();
+  await setAccountPin(userId, nextPin, false);
   return true;
 }
 
-function persistAccounts() {
-  const data = cached ?? readJson(AUTH_KEY);
+async function setAccountPin(userId, pin, defaultPin = false) {
+  const data = cached ?? readJson(AUTH_KEY) ?? { version: 1, users: {} };
+  if (!data.users) data.users = {};
+  const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
+  const hash = await hashPin(pin, salt);
+  data.users[userId] = {
+    ...(data.users[userId] ?? {}),
+    salt,
+    hash,
+    defaultPin,
+    updatedAt: new Date().toISOString(),
+    failed: 0,
+    lockedUntil: 0,
+  };
+  cached = data;
   writeJson(AUTH_KEY, data);
 }
 
+/** Manager creates an account for a new staff member. */
+export async function createAccount(userId, pin, { defaultPin = false } = {}) {
+  if (!validPinFormat(pin)) {
+    const err = new Error('PIN awal harus 4-6 angka.');
+    err.code = 'PIN_FORMAT';
+    throw err;
+  }
+  await setAccountPin(userId, pin, defaultPin);
+}
+
+/** Manager resets another user's PIN without knowing the old PIN. */
+export async function adminSetPin(userId, pin) {
+  if (!validPinFormat(pin)) {
+    const err = new Error('PIN baru harus 4-6 angka.');
+    err.code = 'PIN_FORMAT';
+    throw err;
+  }
+  await setAccountPin(userId, pin, false);
+  const attempts = readAttempts();
+  delete attempts[userId];
+  writeAttempts(attempts);
+  return true;
+}
+
+export function pinStatus(userId) {
+  const account = accountOf(userId);
+  if (!account) return { exists: false, defaultPin: false, updatedAt: null };
+  return { exists: true, defaultPin: Boolean(account.defaultPin), updatedAt: account.updatedAt ?? null };
+}
+
 /** Demo credentials are shown only while a user still has the default PIN. */
-export function demoCredentials() {
+export function demoCredentials(users = ACCOUNTS) {
   const data = cached ?? readJson(AUTH_KEY);
-  return ACCOUNTS
+  return users
     .filter((u) => data?.users?.[u.id]?.defaultPin !== false)
+    .filter((u) => DEFAULT_PINS[u.id])
     .map((u) => ({ ...u, pin: DEFAULT_PINS[u.id] }));
 }

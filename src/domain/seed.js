@@ -19,6 +19,7 @@ import { approvePO, createPO, createSupplierInvoice, paySupplierInvoice, receive
 import { approveOpname, saveCounts, startOpname, submitOpname } from './opname.js';
 import { createShipment, updateShipmentStatus } from './shipments.js';
 import { completeTask, createTask, startTask } from './tasks.js';
+import { confirmOrder, createSalesOrder } from './orders.js';
 
 export const USERS = {
   operator: { id: 'u-op', name: 'Rani Pratama', role: 'operator' },
@@ -70,7 +71,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 4,
+      version: 5,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -78,7 +79,7 @@ function skeleton(dataset) {
       currency: 'IDR',
       timezone: 'Asia/Jakarta',
     },
-    users: Object.values(USERS),
+    users: Object.values(USERS).map((u) => ({ ...u, active: true })),
     warehouses: MASTER.warehouses.map((w) => ({ ...w })),
     categories: MASTER.categories.map((c) => ({ ...c })),
     collections: MASTER.collections.map((c) => ({ ...c })),
@@ -101,9 +102,18 @@ function skeleton(dataset) {
     supplierInvoices: [],
     shipments: [],
     tasks: [],
+    orders: [],
     returns: [],
     opnameSessions: [],
     audit: [],
+    settings: {
+      lowStockMm: 10000,
+      taskDueDays: 1,
+      requireProofOnReceipt: false,
+      salesOrderEnabled: true,
+      operatorCanSeeCosts: false,
+      sampleDepositRequired: false,
+    },
     sequences: {},
   };
 }
@@ -329,6 +339,26 @@ export function buildSeed({ dataset = 'main' } = {}) {
   if (remaining > 0) {
     recordPayment(db, { invoiceId: invGraha.id, amount: remaining, method: 'transfer', reference: 'BNI-0510', date: '2026-10-10', user: sales });
   }
+
+  /* --------------------------------------------------------- sales orders */
+  createSalesOrder(db, {
+    customerId: c1.id,
+    date: '2026-11-06',
+    lines: [{ kind: 'fabric', rollId: roll(7), qtyMm: 20000, unitPrice: 125000 }],
+    notes: 'Menunggu konfirmasi warna final 24 kamar.',
+    user: sales,
+  });
+  const so2 = createSalesOrder(db, {
+    customerId: c4.id,
+    date: '2026-11-07',
+    lines: [
+      { kind: 'fabric', rollId: roll(14), qtyMm: 10000, unitPrice: 149000 },
+      { kind: 'part', partId: 'part-runner', qtyPcs: 6, unitPrice: 12000, warehouseId: 'wh-jkt' },
+    ],
+    notes: 'Pesanan ruang tunggu; siap difakturkan.',
+    user: sales,
+  });
+  confirmOrder(db, { id: so2.id, user: sales });
 
   /* ------------------------------------------------------------ transfers */
   const t1 = createTransfer(db, {

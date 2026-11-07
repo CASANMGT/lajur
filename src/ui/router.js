@@ -4,7 +4,7 @@ import store, { storage } from '../data/store.js';
 import { ROLE_HOME, ensureAccounts, sessionUser } from '../data/auth.js';
 import { dashboardMetrics } from '../domain/reports.js';
 import { invoiceOutstanding } from '../domain/sales.js';
-import { renderShell, mountShell, ROUTE_META } from './shell.js';
+import { renderShell, mountShell, ROUTE_META, canAccess } from './shell.js';
 import { icon, toast, closeModal } from './dom.js';
 import * as login from './views/login.js';
 import * as dashboard from './views/dashboard.js';
@@ -20,6 +20,8 @@ import * as master from './views/master.js';
 import * as simulation from './views/simulation.js';
 import * as tasks from './views/tasks.js';
 import * as samples from './views/samples.js';
+import * as settings from './views/settings.js';
+import * as orders from './views/orders.js';
 
 const VIEWS = {
   ringkasan: dashboard,
@@ -28,12 +30,14 @@ const VIEWS = {
   transfer: transfers,
   pembelian: purchasing,
   penjualan: sales,
+  pesanan: orders,
   proyek: projects,
   pelanggan: customers,
   sampel: samples,
   opname,
   laporan: reports,
   master,
+  pengaturan: settings,
   simulasi: simulation,
 };
 
@@ -45,7 +49,7 @@ export function parseHash(hash = window.location.hash) {
   return { name: VIEWS[name] ? name : 'ringkasan', id, query };
 }
 
-function ctxFor(route, user = sessionUser()) {
+function ctxFor(route, user = sessionUser(store.state.db.users)) {
   const state = store.state;
   const role = user.role;
   const db = store.db;
@@ -79,13 +83,15 @@ function errorPanel(err) {
 
 export function renderApp() {
   const app = document.getElementById('app');
-  const user = sessionUser();
+  const users = store.db.users.filter((u) => u.active !== false);
+  const user = sessionUser(store.db.users);
 
   if (!user) {
     closeModal();
     try {
-      app.innerHTML = login.render();
+      app.innerHTML = login.render({ users });
       login.mount({
+        users: store.db.users,
         onAuthenticated: (u) => {
           store.setUi({ role: u.role }, { rerender: false });
           const home = ROLE_HOME[u.role] ?? '#/ringkasan';
@@ -102,6 +108,13 @@ export function renderApp() {
   }
 
   const route = parseHash();
+  if (!canAccess(user.role, route.name)) {
+    const home = ROLE_HOME[user.role] ?? '#/ringkasan';
+    if (window.location.hash !== home) {
+      window.location.hash = home;
+      return;
+    }
+  }
   const activeWh = store.db.warehouses.filter((w) => w.active !== false);
   if (store.ui.warehouseId !== 'all' && !activeWh.some((w) => w.id === store.ui.warehouseId)) {
     store.setUi({ warehouseId: activeWh[0]?.id ?? 'all' }, { rerender: false });
@@ -140,9 +153,9 @@ export function go(hash) {
 
 export async function start() {
   store.init();
-  await ensureAccounts();
+  await ensureAccounts(store.db.users);
   if (!window.location.hash) window.location.hash = '#/ringkasan';
-  const user = sessionUser();
+  const user = sessionUser(store.db.users);
   if (user) store.setUi({ role: user.role }, { rerender: false });
   store.subscribe(() => renderApp());
   window.addEventListener('hashchange', () => {
@@ -151,7 +164,7 @@ export async function start() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   });
   window.setInterval(() => {
-    if (!sessionUser() && !document.querySelector('.auth-screen')) renderApp();
+    if (!sessionUser(store.db.users) && !document.querySelector('.auth-screen')) renderApp();
   }, 60_000);
   renderApp();
 

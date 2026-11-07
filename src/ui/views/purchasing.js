@@ -6,13 +6,15 @@ import {
 import { byId, daysBetween, parseM, todayJakarta } from '../../domain/core.js';
 import {
   PO_STATUS, approvePO, createPO, createSupplierReturn, paySupplierInvoice, payablesAging, poLineOpen,
-  receivePO, supplierPerformance,
+  receivePO, saveSupplier, supplierPerformance,
 } from '../../domain/purchasing.js';
 import {
   SHIPMENT_MODE, SHIPMENT_STATUS, activeShipmentForPO, createShipment, landedAddPerUnit,
   shipmentProgress, shipmentStats, shipmentsForPO, updateShipmentStatus,
 } from '../../domain/shipments.js';
 import { attachmentMeta } from '../../domain/attachments.js';
+import { settingsOf } from '../../domain/settings.js';
+import { auditTrail } from '../../domain/master.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { printPoHtml } from './print.js';
 
@@ -26,6 +28,12 @@ export function render(ctx) {
   const open = ap.items.length;
   const late = ap.items.filter((i) => i.daysLate > 0).length;
   const ship = shipmentStats(db);
+  const showFinance = role === 'manager';
+  const tabs = [
+    ['po', 'Purchase order'], ['penerimaan', 'Penerimaan'], ['pengiriman', 'Pengiriman impor'],
+    ...(showFinance ? [['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']] : []),
+  ];
+  if (!tabs.some(([k]) => k === tab)) tab = 'po';
 
   return `
     ${pageHead({
@@ -35,14 +43,15 @@ export function render(ctx) {
       actions: `${can(role, 'po.create') ? `<button class="btn btn-primary" type="button" data-act="new-po">${icon('plus')} Buat PO</button>` : ''}`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
-      ${statCard({ label: 'Utang pemasok', value: fmt.money(ap.total), meta: `${open} tagihan terbuka`, tone: 'warn', iconName: 'truck' })}
-      ${statCard({ label: 'Lewat jatuh tempo', value: String(late), meta: 'Tagihan perlu dibayar', tone: 'warn' })}
+      ${showFinance ? statCard({ label: 'Utang pemasok', value: fmt.money(ap.total), meta: `${open} tagihan terbuka`, tone: 'warn', iconName: 'truck' }) : ''}
+      ${showFinance ? statCard({ label: 'Lewat jatuh tempo', value: String(late), meta: 'Tagihan perlu dibayar', tone: 'warn' }) : ''}
       ${statCard({ label: 'PO berjalan', value: String(db.purchaseOrders.filter((p) => ['approved', 'partial'].includes(p.status)).length), meta: 'Belum diterima lengkap' })}
       ${statCard({ label: 'Pengiriman aktif', value: String(ship.active), meta: `${ship.late} lewat ETA · ${ship.customs} di bea cukai`, tone: ship.late ? 'warn' : '' })}
+      ${showFinance ? '' : statCard({ label: 'Penerimaan', value: String(db.goodsReceipts.length), meta: 'Dokumen GR tersimpan' })}
     </div>
 
     <div class="tabs" role="tablist">
-      ${[['po', 'Purchase order'], ['penerimaan', 'Penerimaan'], ['pengiriman', 'Pengiriman impor'], ['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${tabs.map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
 
     ${tab === 'po' ? renderPoTab(ctx) : tab === 'penerimaan' ? renderReceiptTab(ctx) : tab === 'pengiriman' ? renderShipmentTab(ctx) : tab === 'tagihan' ? renderBillTab(ctx) : renderSupplierTab(ctx)}`;
@@ -166,7 +175,11 @@ function renderBillTab(ctx) {  const { db, role } = ctx;
 
 function renderSupplierTab(ctx) {
   const { db, role, metrics } = ctx;
-  return `<div class="grid grid-2">
+  return `<div class="row-between" style="margin-bottom:12px">
+      <div><h2>Pemasok lokal & impor</h2><p class="xs muted">Kurs dan mata uang memengaruhi PO, tagihan, pembayaran, dan HPP.</p></div>
+      ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-supplier">${icon('plus')} Tambah pemasok</button>` : ''}
+    </div>
+    <div class="grid grid-2">
     ${db.suppliers.map((s) => {
       const perf = supplierPerformance(db).find((p) => p.supplier.id === s.id);
       const prices = db.supplierPrices.filter((p) => p.supplierId === s.id);
@@ -208,6 +221,7 @@ function renderPoDetail(ctx) {
   const bill = db.supplierInvoices.find((b) => b.poId === po.id);
   const shipment = activeShipmentForPO(db, po.id);
   const landed = landedAddPerUnit(db, po.id);
+  const showMoney = role === 'manager';
   const actions = [];
   if (po.status === 'draft' && role === 'manager') actions.push(`<button class="btn btn-primary" data-act="approve">${icon('check')} Setujui PO</button>`);
   if (['approved', 'partial'].includes(po.status) && can(role, 'po.receive')) actions.push(`<button class="btn btn-primary" data-act="receive">${icon('truck')} Terima barang</button>`);
@@ -220,7 +234,7 @@ function renderPoDetail(ctx) {
       <div>
         <a class="small strong" href="#/pembelian">← Semua pembelian</a>
         <div class="row" style="margin-top:6px"><h1 class="mono">${esc(po.id)}</h1>${badge(PO_STATUS[po.status].label, PO_STATUS[po.status].tone)} ${po.currency !== 'IDR' ? badge(`Impor ${po.currency}`, 'copper') : ''}</div>
-        <p class="sub">${esc(supplier?.name)} · estimasi ${esc(po.expectedDate)} · termin ${esc(po.termsDays)} hari · ${po.currency !== 'IDR' ? `${esc(po.currency)} ${po.totalForeign.toLocaleString('id-ID')} @ ${fmt.money(po.fxRate)} ≈ ${fmt.money(po.total)}` : fmt.money(po.total)}</p>
+        <p class="sub">${esc(supplier?.name)} · estimasi ${esc(po.expectedDate)} · termin ${esc(po.termsDays)} hari ${showMoney ? `· ${po.currency !== 'IDR' ? `${esc(po.currency)} ${po.totalForeign.toLocaleString('id-ID')} @ ${fmt.money(po.fxRate)} ≈ ${fmt.money(po.total)}` : fmt.money(po.total)}` : ''}</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -228,10 +242,10 @@ function renderPoDetail(ctx) {
     <div class="grid grid-main">
       <div class="stack">
         <section class="card">
-          <div class="card-head"><div><h2>Baris pesanan</h2><p>Kelebihan terima ditolak per baris.</p></div><span class="badge no-dot">${po.currency !== 'IDR' ? `${po.currency} ${po.totalForeign.toLocaleString('id-ID')} · ${fmt.money(po.total)}` : fmt.money(po.total)}</span></div>
+          <div class="card-head"><div><h2>Baris pesanan</h2><p>Kelebihan terima ditolak per baris.</p></div>${showMoney ? `<span class="badge no-dot">${po.currency !== 'IDR' ? `${po.currency} ${po.totalForeign.toLocaleString('id-ID')} · ${fmt.money(po.total)}` : fmt.money(po.total)}</span>` : ''}</div>
           <div class="table-wrap">
             <table class="data">
-              <thead><tr><th>Barang</th><th class="num">Dipesan</th><th class="num">Diterima</th><th class="num">Sisa</th><th class="num">Harga</th></tr></thead>
+              <thead><tr><th>Barang</th><th class="num">Dipesan</th><th class="num">Diterima</th><th class="num">Sisa</th>${showMoney ? '<th class="num">Harga</th>' : ''}</tr></thead>
               <tbody>${po.lines.map((l) => {
                 const open = poLineOpen(l);
                 return `<tr>
@@ -239,7 +253,7 @@ function renderPoDetail(ctx) {
                   <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : `${fmt.pcs(l.qtyPcs)} pcs`}</td>
                   <td class="num">${l.kind === 'fabric' ? fmt.m(l.receivedMm) : `${fmt.pcs(l.receivedPcs)} pcs`}</td>
                   <td class="num ${open ? 'strong' : 'muted'}">${l.kind === 'fabric' ? fmt.m(open) : `${fmt.pcs(open)} pcs`}</td>
-                  <td class="num">${po.currency !== 'IDR' ? `${esc(po.currency)} ${l.unitPrice.toLocaleString('id-ID')}<div class="xs muted">${fmt.money(l.unitCostIdr ?? l.unitPrice)} / ${esc(l.unit)}</div>` : fmt.money(l.unitPrice)}</td>
+                  ${showMoney ? `<td class="num">${po.currency !== 'IDR' ? `${esc(po.currency)} ${l.unitPrice.toLocaleString('id-ID')}<div class="xs muted">${fmt.money(l.unitCostIdr ?? l.unitPrice)} / ${esc(l.unit)}</div>` : fmt.money(l.unitPrice)}</td>` : ''}
                 </tr>`;
               }).join('')}</tbody>
             </table>
@@ -255,14 +269,14 @@ function renderPoDetail(ctx) {
             <div class="grid grid-3" style="margin-top:10px">
               <div><div class="xs muted">ETD / ETA</div><div class="small">${esc(shipment.etd)} → ${esc(shipment.eta)}</div></div>
               <div><div class="xs muted">Kontainer</div><div class="small mono">${esc(shipment.container || '—')}</div></div>
-              <div><div class="xs muted">Landed cost</div><div class="small strong">${fmt.money(shipment.landedCostIdr)}</div></div>
+              ${showMoney ? `<div><div class="xs muted">Landed cost</div><div class="small strong">${fmt.money(shipment.landedCostIdr)}</div></div>` : ''}
             </div>
-            <div class="grid grid-4" style="margin-top:10px">
+            ${showMoney ? `<div class="grid grid-4" style="margin-top:10px">
               <div><div class="xs muted">Freight</div><div class="small num">${fmt.money(shipment.costs.freightIdr)}</div></div>
               <div><div class="xs muted">Asuransi</div><div class="small num">${fmt.money(shipment.costs.insuranceIdr)}</div></div>
               <div><div class="xs muted">Bea masuk</div><div class="small num">${fmt.money(shipment.costs.dutyIdr)}</div></div>
               <div><div class="xs muted">Lain-lain</div><div class="small num">${fmt.money(shipment.costs.otherIdr)}</div></div>
-            </div>
+            </div>` : ''}
             ${landed ? `<div class="notice notice-teal" style="margin-top:10px">${icon('box')}<div><strong>Landed cost dialokasikan ke HPP.</strong> Penerimaan berikutnya memakai harga pokok termasuk freight/duty per unit.</div></div>` : ''}
             ${shipment.attachments?.length ? `<div class="row" style="margin-top:8px">${shipment.attachments.map((a) => badge(`${a.name}`, 'muted')).join('')}</div>` : ''}
             <div class="row" style="margin-top:10px"><a class="btn btn-sm" href="#/pembelian?tab=pengiriman">${icon('ship')} Semua pengiriman</a></div>
@@ -272,13 +286,13 @@ function renderPoDetail(ctx) {
         <section class="card">
           <div class="card-head"><div><h2>Penerimaan</h2><p>Setiap baris menyimpan roll dan lot sendiri.</p></div><span class="badge no-dot">${receipts.length}</span></div>
           ${receipts.length ? `<div class="table-wrap"><table class="data">
-            <thead><tr><th>Dokumen</th><th>Tanggal</th><th>Gudang</th><th class="num">Nilai</th><th>Tagihan</th></tr></thead>
+            <thead><tr><th>Dokumen</th><th>Tanggal</th><th>Gudang</th>${showMoney ? '<th class="num">Nilai</th><th>Tagihan</th>' : ''}</tr></thead>
             <tbody>${receipts.map((r) => `<tr>
               <td class="mono">${esc(r.id)}<div class="xs muted">${esc(r.ref)}</div></td>
               <td>${esc(r.date)}</td>
               <td>${esc(warehouseOf(db, r.warehouseId)?.code)}</td>
-              <td class="num">${fmt.money(r.total)}</td>
-              <td>${r.supplierInvoiceId ? `<a class="mono xs" href="#/pembelian?tab=tagihan">${esc(r.supplierInvoiceId)}</a>` : '—'}</td>
+              ${showMoney ? `<td class="num">${fmt.money(r.total)}</td>
+              <td>${r.supplierInvoiceId ? `<a class="mono xs" href="#/pembelian?tab=tagihan">${esc(r.supplierInvoiceId)}</a>` : '—'}</td>` : ''}
             </tr>`).join('')}</tbody>
           </table></div>` : `<div class="empty" style="padding:24px">${icon('truck')}<strong>Belum diterima</strong><p>Terima sebagian atau lengkap saat barang tiba.</p></div>`}
         </section>
@@ -432,7 +446,7 @@ function openReceive(ctx, po) {
       <div class="section-title" style="margin:16px 0 8px"><h3>Baris diterima</h3><span class="xs muted">Kosongkan yang belum datang</span></div>
       ${rows}
       <label class="checkline"><input type="checkbox" name="createBill" checked /> Buat tagihan pemasok otomatis (simplifikasi demo)</label>
-      ${field('Bukti fisik (opsional)', `<input class="input" type="file" name="proof" accept="image/*,.pdf" />`, { hint: 'Foto surat jalan / kondisi barang. Demo menyimpan metadata saja.' })}
+      ${field('Bukti fisik (opsional)', `<input class="input" type="file" name="proof" accept="image/*,.pdf" />`, { hint: settingsOf(ctx.db).requireProofOnReceipt ? 'Wajib menurut Pengaturan.' : 'Foto surat jalan / kondisi barang. Demo menyimpan metadata saja.' })}
     `,
     onSubmit(form, close) {
       const lines = [...form.querySelectorAll('[data-rec-line]')].map((row) => {
@@ -447,6 +461,7 @@ function openReceive(ctx, po) {
       }).filter(Boolean);
       if (!lines.length) throw new Error('Isi minimal satu baris penerimaan.');
       const proof = form.proof.files?.[0] ? attachmentMeta(form.proof.files[0], { note: 'Bukti penerimaan' }) : null;
+      if (settingsOf(ctx.db).requireProofOnReceipt && !proof) throw new Error('Bukti fisik wajib pada penerimaan sesuai Pengaturan.');
       const result = ctx.store.update((db) => {
         const received = receivePO(db, {
           poId: po.id,
@@ -584,49 +599,54 @@ function openPayBill(ctx, bill) {
   });
 }
 
-function openEditSupplier(ctx, supplier) {
+function openSupplier(ctx, supplier = null) {
+  const isNew = !supplier;
+  const trail = supplier ? auditTrail(ctx.db, 'supplier', supplier.id, 6) : [];
   openModal({
-    title: `Edit ${supplier.name}`,
+    title: isNew ? 'Pemasok baru' : `Edit ${supplier.name}`,
+    description: 'Lokal memakai IDR. Impor memakai mata uang asing, kurs, incoterm, dan pelabuhan.',
+    wide: true,
+    submitLabel: isNew ? 'Buat pemasok' : 'Simpan',
     body: `<div class="form-grid">
-      ${field('Nama', `<input class="input" name="name" value="${esc(supplier.name)}" />`)}
-      ${field('Kontak', `<input class="input" name="contact" value="${esc(supplier.contact)}" />`)}
-      ${field('Telepon', `<input class="input" name="phone" value="${esc(supplier.phone)}" />`)}
-      ${field('Email', `<input class="input" name="email" value="${esc(supplier.email)}" />`)}
-      ${field('Termin (hari)', `<input class="input" type="number" name="termsDays" value="${supplier.termsDays}" />`)}
-      ${field('Lead time (hari)', `<input class="input" type="number" name="leadTimeDays" value="${supplier.leadTimeDays}" />`)}
-      ${field('Asal', `<select class="select" name="origin"><option value="local" ${supplier.origin !== 'import' ? 'selected' : ''}>Lokal (ID)</option><option value="import" ${supplier.origin === 'import' ? 'selected' : ''}>Impor</option></select>`)}
-      ${field('Mata uang', `<select class="select" name="currency"><option value="IDR" ${supplier.currency !== 'CNY' ? 'selected' : ''}>IDR</option><option value="CNY" ${supplier.currency === 'CNY' ? 'selected' : ''}>CNY (yuan)</option></select>`)}
-      ${field('Kurs ke IDR', `<input class="input" name="fxRate" inputmode="decimal" value="${supplier.fxRate ?? 1}" />`, { hint: 'IDR per 1 CNY, dikunci saat PO.' })}
-      ${field('Incoterm', `<input class="input" name="incoterm" value="${esc(supplier.incoterm ?? '')}" placeholder="FOB Ningbo" />`)}
-      ${field('Pelabuhan', `<input class="input" name="port" value="${esc(supplier.port ?? '')}" placeholder="Ningbo → Tanjung Priok" />`)}
-      ${field('Alamat', `<input class="input" name="address" value="${esc(supplier.address)}" />`, { full: true })}
-      ${field('Catatan', `<input class="input" name="notes" value="${esc(supplier.notes)}" />`, { full: true })}
-    </div>`,
+      ${field('Kode', `<input class="input" name="code" value="${esc(supplier?.code ?? '')}" placeholder="SINAR" required />`)}
+      ${field('Nama', `<input class="input" name="name" value="${esc(supplier?.name ?? '')}" required />`)}
+      ${field('Kontak', `<input class="input" name="contact" value="${esc(supplier?.contact ?? '')}" />`)}
+      ${field('Telepon', `<input class="input" name="phone" value="${esc(supplier?.phone ?? '')}" />`)}
+      ${field('Email', `<input class="input" name="email" value="${esc(supplier?.email ?? '')}" />`)}
+      ${field('Asal', `<select class="select" name="origin"><option value="local" ${supplier?.origin !== 'import' ? 'selected' : ''}>Lokal (ID)</option><option value="import" ${supplier?.origin === 'import' ? 'selected' : ''}>Impor</option></select>`)}
+      ${field('Negara', `<input class="input" name="country" value="${esc(supplier?.country ?? 'ID')}" />`)}
+      ${field('Mata uang', `<select class="select" name="currency"><option value="IDR" ${supplier?.currency !== 'CNY' ? 'selected' : ''}>IDR</option><option value="CNY" ${supplier?.currency === 'CNY' ? 'selected' : ''}>CNY (yuan)</option></select>`)}
+      ${field('Kurs ke IDR', `<input class="input" name="fxRate" inputmode="decimal" value="${supplier?.fxRate ?? 1}" />`)}
+      ${field('Incoterm', `<input class="input" name="incoterm" value="${esc(supplier?.incoterm ?? '')}" placeholder="FOB Ningbo" />`)}
+      ${field('Pelabuhan', `<input class="input" name="port" value="${esc(supplier?.port ?? '')}" placeholder="Ningbo → Tanjung Priok" />`)}
+      ${field('Termin (hari)', `<input class="input" type="number" name="termsDays" value="${supplier?.termsDays ?? 30}" />`)}
+      ${field('Lead time (hari)', `<input class="input" type="number" name="leadTimeDays" value="${supplier?.leadTimeDays ?? 7}" />`)}
+      ${field('Alamat', `<input class="input" name="address" value="${esc(supplier?.address ?? '')}" />`, { full: true })}
+      ${field('Catatan', `<input class="input" name="notes" value="${esc(supplier?.notes ?? '')}" />`, { full: true })}
+    </div>
+    ${trail.length ? `<hr class="divider" /><div class="xs muted">Riwayat perubahan</div><ul class="timeline" style="margin-top:8px">${trail.map((a) => `<li><div class="t-head"><strong>${esc(a.action)}</strong><time>${esc(new Date(a.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(a.userName)} · ${esc(a.detail)}</div></li>`).join('')}</ul>` : ''}`,
     onSubmit(form, close) {
-      const currency = form.currency.value;
-      const fxRate = currency === 'IDR' ? 1 : Number(String(form.fxRate.value).replace(',', '.'));
-      if (currency !== 'IDR' && !(fxRate > 0)) throw new Error('Kurs harus lebih dari 0 untuk pemasok impor.');
-      ctx.store.update((db) => {
-        const s = db.suppliers.find((x) => x.id === supplier.id);
-        Object.assign(s, {
-          name: form.name.value.trim(),
-          contact: form.contact.value,
-          phone: form.phone.value,
-          email: form.email.value,
-          termsDays: Number(form.termsDays.value || 0),
-          leadTimeDays: Number(form.leadTimeDays.value || 0),
-          origin: form.origin.value,
-          country: form.origin.value === 'import' ? 'CN' : 'ID',
-          currency,
-          fxRate,
-          incoterm: form.incoterm.value,
-          port: form.port.value,
-          address: form.address.value,
-          notes: form.notes.value,
-        });
-      });
+      ctx.store.update((db) => saveSupplier(db, {
+        id: supplier?.id ?? null,
+        code: form.code.value,
+        name: form.name.value,
+        contact: form.contact.value,
+        phone: form.phone.value,
+        email: form.email.value,
+        address: form.address.value,
+        origin: form.origin.value,
+        country: form.country.value,
+        currency: form.currency.value,
+        fxRate: Number(String(form.fxRate.value).replace(',', '.')),
+        incoterm: form.incoterm.value,
+        port: form.port.value,
+        termsDays: Number(form.termsDays.value || 0),
+        leadTimeDays: Number(form.leadTimeDays.value || 0),
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
       close();
-      toast('Data pemasok diperbarui.', { tone: 'success' });
+      toast(isNew ? 'Pemasok dibuat.' : 'Data pemasok diperbarui.', { tone: 'success' });
     },
   });
 }
@@ -667,8 +687,9 @@ export function mount(ctx) {
   }));
   document.querySelectorAll('[data-edit-supplier]').forEach((btn) => btn.addEventListener('click', () => {
     const supplier = ctx.db.suppliers.find((s) => s.id === btn.dataset.editSupplier);
-    if (supplier) openEditSupplier(ctx, supplier);
+    if (supplier) openSupplier(ctx, supplier);
   }));
+  document.querySelector('[data-act="new-supplier"]')?.addEventListener('click', () => openSupplier(ctx));
 
   if (ctx.route.query?.tab) {
     const allowed = ['po', 'penerimaan', 'pengiriman', 'tagihan', 'pemasok'];

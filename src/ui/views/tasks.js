@@ -4,6 +4,7 @@ import {
   esc, icon, fmt, badge, toast, openModal, field, confirmAction, promptText,
 } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
+import { settingsOf } from '../../domain/settings.js';
 import {
   PRIORITY, TASK_STATUS, TASK_TYPE, assignTask, blockTask, cancelTask, completeTask, createTask, isOverdue,
   resumeTask, startTask, taskAgeDays, taskList, taskQtyLabel, taskStats,
@@ -247,7 +248,7 @@ function openCreate(ctx) {
       ${field('Judul', `<input class="input" name="title" placeholder="Contoh: Potong 10 m Luna-01 untuk proyek Sari" />`, { full: true })}
       ${field('Petugas', `<select class="select" name="assignee">${assignees}</select>`)}
       ${field('Prioritas', `<select class="select" name="priority">${Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}" ${k === 'normal' ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
-      ${field('Jatuh tempo', `<input class="input" type="date" name="dueDate" value="${todayJakarta()}" />`)}
+      ${field('Jatuh tempo', `<input class="input" type="date" name="dueDate" value="${new Date(Date.now() + (settingsOf(db).taskDueDays ?? 1) * 86400000).toISOString().slice(0, 10)}" />`)}
       ${field('Target (m)', `<input class="input" name="qty" inputmode="decimal" placeholder="0" />`, { hint: 'Opsional, untuk potong kain.' })}
       ${field('Roll', `<select class="select" name="roll"><option value="">— Tanpa roll —</option>${rollOptions}</select>`)}
       ${field('Proyek', `<select class="select" name="project"><option value="">— Tanpa proyek —</option>${projectOptions}</select>`)}

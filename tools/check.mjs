@@ -13,6 +13,7 @@ const modules = [
   '../src/ui/views/opname.js', '../src/ui/views/reports.js', '../src/ui/views/master.js',
   '../src/ui/views/simulation.js', '../src/ui/views/login.js',
   '../src/ui/views/tasks.js', '../src/ui/views/samples.js',
+  '../src/ui/views/orders.js', '../src/ui/views/settings.js',
 ];
 
 let failed = 0;

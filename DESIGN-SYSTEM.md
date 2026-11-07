@@ -1,4 +1,4 @@
-# Design System — Lajur v2.2
+# Design System — Lajur v2.3
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -184,7 +184,17 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Import / CNY:** currency shown next to every foreign amount with the IDR equivalent on a second line; CNY badge in copper; shipment status uses info/copper/ok tones; landed cost displayed as a money total.
 - **Proof:** file inputs are optional, labelled “Bukti fisik (opsional)”, and never claim the file was uploaded.
 
-### 5.10 Empty, loading, error
+### 5.10 Settings, staff, sales orders and master visuals
+
+- **Settings:** tabs Akun saya / Pengguna & peran / Preferensi / Audit / Data. Managers only; other roles are redirected.
+- **User row:** name + stable ID, role badge, active state, PIN state, edit and reset-PIN actions. Reset PIN never reveals the old PIN.
+- **Preferences:** low-stock threshold, default task due days, proof-required toggle, sales-order toggle, operator cost visibility, sample-deposit requirement.
+- **Sales order:** status chips Draft / Dikonfirmasi / Menjadi faktur / Dibatalkan. “Fakturkan” is the primary action and warns that stock issues once.
+- **Product/part rows:** 34 px image thumbnail or neutral swatch; SKU/brand; status; edit. Product/part forms show optional image preview (≤250 KB) and an audit timeline.
+- **Supplier cards:** local (teal) vs import/CNY (copper), FX, incoterm, port; add/edit.
+- **Role visibility:** navigation is filtered by role, not merely button-disabled. Operator: summary, tasks, stock, requests, purchasing, opname, simulation. Sales: summary, tasks, stock (read-only), invoices, orders, projects, customers, samples, simulation.
+
+### 5.11 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.
@@ -242,7 +252,7 @@ Rules:
 - Icons are `aria-hidden`; icon-only controls have accessible names.
 - Target sizes: 44 px minimum on touch (≤ 820 px), 40 px desktop.
 - Reduced motion respected.
-- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, stock, purchasing, samples, master and simulation.
+- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, stock, purchasing, orders, samples, master, settings and simulation.
 
 Known gaps: no full screen-reader manual pass; no forced-colours/high-contrast theme yet; print documents are not tagged PDFs.
 

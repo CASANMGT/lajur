@@ -5,6 +5,7 @@
 
 import { clone } from '../domain/core.js';
 import { buildSeed } from '../domain/seed.js';
+import { DEFAULT_SETTINGS } from '../domain/settings.js';
 import { SCHEMA_VERSION } from '../version.js';
 import { exportBackup, importBackup as restoreBackup } from './backup.js';
 
@@ -69,7 +70,7 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'returns', 'opnameSessions', 'audit']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'returns', 'opnameSessions', 'audit']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }
   for (const s of db.suppliers ?? []) {
@@ -92,6 +93,10 @@ export function migrate(db) {
     if (!bill.fxRate) bill.fxRate = 1;
     if (bill.amountForeign === undefined) bill.amountForeign = bill.amount ?? 0;
     if (bill.paidForeign === undefined) bill.paidForeign = bill.paid ?? 0;
+  }
+  db.settings = { ...DEFAULT_SETTINGS, ...(db.settings ?? {}) };
+  for (const u of db.users ?? []) {
+    if (u.active === undefined) u.active = true;
   }
   return db;
 }

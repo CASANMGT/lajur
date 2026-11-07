@@ -2,6 +2,58 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.3.0] — 2026-11-08
+
+**Release name: Kontrol & Peran.** Adds a settings workspace, staff/role management, sales orders, richer master data and strict role-based navigation.
+
+### Added
+
+- **Settings workspace** (`#/pengaturan`, manager only):
+  - Account/PIN form.
+  - Staff users: add with role + initial PIN, edit name/role/active, reset PIN without knowing the old PIN.
+  - Preference toggles: low-stock threshold, default task due days, proof required on receiving, sales-order enabled, operator cost visibility, sample-deposit requirement.
+  - Audit tab for user/product/part/supplier/warehouse/settings changes.
+  - Data export/restore/reset.
+- **Dynamic login:** login screen reads active users from the database, not a hardcoded list; new staff appear immediately. Deactivated users cannot log in; sessions are invalidated on next render.
+- **Role navigation guards:** operator and sales only see their work; direct URLs redirect to the role home. Manager sees all.
+- **Sales orders** (`#/pesanan`): draft/confirmed orders, customer and available product checks, convert to invoice exactly once (stock issue only at invoice), cancel.
+- **Product master:** create/edit with collection, colour, swatch, width, prices, active/dormant, optional image (≤250 KB data URL), notes and per-product audit trail.
+- **Spare-part master:** create/edit with SKU, brand, category, prices, active flag, optional image, notes and audit trail.
+- **Supplier master:** create/edit local or import, CNY/IDR, FX, incoterm, port, terms, lead time, audit trail.
+- **Role-aware cost views:** operator/sales cannot see cost/value on roll detail unless `operatorCanSeeCosts` is enabled; operator loses financial purchasing tabs and PO prices.
+
+### Changed
+
+- Purchasing tabs for operator: PO, receiving, shipments only; bills and suppliers are manager-only.
+- Login accounts are generated from `db.users`; PIN hashes remain separate from the data backup.
+- Version bumped to 2.3.0, schema 5, backup v5; datasets migrate forward.
+- Field helper now associates every label with its input, fixing settings accessibility.
+
+### Fixed
+
+- User creation with a pre-generated auth ID was rejected as “user not found”.
+- Field labels were not programmatically associated in several forms.
+- Landing/PIN/session checks now respect active status and new users.
+- Last active manager guard on role change/deactivation.
+- Order conversion is idempotent: converted/cancelled orders cannot post twice.
+- Sales-order preference hides the menu and blocks the order page.
+
+### Verification
+
+- `node --test`: **42 passed** (29 invariants + 4 operations + 7 admin + 2 auth).
+- Module imports 39/39; render 22/22; browser routes 22/22, zero console errors.
+- Staff creation/login, role redirects, sales order 5 m → invoice with stock 60 → 55 m, part brand/audit, supplier CNY, preference toggle.
+- Lighthouse accessibility 100 on settings, master, orders and dashboard.
+
+### Known limitations
+
+- PIN auth remains client-side; users/backups do not include PIN hashes (manager reset required after restore).
+- Images are small data URLs; production needs object storage.
+- No full WIP production order or machine capacity.
+- Quotes/orders are separate, but partial project fulfilment and accounting remain planned.
+
+---
+
 ## [2.2.0] — 2026-11-08
 
 **Release name: Operasi & Impor.** Adds task operations, a dedicated sample workspace, Chinese import suppliers with CNY/FX, shipment tracking, landed COGS, physical-proof metadata, mobile bottom navigation and an icon-system fix.

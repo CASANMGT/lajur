@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 4;
+export const BACKUP_VERSION = 5;
 
 export function exportBackup(db) {
   return {
@@ -26,7 +26,7 @@ const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
   'movements', 'customers', 'suppliers', 'supplierPrices', 'projects', 'invoices', 'payments',
   'samples', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
-  'shipments', 'tasks', 'returns', 'opnameSessions', 'audit', 'sequences',
+  'shipments', 'tasks', 'orders', 'returns', 'opnameSessions', 'audit', 'sequences',
 ];
 
 export function validateBackup(payload) {
@@ -41,7 +41,7 @@ export function validateBackup(payload) {
 
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
-      if (key === 'tasks' || key === 'shipments') continue;
+      if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }
@@ -148,6 +148,14 @@ export function validateBackup(payload) {
     if (shipment.costs && shipment.costs.totalIdr !== shipment.landedCostIdr) {
       errors.push(`Pengiriman ${shipment.id}: total landed cost tidak konsisten.`);
     }
+  }
+  for (const order of db.orders ?? []) {
+    need(customers, order.customerId, 'Pelanggan', `Pesanan ${order.id}`);
+    for (const line of order.lines ?? []) {
+      if (line.rollId) need(rollIds, line.rollId, 'Roll', `Pesanan ${order.id}`);
+      if (line.partId) need(parts, line.partId, 'Part', `Pesanan ${order.id}`);
+    }
+    if (order.invoiceId) need(invoiceIds, order.invoiceId, 'Faktur', `Pesanan ${order.id}`);
   }
   for (const s of db.suppliers) {
     if (s.currency && !['IDR', 'CNY', 'USD'].includes(s.currency)) errors.push(`Pemasok ${s.id}: mata uang tidak dikenal.`);

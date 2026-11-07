@@ -1,9 +1,9 @@
-# PRD — Lajur v2.2
+# PRD — Lajur v2.3
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.2.0 (schema 4)
+**Version:** 2.3.0 (schema 5)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,6 +67,8 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
+Role scope in v2.3: **operator** can reach summary, tasks, stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders, projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings.
+
 ### 3.1 Warehouse operator ("Operator Gudang")
 
 Needs speed on the floor, often on a phone, sometimes with gloves.
@@ -121,7 +123,9 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Tasks | Receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname, sample; assign/start/block/resume/complete/cancel; priority, due date, cutting queue, manager monitor, optional proof |
 | Import purchasing | Local and Chinese suppliers; CNY prices and locked FX; PO value in CNY + IDR; CNY bills and payments; landed cost (freight/insurance/duty) in roll HPP; shipment BL/container, ETD/ETA, customs, arrival, documents |
 | Access | Per-role login (manager/operator/sales) with PBKDF2 PIN, 8-hour session, 5-attempt lockout, PIN change, logout; role-specific home and action gating |
-| Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products; parts; suppliers |
+| Settings | Account/PIN, staff users (add/edit role/activate/deactivate/reset PIN), operational preferences, audit, backup/restore |
+| Sales orders | Draft/confirmed order, customer + available roll/part, convert to invoice once; stock only moves at invoice |
+| Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products with brand/image/notes; parts with brand/image/notes; suppliers local/import |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
 | Purchasing | Suppliers, price list, PO, approval, partial receiving with per-roll lengths and lots, duplicate receipt block, over-receipt block, auto supplier bill (demo simplification), payables, supplier returns |
 | Sales | Multi-line invoice, fabric + parts + service lines, draft → post, snapshot description/price/cost, payments, deposit application, customer returns with credit and quarantine, print |
@@ -160,8 +164,8 @@ Authentication and server authorization; transactional posting with idempotency;
 |--------|-----------|
 | `warehouse` | id, code, name, bin prefix, address, phone, **active** |
 | `collection` | id, name, category, description |
-| `sku` (colour variant) | id, collectionId, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, active/dormant |
-| `part` | id, SKU, name, category, unit `pcs`, buy/sell price |
+| `sku` (colour variant) | id, collectionId, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, brand/notes/image optional, active/dormant |
+| `part` | id, SKU, name, category, brand, unit `pcs`, buy/sell price, image/notes optional, active |
 | `roll` | id, skuId, lot, receivedAt, receiptRef, originalMm, currentMm, reservedMm, warehouseId, bin, status, condition, costPerM, parentRollId, rootRollId, transit, reservations[] |
 | `movement` | id, at, type, ref, warehouse from/to, sku/part/roll, qty, before/after, unit cost, value, user, role, note |
 | `transfer` | id, from/to warehouse, neededBy, reason, projectId, status, lines[] |
@@ -175,6 +179,8 @@ Authentication and server authorization; transactional posting with idempotency;
 | `customer` | id, name, company, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discount, total, credited, depositApplied, payments[] |
+| `sales order` | id, customer, project, date, status draft/confirmed/converted/cancelled, lines[], total, invoiceId, history[] |
+| `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, salesOrderEnabled, operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
 | `return` | id, type customer/supplier, source invoice/receipt, lines, credit, status |
@@ -353,6 +359,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-33 | Shipment reference (BL/AWB) is unique per PO; ETA must be after ETD; status changes are kept in a timeline. |
 | BR-34 | Physical proof is optional and stored as metadata (name, type, size, note, user, time); file bytes are not persisted in the demo. |
 | BR-35 | A manager must be able to see open/overdue tasks, cutting queue, sales and receivables from the dashboard. |
+| BR-36 | Operator navigation is limited to attendance/warehouse work: summary, tasks, stock, internal requests, purchasing receiving, opname and simulation; sales/CRM/report/settings are not reachable. |
+| BR-37 | Sales navigation is limited to summary, tasks, stock (read-only), invoices, orders, projects, customers, samples and simulation; purchasing/opname/master/settings are not reachable. |
+| BR-38 | A sales order posts no stock. Converting it to an invoice posts stock exactly once; a converted or cancelled order cannot be converted again. |
+| BR-39 | At least one active manager must remain; deactivating the last manager is rejected. |
+| BR-40 | Product, part, supplier, warehouse, user and settings edits are written to the audit trail; images are optional and stored as small data URLs in the demo. |
 
 ---
 
@@ -360,7 +371,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.2 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.3 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -374,12 +385,15 @@ In v2.2 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-secon
 | Receive supplier PO | ✓ | – | ✓ |
 | Create PO | – | ✓ | ✓ |
 | Create/post invoice, payment | – | ✓ | ✓ |
+| Create sales order / convert to invoice | – | ✓ | ✓ |
 | Create project / reserve / issue | – | ✓ | ✓ |
 | Create customer / sample / deposit | – | ✓ | ✓ |
 | Refund sample deposit | – | – | ✓ |
 | Refund indent deposit | – | – | ✓ |
 | Edit master data / suppliers | – | – | ✓ |
 | Create/edit warehouses | – | – | ✓ |
+| Manage staff users, roles and PIN resets | – | – | ✓ |
+| Manage settings and preferences | – | – | ✓ |
 | Login and change own PIN | ✓ | ✓ | ✓ |
 | Backup / restore | – | – | ✓ |
 
@@ -449,8 +463,15 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-35 | Shipment tracks ETD/ETA/status and rejects duplicate reference | Pass |
 | AC-36 | Optional proof metadata is stored on task/receipt/shipment | Pass |
 | AC-37 | Mobile bottom navigation and 2-column task tiles work at 320/390 | Pass |
+| AC-38 | Manager creates staff with role/PIN; new account logs in; deactivated account cannot | Pass |
+| AC-39 | Last active manager cannot be deactivated | Pass |
+| AC-40 | Product/part create-edit keeps stable ID, stores brand/image and audit entry | Pass |
+| AC-41 | Supplier can be created/edited as local or CNY import | Pass |
+| AC-42 | Sales order does not move stock; conversion issues stock once | Pass |
+| AC-43 | Operator cannot reach sales/CRM/settings; sales cannot reach purchasing/opname/master | Pass |
+| AC-44 | Preference “sales order off” hides the menu and document | Pass |
 
-Test evidence: `node --test` → 35/35 passing; browser route sweep → 20/20 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, stock, purchasing, samples, master and simulation.
+Test evidence: `node --test` → 42/42 passing; browser route sweep → 22/22 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, stock, purchasing, orders, samples, master, settings and simulation.
 
 ---
 
@@ -491,7 +512,7 @@ Test evidence: `node --test` → 35/35 passing; browser route sweep → 20/20 ro
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Interactive demo, domain invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments | 35/35 tests, a11y 100 |
+| P0 (done) | Interactive demo, domain invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, sales orders | 42/42 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.2 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.3 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -52,7 +52,11 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Mobile 320/390/768, drawer, 44 px, 16 px, cards, wide table containment | Done | Bottom nav added in v2.2 |
 | Reduced motion, focus, validation, empty/error/loading | Done | Lighthouse 100 |
 | **Task / operation management** | **Done in v2.2** | Tugas Operasi: receive, picking, cutting, sewing, QC, transfer, shipment, opname, sample |
-| **Manager monitors sales + cutting tasks** | **Done in v2.2** | Dashboard sales chart + task/cutting monitor |
+| **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |
+| **Settings, users & roles** | **Done in v2.3** | Account/PIN, staff add/edit/deactivate, reset PIN, preferences, audit, data |
+| **Sales orders** | **Done in v2.3** | Draft/confirmed → invoice once; stock moves only at invoice |
+| **Product/part master detail** | **Done in v2.3** | Brand, optional image, notes, active flag, audit trail |
+| **Supplier add/edit** | **Done in v2.3** | Local/import, CNY/FX/incoterm/port |
 | **Optional physical proof on documents** | **Partial** | Metadata on receipts, transfer receipts, tasks, shipments; invoices/opname still planned |
 | Authentication / PIN per role | Done (demo) | PBKDF2, session, lockout, change PIN |
 | Server authorization / shared transactions | Planned | Production architecture in PRD §12 |
@@ -84,16 +88,16 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 
 | Role | Default landing | Sees first | Cannot |
 |---|---|---|---|
-| Manajer | Ringkasan | exceptions, sales chart, task/cutting monitor, approvals | — |
-| Operator | Ringkasan | task tiles, my tasks, warehouse KPIs, work queue | invoice, master edit, approvals |
-| Sales / CS | Penjualan | receivables, follow-ups, samples/deposits | approvals, dispatch, master edit |
+| Manajer | Ringkasan | exceptions, sales chart, task/cutting monitor, approvals, settings | — |
+| Operator | Ringkasan | task tiles, my tasks, warehouse KPIs, work queue, receiving/opname | invoices, orders, sales/CRM, reports, master/settings |
+| Sales / CS | Penjualan | receivables, follow-ups, samples/deposits, orders | purchasing, opname, master/settings, approvals |
 
 ## 4. Highest-value remaining gaps
 
 1. **Full production orders** — cutting → sewing → QC as one WIP document with per-piece tracking, not just tasks.
 2. **Server auth/RBAC and transactional posting** — the demo remains local.
-3. **Quote/order documents** and partial project fulfilment.
-4. **Real file storage** for proof photos and project documents.
+3. **Real file storage** for proof photos, product images and project documents.
+4. **Partial project fulfilment** and quote → order → delivery documents.
 5. **As-of inventory valuation** and import FX revaluation.
 6. **Barcode/QR scanner** and label printer integration.
 7. **Corporate accounting** integration (GL/PPN) and warehouse attribution policy.

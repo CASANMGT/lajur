@@ -7,6 +7,7 @@ import { byId } from '../domain/core.js';
 import { activeWarehouses } from '../domain/master.js';
 import { changePin, logout, sessionRemainingMs } from '../data/auth.js';
 import { APP_VERSION } from '../version.js';
+import { settingsOf } from '../domain/settings.js';
 
 export const NAV = [
   {
@@ -24,6 +25,7 @@ export const NAV = [
     group: 'Komersial',
     items: [
       { id: 'penjualan', label: 'Penjualan', icon: 'receipt' },
+      { id: 'pesanan', label: 'Pesanan', icon: 'clipboard' },
       { id: 'proyek', label: 'Proyek', icon: 'layers' },
       { id: 'pelanggan', label: 'Pelanggan', icon: 'users' },
       { id: 'sampel', label: 'Sample & Deposit', icon: 'spark' },
@@ -34,10 +36,22 @@ export const NAV = [
     items: [
       { id: 'laporan', label: 'Laporan', icon: 'chart' },
       { id: 'master', label: 'Master Data', icon: 'settings' },
+      { id: 'pengaturan', label: 'Pengaturan', icon: 'userCheck' },
       { id: 'simulasi', label: 'Simulasi Data', icon: 'flask' },
     ],
   },
 ];
+
+const ACCESS = {
+  manager: null,
+  operator: new Set(['ringkasan', 'tugas', 'stok', 'transfer', 'pembelian', 'opname', 'simulasi']),
+  sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pesanan', 'proyek', 'pelanggan', 'sampel', 'simulasi']),
+};
+
+export function canAccess(role, view) {
+  const set = ACCESS[role];
+  return set === null || set === undefined ? true : set.has(view);
+}
 
 export const ROUTE_META = {
   ringkasan: { title: 'Ringkasan', sub: 'Kondisi operasi hari ini' },
@@ -46,12 +60,14 @@ export const ROUTE_META = {
   transfer: { title: 'Permintaan Gudang', sub: 'PO internal antar gudang — tanpa pemasok' },
   pembelian: { title: 'Pembelian', sub: 'PO pemasok, penerimaan, dan utang' },
   penjualan: { title: 'Penjualan', sub: 'Faktur, pembayaran, dan retur' },
+  pesanan: { title: 'Pesanan Penjualan', sub: 'Pesanan sebelum menjadi faktur — stok belum keluar' },
   proyek: { title: 'Proyek', sub: 'Reservasi material sampai serah terima' },
   pelanggan: { title: 'Pelanggan', sub: 'CRM, sample, deposit, dan riwayat' },
   sampel: { title: 'Sample & Deposit', sub: 'Sample pelanggan, konversi, dan saldo deposit' },
   opname: { title: 'Stock Opname', sub: 'Hitung buta, review, dan penyesuaian' },
   laporan: { title: 'Laporan', sub: 'Saldo saat ini dan riwayat — bukan buku besar' },
   master: { title: 'Master Data', sub: 'Produk, kategori, pemasok, dan cadangan data' },
+  pengaturan: { title: 'Pengaturan', sub: 'Akun, PIN, pengguna, peran, dan preferensi' },
   simulasi: { title: 'Simulasi Data', sub: 'Dataset terpisah untuk uji alur' },
 };
 
@@ -75,7 +91,7 @@ export function renderShell(ctx, contentHtml) {
   const navHtml = NAV.map((group) => `
     <nav class="nav-group" aria-label="${esc(group.group)}">
       <span class="nav-label">${esc(group.group)}</span>
-      ${group.items.map((item) => {
+      ${group.items.filter((item) => canAccess(role, item.id)).filter((item) => item.id !== 'pesanan' || settingsOf(db).salesOrderEnabled !== false).map((item) => {
         const active = ctx.route.name === item.id;
         const count = item.id === 'transfer' ? counts.transfer : item.id === 'opname' ? counts.opname : 0;
         return `<a class="nav-link" href="#/${item.id}" ${active ? 'aria-current="page"' : ''}>

@@ -7,6 +7,7 @@ import {
   rollChildren, rollTrail, skuStockByWarehouse, stockSummary, summarizeRolls,
 } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, movementRow, warehouseOptions } from './common.js';
+import { settingsOf } from '../../domain/settings.js';
 import { printLabelHtml } from './print.js';
 
 const filters = { q: '', collection: '', status: 'all', available: false };
@@ -105,13 +106,21 @@ function summaryStrip(ctx) {
   const partsQty = db.partStock
     .filter((p) => !wh || p.warehouseId === wh)
     .reduce((a, p) => a + p.qty, 0);
+  const threshold = settingsOf(db).lowStockMm ?? 10000;
+  const lowSkus = db.skus.filter((sku) => {
+    const rolls = db.rolls.filter((r) => r.skuId === sku.id && (!wh || r.warehouseId === wh) && !r.transit && ['available', 'quarantine'].includes(r.status));
+    const physical = rolls.reduce((a, r) => a + r.currentMm, 0);
+    const available = rolls.reduce((a, r) => a + availableMm(r), 0);
+    return physical > 0 && available < threshold;
+  }).length;
   return `<div class="grid grid-4" style="margin-bottom:16px">
     ${statCard({ label: 'Fisik', value: fmt.m(s.physicalMm), meta: `${s.count} roll di lokasi` })}
     ${statCard({ label: 'Tersedia', value: fmt.m(s.availableMm), meta: 'Bisa dijual / dikirim', tone: 'accent' })}
     ${statCard({ label: 'Terpesan', value: fmt.m(s.reservedMm), meta: 'Proyek & alokasi' })}
     ${statCard({ label: 'Karantina / transit', value: `${fmt.m(s.quarantineMm)} / ${fmt.m(s.incomingMm)}`, meta: 'Transit tidak dihitung stok gudang', tone: 'warn' })}
   </div>
-  <p class="xs muted" style="margin:-6px 0 12px">Spare part terpisah: <strong>${fmt.pcs(partsQty)} pcs</strong> — tidak pernah dijumlahkan dengan meter kain.</p>`;
+  <p class="xs muted" style="margin:-6px 0 12px">Spare part terpisah: <strong>${fmt.pcs(partsQty)} pcs</strong> — tidak pernah dijumlahkan dengan meter kain.</p>
+  ${lowSkus ? `<div class="notice notice-warn" style="margin-bottom:12px">${icon('alert')}<div><strong>${lowSkus} SKU di bawah ambang stok</strong> (${fmt.m(threshold)} tersedia). Ubah ambang di Pengaturan → Preferensi.</div></div>` : ''}`;
 }
 
 export function render(ctx) {
@@ -214,6 +223,7 @@ function renderDetail(ctx) {
   const children = rollChildren(db, roll.id);
   const others = skuStockByWarehouse(db, roll.skuId);
   const parent = roll.parentRollId ? db.rolls.find((r) => r.id === roll.parentRollId) : null;
+  const showCost = role === 'manager' || (role === 'operator' && settingsOf(db).operatorCanSeeCosts);
 
   return `
     <div class="page-head">
@@ -244,10 +254,10 @@ function renderDetail(ctx) {
                 <div class="small muted">Kode warna <strong>${esc(sku?.colourCode)}</strong> · Lot <strong>${esc(roll.lot)}</strong> · ${esc(sku?.widthCm)} cm</div>
               </div>
             </div>
-            <div class="right">
+            ${showCost ? `<div class="right">
               <div class="xs muted">Nilai stok</div>
               <div class="strong num">${fmt.money(Math.round((roll.currentMm / 1000) * roll.costPerM))}</div>
-            </div>
+            </div>` : ''}
           </div>
           <hr class="divider" />
           <div class="grid grid-3">
@@ -255,7 +265,7 @@ function renderDetail(ctx) {
             <div><div class="xs muted">Panjang aktual</div><div class="strong num" style="font-size:1.25rem">${fmt.m(roll.currentMm)}</div></div>
             <div><div class="xs muted">Tersedia</div><div class="strong num">${isSellable(roll) ? fmt.m(avail) : '—'}</div></div>
             <div><div class="xs muted">Terpesan</div><div class="strong num">${roll.reservedMm ? fmt.m(roll.reservedMm) : '—'}</div></div>
-            <div><div class="xs muted">Harga pokok / m</div><div class="strong num">${fmt.money(roll.costPerM)}</div></div>
+            <div><div class="xs muted">Harga pokok / m</div><div class="strong num">${showCost ? fmt.money(roll.costPerM) : '—'}</div></div>
             <div><div class="xs muted">Gudang / rak</div><div class="strong">${esc(wh?.code ?? '—')} · ${esc(roll.bin || '—')}</div></div>
           </div>
           ${roll.reservedMm ? `<div class="notice notice-warn" style="margin-top:12px">${icon('clock')}<div><strong>${fmt.m(roll.reservedMm)} terpesan.</strong> ${esc((roll.reservations ?? []).map((r) => `${r.ref} (${fmt.m(r.qtyMm)})`).join(', '))}</div></div>` : ''}

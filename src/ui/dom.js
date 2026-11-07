@@ -97,10 +97,18 @@ export function swatch(sku, size = '') {
   return `<span class="swatch swatch-unset ${size}" role="img" aria-label="Swatch belum diset">?</span>`;
 }
 
+let fieldSeq = 0;
+
 export function field(label, control, { hint = '', full = false, id = '' } = {}) {
+  const existing = control.match(/\bid="([^"]+)"/);
+  const controlId = id || existing?.[1] || `f-${++fieldSeq}`;
+  let wired = control;
+  if (!existing) {
+    wired = control.replace(/<(input|select|textarea)\b/, `<$1 id="${controlId}"`);
+  }
   return `<div class="field ${full ? 'span-2' : ''}">
-    <label ${id ? `for="${id}"` : ''}>${esc(label)}</label>
-    ${control}
+    <label for="${esc(controlId)}">${esc(label)}</label>
+    ${wired}
     ${hint ? `<span class="hint">${esc(hint)}</span>` : ''}
   </div>`;
 }
@@ -366,6 +374,19 @@ export function downloadFile(filename, content, type = 'application/json') {
 export function csvEscape(value) {
   const s = String(value ?? '');
   return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+}
+
+export function imageToDataUrl(file, { maxBytes = 250_000 } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!file) return resolve(null);
+    if (!file.type?.startsWith('image/')) return reject(new Error('Berkas harus berupa gambar.'));
+    if (file.size > maxBytes) return reject(new Error('Gambar maksimal 250 KB untuk demo.'));
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error('Gagal membaca gambar.'));
+    reader.readAsDataURL(file);
+    return null;
+  });
 }
 
 export function toCsv(rows) {
