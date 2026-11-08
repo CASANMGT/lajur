@@ -1,9 +1,9 @@
-# PRD — Lajur v2.4
+# PRD — Lajur v2.5
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.4.0 (schema 6)
+**Version:** 2.5.0 (schema 7)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.4: **operator** can reach summary, tasks, production WIP, stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders, projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings.
+Role scope in v2.5: **operator** can reach summary, tasks, production WIP, stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders, projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -124,7 +124,10 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Import purchasing | Local and Chinese suppliers; CNY prices and locked FX; PO value in CNY + IDR; CNY bills and payments; landed cost (freight/insurance/duty) in roll HPP; shipment BL/container, ETD/ETA, customs, arrival, documents |
 | Access | Per-role login (manager/operator/sales) with PBKDF2 PIN, 8-hour session, 5-attempt lockout, PIN change, logout; role-specific home and action gating |
 | Settings | Account/PIN, staff users (add/edit role/activate/deactivate/reset PIN), operational preferences, audit, backup/restore |
-| Sales orders | Draft/confirmed order, customer + available roll/part, **reserves stock**, convert to invoice once; stock only moves at invoice |
+| Sales orders | Draft/confirmed order, customer + available roll/part, **reserves stock**, creator and full contents, **editable draft with re-reservation**, line prices, printable sales order, convert to invoice once; stock only moves at invoice |
+| Roll hierarchy | Collection → colour/SKU → root roll → child rolls, parent/root identity, split lineage and conserved metres |
+| Supplier price book | Every fabric/part lists its supplier(s), latest price, currency, MOQ and validity; new quotes update master buy price; PO defaults to latest supplier price |
+| Foreign buying | Explicit IDR/CNY, latest CNY→IDR rate shown and **snapshotted on the PO** with timestamp/source; IDR HPP, bill and payment |
 | Production WIP | Per-piece order: cutting → sewing → QC, reject/rework, piece-rate payroll, work-centre capacity, source roll/lot trace |
 | Reporting | Stock, sales/margin, production WIP/payroll/capacity, orders, AR/AP, deposits, returns, samples, slow-moving |
 | Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products with brand/image/notes; parts with brand/image/notes; suppliers local/import |
@@ -181,7 +184,9 @@ Authentication and server authorization; transactional posting with idempotency;
 | `customer` | id, name, company, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discount, total, credited, depositApplied, payments[] |
-| `sales order` | id, customer, project, date, status draft/confirmed/converted/cancelled, lines[], total, invoiceId, history[] |
+| `sales order` | id, customer, project, date, status draft/confirmed/converted/cancelled, createdBy/userId, lines[] with qty + unit price + amount, total, invoiceId, history[] |
+| `supplier price` | id, supplierId, skuId/partId, price, currency, unit, moqMm/moqPcs, validFrom, validTo, priceIdr, createdAt, createdBy |
+| `fx rate` | id, currency, rate, asOf, source, poId, createdBy |
 | `production order` | id, customer/project, warehouse, targetDate, status, lines[] (roll, qty, piece length), notes |
 | `production piece` | id, orderId, lineId, roll/lot, qtyMm, stage cutting/sewing/done/rejected, worker, QC note, operations[] |
 | `payroll entry` | id, orderId, pieceId, stage, worker, rate, amount, date, paid |
@@ -319,7 +324,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 - Task types: receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname, sample.
 - Any task can link a warehouse, assignee, project, roll, target metres, priority and due date.
 - Lifecycle: open → in progress → blocked/resumed → done, or cancelled.
-- **Tasks never post stock.** Cutting is completed as a task, but the actual cut is recorded through an invoice/project issue.
+- **Tasks never post stock.** Cutting as a task is only coordination; actual cutting is recorded by a WIP production order (`#/produksi`).
 - Managers see all tasks and the cutting queue; operators default to their own tasks; sales can create sample tasks.
 - Completion accepts a note and optional physical proof metadata.
 
@@ -331,6 +336,15 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 4. Every completed stage writes one payroll entry at the work-centre piece rate. Payroll can be marked paid without a bank transfer.
 5. Capacity shows active pieces per stage versus daily capacity and estimated days. It is an estimate, not a machine calendar.
 6. Production never creates a sales invoice; invoicing remains a separate event. Cancellation before cutting releases the reservation; after cutting it requires a scrap workflow (planned).
+
+### 6.11 Roll hierarchy, order documents and supplier pricing
+
+1. **Roll hierarchy:** each roll has at most one parent. A split creates a child with `parentRollId` and the original `rootRollId`; the parent and child lengths conserve the original. Stock exposes a toggle between the flat roll list and a collection → colour/SKU → root → child tree.
+2. **Sales order visibility:** the list shows the creator; the detail shows customer, project, creator, dates, history, every line with quantity/price/amount and the reservation. A confirmed or converted order is read-only except for printing.
+3. **Draft order editing:** editing releases the old fabric/part reservations and reserves the new lines in one operation. A failed edit leaves the previous order and reservations intact.
+4. **Sales order document:** printing produces “Pesanan Penjualan” with creator, lines, roll/lot, prices, total and signature space. It is not a tax invoice.
+5. **Supplier price book:** each SKU/part can have quotes from multiple suppliers. The latest valid quote on the PO date is the default PO price; saving a newer quote refreshes the master IDR buy price.
+6. **Import rate:** when buying in CNY, the PO shows the latest rate before saving. The consumed rate, its timestamp and source are stored on the PO; a different entered rate becomes the new latest rate.
 
 ---
 
@@ -383,6 +397,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-43 | Each completed production stage writes one payroll entry at the work-centre piece rate; payroll is marked paid without a bank transfer. |
 | BR-44 | Production never creates a sales invoice; invoicing is a separate commercial event. Capacity is a daily estimate from active pieces. |
 | BR-45 | Import PO currency and FX can be set at buying time, independent of the supplier default; received HPP and supplier bills use that snapshot. |
+| BR-46 | Rolls form a parent/child forest per collection: a split creates a child whose `parentRollId` and `rootRollId` preserve lineage, and parent + child lengths conserve the original. |
+| BR-47 | A sales order records its creator, line quantities and unit prices. Only a draft can be edited; saving releases the old reservations and reserves the new lines in the same operation. |
+| BR-48 | A printable sales order is a commercial order document, not a tax invoice; stock still moves only when the order is converted and the invoice is posted. |
+| BR-49 | Supplier price records are the source of truth for PO defaults: the latest price valid on the PO date is used, and saving a newer quote refreshes the master buy price in IDR. |
+| BR-50 | Every import PO stores the CNY→IDR rate, timestamp and source used at buying time; a rate different from the latest known rate is appended to the FX history. |
 
 ---
 
@@ -390,7 +409,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.4 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.5 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -496,8 +515,13 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-49 | Import PO accepts explicit CNY + FX at buying | Pass |
 | AC-50 | Production/payroll/capacity report derives from same pieces | Pass |
 | AC-51 | Reference server: scrypt login, shared revision, RBAC action; operator cannot post invoice | Pass |
+| AC-52 | Stock hierarchy groups collection → colour → root → child and conserves metres after a split | Pass |
+| AC-53 | Sales order shows creator, contents and prices; draft edit re-reserves and recalculates total | Pass |
+| AC-54 | Printable sales order contains creator, lines, prices and “bukan faktur” note | Pass |
+| AC-55 | Product/part master lists suppliers and latest price; a new quote updates buy price | Pass |
+| AC-56 | PO defaults to latest supplier price; CNY PO stores latest rate, timestamp and source | Pass |
 
-Test evidence: `node --test` → 46/46 passing; browser route sweep → 23/23 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, production, stock, purchasing, orders, samples, master, settings and simulation.
+Test evidence: `node --test` → 51/51 passing; browser route sweep → 24/24 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -540,7 +564,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, orders, WIP production, payroll, capacity | 46/46 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, roll hierarchy, sales orders with edit/print, supplier price book, FX snapshots, WIP production, payroll, capacity | 51/51 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

@@ -70,9 +70,29 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'fxRates']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }
+  if (!db.fxRates.length) {
+    const importSupplier = (db.suppliers ?? []).find((s) => s.currency === 'CNY' && s.fxRate > 0);
+    if (importSupplier) {
+      db.fxRates.push({
+        id: 'FX-0001', currency: 'CNY', rate: Number(importSupplier.fxRate),
+        asOf: new Date().toISOString(), source: 'Pemasok impor (migrasi)', createdAt: new Date().toISOString(), createdBy: 'Sistem',
+      });
+    }
+  }
+  for (const price of db.supplierPrices) {
+    const supplier = (db.suppliers ?? []).find((s) => s.id === price.supplierId);
+    if (!price.currency) price.currency = supplier?.currency ?? 'IDR';
+    if (price.priceIdr === undefined) {
+      const rate = price.currency === 'IDR' ? 1 : ((db.fxRates ?? []).find((r) => r.currency === price.currency)?.rate ?? supplier?.fxRate ?? 1);
+      price.priceIdr = Math.round(Number(price.price) * rate);
+    }
+  }
+  db.sequences = db.sequences ?? {};
+  db.sequences.supplierPrice = Math.max(Number(db.sequences.supplierPrice) || 0, db.supplierPrices.length);
+  db.sequences.fxRate = Math.max(Number(db.sequences.fxRate) || 0, db.fxRates.length);
   if (!Array.isArray(db.workCenters) || !db.workCenters.length) {
     db.workCenters = [
       { id: 'wc-cut', stage: 'cutting', name: 'Meja potong', capacityPerDay: 40, ratePerPiece: 5000 },

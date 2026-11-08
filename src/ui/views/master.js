@@ -7,7 +7,11 @@ import { byId, uid, todayJakarta } from '../../domain/core.js';
 import {
   activeWarehouses, auditTrail, createCollection, renameCollection, savePart, saveSku, saveWarehouse,
 } from '../../domain/master.js';
-import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';import { pageHead, statCard, can } from './common.js';
+import {
+  latestSupplierPrice, saveSupplierPrice, supplierPriceHistory, suppliersOfItem,
+} from '../../domain/pricing.js';
+import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';
+import { pageHead, statCard, can } from './common.js';
 
 let tab = 'produk';
 
@@ -30,54 +34,70 @@ export function render(ctx) {
     ${tab === 'data' ? renderData(ctx) : ''}`;
 }
 
+function supplierNames(db, item) {
+  const list = suppliersOfItem(db, item);
+  if (!list.length) return '<span class="muted">—</span>';
+  return list.slice(0, 3).map((s) => `<div class="small">${esc(s.code)} · ${esc(s.name)}</div>`).join('')
+    + (list.length > 3 ? `<div class="xs muted">+${list.length - 3} pemasok</div>` : '');
+}
+
+function latestPriceNote(db, item) {
+  const latest = latestSupplierPrice(db, item);
+  if (!latest) return '';
+  const supplier = byId(db.suppliers, latest.supplierId);
+  return `<div class="xs muted">${esc(supplier?.code ?? '')} · ${esc(latest.currency ?? 'IDR')} ${Number(latest.price).toLocaleString('id-ID')} · ${esc(latest.validFrom ?? '')}</div>`;
+}
+
 function renderProducts(ctx) {
   const { db, role } = ctx;
   return `<div class="row-between" style="margin-bottom:12px">
-      <div><h2>Produk kain</h2><p class="xs muted">Gambar, swatch, harga, dan status. ID internal tetap.</p></div>
+      <div><h2>Produk kain</h2><p class="xs muted">Gambar, swatch, pemasok, harga terbaru, dan status. ID internal tetap.</p></div>
       ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-product">${icon('plus')} Produk kain</button>` : ''}
     </div>
     <section class="card">
     <div class="table-wrap"><table class="data">
-      <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+      <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="hide-sm">Pemasok</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.skus.map((s) => `<tr>
         <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
         <td>${esc(s.collectionName)}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span><div class="xs mono">${s.swatch ? esc(s.swatch) : 'hex belum diset'}</div></span></div></td>
+        <td class="hide-sm">${supplierNames(db, { skuId: s.id })}</td>
         <td class="num">${s.widthCm ? `${s.widthCm} cm` : '—'}</td>
-        <td class="num">${fmt.money(s.buyPrice)}</td>
+        <td class="num">${fmt.money(s.buyPrice)}${latestPriceNote(db, { skuId: s.id })}</td>
         <td class="num">${fmt.money(s.sellPrice)}</td>
         <td>${s.active === false ? badge('Nonaktif / dormant', 'danger') : badge('Aktif', 'ok')}</td>
-        <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-sku="${s.id}">Edit</button>` : ''}</td>
+        <td class="right"><div class="row" style="justify-content:flex-end">${role === 'manager' ? `<button class="btn btn-sm btn-ghost" data-price-sku="${s.id}">Harga</button><button class="btn btn-sm" data-edit-sku="${s.id}">Edit</button>` : ''}</div></td>
       </tr>`).join('')}</tbody>
     </table></div>
-    <div class="card-pad"><p class="xs muted">Swatch tidak pernah diturunkan dari kode warna. Bila belum diset, tampil pola netral dan operator mencocokkan kode + lot secara fisik.</p></div>
+    <div class="card-pad"><p class="xs muted">Harga beli master mengikuti harga pemasok terbaru. Swatch tidak pernah diturunkan dari kode warna; bila belum diset, operator mencocokkan kode + lot secara fisik.</p></div>
   </section>`;
 }
 
 function renderParts(ctx) {
   const { db, role } = ctx;
   return `<div class="row-between" style="margin-bottom:12px">
-      <div><h2>Spare part</h2><p class="xs muted">Brand, gambar, kategori, harga, dan status aktif. Stok selalu pcs.</p></div>
+      <div><h2>Spare part</h2><p class="xs muted">Brand, gambar, pemasok, harga terbaru, dan status aktif. Stok selalu pcs.</p></div>
       ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-part">${icon('plus')} Tambah spare part</button>` : ''}
     </div>
     <section class="card">
     <div class="table-wrap"><table class="data">
-      <thead><tr><th>SKU / brand</th><th>Nama</th><th>Kategori</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+      <thead><tr><th>SKU / brand</th><th>Nama</th><th class="hide-sm">Pemasok</th><th>Kategori</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.parts.map((p) => {
         const qty = db.partStock.filter((s) => s.partId === p.id).reduce((a, s) => a + s.qty, 0);
         return `<tr>
           <td><div class="cell-main">${p.image ? `<img src="${esc(p.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${icon('box')}</span>`}<div class="txt"><strong class="mono">${esc(p.sku)}</strong><span>${esc(p.brand || 'Tanpa brand')}</span></div></div></td>
           <td>${esc(p.name)}<div class="xs muted">${esc(p.id)}</div></td>
+          <td class="hide-sm">${supplierNames(db, { partId: p.id })}</td>
           <td>${esc(byId(db.categories, p.categoryId)?.name ?? '—')}</td>
-          <td class="num">${fmt.money(p.buyPrice)}</td>
+          <td class="num">${fmt.money(p.buyPrice)}${latestPriceNote(db, { partId: p.id })}</td>
           <td class="num">${fmt.money(p.sellPrice)}</td>
           <td class="num">${fmt.pcs(qty)} pcs</td>
           <td>${p.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
-          <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-part="${p.id}">Edit</button>` : ''}</td>
+          <td class="right"><div class="row" style="justify-content:flex-end">${role === 'manager' ? `<button class="btn btn-sm btn-ghost" data-price-part="${p.id}">Harga</button><button class="btn btn-sm" data-edit-part="${p.id}">Edit</button>` : ''}</div></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>
-    <div class="card-pad"><p class="xs muted">Spare part selalu bilangan bulat pcs; tidak pernah diubah menjadi roll atau meter.</p></div>
+    <div class="card-pad"><p class="xs muted">Harga beli master mengikuti harga pemasok terbaru. Spare part selalu bilangan bulat pcs; tidak pernah diubah menjadi roll atau meter.</p></div>
   </section>`;
 }
 
@@ -340,6 +360,76 @@ function openPart(ctx, part = null) {
   });
 }
 
+function openPriceModal(ctx, { kind, item }) {
+  const { db } = ctx;
+  const isFabric = kind === 'sku';
+  const filter = isFabric ? { skuId: item.id } : { partId: item.id };
+  const history = supplierPriceHistory(db, filter);
+  const latest = latestSupplierPrice(db, filter);
+  const defaultSupplier = latest?.supplierId ?? db.suppliers[0]?.id ?? '';
+  const label = isFabric ? `${item.code}` : `${item.sku} · ${item.name}`;
+
+  openModal({
+    title: `Harga pemasok · ${label}`,
+    description: 'Harga baru langsung dipakai sebagai default saat membuat PO dan memperbarui harga beli master.',
+    wide: true,
+    submitLabel: 'Simpan harga',
+    body: `
+      <div class="notice notice-info" style="margin-bottom:12px">${icon('wallet')}<div><strong>Harga beli master saat ini ${fmt.money(item.buyPrice)}.</strong> ${latest ? `Terakhir dari ${esc(byId(db.suppliers, latest.supplierId)?.name ?? '—')} · ${esc(latest.currency ?? 'IDR')} ${Number(latest.price).toLocaleString('id-ID')} · berlaku ${esc(latest.validFrom)}.` : 'Belum ada harga pemasok tercatat.'}</div></div>
+      <div class="table-wrap" style="margin-bottom:14px"><table class="data">
+        <thead><tr><th>Pemasok</th><th class="num">Harga</th><th class="num">IDR</th><th>MOQ</th><th>Berlaku</th></tr></thead>
+        <tbody>${history.map((r) => `<tr>
+          <td>${esc(byId(db.suppliers, r.supplierId)?.name ?? r.supplierId)}</td>
+          <td class="num">${esc(r.currency ?? 'IDR')} ${Number(r.price).toLocaleString('id-ID')}</td>
+          <td class="num">${fmt.money(r.priceIdr ?? r.price)}</td>
+          <td class="num">${isFabric ? (r.moqMm ? fmt.m(r.moqMm) : '—') : (r.moqPcs ? `${r.moqPcs} pcs` : '—')}</td>
+          <td class="small">${esc(r.validFrom ?? '—')}${r.validTo ? ` → ${esc(r.validTo)}` : ''}</td>
+        </tr>`).join('') || `<tr><td colspan="5" class="muted">Belum ada riwayat harga.</td></tr>`}</tbody>
+      </table></div>
+      <div class="form-grid">
+        ${field('Pemasok', `<select class="select" name="supplier">${db.suppliers.map((s) => `<option value="${s.id}" data-currency="${esc(s.currency ?? 'IDR')}" ${s.id === defaultSupplier ? 'selected' : ''}>${esc(s.name)} · ${esc(s.currency ?? 'IDR')}</option>`).join('')}</select>`)}
+        ${field(isFabric ? 'Harga / m' : 'Harga / pcs', `<input class="input" name="price" inputmode="decimal" placeholder="${isFabric ? '69500' : '90000'}" required />`, { hint: 'Masukkan dalam mata uang pemasok.' })}
+        ${field(isFabric ? 'MOQ (m)' : 'MOQ (pcs)', `<input class="input" name="moq" inputmode="numeric" placeholder="${isFabric ? '60' : '12'}" />`)}
+        ${field('Berlaku dari', `<input class="input" type="date" name="validFrom" value="${todayJakarta()}" />`)}
+        ${field('Berlaku sampai', `<input class="input" type="date" name="validTo" />`)}
+        ${field('Catatan', `<input class="input" name="notes" placeholder="Kenaikan harga, promosi, syarat kirim" />`, { full: true })}
+      </div>
+      <div class="notice" data-currency-hint>${icon('globe')}<div>Harga disimpan dalam mata uang pemasok dan dikonversi ke IDR dengan kurs terbaru.</div></div>
+    `,
+    onMount(form) {
+      const hint = form.querySelector('[data-currency-hint]');
+      const sync = () => {
+        const sup = db.suppliers.find((s) => s.id === form.supplier.value);
+        hint.innerHTML = `${icon('globe')}<div>Harga dalam <strong>${esc(sup?.currency ?? 'IDR')}</strong>. ${sup?.currency === 'IDR' ? 'Tanpa konversi kurs.' : 'Dikonversi ke IDR memakai kurs CNY terbaru saat disimpan.'}</div>`;
+      };
+      form.supplier.addEventListener('change', sync);
+      sync();
+    },
+    onSubmit(form, close) {
+      const supplier = db.suppliers.find((s) => s.id === form.supplier.value);
+      const raw = String(form.price.value ?? '').trim();
+      const price = supplier?.currency === 'IDR'
+        ? Number(raw.replace(/\D/g, ''))
+        : Number(raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw.replace(/,/g, ''));
+      const moq = Number(String(form.moq.value ?? '').replace(/\D/g, '')) || 0;
+      const saved = ctx.store.update((db2) => saveSupplierPrice(db2, {
+        supplierId: form.supplier.value,
+        skuId: isFabric ? item.id : null,
+        partId: isFabric ? null : item.id,
+        price,
+        moqMm: isFabric ? moq * 1000 : null,
+        moqPcs: isFabric ? null : moq,
+        validFrom: form.validFrom.value,
+        validTo: form.validTo.value || null,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast(`Harga ${label} diperbarui: ${saved.record.currency} ${Number(saved.record.price).toLocaleString('id-ID')} → ${fmt.money(saved.priceIdr)}.`, { tone: 'success' });
+    },
+  });
+}
+
 function openCategory(ctx) {
   openModal({
     title: 'Kategori baru',
@@ -446,6 +536,14 @@ export function mount(ctx) {
   document.querySelectorAll('[data-edit-part]').forEach((btn) => btn.addEventListener('click', () => {
     const part = ctx.db.parts.find((p) => p.id === btn.dataset.editPart);
     if (part) openPart(ctx, part);
+  }));
+  document.querySelectorAll('[data-price-sku]').forEach((btn) => btn.addEventListener('click', () => {
+    const sku = ctx.db.skus.find((s) => s.id === btn.dataset.priceSku);
+    if (sku) openPriceModal(ctx, { kind: 'sku', item: sku });
+  }));
+  document.querySelectorAll('[data-price-part]').forEach((btn) => btn.addEventListener('click', () => {
+    const part = ctx.db.parts.find((p) => p.id === btn.dataset.pricePart);
+    if (part) openPriceModal(ctx, { kind: 'part', item: part });
   }));
   document.querySelector('[data-act="new-category"]')?.addEventListener('click', () => openCategory(ctx));
   document.querySelector('[data-act="new-warehouse"]')?.addEventListener('click', () => openWarehouse(ctx));

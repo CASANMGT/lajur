@@ -229,7 +229,130 @@ export function rollTrail(db, rollId) {
 }
 
 export function rollChildren(db, rollId) {
-  return db.rolls.filter((r) => r.parentRollId === rollId || r.rootRollId === rollId && r.id !== rollId);
+  return db.rolls.filter((r) => r.parentRollId === rollId || (r.rootRollId === rollId && r.id !== rollId));
+}
+
+/** Ancestors from the root down to the direct parent (cycle-safe). */
+export function rollAncestors(db, rollId) {
+  const chain = [];
+  const seen = new Set([rollId]);
+  let current = getRoll(db, rollId);
+  while (current?.parentRollId && !seen.has(current.parentRollId)) {
+    const parent = getRoll(db, current.parentRollId);
+    if (!parent) break;
+    chain.push(parent);
+    seen.add(parent.id);
+    current = parent;
+  }
+  return chain.reverse();
+}
+
+export function rollDescendants(db, rollId) {
+  const out = [];
+  const queue = [rollId];
+  const seen = new Set([rollId]);
+  while (queue.length) {
+    const id = queue.shift();
+    for (const child of db.rolls.filter((r) => r.parentRollId === id)) {
+      if (seen.has(child.id)) continue;
+      seen.add(child.id);
+      out.push(child);
+      queue.push(child.id);
+    }
+  }
+  return out;
+}
+
+function hierarchyNode(roll, childrenMap, seen) {
+  const children = [];
+  for (const child of childrenMap.get(roll.id) ?? []) {
+    if (seen.has(child.id)) continue;
+    seen.add(child.id);
+    children.push(hierarchyNode(child, childrenMap, seen));
+  }
+  const physicalMm = roll.currentMm || 0;
+  const reservedMm = roll.reservedMm || 0;
+  const avail = availableMm(roll);
+  return {
+    roll,
+    children,
+    physicalMm,
+    reservedMm,
+    availableMm: avail,
+    subtreePhysicalMm: physicalMm + children.reduce((a, c) => a + c.subtreePhysicalMm, 0),
+    subtreeAvailableMm: avail + children.reduce((a, c) => a + c.subtreeAvailableMm, 0),
+  };
+}
+
+/**
+ * Parent/child hierarchy grouped per collection → colour/SKU → root roll →
+ * children. Only rolls in `rolls` (already filtered by the caller) are used, so
+ * a search/status filter cannot hide a parent while showing an orphan child.
+ */
+export function rollHierarchy(db, { warehouseId = null, rolls = null } = {}) {
+  const list = (rolls ?? db.rolls).filter((r) => !warehouseId || r.warehouseId === warehouseId);
+  const collections = new Map();
+
+  for (const roll of list) {
+    const sku = byId(db.skus, roll.skuId);
+    const collectionId = sku?.collectionId ?? '__none';
+    if (!collections.has(collectionId)) {
+      collections.set(collectionId, {
+        id: collectionId,
+        name: byId(db.collections, collectionId)?.name ?? 'Tanpa koleksi',
+        categoryId: byId(db.collections, collectionId)?.categoryId ?? null,
+        skus: new Map(),
+      });
+    }
+    const group = collections.get(collectionId);
+    if (!group.skus.has(roll.skuId)) group.skus.set(roll.skuId, { sku, rolls: [] });
+    group.skus.get(roll.skuId).rolls.push(roll);
+  }
+
+  const result = [];
+  for (const group of collections.values()) {
+    const skus = [];
+    for (const { sku, rolls } of group.skus.values()) {
+      const ids = new Set(rolls.map((r) => r.id));
+      const childrenMap = new Map();
+      for (const roll of rolls) {
+        if (!roll.parentRollId || !ids.has(roll.parentRollId)) continue;
+        if (!childrenMap.has(roll.parentRollId)) childrenMap.set(roll.parentRollId, []);
+        childrenMap.get(roll.parentRollId).push(roll);
+      }
+      const roots = rolls
+        .filter((r) => !r.parentRollId || !ids.has(r.parentRollId))
+        .sort((a, b) => a.id.localeCompare(b.id));
+      const seen = new Set(roots.map((r) => r.id));
+      const nodes = roots.map((r) => hierarchyNode(r, childrenMap, seen));
+      const physicalMm = nodes.reduce((a, n) => a + n.subtreePhysicalMm, 0);
+      const availableMmTotal = nodes.reduce((a, n) => a + n.subtreeAvailableMm, 0);
+      const reservedMm = rolls.reduce((a, r) => a + (r.reservedMm || 0), 0);
+      skus.push({
+        sku,
+        nodes,
+        rollCount: rolls.length,
+        rootCount: roots.length,
+        childCount: rolls.length - roots.length,
+        physicalMm,
+        availableMm: availableMmTotal,
+        reservedMm,
+      });
+    }
+    skus.sort((a, b) => String(a.sku?.code ?? '').localeCompare(String(b.sku?.code ?? '')));
+    result.push({
+      id: group.id,
+      name: group.name,
+      categoryId: group.categoryId,
+      skus,
+      rollCount: skus.reduce((a, s) => a + s.rollCount, 0),
+      physicalMm: skus.reduce((a, s) => a + s.physicalMm, 0),
+      availableMm: skus.reduce((a, s) => a + s.availableMm, 0),
+      reservedMm: skus.reduce((a, s) => a + s.reservedMm, 0),
+    });
+  }
+  result.sort((a, b) => a.name.localeCompare(b.name));
+  return result;
 }
 
 /* -------------------------------------------------------------------------- */

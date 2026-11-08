@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.4 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.5 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -27,7 +27,7 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Supplier invoices, partial payments, returns | Done | Payables, supplier return |
 | Customer profiles, contacts, stage, next action | Done | Pelanggan |
 | Customer projects/samples/purchases/deposits | Done | Customer profile |
-| Quotes / orders / invoices | **Partial** | Invoice is the sales document; quote/order entities planned |
+| Quotes / orders / invoices | **Partial** | Sales order with detail/edit/print + invoice; formal quote document still planned |
 | Samples free / paid / refundable deposit | Done | Sample & Deposit page |
 | Sample cuts reduce the source roll | Done | `createSample` → `splitRoll` |
 | Sample-to-purchase linking and conversion | Done | Link invoice, sample report |
@@ -55,12 +55,16 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **WIP production / payroll / capacity** | **Done in v2.4** | Per-piece cutting → sewing → QC, rework, piece-rate payroll, capacity load |
 | **Sales order reserves stock** | **Done in v2.4** | Reserve at order, release on cancel, consume once at invoice |
 | **Explicit CNY buying** | **Done in v2.4** | Currency + FX chosen on PO; IDR HPP and bill |
+| **Roll parent/child hierarchy per collection** | **Done in v2.5** | Collection → colour → root → child tree; lineage path and conserved metres |
+| **Sales order detail, editing and print** | **Done in v2.5** | Creator, contents, prices, draft edit with re-reservation, printable Pesanan Penjualan |
+| **Supplier price book** | **Done in v2.5** | Supplier(s), latest price/MOQ/validity per SKU/part; new quote updates master buy price |
+| **Latest CNY rate on import PO** | **Done in v2.5** | Rate, timestamp and source snapshotted; manual rate appended to FX history |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |
 | **Settings, users & roles** | **Done in v2.3** | Account/PIN, staff add/edit/deactivate, reset PIN, preferences, audit, data |
-| **Sales orders** | **Done in v2.3** | Draft/confirmed → invoice once; stock moves only at invoice |
-| **Product/part master detail** | **Done in v2.3** | Brand, optional image, notes, active flag, audit trail |
+| **Sales orders** | **Done in v2.5** | Draft detail/edit/print; reserves stock; invoice once |
+| **Product/part master detail** | **Done in v2.5** | Brand, image, supplier list, latest price, active flag, audit trail |
 | **Supplier add/edit** | **Done in v2.3** | Local/import, CNY/FX/incoterm/port |
 | **Optional physical proof on documents** | **Partial** | Metadata on receipts, transfer receipts, tasks, shipments; invoices/opname still planned |
 | Authentication / PIN per role | Done (demo) | PBKDF2, session, lockout, change PIN |
@@ -78,12 +82,12 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Mobile bottom navigation | Done | Beranda, Tugas, Stok, Akun |
 | Mobile task-first dashboard | Done | Terima Barang, Picking, Potong Kain, Opname tiles |
 | Task cards with due/priority/assignee | Done | Tugas Operasi |
-| Cut roll screen with roll summary + preview | Partial | Task detail shows roll/lot/target; cut posting remains invoice/project |
+| Cut roll screen with roll summary + preview | Done | WIP production order + per-piece flow |
 | Partial internal receiving with transit control | Done | Receive modal + transfer detail |
 | Blind opname with manager-only variance | Done | Expected hidden while counting, shown in review |
 | Sample swatches and unset state | Done | Swatch never derived from code |
-| Flow: Pesan → Planning → Cutting → Jahit → QC → Transit → Selesai | **Partial** | Cutting/sewing/QC WIP + shipment done; order planning and machine calendar partial |
-| Desktop workspace hierarchy tree (collection → colour → lot → roll → bin) | **Partial** | Flat filtered table + roll detail; collapsible tree is planned |
+| Flow: Pesan → Planning → Cutting → Jahit → QC → Transit → Selesai | **Partial** | Sales order → WIP → shipment done; machine planning/calendar partial |
+| Desktop workspace hierarchy tree (collection → colour → lot → roll → bin) | **Done in v2.5** | *Hierarki koleksi* toggle with root/child roll tree |
 | Hero illustration / decorative waves | Not needed | Functional UI prioritised; brand mark used |
 | 320 / 390 / 768 / desktop | Done | Verified, 0 overflow |
 | Simulation badges | Done | Copper banner + badges |

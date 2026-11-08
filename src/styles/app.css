@@ -1758,3 +1758,78 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   .card { box-shadow: none; border-color: #bbb; }
   .print-page { padding: 24px; }
 }
+
+/* ---------------------------------------------------------------- roll tree */
+.tree-collection { overflow: hidden; }
+.tree-collection > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 14px 16px;
+  background: var(--ivory-50);
+  border-bottom: 1px solid var(--line);
+}
+.tree-collection > summary::-webkit-details-marker { display: none; }
+.tree-collection > summary::before {
+  content: "?";
+  color: var(--teal);
+  font-size: 12px;
+  transform: translateY(-1px);
+}
+.tree-collection[open] > summary::before { content: "?"; }
+.tree-collection-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy-900);
+}
+.tree-sku { padding: 14px 0 6px; border-top: 1px dashed var(--line); }
+.tree-sku:first-child { border-top: 0; padding-top: 2px; }
+.tree-sku-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 0 6px 8px;
+}
+.tree-sku-head > div { flex: 1 1 220px; }
+.tree-head,
+.tree-row {
+  display: grid;
+  grid-template-columns: 112px minmax(140px, 1fr) 76px 76px 76px 92px;
+  gap: 8px;
+  align-items: center;
+}
+.tree-head {
+  padding: 6px 10px;
+  color: var(--muted-2);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.tree-row {
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.tree-row:hover { background: var(--ivory-50); }
+.tree-row:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.tree-node + .tree-node { margin-top: 1px; }
+.tree-children {
+  margin-left: 18px;
+  padding-left: 10px;
+  border-left: 1px dashed var(--line-strong);
+}
+.tree-id { color: var(--navy-900); }
+.tree-path { line-height: 1.8; }
+@media (max-width: 760px) {
+  .tree-head { display: none; }
+  .tree-row { display: flex; flex-wrap: wrap; gap: 4px 10px; padding: 9px 8px; }
+  .tree-lot { flex-basis: 100%; }
+  .tree-children { margin-left: 10px; padding-left: 8px; }
+  .tree-collection > summary { padding: 12px; }
+}

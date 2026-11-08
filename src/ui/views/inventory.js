@@ -4,13 +4,15 @@ import { esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, 
 import { MM_PER_M, byId, formatDateLong, parseM, todayJakarta } from '../../domain/core.js';
 import {
   ROLL_STATUS, availableMm, isSellable, partAvailable, quarantineRoll, receiveAdhocStock,
-  rollChildren, rollTrail, skuStockByWarehouse, stockSummary, summarizeRolls,
+  rollAncestors, rollDescendants, rollHierarchy, rollTrail, skuStockByWarehouse,
+  stockSummary, summarizeRolls,
 } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, movementRow, warehouseOptions } from './common.js';
 import { settingsOf } from '../../domain/settings.js';
 import { printLabelHtml } from './print.js';
 
 const filters = { q: '', collection: '', status: 'all', available: false };
+let stockView = 'list';
 
 function rollStatus(roll) {
   if (roll.transit) return { label: 'Transit', tone: 'info' };
@@ -70,6 +72,61 @@ function rowsHtml(ctx) {
       <td>${badge(status.label, status.tone)}</td>
     </tr>`;
   }).join('');
+}
+
+function treeRows(nodes, db) {
+  return nodes.map((node) => {
+    const roll = node.roll;
+    const status = rollStatus(roll);
+    const wh = roll.transit ? byId(db.warehouses, roll.transit.toWarehouseId) : byId(db.warehouses, roll.warehouseId);
+    return `<div class="tree-node">
+      <a class="tree-row" href="#/stok/${esc(roll.id)}">
+        <span class="tree-id mono strong">${esc(roll.id)}</span>
+        <span class="tree-lot xs muted">Lot ${esc(roll.lot)} · ${esc(wh?.code ?? '—')}/${esc(roll.bin || '—')}</span>
+        <span class="num">${fmt.m(roll.currentMm)}</span>
+        <span class="num ${node.reservedMm ? 'strong' : 'muted'}">${node.reservedMm ? fmt.m(node.reservedMm) : '—'}</span>
+        <span class="num">${isSellable(roll) ? fmt.m(node.availableMm) : '—'}</span>
+        <span>${badge(status.label, status.tone)}</span>
+      </a>
+      ${node.children.length ? `<div class="tree-children">${treeRows(node.children, db)}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function hierarchyInner(ctx) {
+  const { db, ui } = ctx;
+  const filtered = db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId }));
+  const groups = rollHierarchy(db, { rolls: filtered });
+  if (!groups.length) {
+    return `<div class="empty">${icon('search')}<strong>Tidak ada roll</strong><p>Ubah kata kunci atau filter gudang.</p></div>`;
+  }
+  return `<div class="stack">${groups.map((group) => {
+    const rootCount = group.skus.reduce((a, s) => a + s.rootCount, 0);
+    const childCount = group.skus.reduce((a, s) => a + s.childCount, 0);
+    return `<details class="card tree-collection" open>
+      <summary>
+        <span class="tree-collection-name">${esc(group.name)}</span>
+        <span class="xs muted">${group.rollCount} roll · ${rootCount} induk · ${childCount} turunan</span>
+        <span class="small num">${fmt.m(group.physicalMm)} fisik · ${fmt.m(group.availableMm)} tersedia</span>
+      </summary>
+      <div class="card-pad">
+        ${group.skus.map((s) => `<div class="tree-sku">
+          <div class="tree-sku-head">
+            ${swatch(s.sku)}
+            <div>
+              <strong>${esc(s.sku?.collectionName)} ${esc(s.sku?.colourName || s.sku?.colourCode || '')}</strong>
+              <div class="xs muted">${esc(s.sku?.code)} · ${s.rootCount} induk · ${s.childCount} turunan · ${fmt.m(s.physicalMm)} fisik · ${fmt.m(s.availableMm)} tersedia</div>
+            </div>
+            ${s.sku?.swatch ? `<span class="xs mono muted">${esc(s.sku.swatch)}</span>` : ''}
+          </div>
+          <div class="tree-head" aria-hidden="true">
+            <span>Roll</span><span>Lot / lokasi</span><span class="num">Fisik</span><span class="num">Terpesan</span><span class="num">Tersedia</span><span>Status</span>
+          </div>
+          <div class="tree-nodes">${treeRows(s.nodes, db)}</div>
+        </div>`).join('')}
+      </div>
+    </details>`;
+  }).join('')}</div>`;
 }
 
 function cardsHtml(ctx) {
@@ -161,7 +218,12 @@ export function render(ctx) {
       <label class="checkline" style="min-height:42px"><input type="checkbox" id="f-available" ${filters.available ? 'checked' : ''} /> Hanya ada stok</label>
       <button class="btn btn-ghost" type="button" data-action="reset-filter">Reset</button>
     </div>
-    <section class="card">
+    <div class="row" style="margin-bottom:12px">
+      ${[['list', 'Daftar roll'], ['tree', 'Hierarki koleksi']].map(([key, label]) => `<button class="chip" type="button" data-stock-view="${key}" aria-pressed="${stockView === key}">${label}</button>`).join('')}
+    </div>
+    ${stockView === 'tree'
+      ? `<div id="stock-tree">${hierarchyInner(ctx)}</div>`
+      : `<section class="card">
       <div class="table-wrap desktop-table">
         <table class="data">
           <thead><tr><th>Roll / Lot</th><th>Produk & warna</th><th class="hide-sm">Gudang / Rak</th><th class="num">Fisik</th><th class="num">Terpesan</th><th class="num">Tersedia</th><th>Status</th></tr></thead>
@@ -170,7 +232,7 @@ export function render(ctx) {
       </div>
       <div class="mobile-cards" id="roll-cards">${cardsHtml(ctx)}</div>
     </section>
-    <p class="xs muted" style="margin-top:8px">Menampilkan <span id="roll-count">${db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId })).length}</span> roll. Swatch hanya referensi visual; cocokkan kode warna dan lot saat memotong.</p>
+    <p class="xs muted" style="margin-top:8px">Menampilkan <span id="roll-count">${db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId })).length}</span> roll. Swatch hanya referensi visual; cocokkan kode warna dan lot saat memotong.</p>`}
     ${partsSection(ctx)}`;
 }
 
@@ -220,7 +282,9 @@ function renderDetail(ctx) {
   const wh = roll.transit ? warehouseOf(db, roll.transit.toWarehouseId) : warehouseOf(db, roll.warehouseId);
   const avail = availableMm(roll);
   const trail = rollTrail(db, roll.id);
-  const children = rollChildren(db, roll.id);
+  const ancestors = rollAncestors(db, roll.id);
+  const directChildren = db.rolls.filter((r) => r.parentRollId === roll.id);
+  const descendants = rollDescendants(db, roll.id);
   const others = skuStockByWarehouse(db, roll.skuId);
   const parent = roll.parentRollId ? db.rolls.find((r) => r.id === roll.parentRollId) : null;
   const showCost = role === 'manager' || (role === 'operator' && settingsOf(db).operatorCanSeeCosts);
@@ -285,10 +349,15 @@ function renderDetail(ctx) {
             <div class="row-between"><span class="small muted">Penerimaan</span><span class="small strong">${esc(roll.receiptRef || '—')}</span></div>
             <div class="row-between"><span class="small muted">Tanggal terima</span><span class="small">${esc(formatDateLong(roll.receivedAt))}</span></div>
             <div class="row-between"><span class="small muted">Induk</span><span class="small">${parent ? `<a class="mono" href="#/stok/${parent.id}">${esc(parent.id)}</a>` : '—'}</span></div>
-            <div class="row-between"><span class="small muted">Roll akar</span><span class="small mono">${esc(roll.rootRollId || roll.id)}</span></div>
+            <div class="row-between"><span class="small muted">Roll akar</span><span class="small mono"><a href="#/stok/${esc(roll.rootRollId || roll.id)}">${esc(roll.rootRollId || roll.id)}</a></span></div>
+            <div class="row-between"><span class="small muted">Turunan langsung</span><span class="small">${directChildren.length}</span></div>
+            <div class="row-between"><span class="small muted">Total turunan</span><span class="small">${descendants.length}</span></div>
           </div>
-          ${children.length ? `<hr class="divider" /><div class="small muted" style="margin-bottom:6px">Turunan (${children.length})</div>
-            <div class="stack-sm">${children.slice(0, 8).map((c) => `<a class="row-between small" href="#/stok/${c.id}"><span class="mono">${esc(c.id)}</span><span>${fmt.m(c.currentMm)} · ${esc(ROLL_STATUS[c.status]?.label ?? c.status)}</span></a>`).join('')}</div>` : ''}
+          ${ancestors.length ? `<hr class="divider" /><div class="small muted" style="margin-bottom:6px">Jalur roll</div>
+            <div class="tree-path small">${ancestors.map((a) => `<a class="mono" href="#/stok/${a.id}">${esc(a.id)}</a>`).join(' <span class="muted">→</span> ')} <span class="muted">→</span> <strong class="mono">${esc(roll.id)}</strong></div>` : ''}
+          ${directChildren.length ? `<hr class="divider" /><div class="small muted" style="margin-bottom:6px">Turunan langsung (${directChildren.length})</div>
+            <div class="stack-sm">${directChildren.slice(0, 8).map((c) => `<a class="row-between small" href="#/stok/${c.id}"><span class="mono">${esc(c.id)}</span><span>${fmt.m(c.currentMm)} · ${esc(ROLL_STATUS[c.status]?.label ?? c.status)}</span></a>`).join('')}${directChildren.length > 8 ? `<span class="xs muted">+${directChildren.length - 8} turunan langsung lainnya</span>` : ''}</div>` : ''}
+          ${descendants.length > directChildren.length ? `<div class="xs muted" style="margin-top:8px">${descendants.length - directChildren.length} turunan lebih dalam (potongan dari potongan).</div>` : ''}
         </section>
 
         <section class="card card-pad">
@@ -452,8 +521,12 @@ export function mount(ctx) {
   }
 
   const rerenderList = () => {
-    document.getElementById('roll-rows').innerHTML = rowsHtml(ctx);
-    document.getElementById('roll-cards').innerHTML = cardsHtml(ctx);
+    const rowsEl = document.getElementById('roll-rows');
+    const cardsEl = document.getElementById('roll-cards');
+    if (rowsEl) rowsEl.innerHTML = rowsHtml(ctx);
+    if (cardsEl) cardsEl.innerHTML = cardsHtml(ctx);
+    const treeEl = document.getElementById('stock-tree');
+    if (treeEl) treeEl.innerHTML = hierarchyInner(ctx);
     const count = ctx.db.rolls.filter((r) => matches(ctx.db, r, { whId: ctx.ui.warehouseId })).length;
     const el = document.getElementById('roll-count');
     if (el) el.textContent = String(count);
@@ -462,6 +535,10 @@ export function mount(ctx) {
     });
   };
 
+  document.querySelectorAll('[data-stock-view]').forEach((btn) => btn.addEventListener('click', () => {
+    stockView = btn.dataset.stockView;
+    ctx.store.emit();
+  }));
   const search = document.getElementById('roll-search');
   let timer = 0;
   search?.addEventListener('input', (e) => {

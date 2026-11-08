@@ -2,6 +2,63 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.5.0] — 2026-11-08
+
+**Release name: Hierarki & Pesanan.** Adds roll parent/child hierarchy per collection, sales-order detail/edit/print, a supplier price book, latest-price defaults on PO and a CNY→IDR rate snapshot on import POs.
+
+### Added
+
+- **Roll hierarchy per collection** (`#/stok` → *Hierarki koleksi*):
+  - Collection → colour/SKU → root roll → child rolls.
+  - Root/parent/child counts, lineage path on roll detail, direct children and total descendants.
+  - Split lineage keeps `parentRollId`/`rootRollId`; physical metres are conserved.
+- **Sales order detail** (`#/pesanan/:id`):
+  - Creator, customer, project, dates, full line contents, unit prices, amounts and reservation list.
+  - Draft editing with customer/date/notes, add/remove lines, quantity and price changes.
+  - Saving releases old fabric/part reservations and reserves the new lines.
+  - Printable **Pesanan Penjualan** with creator, lines, roll/lot and total; explicitly “bukan faktur”.
+- **Supplier price book** (`#/master`):
+  - Product and part lists show supplying supplier(s) and the latest price/validity.
+  - New **Harga** dialog records supplier quotes (price, currency, MOQ, validity) and history.
+  - Saving a newer quote refreshes the master IDR buy price.
+- **PO price list:** creating a PO shows the supplier's latest prices with IDR equivalents, MOQ and validity; line prices default to the latest quote.
+- **Latest CNY→IDR rate:** import PO shows the latest rate, timestamp and source; the rate is editable and snapshotted on the PO. A different rate is appended to `fxRates`.
+- Seed: 20 supplier price records (including an October increase), 3 CNY rate records, supplier links for all parts and Nova.
+
+### Changed
+
+- `createPO` defaults line prices from supplier price history rather than the static master buy price.
+- Import PO stores `fxAsOf` and `fxSource`; PO detail shows the snapshot.
+- Master product/part tables now include a supplier column and latest-price note.
+- Version bumped to 2.5.0, schema 7, backup v7; migration adds `fxRates`, supplier-price currency/IDR values and sequences.
+
+### Fixed
+
+- Supplier-price sequence now starts after the seeded records (`SP-0021`), avoiding duplicate IDs.
+- CNY decimal input no longer strips the decimal point (`27,5` → 27,5, not 275).
+- PO price parsing separates IDR thousands from foreign decimals.
+
+### Verification
+
+- `node --test`: **51 passed** (29 invariants + 4 operations + 7 admin + 5 orders/pricing + 4 production + 2 auth).
+- Module imports 41/41; render 24/24; browser route sweep 24/24 with zero console errors.
+- Hierarchy split RL-0001 → child keeps parent/root and totals are conserved.
+- Sales order edit: 20 m × Rp 125.000 → 22 m × Rp 130.000; reservation 22 m and total Rp 2.860.000.
+- Supplier price: latest 69.500; new quote 71.500 updates master; PO defaults to 69.500.
+- Import: CNY 27 prefilled from Ningbo, FX 2.250 snapshotted; manual 2.300 stored as FX-0004.
+- Mobile 320/390/768: tree and order detail overflow 0; drawer z60/scrim z55/nav z45.
+- Lighthouse accessibility 100 on stock hierarchy, sales-order detail, master and purchasing.
+
+### Known limitations
+
+- The reference server is still not wired to the static Vercel UI; no PostgreSQL/multi-node locking.
+- Object storage is still absent: product images are local SVG/data URLs; proof is metadata.
+- Sales-order editing is limited to drafts; confirmed orders must be cancelled/recreated.
+- Payroll is a piece-rate ledger, not HR/tax.
+- Partial project fulfilment, quotes, as-of valuation and accounting/PPN remain planned.
+
+---
+
 ## [2.4.0] — 2026-11-08
 
 **Release name: Produksi & Kontrol.** Adds WIP production with payroll/capacity, stock-reserving sales orders, richer reporting, explicit CNY buying, part imagery and mobile layering fixes.

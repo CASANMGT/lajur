@@ -3,7 +3,7 @@ const modules = [
   '../src/domain/core.js', '../src/domain/inventory.js', '../src/domain/transfers.js',
   '../src/domain/sales.js', '../src/domain/purchasing.js', '../src/domain/projects.js',
   '../src/domain/crm.js', '../src/domain/opname.js', '../src/domain/reports.js',
-  '../src/domain/seed.js', '../src/domain/master.js', '../src/version.js',
+  '../src/domain/seed.js', '../src/domain/master.js', '../src/domain/pricing.js', '../src/version.js',
   '../src/domain/tasks.js', '../src/domain/shipments.js', '../src/domain/attachments.js',
   '../src/data/store.js', '../src/data/backup.js', '../src/data/auth.js',
   '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js',

@@ -49,8 +49,8 @@ export const MASTER = {
     { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', description: 'Motor, remote, dan kontrol.' },
   ],
   skus: [
-    { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 68000, active: true, dormant: false },
-    { id: 'sku-luna-02', collectionId: 'col-luna', collectionName: 'Luna', code: 'Luna-02', colourCode: '02', colourName: 'Sand', swatch: '#C9B79C', unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 68000, active: true, dormant: false },
+    { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 69500, active: true, dormant: false },
+    { id: 'sku-luna-02', collectionId: 'col-luna', collectionName: 'Luna', code: 'Luna-02', colourCode: '02', colourName: 'Sand', swatch: '#C9B79C', unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 70000, active: true, dormant: false },
     { id: 'sku-aria-01', collectionId: 'col-aria', collectionName: 'Aria', code: 'Aria-01', colourCode: '01', colourName: 'Putih', swatch: '#F1EEE4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, active: true, dormant: false },
     { id: 'sku-aria-02', collectionId: 'col-aria', collectionName: 'Aria', code: 'Aria-02', colourCode: '02', colourName: 'Greige', swatch: '#C9C2B4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, active: true, dormant: false },
     { id: 'sku-nova-01', collectionId: 'col-nova', collectionName: 'Nova', code: 'Nova-01', colourCode: '01', colourName: 'Charcoal', swatch: '#3D444B', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, active: true, dormant: false },
@@ -73,7 +73,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 6,
+      version: 7,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -93,6 +93,7 @@ function skeleton(dataset) {
     customers: [],
     suppliers: [],
     supplierPrices: [],
+    fxRates: [],
     projects: [],
     invoices: [],
     payments: [],
@@ -178,15 +179,35 @@ export function buildSeed({ dataset = 'main' } = {}) {
   );
 
   db.supplierPrices.push(
-    { id: 'SP-001', supplierId: 'SUP-001', skuId: 'sku-luna-01', price: 68000, unit: 'm', moqMm: 60000, validFrom: '2026-07-01', validTo: '2026-12-31' },
-    { id: 'SP-002', supplierId: 'SUP-001', skuId: 'sku-luna-02', price: 68500, unit: 'm', moqMm: 60000, validFrom: '2026-07-01', validTo: '2026-12-31' },
-    { id: 'SP-003', supplierId: 'SUP-003', skuId: 'sku-aria-01', price: 55000, unit: 'm', moqMm: 45000, validFrom: '2026-08-01', validTo: '2026-11-30' },
-    { id: 'SP-004', supplierId: 'SUP-003', skuId: 'sku-aria-02', price: 56000, unit: 'm', moqMm: 45000, validFrom: '2026-09-01', validTo: '2027-01-31' },
-    { id: 'SP-005', supplierId: 'SUP-002', partId: 'part-rel-3', price: 52000, unit: 'pcs', moqPcs: 20, validFrom: '2026-06-01', validTo: '2026-12-31' },
-    { id: 'SP-006', supplierId: 'SUP-002', partId: 'part-motor', price: 1250000, unit: 'pcs', moqPcs: 5, validFrom: '2026-01-01', validTo: '2026-12-31' },
-    { id: 'SP-007', supplierId: 'SUP-004', skuId: 'sku-luna-01', price: 27, unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-03-31' },
-    { id: 'SP-008', supplierId: 'SUP-004', skuId: 'sku-luna-02', price: 27.5, unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-03-31' },
+    { id: 'SP-001', supplierId: 'SUP-001', skuId: 'sku-luna-01', price: 68000, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-07-01', validTo: '2026-12-31' },
+    { id: 'SP-002', supplierId: 'SUP-001', skuId: 'sku-luna-02', price: 68500, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-07-01', validTo: '2026-12-31' },
+    { id: 'SP-003', supplierId: 'SUP-003', skuId: 'sku-aria-01', price: 55000, currency: 'IDR', unit: 'm', moqMm: 45000, validFrom: '2026-08-01', validTo: '2026-11-30' },
+    { id: 'SP-004', supplierId: 'SUP-003', skuId: 'sku-aria-02', price: 56000, currency: 'IDR', unit: 'm', moqMm: 45000, validFrom: '2026-09-01', validTo: '2027-01-31' },
+    { id: 'SP-005', supplierId: 'SUP-002', partId: 'part-rel-3', price: 52000, currency: 'IDR', unit: 'pcs', moqPcs: 20, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-006', supplierId: 'SUP-002', partId: 'part-motor', price: 1250000, currency: 'IDR', unit: 'pcs', moqPcs: 5, validFrom: '2026-01-01', validTo: '2026-12-31' },
+    { id: 'SP-007', supplierId: 'SUP-004', skuId: 'sku-luna-01', price: 27, currency: 'CNY', unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-03-31' },
+    { id: 'SP-008', supplierId: 'SUP-004', skuId: 'sku-luna-02', price: 27.5, currency: 'CNY', unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-03-31' },
+    { id: 'SP-009', supplierId: 'SUP-002', partId: 'part-rel-4', price: 64000, currency: 'IDR', unit: 'pcs', moqPcs: 20, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-010', supplierId: 'SUP-002', partId: 'part-runner', price: 6500, currency: 'IDR', unit: 'pcs', moqPcs: 50, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-011', supplierId: 'SUP-002', partId: 'part-bracket', price: 14000, currency: 'IDR', unit: 'pcs', moqPcs: 24, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-012', supplierId: 'SUP-002', partId: 'part-bracket-set', price: 90000, currency: 'IDR', unit: 'pcs', moqPcs: 12, validFrom: '2026-09-01', validTo: '2027-01-31' },
+    { id: 'SP-013', supplierId: 'SUP-002', partId: 'part-hook', price: 1500, currency: 'IDR', unit: 'pcs', moqPcs: 100, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-014', supplierId: 'SUP-002', partId: 'part-ring', price: 2200, currency: 'IDR', unit: 'pcs', moqPcs: 100, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-015', supplierId: 'SUP-002', partId: 'part-endcap', price: 2000, currency: 'IDR', unit: 'pcs', moqPcs: 50, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-016', supplierId: 'SUP-002', partId: 'part-remote', price: 210000, currency: 'IDR', unit: 'pcs', moqPcs: 6, validFrom: '2026-06-01', validTo: '2026-12-31' },
+    { id: 'SP-017', supplierId: 'SUP-003', skuId: 'sku-nova-01', price: 82000, currency: 'IDR', unit: 'm', moqMm: 30000, validFrom: '2026-08-01', validTo: '2027-02-28' },
+    { id: 'SP-018', supplierId: 'SUP-003', skuId: 'sku-nova-02', price: 82000, currency: 'IDR', unit: 'm', moqMm: 30000, validFrom: '2026-08-01', validTo: '2027-02-28' },
+    { id: 'SP-019', supplierId: 'SUP-001', skuId: 'sku-luna-01', price: 69500, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-10-15', validTo: '2027-03-31', notes: 'Kenaikan harga Oktober.' },
+    { id: 'SP-020', supplierId: 'SUP-001', skuId: 'sku-luna-02', price: 70000, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-10-15', validTo: '2027-03-31', notes: 'Kenaikan harga Oktober.' },
   );
+
+  db.fxRates.push(
+    { id: 'FX-0003', currency: 'CNY', rate: 2238, asOf: '2026-09-01T09:00:00+07:00', source: 'Bank Indonesia (demo)', createdAt: '2026-09-01T09:00:00+07:00', createdBy: 'Sistem' },
+    { id: 'FX-0002', currency: 'CNY', rate: 2250, asOf: '2026-10-30T09:00:00+07:00', source: 'Bank Indonesia (demo)', createdAt: '2026-10-30T09:00:00+07:00', createdBy: 'Sistem' },
+    { id: 'FX-0001', currency: 'CNY', rate: 2250, asOf: '2026-11-06T09:00:00+07:00', source: 'Bank Indonesia (demo)', createdAt: '2026-11-06T09:00:00+07:00', createdBy: 'Sistem' },
+  );
+  db.sequences.supplierPrice = db.supplierPrices.length;
+  db.sequences.fxRate = db.fxRates.length;
 
   /* ------------------------------------------------------------- customers */
   const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);

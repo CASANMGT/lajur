@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 6;
+export const BACKUP_VERSION = 7;
 
 export function exportBackup(db) {
   return {
@@ -26,7 +26,7 @@ const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
   'movements', 'customers', 'suppliers', 'supplierPrices', 'projects', 'invoices', 'payments',
   'samples', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
-  'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences',
+  'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences', 'fxRates',
 ];
 
 export function validateBackup(payload) {
@@ -42,7 +42,7 @@ export function validateBackup(payload) {
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
       if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
-      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters'].includes(key)) continue;
+      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates'].includes(key)) continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }

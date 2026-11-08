@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-46%2F46-brightgreen) ![Version](https://img.shields.io/badge/version-2.4.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-51%2F51-brightgreen) ![Version](https://img.shields.io/badge/version-2.5.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -57,7 +57,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -94,7 +94,8 @@ Lajur/
 │   │   ├── purchasing.js     suppliers, PO, receiving, payables, FX
 │   │   ├── shipments.js      import shipment tracking + landed cost
 │   │   ├── tasks.js          receive/pick/cut/sew/QC/opname tasks
-│   │   ├── orders.js         sales orders before invoice
+│   │   ├── orders.js         sales orders, editing, reservations
+│   │   ├── pricing.js        supplier prices, latest price, FX snapshots
 │   │   ├── production.js     WIP orders, pieces, payroll, capacity
 │   │   ├── settings.js       operational preferences
 │   │   ├── attachments.js    optional physical-proof metadata
@@ -123,6 +124,7 @@ Lajur/
 │   ├── invariants.test.js    29 business invariant tests
 │   ├── operations.test.js    4 import/task/shipment tests
 │   ├── admin.test.js         7 master/user/order/settings tests
+│   ├── orders-pricing.test.js 5 hierarchy/order/supplier-price/FX tests
 │   ├── production.test.js    4 WIP/payroll/capacity tests
 │   └── auth.test.js          2 PIN hashing / policy tests
 └── tools/
@@ -145,12 +147,12 @@ Lajur/
 
 0. **Masuk** — choose an account and enter its PIN (manager `2468`, operator `1357`, sales `8642`). Change it from the avatar menu.
 1. **Dashboard** — manager defaults: inventory value, receivables, month margin, payables, exception feed.
-2. **Stok & Roll** — search `RL-0001`; open it. See 60 m physical, 0 reserved, 60 m available, lot `LOT-2608-A`, bin `A-01-01`, and the full movement trail.
+2. **Stok & Roll** — search `RL-0001`; open it. See 60 m physical, 0 reserved, 60 m available, lot `LOT-2608-A`, bin `A-01-01`, and the full movement trail. Switch to **Hierarki koleksi** to see collection → colour → root roll → child rolls, with parent/child totals.
 3. **Whole vs cut** — open `#/penjualan?new=1&roll=RL-0001`, add 10 m, post. The roll becomes 50 m and the sold piece is a separate traceable child. You can also choose **Roll utuh** (blocked when reserved).
 4. **Permintaan Gudang** — open `TRF-0001`. It is the canonical partial case:
    **15 requested · 5 dispatched · 2 received · 10 not yet dispatched · 3 in transit.**
    Approve does not reserve; dispatch re-checks availability.
-5. **Pembelian** — open `PO-0001`. Receive 60 m as two rolls (e.g. `20, 40`), each with its own lot. Try the same receipt ref twice: it is rejected.
+5. **Pembelian** — open `PO-0001`. Receive 60 m as two rolls (e.g. `20, 40`), each with its own lot. Try the same receipt ref twice: it is rejected. **Buat PO** now shows the supplier's latest price list (price, MOQ, validity) and prefills the line price; for CNY it shows the latest rate and records it on the PO.
 6. **Proyek** — open `PRJ-001`. See reservations on an exact roll and parts. `PRJ-002` shows a shortage. Issue posts the invoice and deducts stock; handover does not deduct again.
 7. **Pelanggan** — open `CUS-0002`: projects, invoices, samples, deposits, activity. Samples record the source roll; sample deposit refund is blocked until a purchase is linked.
 8. **Stock Opname** — start a session for Bandung. Expected balances are hidden; save, submit, then approve as manager. The warehouse is frozen while counting.
@@ -160,13 +162,14 @@ Lajur/
 11. **Tambah stok** — on Stok, “Tambah stok” records opening stock or a correction without a PO: unique document, lot, each roll length, cost, reason, and a movement per roll.
 12. **Master Data → Gudang** — add or rename a warehouse, change its code/prefix/contact, or deactivate an empty one. Deactivation is refused while stock, transit, parts, active requests, or an opname still reference it. Collection names can be renamed without changing SKU IDs.
 13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Rani, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
-14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty.
+14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty. The latest CNY→IDR rate is snapshotted on the PO with timestamp and source.
 15. **Sample & Deposit** — sample conversion, deposit ledger and refunds in one workspace.
 16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, edit preferences, see master audit, export/restore.
-17. **Pesanan** (`#/pesanan`) — create a sales order, confirm, convert to invoice; stock moves only at conversion.
-18. **Master data** — add/edit spare part with brand + optional image, product images, supplier local/import; each edit writes to audit.
+17. **Pesanan** (`#/pesanan`) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
+18. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand + optional image; each edit writes to audit.
 19. **Produksi WIP** — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
 20. **Laporan → Produksi & payroll** — WIP metres, open payroll, QC rejects, capacity and order progress.
+21. **Laporan → Penjualan** — order list with status, totals and invoice links.
 
 ### Role experience
 
@@ -216,12 +219,17 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **46 passed, 0 failed** (44 business + 2 auth) |
-| Module import check | **40/40 modules** |
-| Server-side render of all views | **23/23 render, no exceptions** (incl. login and 3 roles) |
-| Browser route sweep | **23/23 routes**, zero console errors |
+| `node --test` | **51 passed, 0 failed** (49 business + 2 auth) |
+| Module import check | **41/41 modules** |
+| Server-side render of all views | **24/24 render, no exceptions** (incl. login and 3 roles) |
+| Browser route sweep | **24/24 routes**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
 | WIP production | 10 m cut into 5 pieces, payroll Rp 25.000, sew/QC, reject + rework, capacity load |
+| Roll hierarchy | Split RL-0001 → child keeps parent/root; collection tree conserves physical metres |
+| Sales order edit | Creator shown; 20 m × Rp 125.000 → 22 m × Rp 130.000; total and reservation both updated |
+| Sales order print | “Pesanan Penjualan” contains creator, lines, roll/lot, total and “bukan faktur” note |
+| Supplier pricing | Latest Luna-01 price 69.500; new quote 71.500 updates master buy price; suppliers listed |
+| Import price/FX | PO prefilled CNY 27 from Ningbo; FX 2.250 snapshotted; manual 2.300 stored as newest FX-0004 |
 | Sales order reserve | 10 m reserved at order; conversion released reservation and reduced stock once |
 | Nota CNY | PO currency explicit; 26.5 CNY × 2.250 + landed Rp 600.000 → roll HPP Rp 71.625/m |
 | Server auth | reference API login (scrypt), shared revision, operator task action; operator invoice action → 403 |
@@ -265,7 +273,11 @@ node tools/render-check.mjs
 - Per-role login with PBKDF2-hashed PIN, 8-hour session, 5-attempt lockout, PIN change, logout.
 - **Settings workspace:** account/PIN, staff user management (add, edit role, activate/deactivate, reset PIN), preferences, audit and data.
 - **Dynamic users:** new staff accounts appear on the login screen; role changes and deactivation apply immediately.
-- **Role-restricted navigation:** operator sees only warehouse work; sales sees sales/CRM/sample; manager sees all, settings and master.
+- **Role-restricted navigation:** operator sees only warehouse work; sales sees sales/CRM/sample; manager sees all, settings and master. Operator purchasing hides PO prices/totals, supplier bills and the supplier master.
+- **Roll hierarchy:** collection → colour/SKU → root roll → child rolls, with parent/root links and conserved metres.
+- **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”.
+- **Supplier price book:** every product/part lists its suppliers, latest price, MOQ and validity; new quotes update the master buy price.
+- **Latest CNY rate on import POs:** price list and latest rate shown before saving; rate, timestamp and source snapshotted on the PO.
 - **WIP production orders:** cut → sew → QC per piece, reject/rework, payroll per piece, work-centre capacity, source roll/lot trace.
 - **Sales orders reserve stock:** reservation at order, release on cancel, consume once at invoice conversion.
 - **CNY buying:** explicit currency + FX on PO, foreign line prices, IDR HPP including landed cost.
@@ -295,7 +307,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.4.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.5.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

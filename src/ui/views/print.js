@@ -98,6 +98,39 @@ export function printInvoiceHtml(db, invoice) {
     <p class="note" style="margin-top:10px">Demo — bukan e-faktur pajak dan bukan dokumen akuntansi resmi.</p>`;
 }
 
+export function printSalesOrderHtml(db, order) {
+  const customer = byId(db.customers, order.customerId);
+  const creator = byId(db.users, order.userId);
+  const project = order.projectId ? db.projects.find((p) => p.id === order.projectId) : null;
+  return `
+    <h1>PESANAN PENJUALAN</h1>
+    <p class="pill">${esc(order.id)} · ${esc(order.status)}</p>
+    <div class="meta" style="margin-top:12px">
+      <div><span>Pelanggan</span><strong>${esc(customer?.name ?? order.customerName)}</strong></div>
+      <div><span>Perusahaan</span><strong>${esc(customer?.company ?? '—')}</strong></div>
+      <div><span>Alamat</span><strong>${esc(customer?.address ?? '—')}</strong></div>
+      <div><span>Tanggal</span><strong>${esc(order.date)}</strong></div>
+      <div><span>Dibuat oleh</span><strong>${esc(creator?.name ?? order.createdBy ?? 'Sistem')}</strong></div>
+      <div><span>Proyek</span><strong>${esc(project?.name ?? order.projectId ?? '—')}</strong></div>
+    </div>
+    <table>
+      <thead><tr><th>Deskripsi</th><th class="num">Qty</th><th class="num">Harga</th><th class="num">Jumlah</th></tr></thead>
+      <tbody>${order.lines.map((l) => `<tr>
+        <td>${esc(l.description)}${l.rollId ? `<br><small>Roll ${esc(l.rollId)} · Lot ${esc(l.lot ?? '')} · ${l.mode === 'whole' ? 'roll utuh' : 'potong'}</small>` : l.kind === 'part' ? `<br><small>Spare part · ${esc(byId(db.warehouses, l.warehouseId)?.name ?? '')}</small>` : ''}</td>
+        <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : `${fmt.pcs(l.qtyPcs)} pcs`}</td>
+        <td class="num">${fmt.money(l.unitPrice)}</td>
+        <td class="num">${fmt.money(l.amount)}</td>
+      </tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="3"><strong>Total pesanan</strong></td><td class="num"><strong>${fmt.money(order.total)}</strong></td></tr></tfoot>
+    </table>
+    ${order.notes ? `<p class="note">${esc(order.notes)}</p>` : ''}
+    <div style="display:flex;gap:40px;margin-top:34px;font-size:11px">
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:6px">Dibuat oleh<br><strong>${esc(creator?.name ?? order.createdBy ?? 'Sistem')}</strong></div>
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:6px">Disetujui pelanggan<br><strong>&nbsp;</strong></div>
+    </div>
+    <p class="note" style="margin-top:14px">Dokumen pesanan — bukan faktur. Stok dicadangkan saat pesanan dibuat dan keluar satu kali saat faktur diterbitkan.</p>`;
+}
+
 export function printPoHtml(db, po) {
   const supplier = byId(db.suppliers, po.supplierId);
   return `

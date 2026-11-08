@@ -16,6 +16,7 @@ import { attachmentMeta } from '../../domain/attachments.js';
 import { settingsOf } from '../../domain/settings.js';
 import { auditTrail } from '../../domain/master.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
+import { latestFxRate, latestSupplierPrice } from '../../domain/pricing.js';
 import { printPoHtml } from './print.js';
 
 let tab = 'po';
@@ -307,6 +308,8 @@ function renderPoDetail(ctx) {
             <div class="row-between"><span class="small muted">Kontak</span><span class="small">${esc(supplier?.contact)}</span></div>
             <div class="row-between"><span class="small muted">Dibuat</span><span class="small">${esc(po.date)}</span></div>
             <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(po.approvedBy || '—')}</span></div>
+            ${showMoney && po.currency !== 'IDR' ? `<div class="row-between"><span class="small muted">Kurs terkunci</span><span class="small">${fmt.money(po.fxRate)} / ${esc(po.currency)}</span></div>
+            <div class="row-between"><span class="small muted">Kurs dicatat</span><span class="small">${esc(po.fxAsOf ?? po.date)}<div class="xs muted">${esc(po.fxSource ?? '—')}</div></span></div>` : ''}
             <div class="row-between"><span class="small muted">Tagihan</span><span class="small">${bill ? `${esc(bill.id)}` : '—'}</span></div>
           </div>
           ${po.note ? `<hr class="divider" /><p class="small muted">${esc(po.note)}</p>` : ''}
@@ -335,13 +338,59 @@ export function openCreatePo(ctx) {
     <select class="select l-kind"><option value="fabric">Kain</option><option value="part">Part</option></select>
     <select class="select l-product">${skuOptions}</select>
     <input class="input l-qty" inputmode="decimal" placeholder="m" />
-    <input class="input l-price" inputmode="numeric" placeholder="harga" />
-    <button class="icon-btn" type="button" data-remove>${icon('x')}</button>
+    <input class="input l-price" inputmode="decimal" placeholder="harga" />
+    <button class="icon-btn" type="button" data-remove aria-label="Hapus baris">${icon('x')}</button>
   </div>`;
+
+  const parsePrice = (raw, currency) => {
+    const text = String(raw ?? '').trim();
+    if (!text) return 0;
+    if (currency === 'IDR') return Number(text.replace(/\D/g, '')) || 0;
+    return Number(text.includes(',') ? text.replace(/\./g, '').replace(',', '.') : text.replace(/,/g, '')) || 0;
+  };
+
+  const priceList = (supplierId, date) => {
+    const supplier = byId(db.suppliers, supplierId);
+    if (!supplier) return '<p class="small muted">Pilih pemasok.</p>';
+    const keys = new Map();
+    for (const rec of db.supplierPrices.filter((p) => p.supplierId === supplierId)) {
+      const key = rec.skuId ? `s:${rec.skuId}` : `p:${rec.partId}`;
+      if (!keys.has(key)) keys.set(key, { kind: rec.skuId ? 'fabric' : 'part', id: rec.skuId ?? rec.partId });
+    }
+    const rowsHtml = [...keys.values()].map((item) => {
+      const rec = latestSupplierPrice(db, {
+        supplierId, skuId: item.kind === 'fabric' ? item.id : null,
+        partId: item.kind === 'part' ? item.id : null, date,
+      });
+      if (!rec) return '';
+      const sku = item.kind === 'fabric' ? byId(db.skus, item.id) : null;
+      const part = item.kind === 'part' ? byId(db.parts, item.id) : null;
+      const name = sku ? `${sku.collectionName} ${sku.colourName || sku.colourCode} · ${sku.code}` : `${part.sku} · ${part.name}`;
+      const recCurrency = rec.currency ?? supplier.currency ?? 'IDR';
+      const recRate = recCurrency === 'IDR' ? 1 : (latestFxRate(db, recCurrency)?.rate ?? supplier.fxRate ?? 1);
+      const idr = Math.round(Number(rec.price) * recRate);
+      const moq = item.kind === 'fabric'
+        ? (rec.moqMm ? fmt.m(rec.moqMm) : '—')
+        : (rec.moqPcs ? `${fmt.pcs(rec.moqPcs)} pcs` : '—');
+      return `<tr>
+        <td><span class="small strong">${esc(name)}</span><div class="xs muted">${item.kind === 'fabric' ? 'Kain / m' : 'Part / pcs'}</div></td>
+        <td class="num">${esc(recCurrency)} ${Number(rec.price).toLocaleString('id-ID')}</td>
+        <td class="num">${fmt.money(idr)}</td>
+        <td class="num">${moq}</td>
+        <td class="small">${esc(rec.validFrom ?? '—')}${rec.validTo ? ` → ${esc(rec.validTo)}` : ''}</td>
+        <td class="right"><button class="btn btn-sm" type="button" data-use-price data-kind="${item.kind}" data-id="${esc(item.id)}" data-price="${esc(rec.price)}">Tambah</button></td>
+      </tr>`;
+    }).filter(Boolean);
+    if (!rowsHtml.length) return '<p class="small muted">Belum ada harga tercatat untuk pemasok ini. Harga master akan dipakai sebagai default.</p>';
+    return `<div class="table-wrap"><table class="data">
+      <thead><tr><th>Barang</th><th class="num">Harga</th><th class="num">Setara IDR</th><th class="num">MOQ</th><th>Berlaku</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+      <tbody>${rowsHtml.join('')}</tbody>
+    </table></div>`;
+  };
 
   openModal({
     title: 'Buat purchase order',
-    description: 'PO eksternal ke pemasok. Bukan permintaan gudang internal.',
+    description: 'PO eksternal ke pemasok. Harga tersedia dan kurs terbaru ditampilkan sebelum disimpan.',
     wide: true,
     submitLabel: 'Simpan PO',
     body: `
@@ -354,36 +403,69 @@ export function openCreatePo(ctx) {
         ${field('Termin (hari)', `<input class="input" type="number" name="terms" value="30" min="0" max="180" />`)}
         ${field('Catatan', `<input class="input" name="note" placeholder="Instruksi kirim / lot" />`, { full: true })}
       </div>
-      <div class="section-title" style="margin:18px 0 6px"><h3>Baris PO</h3></div>
+      <div class="section-title" style="margin:18px 0 6px"><h3>Baris PO</h3><span class="xs muted">Harga default diambil dari harga pemasok terbaru</span></div>
       <div id="po-rows">${row()}</div>
       <button class="btn btn-sm" type="button" data-add>${icon('plus')} Tambah baris</button>
+      <div class="section-title" style="margin:18px 0 6px"><h3>Daftar harga tersedia</h3><span class="xs muted">Klik “Tambah” untuk memakai harga ini</span></div>
+      <div data-price-list>${priceList(db.suppliers[0]?.id, todayJakarta())}</div>
       <div class="notice notice-info" style="margin-top:12px" data-fx-hint>${icon('alert')}<div>Harga diisi dalam mata uang pemasok. Pemasok impor memakai CNY dan kurs yang dikunci saat PO.</div></div>
     `,
     onMount(form) {
       const rows = form.querySelector('#po-rows');
-      const supplierOf = () => db.suppliers.find((s) => s.id === form.supplier.value);
+      const supplierOf = () => byId(db.suppliers, form.supplier.value);
+      const parseFx = () => Number(String(form.fxRate.value ?? '').replace(',', '.')) || 1;
+
       const syncCurrency = () => {
         const s = supplierOf();
         form.currency.value = s?.currency ?? 'IDR';
-        form.fxRate.value = String(s?.fxRate ?? 1);
+        if (form.currency.value === 'IDR') form.fxRate.value = '1';
+        else form.fxRate.value = String(latestFxRate(db, form.currency.value)?.rate ?? s?.fxRate ?? 1);
         form.fxRate.disabled = form.currency.value === 'IDR';
+        delete form.fxRate.dataset.manual;
       };
+
       const updateHint = () => {
         const currency = form.currency.value;
         const hint = form.querySelector('[data-fx-hint]');
-        hint.innerHTML = currency === 'CNY'
-          ? `${icon('globe')}<div><strong>Pembelian CNY.</strong> Harga baris dalam CNY; kurs ${fmt.money(Number(form.fxRate.value) || 0)} / CNY → HPP IDR dihitung otomatis.</div>`
-          : `${icon('alert')}<div>Harga dalam IDR. PO lokal tidak memakai kurs.</div>`;
+        const latest = latestFxRate(db, currency);
+        if (currency === 'CNY') {
+          hint.innerHTML = `${icon('globe')}<div><strong>Pembelian CNY.</strong> Kurs PO <strong>${fmt.money(parseFx())}</strong> / CNY. ${latest ? `Kurs terbaru ${fmt.money(latest.rate)} · ${esc(latest.asOf)} · ${esc(latest.source)}.` : 'Belum ada kurs tercatat.'}<div class="xs">Kurs yang dipakai dicatat ke PO saat disimpan.</div></div>`;
+        } else {
+          hint.innerHTML = `${icon('alert')}<div>Harga dalam IDR. PO lokal tidak memakai kurs.</div>`;
+        }
       };
+
+      const updatePriceList = () => {
+        const panel = form.querySelector('[data-price-list]');
+        panel.innerHTML = priceList(form.supplier.value, form.date.value);
+      };
+
       const reprice = () => {
         const currency = form.currency.value;
-        const fx = currency === 'IDR' ? 1 : (Number(String(form.fxRate.value).replace(',', '.')) || 1);
+        const fx = currency === 'IDR' ? 1 : parseFx();
+        const supplier = supplierOf();
         rows.querySelectorAll('[data-line]').forEach((r) => {
+          const kind = r.querySelector('.l-kind').value;
           const id = r.querySelector('.l-product').value;
-          const item = db.skus.find((x) => x.id === id) ?? db.parts.find((x) => x.id === id);
-          if (item) r.querySelector('.l-price').value = String(Math.round((item.buyPrice / fx) * 100) / 100);
+          const item = kind === 'fabric' ? byId(db.skus, id) : byId(db.parts, id);
+          if (!item) return;
+          const rec = latestSupplierPrice(db, {
+            supplierId: supplier?.id, skuId: kind === 'fabric' ? id : null,
+            partId: kind === 'part' ? id : null, date: form.date.value,
+          });
+          let value;
+          if (rec) {
+            const recCurrency = rec.currency ?? supplier?.currency ?? 'IDR';
+            const recRate = recCurrency === 'IDR' ? 1 : (latestFxRate(db, recCurrency)?.rate ?? supplier?.fxRate ?? fx);
+            const idr = Number(rec.price) * recRate;
+            value = currency === 'IDR' ? idr : idr / fx;
+          } else {
+            value = currency === 'IDR' ? item.buyPrice : item.buyPrice / fx;
+          }
+          r.querySelector('.l-price').value = String(Math.round(value * 100) / 100);
         });
       };
+
       const bind = (r) => {
         r.querySelector('.l-kind').addEventListener('change', (e) => {
           r.querySelector('.l-product').innerHTML = e.target.value === 'fabric' ? skuOptions : partOptions;
@@ -392,39 +474,63 @@ export function openCreatePo(ctx) {
         });
         r.querySelector('[data-remove]').addEventListener('click', () => { if (rows.children.length > 1) r.remove(); });
         r.querySelector('.l-product').addEventListener('change', () => reprice());
+        r.querySelector('.l-price').addEventListener('input', () => { r.dataset.manualPrice = '1'; });
       };
-      form.supplier.addEventListener('change', () => { syncCurrency(); updateHint(); reprice(); });
+
+      const addRow = ({ kind = 'fabric', id = null, price = null } = {}) => {
+        rows.insertAdjacentHTML('beforeend', row());
+        const r = rows.lastElementChild;
+        bind(r);
+        const kindSel = r.querySelector('.l-kind');
+        kindSel.value = kind;
+        kindSel.dispatchEvent(new Event('change', { bubbles: true }));
+        if (id) r.querySelector('.l-product').value = id;
+        if (price !== null) r.querySelector('.l-price').value = String(price);
+        r.querySelector('.l-qty').focus();
+      };
+
+      form.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-use-price]');
+        if (!btn) return;
+        addRow({ kind: btn.dataset.kind, id: btn.dataset.id, price: btn.dataset.price });
+      });
+
+      form.supplier.addEventListener('change', () => { syncCurrency(); updateHint(); updatePriceList(); reprice(); });
       form.currency.addEventListener('change', () => {
         form.fxRate.disabled = form.currency.value === 'IDR';
         if (form.currency.value === 'IDR') form.fxRate.value = '1';
+        else form.fxRate.value = String(latestFxRate(db, form.currency.value)?.rate ?? supplierOf()?.fxRate ?? 1);
+        delete form.fxRate.dataset.manual;
         updateHint();
         reprice();
       });
-      form.fxRate.addEventListener('input', () => { updateHint(); reprice(); });
+      form.fxRate.addEventListener('input', () => { form.fxRate.dataset.manual = '1'; updateHint(); reprice(); });
+      form.date.addEventListener('change', () => { updatePriceList(); reprice(); });
       syncCurrency();
       updateHint();
+      updatePriceList();
       form.querySelectorAll('[data-line]').forEach(bind);
-      form.querySelector('[data-add]').addEventListener('click', () => {
-        rows.insertAdjacentHTML('beforeend', row());
-        bind(rows.lastElementChild);
-        reprice();
-      });
+      form.querySelector('[data-add]').addEventListener('click', () => { addRow(); reprice(); });
       reprice();
     },
     onSubmit(form, close) {
+      const currency = form.currency.value;
       const lines = [...form.querySelectorAll('[data-line]')].map((row) => {
         const kind = row.querySelector('.l-kind').value;
         const raw = row.querySelector('.l-qty').value;
-        const price = Number(String(row.querySelector('.l-price').value).replace(/\D/g, '')) || 0;
+        const price = parsePrice(row.querySelector('.l-price').value, currency);
         return kind === 'fabric'
           ? { kind, skuId: row.querySelector('.l-product').value, qtyMm: parseM(raw), unitPrice: price || undefined }
           : { kind, partId: row.querySelector('.l-product').value, qtyPcs: Number(raw), unitPrice: price || undefined };
       }).filter((l) => (l.qtyMm ?? l.qtyPcs) > 0);
       if (!lines.length) throw new Error('Tambahkan minimal satu baris PO.');
+      const fxRate = currency === 'IDR' ? 1 : Number(String(form.fxRate.value).replace(',', '.')) || 0;
+      if (currency !== 'IDR' && !(fxRate > 0)) throw new Error('Isi kurs ke IDR untuk pembelian impor.');
       const po = ctx.store.update((db) => createPO(db, {
         supplierId: form.supplier.value,
-        currency: form.currency.value,
-        fxRate: Number(String(form.fxRate.value).replace(',', '.')),
+        currency,
+        fxRate,
+        fxSource: form.fxRate.dataset.manual ? 'Kurs manual PO' : latestFxRate(db, currency)?.source,
         date: form.date.value,
         expectedDate: form.expectedDate.value,
         termsDays: Number(form.terms.value || 30),
@@ -434,7 +540,7 @@ export function openCreatePo(ctx) {
       }));
       close();
       window.location.hash = `#/pembelian/${po.id}`;
-      toast('PO dibuat. Setujui sebelum menerima barang.', { tone: 'success' });
+      toast(`PO ${po.id} dibuat. ${currency !== 'IDR' ? `Kurs ${fmt.money(po.fxRate)} / ${currency} terkunci.` : ''}`, { tone: 'success' });
     },
   });
 }

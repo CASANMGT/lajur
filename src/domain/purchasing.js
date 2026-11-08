@@ -16,6 +16,7 @@ import {
   assertWarehouseOpen, createRoll, receiveParts, recordMovement, requireRoll,
 } from './inventory.js';
 import { landedAddPerUnit } from './shipments.js';
+import { latestFxRate, latestSupplierPrice, recordFxRate } from './pricing.js';
 
 export const PO_STATUS = {
   draft: { label: 'Draf', tone: 'muted' },
@@ -41,20 +42,33 @@ export function poLineOpen(line) {
     : Math.max(0, line.qtyPcs - line.receivedPcs);
 }
 
-export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, lines, note = '', termsDays = 30, currency: currencyInput = null, fxRate: fxInput = null, user }) {
+export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, lines, note = '', termsDays = 30, currency: currencyInput = null, fxRate: fxInput = null, fxSource: fxSourceInput = null, user }) {
   const supplier = byId(db.suppliers, supplierId);
   assert(supplier, 'SUPPLIER_NOT_FOUND', 'Pemasok tidak ditemukan.');
   const currency = currencyInput ?? supplier.currency ?? 'IDR';
-  const fxRate = currency === 'IDR' ? 1 : Number(fxInput ?? supplier.fxRate ?? 0);
+  const latestFx = currency === 'IDR' ? null : latestFxRate(db, currency, date);
+  const fxRate = currency === 'IDR' ? 1 : Number(fxInput ?? latestFx?.rate ?? supplier.fxRate ?? 0);
   assert(fxRate > 0, 'INVALID_FX', 'Kurs pemasok harus lebih dari 0.');
   assert(Array.isArray(lines) && lines.length > 0, 'EMPTY_LINES', 'PO harus memiliki minimal satu baris.');
+
+  const supplierPrice = (skuId, partId) => latestSupplierPrice(db, {
+    supplierId, skuId, partId, date,
+  });
+  const priceInCurrency = (record, fallbackIdr) => {
+    if (!record) return currency === 'IDR' ? fallbackIdr : fallbackIdr / fxRate;
+    const recCurrency = record.currency ?? supplier.currency ?? 'IDR';
+    const recRate = recCurrency === 'IDR' ? 1 : (latestFxRate(db, recCurrency, date)?.rate ?? supplier.fxRate ?? fxRate);
+    const idr = Number(record.price) * recRate;
+    return currency === 'IDR' ? idr : idr / fxRate;
+  };
+
   const built = lines.map((l) => {
     if (l.kind === 'part') {
       const part = byId(db.parts, l.partId);
       assert(part, 'PART_NOT_FOUND', 'Spare part tidak ditemukan.');
       const qty = Math.round(Number(l.qtyPcs));
       assert(qty > 0, 'INVALID_QTY', 'Jumlah harus lebih dari 0.');
-      const rawPrice = l.unitPrice ?? (currency === 'IDR' ? part.buyPrice : part.buyPrice / fxRate);
+      const rawPrice = l.unitPrice ?? priceInCurrency(supplierPrice(null, part.id), part.buyPrice);
       const unitPrice = Math.round(Number(rawPrice) * 100) / 100;
       return {
         id: nextId(db, 'poLine', 'PL', 5), kind: 'part', partId: part.id, skuId: null,
@@ -66,7 +80,7 @@ export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, 
     assert(sku, 'SKU_NOT_FOUND', 'SKU kain tidak ditemukan.');
     const qtyMm = Math.round(Number(l.qtyMm));
     assert(qtyMm > 0, 'INVALID_LENGTH', 'Jumlah kain harus lebih dari 0 m.');
-    const rawPrice = l.unitPrice ?? (currency === 'IDR' ? sku.buyPrice : sku.buyPrice / fxRate);
+    const rawPrice = l.unitPrice ?? priceInCurrency(supplierPrice(sku.id, null), sku.buyPrice);
     const unitPrice = Math.round(Number(rawPrice) * 100) / 100;
     return {
       id: nextId(db, 'poLine', 'PL', 5), kind: 'fabric', skuId: sku.id, partId: null,
@@ -76,12 +90,17 @@ export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, 
     };
   });
   const totalForeign = built.reduce((acc, l) => acc + (l.qtyMm ? l.qtyMm / MM_PER_M : l.qtyPcs) * l.unitPrice, 0);
+  const sameAsLatest = Boolean(latestFx && Number(latestFx.rate) === Number(fxRate));
+  const fxAsOf = currency === 'IDR' ? date : (sameAsLatest ? latestFx.asOf : isoNow());
+  const fxSource = currency === 'IDR' ? 'Rupiah' : (sameAsLatest ? latestFx.source : (fxSourceInput ?? (fxInput != null ? 'Kurs manual PO' : 'Kurs pemasok')));
   const po = {
     id: nextId(db, 'po', 'PO', 4),
     supplierId,
     supplierName: supplier.name,
     currency,
     fxRate,
+    fxAsOf,
+    fxSource,
     date,
     expectedDate: expectedDate || date,
     termsDays,
@@ -97,6 +116,9 @@ export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, 
     total: money(totalForeign * fxRate),
   };
   db.purchaseOrders.unshift(po);
+  if (currency !== 'IDR' && !sameAsLatest) {
+    recordFxRate(db, { currency, rate: fxRate, source: fxSource, asOf: fxAsOf, poId: po.id, user });
+  }
   audit(db, user, 'buat_po', 'po', po.id, `${supplier.name} · ${currency}`);
   return po;
 }
