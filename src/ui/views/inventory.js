@@ -190,7 +190,7 @@ export function render(ctx) {
       eyebrow: 'Persediaan',
       title: 'Stok & Roll',
       sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
-      actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok</button>` : ''}
+      actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok manual</button>` : ''}
         <a class="btn" href="#/pembelian">${icon('truck')} Terima PO</a>
         ${can(role, 'stock.view') ? `<button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
     })}
@@ -582,6 +582,10 @@ export function mount(ctx) {
     ctx.store.emit();
   });
   document.querySelector('[data-act="add-stock"]')?.addEventListener('click', () => openAddStock(ctx));
+  if (ctx.route.query?.add && can(ctx.role, 'stock.add')) {
+    history.replaceState(null, '', '#/stok');
+    openAddStock(ctx);
+  }
   document.querySelector('[data-action="export"]')?.addEventListener('click', () => {    const { db, ui } = ctx;
     const list = db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId }));
     const rows = [

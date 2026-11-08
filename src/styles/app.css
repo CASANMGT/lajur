@@ -1310,6 +1310,8 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
 .task-foot { display: flex; gap: 10px; flex-wrap: wrap; font-size: 10.5px; color: var(--muted); }
 .task-proof { display: inline-flex; align-items: center; gap: 3px; color: var(--teal-700); }
 .task-proof .ico { width: 12px; height: 12px; }
+.task-print { display: inline-flex; align-items: center; gap: 3px; color: var(--copper-700); }
+.task-print .ico { width: 12px; height: 12px; }
 
 .task-tile {
   display: flex;

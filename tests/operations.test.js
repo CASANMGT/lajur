@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { buildSeed } from '../src/domain/seed.js';
 import { approvePO, createPO, paySupplierInvoice, receivePO } from '../src/domain/purchasing.js';
 import { createShipment, shipmentProgress, updateShipmentStatus, landedAddPerUnit } from '../src/domain/shipments.js';
-import { completeTask, createTask, startTask, taskStats } from '../src/domain/tasks.js';
+import { completeTask, createTask, markTaskPrinted, startTask, taskStats } from '../src/domain/tasks.js';
 
 const OP = { id: 'u-op', name: 'Rani', role: 'operator' };
 const MGR = { id: 'u-mgr', name: 'Arif', role: 'manager' };
@@ -74,6 +74,9 @@ test('operational task lifecycle keeps stock untouched and stores proof', () => 
     user: SALES,
   });
   assert.equal(task.status, 'open');
+  markTaskPrinted(db, { id: task.id, user: OP });
+  assert.equal(task.printCount, 1);
+  assert.equal(task.history.some((h) => h.action === 'Tiket tugas dicetak'), true);
   startTask(db, { id: task.id, user: OP });
   assert.equal(task.status, 'in_progress');
   completeTask(db, {

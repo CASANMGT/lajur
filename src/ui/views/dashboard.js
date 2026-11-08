@@ -152,6 +152,7 @@ export function render(ctx) {
           <a class="btn btn-primary btn-block" href="#/transfer?new=1">${icon('plus')} Buat permintaan gudang</a>
           <a class="btn btn-block" href="#/opname?new=1">${icon('clipboard')} Mulai stock opname</a>
           ${isAdvancedMode(db) && settingsOf(db).productionEnabled ? `<a class="btn btn-block" href="#/produksi">${icon('needle')} Produksi WIP</a>` : ''}
+          <a class="btn btn-block" href="#/stok?add=1">${icon('plus')} Tambah stok manual</a>
           <a class="btn btn-block" href="#/stok">${icon('search')} Cari roll / lot</a>
           <a class="btn btn-block" href="#/pembelian">${icon('truck')} Terima barang pemasok</a>
           <p class="xs muted" style="margin-top:4px">Peran demo membatasi tombol; otorisasi produksi harus dicek di server.</p>

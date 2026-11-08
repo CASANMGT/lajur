@@ -1,9 +1,9 @@
-# PRD — Lajur v2.9
+# PRD — Lajur v2.10
 
 **Product:** Lajur — curtain & textile inventory management
-**Company model:** one company, multiple warehouses
+**Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.9.0 (schema 11)
+**Version:** 2.10.0 (schema 11)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -47,7 +47,7 @@ and one consistent set of quantities:
 
 ## 2. Assumptions
 
-1. **One legal entity, three warehouses** (Jakarta, Bandung, Surabaya). Warehouses are stock locations, not profit centres.
+1. **One legal entity, two warehouses** (Jakarta and Bali). Warehouses are stock locations, not profit centres.
 2. **Fabric is the unit of truth in metres**, stored as integer millimetres. Spare parts are integer pieces. They are never summed.
 3. **Opening stock** is given for Luna:
    - colour 01: 60, 61.2, 63, 70, 70 m (324.2 m)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.9: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), projects, customers, samples and simulation (Advanced); **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.10: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), projects, customers, samples and simulation (Advanced); **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -140,7 +140,11 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Part hierarchy in stock | Parts grouped by category, with parent/child rows when `parentPartId` is set; stocked children remain visible when the parent has no stock in the selected warehouse |
 | Image preview | Click/tap any product or part thumbnail to open a full-size preview; available to manager, sales and operator |
 | Optional modules | WIP Production and Pesanan are hidden by default; manager enables them in Settings. Menu, dashboard links, report tabs and direct routes follow the flag |
-| Simple / Advanced mode | Simple is the default daily operation: stock, tasks, transfers, purchasing, invoices, projects, customers, samples, opname. Advanced adds reports, master data, simulation, tax invoice, surat jalan, import tabs, and unlocks optional WIP/Pesanan. Direct advanced routes redirect in Simple |
+| Simple / Advanced mode | Simple is the default daily operation: stock, tasks, transfers, purchasing, invoices, projects, customers, samples, opname and master-data updates. Advanced adds reports, simulation, tax invoice, surat jalan, import tabs, and unlocks optional WIP/Pesanan. Direct advanced routes redirect in Simple |
+| Task tickets + online assignment | Task detail and filtered queue print tickets/PDF; printing is counted; online assignment can be disabled so tickets are printed and workers update status manually |
+| Manual stock | Stok → Tambah stok manual records fabric rolls or parts without a PO |
+| Delivery schedule | Driver/date/courier/status overview; surat jalan warns about another delivery for the same driver on the same day |
+| Chinese supplier demos | Ningbo, Shaoxing, Yiwu and Guangzhou suppliers, CNY price records and a draft Shaoxing PO |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
 | Purchasing | Suppliers, price list, PO, approval, partial receiving with per-roll lengths and lots, duplicate receipt block, over-receipt block, auto supplier bill (demo simplification), payables, supplier returns |
 | Sales | Multi-line invoice, fabric + parts + service lines, draft → post, snapshot description/price/cost, payments, deposit application, customer returns with credit and quarantine, print |
@@ -190,7 +194,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `goods receipt` | id, unique ref, kind `po`/`adhoc`, PO, supplier (nullable for adhoc), date, warehouse, currency/fx, lines with lot/lengths/rollIds, total, attachments |
 | `supplier invoice` | id, supplier, PO, receipt, currency, fxRate, amountForeign, amount IDR, paid, paidForeign, payments[] |
 | `shipment` | id, PO, supplier, mode, BL/AWB ref, container, ETD, ETA, status, history[], costs{freight,insurance,duty,other}, landedCostIdr, attachments |
-| `task` | id, type, title, warehouse, assignee, priority, status, dueDate, project, roll, qtyMm, notes, history[], attachments |
+| `task` | id, type, title, warehouse, assignee, priority, status, dueDate, project, roll, qtyMm, notes, printCount, printedAt, printedBy, history[], attachments |
 | `customer` | id, name, company, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discountType, discountValue, discount, total, taxInvoice{number,npwp,ratePercent,dpp,ppn,total,issuedAt,issuedBy}, deliveryId, credited, depositApplied, payments[] |
@@ -203,7 +207,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `production piece` | id, orderId, lineId, roll/lot, qtyMm, stage cutting/sewing/done/rejected, worker, QC note, operations[] |
 | `payroll entry` | id, orderId, pieceId, stage, worker, rate, amount, date, paid |
 | `work centre` | stage, name, capacityPerDay, ratePerPiece |
-| `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, uiMode simple/advanced (default simple), salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
+| `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, uiMode simple/advanced (default simple), onlineAssignmentEnabled (default on), salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
 | `return` | id, type customer/supplier, source invoice/receipt, lines, credit, status |
@@ -370,8 +374,8 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 ### 6.13 Simple and Advanced modes
 
-1. **Simple** is the default. It exposes ringkasan, tugas, stok, transfer, pembelian (PO + penerimaan), penjualan, proyek, pelanggan, sampel, opname and pengaturan.
-2. **Advanced** adds laporan, master data, simulasi, tax invoice, surat jalan, purchasing import/shipment/bill/supplier tabs, and unlocks optional WIP/Pesanan when their toggles are on.
+1. **Simple** is the default. It exposes ringkasan, tugas, stok, transfer, pembelian (PO + penerimaan), penjualan, proyek, pelanggan, sampel, opname, **master data** and pengaturan.
+2. **Advanced** adds laporan, simulasi, tax invoice, surat jalan, purchasing import/shipment/bill/supplier tabs, and unlocks optional WIP/Pesanan when their toggles are on.
 3. The manager switches mode from the topbar chip or Settings → Preferensi. Route guards redirect direct URLs to advanced screens while Simple is active.
 4. Simple mode keeps the invoice discount, payments and returns; it hides only the advanced layers. WIP/Pesanan remain optional even in Advanced mode.
 5. Demo user names are **Henry Martin** (manager), **Henny** (operator) and **Belinda** (sales).
@@ -384,6 +388,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 4. **Address:** the delivery address uses autocomplete from customer/previous delivery addresses and shows a map preview plus an external map link.
 5. **Mobile drawer:** the sidebar scrolls independently; all menu items and the footer must be reachable at 320/390 without page overflow.
 6. **Task simulation:** create → start → complete must work with note and optional proof; stock never changes.
+7. **Task tickets/online assignment:** ticket printing and queue printing use the same Cetak/PDF preview; printing increments the ticket count. When online assignment is disabled, tasks are created without an online assignee and the ticket is used to assign the worker manually.
+8. **Manual stock:** Tambah stok manual can add fabric rolls or spare parts without a PO.
+9. **Delivery schedule:** sales shows driver/date/courier/status, and the surat jalan form warns when the driver is already scheduled that day.
+10. **Warehouses:** only Jakarta (`JKT`) and Bali (`DPS`) are active demo locations; legacy Bandung/Surabaya references migrate to Bali.
+11. **Chinese suppliers:** at least four import suppliers (Ningbo, Shaoxing, Yiwu, Guangzhou), CNY price records and a draft Chinese PO are available in Advanced mode.
 
 ---
 
@@ -447,10 +456,13 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-54 | Invoice discount may be fixed rupiah or a percentage of subtotal (0–100). The resolved discount is snapshotted and never exceeds subtotal; line prices are unchanged. |
 | BR-55 | Faktur pajak is issued only for a posted invoice, once. DPP and PPN are derived from the invoice total (PPN 11%), not entered manually, and the invoice total and AR stay unchanged. |
 | BR-56 | A surat jalan belongs to one posted invoice and captures PIC pengiriman. Dispatch, arrival and receiver confirmation are status events only; stock was already issued by the invoice and must not move again. |
-| BR-57 | Simple mode exposes only the daily flow; Advanced mode additionally exposes reports, master data, simulation, tax invoice, surat jalan, import tabs and optional WIP/Pesanan. Advanced routes are blocked in Simple mode and the mode switch is manager-only. |
+| BR-57 | Simple mode exposes only the daily flow; Advanced mode additionally exposes reports, simulation, tax invoice, surat jalan, import tabs and optional WIP/Pesanan. Master-data updates are available in Simple for the manager. Advanced routes are blocked in Simple mode and the mode switch is manager-only. |
 | BR-58 | Every printable item opens a preview with Cetak and Unduh PDF. The PDF uses the same document layout and never alters the underlying record. |
 | BR-59 | A delivery may reference a driver from master; the delivery snapshots name, phone, vehicle type and plate so later master edits do not rewrite history. Courier is Internal, Lalamove, GoSend or GrabExpress. |
 | BR-60 | The mobile sidebar must scroll independently of the page; a drawer must never trap nav items or the footer behind the viewport. |
+| BR-61 | Printing a task ticket increments `printCount` and records who/when. When online assignment is off, task creation omits the online assignee and the printed ticket carries the manual assignment. |
+| BR-62 | Manual stock addition is the only stock-in path that does not need a PO; it still writes movements, lot/roll identity and audit. |
+| BR-63 | Only Jakarta and Bali are active demo warehouses. Legacy Bandung/Surabaya references migrate to Bali. |
 
 ---
 
@@ -458,7 +470,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.9 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.10 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -578,12 +590,16 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-60 | Invoice applies fixed or percentage discount; 10% of Rp 340.000 gives Rp 306.000 total | Pass |
 | AC-61 | Posted invoice issues one tax invoice; DPP + PPN equals total; duplicate issue rejected | Pass |
 | AC-62 | Surat jalan captures PIC, follows draft → dispatched → delivered → confirmed, and leaves stock unchanged | Pass |
-| AC-63 | Simple mode exposes 18 core routes; Advanced exposes 25 with WIP+Pesanan; advanced URLs redirect in Simple | Pass |
+| AC-63 | Simple mode exposes 19 core routes (including Master Data); Advanced exposes 25 with WIP+Pesanan; advanced URLs redirect in Simple | Pass |
 | AC-64 | Every print preview offers Cetak and Unduh PDF; PDF file generated from the document | Pass |
 | AC-65 | Driver master stores name/phone/vehicle/plate; surat jalan selects a driver and snapshots vehicle + plate | Pass |
 | AC-66 | Courier options include Lalamove/GoSend; address autocomplete and map preview work; mobile sidebar scrolls at 320/390 | Pass |
+| AC-67 | Task ticket and queue print increment printCount; online assignment off hides assignee/assign action | Pass |
+| AC-68 | Manual stock add works from Stok/`?add=1`; warehouse list is Jakarta + Bali only | Pass |
+| AC-69 | Driver schedule shows driver/date/courier/status and warns about same-day double assignment | Pass |
+| AC-70 | Four Chinese suppliers and a draft Chinese PO are present and selectable | Pass |
 
-Test evidence: `node --test` → 56/56 passing; browser route sweep → 18/18 Simple routes and 25/25 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 56/56 passing; browser route sweep → 19/19 Simple routes and 25/25 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 

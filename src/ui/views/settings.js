@@ -100,6 +100,7 @@ function renderPreferences(ctx) {
           ${field('Tenggat tugas default (hari)', `<input class="input" type="number" name="taskDueDays" min="0" max="30" value="${s.taskDueDays}" />`)}
         </div>
         <label class="checkline"><input type="checkbox" name="requireProof" ${s.requireProofOnReceipt ? 'checked' : ''} /> Wajibkan bukti fisik saat menerima barang</label>
+        <label class="checkline"><input type="checkbox" name="onlineAssignment" ${s.onlineAssignmentEnabled !== false ? 'checked' : ''} /> Aktifkan penugasan online tugas operasi</label>
         ${advanced ? `
           <div class="notice notice-info">${icon('layers')}<div><strong>Opsi lanjutan.</strong> Aktifkan modul dan biaya hanya jika operasi membutuhkannya.</div></div>
           <label class="checkline"><input type="checkbox" name="salesOrder" ${s.salesOrderEnabled ? 'checked' : ''} /> Aktifkan pesanan penjualan (sales order / pesanan)</label>
@@ -118,6 +119,7 @@ function renderPreferences(ctx) {
         <li><strong>Stok rendah</strong> — penanda pada ringkasan stok (rencana: notifikasi).</li>
         <li><strong>Tenggat tugas</strong> — tanggal default saat membuat tugas baru.</li>
         <li><strong>Bukti fisik</strong> — form penerimaan menolak tanpa lampiran.</li>
+        <li><strong>Penugasan online</strong> — jika nonaktif, tugas dibuat tanpa petugas online; cetak tiket dan tulis petugas, lalu update status manual di aplikasi.</li>
         <li><strong>Sales order</strong> — menu Pesanan, tombol di Penjualan, dan laporan pesanan muncul kembali. Nonaktif secara default; faktur draf tetap tersedia.</li>
         <li><strong>Produksi WIP</strong> — menu Produksi, tautan dashboard, dan laporan produksi muncul kembali. Nonaktif secara default.</li>
         <li><strong>Harga pokok</strong> — operator melihat/menyembunyikan biaya.</li>
@@ -267,6 +269,7 @@ export function mount(ctx) {
       taskDueDays: Math.max(0, Number(pref.taskDueDays.value) || 0),
       requireProofOnReceipt: pref.requireProof.checked,
       uiMode: pref.uiMode.value,
+      onlineAssignmentEnabled: pref.onlineAssignment.checked,
       salesOrderEnabled: pref.salesOrder ? pref.salesOrder.checked : current.salesOrderEnabled,
       productionEnabled: pref.production ? pref.production.checked : current.productionEnabled,
       operatorCanSeeCosts: pref.operatorCosts ? pref.operatorCosts.checked : current.operatorCanSeeCosts,

@@ -39,6 +39,19 @@ export function deliveryForInvoice(db, invoiceId) {
   return (db.deliveries ?? []).find((d) => d.invoiceId === invoiceId) ?? null;
 }
 
+export function driverDeliveriesOn(db, { driverId, date, excludeId = null } = {}) {
+  if (!driverId) return [];
+  return (db.deliveries ?? [])
+    .filter((d) => d.driverId === driverId && d.date === date && d.id !== excludeId)
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
+export function deliverySchedule(db, { limit = 12 } = {}) {
+  return [...(db.deliveries ?? [])]
+    .sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.id).localeCompare(String(b.id)))
+    .slice(0, limit);
+}
+
 function pushHistory(delivery, action, user, note = '') {
   delivery.history.unshift({ at: isoNow(), by: user?.name ?? 'Sistem', action, note });
 }

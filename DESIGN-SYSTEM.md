@@ -1,4 +1,4 @@
-# Design System — Lajur v2.9
+# Design System — Lajur v2.10
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -229,7 +229,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 ### 5.14 Simple and Advanced modes
 
-- **Simple** is the default and should feel lighter: core nav only, no report/master/simulation items, no tax invoice or surat jalan cards, no import tabs, and no WIP/Pesanan.
+- **Simple** is the default and should feel lighter: core nav only, no report/simulation items, no tax invoice or surat jalan cards, no import tabs, and no WIP/Pesanan. **Master Data stays available** for the manager because master updates are basic operation.
 - **Advanced** adds the analytical and setup layers. Do not simply grey out hidden items; remove them from navigation and redirect direct URLs.
 - **Switch placement:** manager sees a topbar chip `Mode Sederhana` / `Mode Lanjutan`; the same choice is in Settings → Preferensi. Non-managers see the current mode in the sidebar footer but cannot switch.
 - **Copy:** explain that Simple is for daily operation and Advanced is for analysis/setup/documents. Never make the user guess why a screen disappeared.
@@ -245,6 +245,11 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Address:** autocomplete from customer and previous delivery addresses; show an inline map preview and an external map link. Never hide the map behind a submit action.
 - **Mobile sidebar:** `overflow-y: auto`, `overscroll-behavior: contain`, safe-area bottom padding. The drawer must scroll at 320/390 with Advanced mode; bottom nav must remain below the drawer.
 - **Task flow:** create → Mulai → Selesai, note/proof optional; no stock movement.
+- **Task tickets:** task detail and filtered queue print a ticket with Cetak/PDF; show print count and printed by/time. If online assignment is off, hide the assignee field/assign action, keep the manual Start/Finish updates, and print the worker name slot on the ticket.
+- **Manual stock:** Stok has **Tambah stok manual** (and `#/stok?add=1`); choose fabric roll or part, warehouse, lot/length/cost or pcs, reason. This is the no-PO stock-in path.
+- **Delivery schedule:** sales list shows date, driver/vehicle, courier, customer and status; the surat jalan form shows a same-day driver conflict notice.
+- **Warehouses:** demo is Jakarta (JKT) and Bali (DPS) only. Do not label the Bali site Bandung/Surabaya.
+- **Chinese suppliers:** Advanced purchasing shows Ningbo, Shaoxing, Yiwu and Guangzhou import suppliers; each uses CNY and a manually entered PO rate.
 
 ### 5.16 Empty, loading, error
 

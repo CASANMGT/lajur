@@ -53,12 +53,12 @@ test('supplier master adds local and import suppliers with FX validation', () =>
   const local = saveSupplier(db, { code: 'BARU', name: 'CV Baru', origin: 'local', currency: 'IDR', user: MGR });
   assert.equal(local.currency, 'IDR');
   const imp = saveSupplier(db, {
-    code: 'YIWU', name: 'Yiwu Import', origin: 'import', country: 'CN', currency: 'CNY',
+    code: 'TESTIMP', name: 'Yiwu Import', origin: 'import', country: 'CN', currency: 'CNY',
     fxRate: 2280, incoterm: 'FOB Ningbo', port: 'Ningbo → Tanjung Priok', user: MGR,
   });
   assert.equal(imp.fxRate, 2280);
   assert.throws(
-    () => saveSupplier(db, { code: 'YIWU', name: 'Duplikat', currency: 'CNY', fxRate: 1, user: MGR }),
+    () => saveSupplier(db, { code: 'TESTIMP', name: 'Duplikat', currency: 'CNY', fxRate: 1, user: MGR }),
     (err) => err.code === 'DUPLICATE_CODE',
   );
 });

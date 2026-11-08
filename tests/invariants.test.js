@@ -158,7 +158,7 @@ test('approval does not reserve; availability is re-checked at dispatch', () => 
 
   const t = createTransfer(db, {
     fromWarehouseId: 'wh-jkt',
-    toWarehouseId: 'wh-bdg',
+    toWarehouseId: 'wh-bali',
     neededBy: '2026-12-01',
     reason: 'Uji reservasi',
     lines: [{ skuId: 'sku-luna-01', requestedMm: 58000 }],
@@ -195,9 +195,9 @@ test('internal transfer preserves quantity and unit cost', () => {
   assert.equal(piece.currentMm, 5000);
 
   // Physical stock at a warehouse never includes transit pieces.
-  const sby = stockSummary(db, { warehouseId: 'wh-sby' });
+  const sby = stockSummary(db, { warehouseId: 'wh-bali' });
   const physical = db.rolls
-    .filter((r) => r.warehouseId === 'wh-sby' && !r.transit && ['available', 'quarantine'].includes(r.status))
+    .filter((r) => r.warehouseId === 'wh-bali' && !r.transit && ['available', 'quarantine'].includes(r.status))
     .reduce((a, r) => a + r.currentMm, 0);
   assert.equal(sby.physicalMm, physical);
 });
@@ -365,7 +365,7 @@ test('stock opname freeze also blocks sample cuts and quarantine', () => {
 
 test('stock opname freezes the warehouse and blocks conflicting adjustments', () => {
   const db = buildSeed();
-  const session = startOpname(db, { warehouseId: 'wh-sby', user: OP });
+  const session = startOpname(db, { warehouseId: 'wh-bali', user: OP });
 
   const inv = createInvoice(db, {
     customerId: 'CUS-0002',

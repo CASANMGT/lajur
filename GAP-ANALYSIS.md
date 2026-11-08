@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.9 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.10 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -71,6 +71,12 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Driver/vehicle master** | **Done in v2.9** | Name, phone, motor/mobil/truk, plate; delivery snapshot |
 | **Courier + address autocomplete + map** | **Done in v2.9** | Lalamove/GoSend/GrabExpress; datalist + map iframe |
 | **Mobile drawer scroll** | **Fixed in v2.9** | Sidebar overflow-y auto, tested 320/390 Advanced |
+| **Jakarta + Bali warehouses** | **Done in v2.10** | Only JKT/DPS; legacy Bandung/Surabaya migrate to Bali |
+| **Master Data in Simple mode** | **Done in v2.10** | Manager can update master/drivers without Advanced |
+| **Task tickets + online assignment option** | **Done in v2.10** | Print/PDF tickets, print count, online assignee toggle |
+| **Manual stock** | **Done** | Tambah stok manual / `#/stok?add=1` |
+| **Delivery schedule** | **Done in v2.10** | Driver/date/courier/status + same-day conflict |
+| **Chinese suppliers + draft PO** | **Done in v2.10** | Ningbo, Shaoxing, Yiwu, Guangzhou; PO-0006 |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |

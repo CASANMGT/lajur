@@ -2,6 +2,38 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.10.0] — 2026-11-08
+
+**Release name: Gudang & Tiket.** Consolidates warehouses to Jakarta + Bali, moves Master Data into Simple mode, adds printed task tickets/online-assignment option, manual stock shortcut, delivery schedules and Chinese supplier demos.
+
+### Added
+
+- **Warehouse consolidation:** only Jakarta (JKT) and Bali (DPS); legacy Bandung/Surabaya references migrate to Bali.
+- **Master Data in Simple mode:** master updates, including Driver & kendaraan, no longer require Advanced.
+- **Task tickets + print queue:** print a single ticket or the filtered queue with Cetak/PDF; printing increments count and records printer/time.
+- **Online assignment option:** Settings toggle. When off, tasks are created without an online assignee, the assign action is hidden, and the printed ticket carries the manual worker slot.
+- **Manual stock addition:** clarified **Tambah stok manual**, also opened by `#/stok?add=1`.
+- **Delivery schedule:** sales list shows driver/date/courier/status; surat jalan warns when a driver already has another delivery that day.
+- **Chinese supplier demos:** Ningbo, Shaoxing, Yiwu and Guangzhou suppliers, CNY prices and a draft Shaoxing PO (`PO-0006`).
+
+### Verification
+
+- `node --test`: **56 passed**; module imports 43/43; render 24/24.
+- Warehouses: exactly JKT Jakarta and DPS Bali; legacy references remapped in migration.
+- Task ticket: TSK-0003 printCount 1, printedBy Henry Martin; ticket/PDF toolbar present.
+- Online assignment off: notice shown; create form has no assignee field.
+- Manual stock: `#/stok?add=1` opens Tambah stok with Jakarta + Bali.
+- Delivery schedule: overlapping Asep/2026-10-06 shows SJ-0001 conflict.
+- Chinese suppliers: 4 CNY suppliers; draft PO-0006 from Shaoxing.
+- Browser routes: 19 Simple / 25 Advanced with modules; zero console errors.
+
+### Known limitations
+
+- Print tickets are paper/PDF; there is no physical printer integration or QR scanner.
+- Online assignment is a demo toggle, not server push.
+
+---
+
 ## [2.9.0] — 2026-11-08
 
 **Release name: Driver & PDF.** Adds print/PDF for every document, driver/vehicle master, third-party couriers, address autocomplete/map, mobile drawer scrolling and task QA.

@@ -1,16 +1,17 @@
 /** Tugas operasi: antrean kerja operator dan monitoring manajer. */
 
 import {
-  esc, icon, fmt, badge, toast, openModal, field, confirmAction, promptText,
+  esc, icon, fmt, badge, toast, openModal, field, confirmAction, promptText, printDocument,
 } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
 import { settingsOf } from '../../domain/settings.js';
 import {
   PRIORITY, TASK_STATUS, TASK_TYPE, assignTask, blockTask, cancelTask, completeTask, createTask, isOverdue,
-  resumeTask, startTask, taskAgeDays, taskList, taskQtyLabel, taskStats,
+  markTaskPrinted, resumeTask, startTask, taskAgeDays, taskList, taskQtyLabel, taskStats,
 } from '../../domain/tasks.js';
 import { warehouseOf, can, warehouseOptions, pageHead, statCard } from './common.js';
 import { attachmentMeta } from '../../domain/attachments.js';
+import { printTaskTicketsHtml } from './print.js';
 
 let filter = { status: 'open', mine: null, type: 'all' };
 let lastRole = null;
@@ -37,6 +38,7 @@ function taskCard(ctx, task) {
         <span class="${overdue ? 'strong' : ''}">${overdue ? 'Lewat ' : 'Jatuh '}${esc(task.dueDate)}</span>
         <span>${esc(PRIORITY[task.priority]?.label ?? task.priority)}</span>
         ${task.attachments?.length ? `<span class="task-proof">${icon('camera')} ${task.attachments.length}</span>` : ''}
+        ${task.printCount ? `<span class="task-print">${icon('printer')} ${task.printCount}</span>` : ''}
       </span>
     </span>
   </button>`;
@@ -56,14 +58,17 @@ export function render(ctx) {
     .filter((t) => filter.type === 'all' || t.type === filter.type);
 
   const cutting = db.tasks.filter((t) => t.type === 'cutting' && ['open', 'in_progress', 'blocked'].includes(t.status));
+  const online = settingsOf(db).onlineAssignmentEnabled !== false;
 
   return `
     ${pageHead({
       eyebrow: 'Operasi gudang',
       title: 'Tugas operasi',
       sub: 'Terima barang, picking, potong kain, jahit, QC, transfer, opname, sample dan pengiriman impor — satu antrean.',
-      actions: `${can(role, 'task.create') ? `<button class="btn btn-primary" type="button" data-act="new-task">${icon('plus')} Buat tugas</button>` : ''}`,
+      actions: `${can(role, 'task.create') ? `<button class="btn btn-primary" type="button" data-act="new-task">${icon('plus')} Buat tugas</button>` : ''}
+        ${tasks.length ? `<button class="btn" type="button" data-act="print-queue">${icon('printer')} Cetak antrean</button>` : ''}`,
     })}
+    ${!online ? `<div class="notice notice-info" style="margin-bottom:14px">${icon('printer')}<div><strong>Penugasan online nonaktif.</strong> Cetak tiket tugas dan tulis petugas di tiket; pembaruan status tetap manual di aplikasi lewat Mulai / Selesai.</div></div>` : ''}
     <div class="kpi-strip" style="margin-bottom:16px">
       ${statCard({ label: 'Aktif', value: String(stats.active), meta: `${stats.dueToday} jatuh tempo hari ini`, tone: 'accent', iconName: 'listCheck' })}
       ${statCard({ label: 'Dikerjakan', value: String(stats.inProgress), meta: `${stats.blocked} terhambat` })}
@@ -124,13 +129,17 @@ function openTask(ctx, task) {
   const project = task.projectId ? ctx.db.projects.find((p) => p.id === task.projectId) : null;
   const open = ['open', 'in_progress', 'blocked'].includes(task.status);
   const canWork = can(ctx.role, 'task.complete');
+  const online = settingsOf(ctx.db).onlineAssignmentEnabled !== false;
   const actions = [];
   if (open && task.status !== 'in_progress' && canWork) actions.push(`<button class="btn btn-primary" type="button" data-task-act="start">${icon('play')} Mulai</button>`);
   if (task.status === 'blocked' && canWork) actions.push(`<button class="btn" type="button" data-task-act="resume">${icon('refresh')} Lanjutkan</button>`);
   if (task.status === 'in_progress' && canWork) actions.push(`<button class="btn" type="button" data-task-act="block">${icon('alert')} Terhambat</button>`);
   if (open && canWork) actions.push(`<button class="btn btn-primary" type="button" data-task-act="done">${icon('check')} Selesai</button>`);
-  if (open && ctx.role === 'manager') {
+  if (task.status !== 'cancelled') actions.push(`<button class="btn" type="button" data-task-act="print">${icon('printer')} Cetak tiket</button>`);
+  if (open && ctx.role === 'manager' && online) {
     actions.push(`<button class="btn" type="button" data-task-act="assign">${icon('userCheck')} Tugaskan</button>`);
+  }
+  if (open && ctx.role === 'manager') {
     actions.push(`<button class="btn btn-ghost" type="button" data-task-act="cancel">Batalkan</button>`);
   }
 
@@ -153,6 +162,7 @@ function openTask(ctx, task) {
       ${task.status === 'blocked' && task.blockedReason ? `<div class="notice notice-warn" style="margin-top:12px">${icon('alert')}<div><strong>Terhambat:</strong> ${esc(task.blockedReason)}</div></div>` : ''}
       ${task.completionNote ? `<div class="notice notice-teal" style="margin-top:12px">${icon('checkCircle')}<div><strong>Selesai:</strong> ${esc(task.completionNote)}</div></div>` : ''}
       ${task.attachments?.length ? `<div style="margin-top:12px"><div class="xs muted">Bukti fisik</div>${task.attachments.map((a) => `<div class="row-between small"><span>${icon('camera')} ${esc(a.name)}</span><span class="xs muted">${esc(a.by)}</span></div>`).join('')}</div>` : ''}
+      ${task.printedAt ? `<div class="notice notice-teal" style="margin-top:12px">${icon('printer')}<div><strong>Tiket sudah dicetak ${task.printCount ?? 1}×.</strong> ${esc(task.printedBy ?? '')} · ${esc(new Date(task.printedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}. Perbarui status manual di aplikasi.</div></div>` : ''}
       <hr class="divider" />
       <div class="xs muted" style="margin-bottom:6px">Riwayat</div>
       <ul class="timeline">${(task.history ?? []).map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by ?? '')}${h.note ? ` · ${esc(h.note)}` : ''}</div></li>`).join('')}</ul>
@@ -190,6 +200,10 @@ function openTask(ctx, task) {
           },
         });
       });
+      form.querySelector('[data-task-act="print"]')?.addEventListener('click', () => {
+        const fresh = ctx.store.update((db) => markTaskPrinted(db, { id: task.id, user: ctx.user }));
+        printDocument(`Tiket ${task.id}`, printTaskTicketsHtml(ctx.store.db, [fresh]));
+      });
       form.querySelector('[data-task-act="cancel"]')?.addEventListener('click', async () => {
         const ok = await confirmAction({ title: 'Batalkan tugas?', message: 'Riwayat tetap tersimpan.', confirmLabel: 'Batalkan', tone: 'danger' });
         if (!ok) return;
@@ -223,6 +237,7 @@ function openComplete(ctx, task, parentClose) {
 
 function openCreate(ctx) {
   const { db } = ctx;
+  const online = settingsOf(db).onlineAssignmentEnabled !== false;
   const active = db.warehouses.filter((w) => w.active !== false);
   if (!active.length) {
     toast('Tidak ada gudang aktif.', { tone: 'error' });
@@ -246,7 +261,7 @@ function openCreate(ctx) {
       ${field('Jenis', `<select class="select" name="type">${Object.entries(TASK_TYPE).map(([k, v]) => `<option value="${k}">${esc(v.label)}</option>`).join('')}</select>`)}
       ${field('Gudang', `<select class="select" name="warehouse">${warehouseOptions(db, defaultWh)}</select>`)}
       ${field('Judul', `<input class="input" name="title" placeholder="Contoh: Potong 10 m Luna-01 untuk proyek Sari" />`, { full: true })}
-      ${field('Petugas', `<select class="select" name="assignee">${assignees}</select>`)}
+      ${online ? field('Petugas', `<select class="select" name="assignee">${assignees}</select>`) : `<div class="notice notice-info span-2">${icon('printer')}<div><strong>Penugasan online nonaktif.</strong> Tugas dibuat tanpa petugas online; cetak tiket dan tulis nama petugas di tiket.</div></div>`}
       ${field('Prioritas', `<select class="select" name="priority">${Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}" ${k === 'normal' ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
       ${field('Jatuh tempo', `<input class="input" type="date" name="dueDate" value="${new Date(Date.now() + (settingsOf(db).taskDueDays ?? 1) * 86400000).toISOString().slice(0, 10)}" />`)}
       ${field('Target (m)', `<input class="input" name="qty" inputmode="decimal" placeholder="0" />`, { hint: 'Opsional, untuk potong kain.' })}
@@ -264,7 +279,7 @@ function openCreate(ctx) {
         type: form.type.value,
         title: form.title.value,
         warehouseId: form.warehouse.value,
-        assigneeId: form.assignee.value || null,
+        assigneeId: online ? (form.assignee.value || null) : null,
         priority: form.priority.value,
         dueDate: form.dueDate.value,
         projectId: form.project.value || null,
@@ -295,6 +310,17 @@ export function mount(ctx) {
     ctx.store.emit();
   });
   document.querySelector('[data-act="new-task"]')?.addEventListener('click', () => openCreate(ctx));
+  document.querySelector('[data-act="print-queue"]')?.addEventListener('click', () => {
+    const warehouseId = ctx.ui.warehouseId === 'all' ? null : ctx.ui.warehouseId;
+    const list = taskList(ctx.db, { warehouseId, status: filter.status })
+      .filter((t) => filter.type === 'all' || t.type === filter.type);
+    if (!list.length) {
+      toast('Tidak ada tugas untuk dicetak pada filter ini.', { tone: 'error' });
+      return;
+    }
+    const fresh = ctx.store.update((db) => list.map((t) => markTaskPrinted(db, { id: t.id, user: ctx.user })));
+    printDocument('Antrean tugas operasi', printTaskTicketsHtml(ctx.store.db, fresh));
+  });
   document.querySelectorAll('[data-task]').forEach((btn) => btn.addEventListener('click', () => {
     const task = ctx.db.tasks.find((t) => t.id === btn.dataset.task);
     if (task) openTask(ctx, task);

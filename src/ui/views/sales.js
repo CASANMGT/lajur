@@ -10,8 +10,8 @@ import {
   taxBreakdown,
 } from '../../domain/sales.js';
 import {
-  DELIVERY_STATUS, COURIERS, confirmDelivery, createDelivery, deliveryForInvoice, dispatchDelivery,
-  markDelivered, updateDelivery,
+  DELIVERY_STATUS, COURIERS, confirmDelivery, createDelivery, deliveryForInvoice, deliverySchedule,
+  dispatchDelivery, driverDeliveriesOn, markDelivered, updateDelivery,
 } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
@@ -40,6 +40,7 @@ export function render(ctx) {
   }, 0);
   const month = todayJakarta().slice(0, 7);
   const monthTotal = posted.filter((i) => i.date.slice(0, 7) === month).reduce((a, i) => a + i.total, 0);
+  const schedule = advanced ? deliverySchedule(db, { limit: 10 }) : [];
 
   return `
     ${pageHead({
@@ -62,6 +63,21 @@ export function render(ctx) {
         s === 'all' ? 'Semua' : s === 'outstanding' ? 'Belum lunas' : s === 'draft' ? 'Draf' : 'Terbit'
       }</button>`).join('')}
     </div>
+
+    ${schedule.length ? `<div class="section-title"><h2>Jadwal surat jalan</h2><span class="small muted">Driver, tanggal, dan status pengiriman</span></div>
+    <section class="card" style="margin-bottom:16px">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Tanggal</th><th>Driver / kendaraan</th><th>Kurir</th><th>Pelanggan</th><th>Status</th><th>Faktur</th></tr></thead>
+        <tbody>${schedule.map((d) => `<tr>
+          <td class="small strong">${esc(d.date)}<div class="xs muted">${esc(d.id)}</div></td>
+          <td><strong class="small">${esc(d.driver || '—')}</strong><div class="xs muted">${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType ?? '—')}${d.plateNumber ? ` · ${esc(d.plateNumber)}` : ''}</div></td>
+          <td class="small">${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')}${d.trackingRef ? `<div class="xs muted">${esc(d.trackingRef)}</div>` : ''}</td>
+          <td class="small">${esc(d.customerName)}</td>
+          <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}</td>
+          <td><a class="mono xs" href="#/penjualan/${esc(d.invoiceId)}">${esc(d.invoiceId)}</a></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </section>` : ''}
 
     <section class="card">
       <div class="table-wrap desktop-table">
@@ -679,6 +695,7 @@ function deliveryFields(db, delivery, customer) {
     ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
     ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
     ${field('Resi / ID kurir', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="Untuk Lalamove / GoSend" />`)}
+    <div class="span-2" data-driver-schedule hidden></div>
     <div class="span-2">
       ${field('Alamat kirim', `<input class="input" name="address" list="delivery-addresses" value="${esc(address)}" placeholder="Ketik alamat, pilih saran" />`, { hint: 'Autocomplete dari alamat pelanggan dan pengiriman sebelumnya.' })}
       ${addressSuggestions(db, address)}
@@ -694,7 +711,7 @@ function deliveryFields(db, delivery, customer) {
   `;
 }
 
-function bindDeliveryFields(form) {
+function bindDeliveryFields(form, db, currentDelivery = null) {
   const syncDriver = () => {
     const opt = form.driver.selectedOptions[0];
     if (!opt?.value) return;
@@ -702,8 +719,26 @@ function bindDeliveryFields(form) {
     form.plateNumber.value = opt.dataset.plate || '';
     form.driverPhone.value = opt.dataset.phone || '';
   };
-  form.driver?.addEventListener('change', syncDriver);
+  const syncSchedule = () => {
+    const panel = form.querySelector('[data-driver-schedule]');
+    if (!panel) return;
+    const list = driverDeliveriesOn(db, {
+      driverId: form.driver.value,
+      date: form.date.value,
+      excludeId: currentDelivery?.id ?? null,
+    });
+    if (!form.driver.value || !list.length) {
+      panel.hidden = true;
+      panel.innerHTML = '';
+      return;
+    }
+    panel.hidden = false;
+    panel.innerHTML = `${icon('calendar')}<div><strong>Jadwal driver pada ${esc(form.date.value)}</strong>${list.map((d) => `<div class="small">${esc(d.customerName)} · ${esc(d.id)} · ${esc(d.status)}</div>`).join('')}</div>`;
+  };
+  form.driver?.addEventListener('change', () => { syncDriver(); syncSchedule(); });
+  form.date?.addEventListener('change', syncSchedule);
   if (form.driver?.value) syncDriver();
+  syncSchedule();
   const syncMap = () => {
     const address = form.address.value.trim();
     const frame = form.querySelector('[data-map-frame]');
@@ -724,7 +759,7 @@ function openCreateDelivery(ctx, inv) {
     body: deliveryFields(ctx.db, null, customer),
     onMount(form) {
       form.pic.value = form.pic.value || ctx.user.name;
-      bindDeliveryFields(form);
+      bindDeliveryFields(form, ctx.db);
     },
     onSubmit(form, close) {
       ctx.store.update((db) => createDelivery(db, {
@@ -755,7 +790,7 @@ function openEditDelivery(ctx, delivery) {
     wide: true,
     submitLabel: 'Simpan',
     body: deliveryFields(ctx.db, delivery, customer),
-    onMount(form) { bindDeliveryFields(form); },
+    onMount(form) { bindDeliveryFields(form, ctx.db, delivery); },
     onSubmit(form, close) {
       ctx.store.update((db) => updateDelivery(db, {
         id: delivery.id,

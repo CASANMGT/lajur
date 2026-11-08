@@ -32,8 +32,7 @@ export const USERS = {
 export const MASTER = {
   warehouses: [
     { id: 'wh-jkt', code: 'JKT', name: 'Gudang Pusat Jakarta', binPrefix: 'A', active: true, address: 'Jl. Industri Raya 12, Cakung, Jakarta Timur', phone: '021-555-0101' },
-    { id: 'wh-bdg', code: 'BDG', name: 'Gudang Bandung', binPrefix: 'B', active: true, address: 'Jl. Soekarno-Hatta 288, Bandung', phone: '022-555-0202' },
-    { id: 'wh-sby', code: 'SBY', name: 'Gudang Surabaya', binPrefix: 'C', active: true, address: 'Jl. Rungkut Industri 8, Surabaya', phone: '031-555-0303' },
+    { id: 'wh-bali', code: 'DPS', name: 'Gudang Bali', binPrefix: 'B', active: true, address: 'Jl. By Pass Ngurah Rai 88, Denpasar, Bali', phone: '0361-555-0202' },
   ],
   categories: [
     { id: 'cat-blackout', name: 'Blackout' },
@@ -125,6 +124,7 @@ function skeleton(dataset) {
       taskDueDays: 1,
       requireProofOnReceipt: false,
       uiMode: 'simple',
+      onlineAssignmentEnabled: true,
       salesOrderEnabled: false,
       productionEnabled: false,
       operatorCanSeeCosts: false,
@@ -181,6 +181,9 @@ export function buildSeed({ dataset = 'main' } = {}) {
     { id: 'SUP-002', code: 'MEGA', name: 'CV Mega Aksen', contact: 'Lestari', phone: '021-777-2002', email: 'order@megaaksen.co.id', address: 'Jl. Gajah Mada 88, Jakarta', country: 'ID', origin: 'local', currency: 'IDR', fxRate: 1, incoterm: '', port: '', termsDays: 30, leadTimeDays: 7, notes: 'Rel, aksesori, motor.' },
     { id: 'SUP-003', code: 'KILAU', name: 'PT Kilau Sheer', contact: 'Yosef', phone: '022-777-3003', email: 'yosef@kilausheer.co.id', address: 'Jl. Cigondewah 12, Bandung', country: 'ID', origin: 'local', currency: 'IDR', fxRate: 1, incoterm: '', port: '', termsDays: 21, leadTimeDays: 10, notes: 'Sheer dan dimout.' },
     { id: 'SUP-004', code: 'NINGBO', name: 'Ningbo Lajur Textiles Co.', contact: 'Chen Wei', phone: '+86 574 8888 1000', email: 'export@ningbolajur.cn', address: 'No. 88 Textile Road, Ningbo, Zhejiang', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2250, incoterm: 'FOB Ningbo', port: 'Ningbo → Tanjung Priok', termsDays: 45, leadTimeDays: 40, notes: 'Pemasok impor. Pembayaran CNY via TT; kurs dikunci saat PO.' },
+    { id: 'SUP-005', code: 'SHAOX', name: 'Shaoxing Lajur Fabrics', contact: 'Li Na', phone: '+86 575 8866 2000', email: 'sales@shaoxinglajur.cn', address: 'Keqiao Textile City, Shaoxing, Zhejiang', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2280, incoterm: 'FOB Ningbo', port: 'Ningbo → Tanjung Priok', termsDays: 40, leadTimeDays: 35, notes: 'Alternatif blackout; MOQ 300 m.' },
+    { id: 'SUP-006', code: 'YIWU', name: 'Yiwu Home Textile Co.', contact: 'Wang Lei', phone: '+86 579 8555 3000', email: 'export@yiwuhome.cn', address: 'International Trade City, Yiwu, Zhejiang', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2295, incoterm: 'FOB Shanghai', port: 'Shanghai → Tanjung Priok', termsDays: 30, leadTimeDays: 30, notes: 'Sheer, aksesori, dan part.' },
+    { id: 'SUP-007', code: 'GZWEAVE', name: 'Guangzhou Weave Import', contact: 'Zhang Min', phone: '+86 20 8888 4000', email: 'trade@gzweave.cn', address: 'Haizhu Textile Market, Guangzhou', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2310, incoterm: 'FOB Guangzhou', port: 'Guangzhou → Tanjung Priok', termsDays: 45, leadTimeDays: 40, notes: 'Dimout dan motor untuk proyek.' },
   );
 
   db.drivers.push(
@@ -210,6 +213,12 @@ export function buildSeed({ dataset = 'main' } = {}) {
     { id: 'SP-018', supplierId: 'SUP-003', skuId: 'sku-nova-02', price: 82000, currency: 'IDR', unit: 'm', moqMm: 30000, validFrom: '2026-08-01', validTo: '2027-02-28' },
     { id: 'SP-019', supplierId: 'SUP-001', skuId: 'sku-luna-01', price: 69500, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-10-15', validTo: '2027-03-31', notes: 'Kenaikan harga Oktober.' },
     { id: 'SP-020', supplierId: 'SUP-001', skuId: 'sku-luna-02', price: 70000, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-10-15', validTo: '2027-03-31', notes: 'Kenaikan harga Oktober.' },
+    { id: 'SP-021', supplierId: 'SUP-005', skuId: 'sku-luna-01', price: 26.5, currency: 'CNY', unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-04-30', notes: 'Alternatif Ningbo.' },
+    { id: 'SP-022', supplierId: 'SUP-005', skuId: 'sku-luna-02', price: 27, currency: 'CNY', unit: 'm', moqMm: 300000, validFrom: '2026-10-01', validTo: '2027-04-30' },
+    { id: 'SP-023', supplierId: 'SUP-006', skuId: 'sku-aria-01', price: 24.5, currency: 'CNY', unit: 'm', moqMm: 45000, validFrom: '2026-10-01', validTo: '2027-03-31' },
+    { id: 'SP-024', supplierId: 'SUP-006', partId: 'part-runner', price: 1.2, currency: 'CNY', unit: 'pcs', moqPcs: 500, validFrom: '2026-10-01', validTo: '2027-03-31' },
+    { id: 'SP-025', supplierId: 'SUP-007', skuId: 'sku-nova-01', price: 35.5, currency: 'CNY', unit: 'm', moqMm: 30000, validFrom: '2026-10-01', validTo: '2027-04-30' },
+    { id: 'SP-026', supplierId: 'SUP-007', partId: 'part-motor', price: 85, currency: 'CNY', unit: 'pcs', moqPcs: 5, validFrom: '2026-10-01', validTo: '2027-04-30' },
   );
 
   db.fxRates.push(
@@ -239,29 +248,29 @@ export function buildSeed({ dataset = 'main' } = {}) {
   addParts(db, 'part-motor', 'wh-jkt', 2);
   addParts(db, 'part-ring', 'wh-jkt', 120);
   addParts(db, 'part-endcap', 'wh-jkt', 30);
-  addParts(db, 'part-rel-3', 'wh-bdg', 12);
-  addParts(db, 'part-runner', 'wh-bdg', 20);
-  addParts(db, 'part-rel-4', 'wh-sby', 10);
-  addParts(db, 'part-motor', 'wh-sby', 3);
-  addParts(db, 'part-remote', 'wh-sby', 4);
+  addParts(db, 'part-rel-3', 'wh-bali', 12);
+  addParts(db, 'part-runner', 'wh-bali', 20);
+  addParts(db, 'part-rel-4', 'wh-bali', 10);
+  addParts(db, 'part-motor', 'wh-bali', 3);
+  addParts(db, 'part-remote', 'wh-bali', 4);
 
   /* -------------------------------------------------------- opening rolls */
   addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-jkt', lot: 'LOT-2608-A', receivedAt: '2026-08-12', receiptRef: 'GR-AWAL-01', lenM: 60, bin: 'A-01-01', costPerM: 68000 });
   addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-jkt', lot: 'LOT-2608-A', receivedAt: '2026-08-12', receiptRef: 'GR-AWAL-01', lenM: 61.2, bin: 'A-01-02', costPerM: 68000 });
   addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-jkt', lot: 'LOT-2610-B', receivedAt: '2026-10-03', receiptRef: 'GR-AWAL-03', lenM: 63, bin: 'A-02-01', costPerM: 68500 });
-  addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-bdg', lot: 'LOT-2609-C', receivedAt: '2026-09-19', receiptRef: 'GR-AWAL-02', lenM: 70, bin: 'B-01-01', costPerM: 68000 });
-  addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-sby', lot: 'LOT-2609-D', receivedAt: '2026-09-22', receiptRef: 'GR-AWAL-04', lenM: 70, bin: 'C-01-01', costPerM: 68000 });
+  addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-bali', lot: 'LOT-2609-C', receivedAt: '2026-09-19', receiptRef: 'GR-AWAL-02', lenM: 70, bin: 'B-01-01', costPerM: 68000 });
+  addRoll(db, { skuId: 'sku-luna-01', warehouseId: 'wh-bali', lot: 'LOT-2609-D', receivedAt: '2026-09-22', receiptRef: 'GR-AWAL-04', lenM: 70, bin: 'C-01-01', costPerM: 68000 });
   addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-jkt', lot: 'LOT-2608-A', receivedAt: '2026-08-12', receiptRef: 'GR-AWAL-01', lenM: 70, bin: 'A-01-03', costPerM: 68500 });
   addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-jkt', lot: 'LOT-2610-B', receivedAt: '2026-10-03', receiptRef: 'GR-AWAL-03', lenM: 70, bin: 'A-01-04', costPerM: 68500 });
   addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-jkt', lot: 'LOT-2610-B', receivedAt: '2026-10-03', receiptRef: 'GR-AWAL-03', lenM: 63, bin: 'A-02-02', costPerM: 68500 });
-  addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-bdg', lot: 'LOT-2609-C', receivedAt: '2026-09-19', receiptRef: 'GR-AWAL-02', lenM: 50.3, bin: 'B-01-02', costPerM: 68500 });
-  addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-sby', lot: 'LOT-2609-D', receivedAt: '2026-09-22', receiptRef: 'GR-AWAL-04', lenM: 80, bin: 'C-01-02', costPerM: 68500 });
+  addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-bali', lot: 'LOT-2609-C', receivedAt: '2026-09-19', receiptRef: 'GR-AWAL-02', lenM: 50.3, bin: 'B-01-02', costPerM: 68500 });
+  addRoll(db, { skuId: 'sku-luna-02', warehouseId: 'wh-bali', lot: 'LOT-2609-D', receivedAt: '2026-09-22', receiptRef: 'GR-AWAL-04', lenM: 80, bin: 'C-01-02', costPerM: 68500 });
   addRoll(db, { skuId: 'sku-aria-01', warehouseId: 'wh-jkt', lot: 'LOT-2609-E', receivedAt: '2026-09-25', receiptRef: 'GR-AWAL-05', lenM: 80, bin: 'A-03-01', costPerM: 55000 });
-  addRoll(db, { skuId: 'sku-aria-01', warehouseId: 'wh-bdg', lot: 'LOT-2609-E', receivedAt: '2026-09-25', receiptRef: 'GR-AWAL-05', lenM: 45, bin: 'B-02-01', costPerM: 55000 });
+  addRoll(db, { skuId: 'sku-aria-01', warehouseId: 'wh-bali', lot: 'LOT-2609-E', receivedAt: '2026-09-25', receiptRef: 'GR-AWAL-05', lenM: 45, bin: 'B-02-01', costPerM: 55000 });
   addRoll(db, { skuId: 'sku-aria-02', warehouseId: 'wh-jkt', lot: 'LOT-2610-F', receivedAt: '2026-10-06', receiptRef: 'GR-AWAL-06', lenM: 90, bin: 'A-03-02', costPerM: 56000 });
   addRoll(db, { skuId: 'sku-nova-01', warehouseId: 'wh-jkt', lot: 'LOT-2608-G', receivedAt: '2026-08-20', receiptRef: 'GR-AWAL-07', lenM: 55, bin: 'A-04-01', costPerM: 82000 });
-  addRoll(db, { skuId: 'sku-nova-01', warehouseId: 'wh-sby', lot: 'LOT-2608-G', receivedAt: '2026-08-20', receiptRef: 'GR-AWAL-07', lenM: 40, bin: 'C-02-01', costPerM: 82000 });
-  addRoll(db, { skuId: 'sku-nova-02', warehouseId: 'wh-sby', lot: 'LOT-2602-H', receivedAt: '2026-02-11', receiptRef: 'GR-AWAL-08', lenM: 25, bin: 'C-02-02', costPerM: 82000, condition: 'minor_defect' });
+  addRoll(db, { skuId: 'sku-nova-01', warehouseId: 'wh-bali', lot: 'LOT-2608-G', receivedAt: '2026-08-20', receiptRef: 'GR-AWAL-07', lenM: 40, bin: 'C-02-01', costPerM: 82000 });
+  addRoll(db, { skuId: 'sku-nova-02', warehouseId: 'wh-bali', lot: 'LOT-2602-H', receivedAt: '2026-02-11', receiptRef: 'GR-AWAL-08', lenM: 25, bin: 'C-02-02', costPerM: 82000, condition: 'minor_defect' });
 
   const roll = (n) => `RL-${String(n).padStart(4, '0')}`;
 
@@ -421,9 +430,9 @@ export function buildSeed({ dataset = 'main' } = {}) {
   /* ------------------------------------------------------------ transfers */
   const t1 = createTransfer(db, {
     fromWarehouseId: 'wh-jkt',
-    toWarehouseId: 'wh-bdg',
+    toWarehouseId: 'wh-bali',
     neededBy: '2026-11-09',
-    reason: 'Permintaan customer Bandung — Luna-01 untuk 6 jendela.',
+    reason: 'Permintaan customer Bali — Luna-01 untuk 6 jendela.',
     lines: [{ skuId: 'sku-luna-01', requestedMm: 15000 }],
     user: op,
   });
@@ -439,7 +448,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   receiveLine(db, { transferId: t1.id, lineId: t1.lines[0].id, qtyMm: 2000, user: op, note: 'Diterima 2 m; 3 m masih di jalan.' });
 
   const t2 = createTransfer(db, {
-    fromWarehouseId: 'wh-bdg',
+    fromWarehouseId: 'wh-bali',
     toWarehouseId: 'wh-jkt',
     neededBy: '2026-11-10',
     reason: 'Restock Jakarta untuk indent Hotel Arunika.',
@@ -450,9 +459,9 @@ export function buildSeed({ dataset = 'main' } = {}) {
 
   const t3 = createTransfer(db, {
     fromWarehouseId: 'wh-jkt',
-    toWarehouseId: 'wh-sby',
+    toWarehouseId: 'wh-bali',
     neededBy: '2026-10-22',
-    reason: 'Proyek Graha Nusantara — kebutuhan Surabaya.',
+    reason: 'Proyek Graha Nusantara — kebutuhan Bali.',
     lines: [{ skuId: 'sku-aria-01', requestedMm: 20000 }],
     user: op,
   });
@@ -462,7 +471,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   receiveLine(db, { transferId: t3.id, lineId: t3.lines[0].id, qtyMm: 20000, user: op });
 
   const t4 = createTransfer(db, {
-    fromWarehouseId: 'wh-sby',
+    fromWarehouseId: 'wh-bali',
     toWarehouseId: 'wh-jkt',
     neededBy: '2026-11-12',
     reason: 'Rotasi stok Luna-02 untuk permintaan Jakarta.',
@@ -593,6 +602,21 @@ export function buildSeed({ dataset = 'main' } = {}) {
   const cnBill = db.supplierInvoices.find((b) => b.poId === poCn2.id);
   if (cnBill) paySupplierInvoice(db, { id: cnBill.id, amount: 2250000, amountForeign: 1000, method: 'transfer', reference: 'TT-CNY-1000', user: mgr });
 
+  createPO(db, {
+    supplierId: 'SUP-005',
+    date: '2026-11-07',
+    expectedDate: '2026-12-18',
+    termsDays: 40,
+    currency: 'CNY',
+    fxRate: 2300,
+    fxSource: 'Kurs manual PO',
+    fxAsOf: '2026-11-07T10:00:00+07:00',
+    recordRate: false,
+    lines: [{ kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 300000, unitPrice: 26.5 }],
+    note: 'Draf alternatif impor Shaoxing — bandingkan harga dengan Ningbo.',
+    user: mgr,
+  });
+
   /* --------------------------------------------------------------- tasks */
   const taskCut = createTask(db, {
     type: 'cutting', title: 'Potong 10 m Luna-01 untuk ruang tamu', warehouseId: 'wh-jkt',
@@ -606,7 +630,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
     assigneeId: 'u-op', priority: 'normal', dueDate: '2026-11-09', notes: 'Periksa dua roll dan lot.', user: mgr,
   });
   createTask(db, {
-    type: 'picking', title: 'Siapkan kiriman TRF-0001 ke Bandung', warehouseId: 'wh-jkt',
+    type: 'picking', title: 'Siapkan kiriman TRF-0001 ke Bali', warehouseId: 'wh-jkt',
     assigneeId: 'u-op', priority: 'urgent', dueDate: '2026-11-08', notes: 'Sisa 10 m belum dikirim.', user: mgr,
   });
   const shipTask = createTask(db, {
@@ -662,7 +686,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   postCustomerReturn(db, { id: ret.id, user: mgr, disposition: 'quarantine' });
 
   /* ------------------------------------------------ historical stock opname */
-  const session = startOpname(db, { warehouseId: 'wh-sby', user: op, note: 'Opname bulanan Oktober.' });
+  const session = startOpname(db, { warehouseId: 'wh-bali', user: op, note: 'Opname bulanan Bali.' });
   const counts = session.lines.map((l) => ({
     rollId: l.rollId,
     countedMm: l.rollId === roll(15) ? l.expectedMm - 500 : l.expectedMm,

@@ -14,7 +14,7 @@ export const UI_MODE = {
   advanced: { label: 'Lanjutan', description: 'Analitik, master data, dokumen pajak/pengiriman' },
 };
 
-export const ADVANCED_VIEWS = new Set(['laporan', 'master', 'simulasi', 'produksi', 'pesanan']);
+export const ADVANCED_VIEWS = new Set(['laporan', 'simulasi', 'produksi', 'pesanan']);
 
 export function uiMode(db) {
   return settingsOf(db).uiMode === 'advanced' ? 'advanced' : 'simple';

@@ -68,6 +68,29 @@ export function migrate(db) {
   db.meta = db.meta ?? {};
   db.meta.version = SCHEMA_VERSION;
   db.warehouses = db.warehouses ?? [];
+  const legacyBali = db.warehouses.find((w) => w.id === 'wh-bdg');
+  if (legacyBali) {
+    Object.assign(legacyBali, {
+      id: 'wh-bali', code: 'DPS', name: 'Gudang Bali', binPrefix: 'B',
+      address: 'Jl. By Pass Ngurah Rai 88, Denpasar, Bali', phone: '0361-555-0202',
+    });
+  }
+  db.warehouses = db.warehouses.filter((w) => w.id !== 'wh-sby');
+  db.warehouses = db.warehouses.filter((w, index, list) => list.findIndex((x) => x.id === w.id) === index);
+  const remapWarehouse = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (Array.isArray(node)) { node.forEach(remapWarehouse); return; }
+    for (const [key, value] of Object.entries(node)) {
+      if (typeof value === 'string'
+        && ['warehouseId', 'fromWarehouseId', 'toWarehouseId', 'warehouseToId'].includes(key)
+        && ['wh-bdg', 'wh-sby'].includes(value)) {
+        node[key] = 'wh-bali';
+      } else if (value && typeof value === 'object') {
+        remapWarehouse(value);
+      }
+    }
+  };
+  remapWarehouse(db);
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }

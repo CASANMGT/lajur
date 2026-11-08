@@ -87,7 +87,7 @@ test('supplier price history feeds master buy price and lists all suppliers', ()
   assert.equal(latest.currency, 'IDR');
   assert.deepEqual(
     suppliersOfItem(db, { skuId: 'sku-luna-01' }).map((s) => s.id).sort(),
-    ['SUP-001', 'SUP-004'],
+    ['SUP-001', 'SUP-004', 'SUP-005'],
   );
 
   const saved = saveSupplierPrice(db, {

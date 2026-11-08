@@ -5,6 +5,7 @@ import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
 import { COURIERS, DELIVERY_STATUS } from '../../domain/deliveries.js';
+import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
 
@@ -229,6 +230,54 @@ export function printPoHtml(db, po) {
       </tr>`).join('')}</tbody>
     </table>
     ${po.note ? `<p class="note">${esc(po.note)}</p>` : ''}`;
+}
+
+export function printTaskTicketsHtml(db, tasks) {
+  return tasks.map((task, index) => {
+    const type = TASK_TYPE[task.type] ?? { label: task.type };
+    const warehouse = byId(db.warehouses, task.warehouseId);
+    const assignee = task.assigneeId ? byId(db.users, task.assigneeId) : null;
+    const roll = task.rollId ? db.rolls.find((r) => r.id === task.rollId) : null;
+    const project = task.projectId ? db.projects.find((p) => p.id === task.projectId) : null;
+    return `<div class="task-ticket" style="border:2px solid #172b3a;border-radius:8px;padding:16px;max-width:640px;${index < tasks.length - 1 ? 'page-break-after:always;margin-bottom:18px' : ''}">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
+        <div><div class="brand">lajur</div><small style="color:#62727c">TIKET TUGAS OPERASI</small></div>
+        <div style="text-align:right"><strong style="font-family:ui-monospace,monospace;font-size:18px">${esc(task.id)}</strong><div style="font-size:10px;color:#62727c">${esc(TASK_STATUS[task.status]?.label ?? task.status)}</div></div>
+      </div>
+      <h1 style="margin:10px 0 2px">${esc(task.title)}</h1>
+      <p class="pill">${esc(type.label)} · ${esc(warehouse?.name ?? '—')}</p>
+      <div class="meta" style="margin-top:12px">
+        <div><span>Petugas</span><strong>${esc(assignee?.name ?? '________________')}</strong></div>
+        <div><span>Jatuh tempo</span><strong>${esc(task.dueDate)}</strong></div>
+        <div><span>Prioritas</span><strong>${esc(PRIORITY[task.priority]?.label ?? task.priority)}</strong></div>
+        <div><span>Dibuat</span><strong>${esc(task.createdAt ? new Date(task.createdAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '—')}</strong></div>
+        <div><span>Cetakan</span><strong>${esc(task.printCount ?? 0)}×</strong></div>
+        <div><span>Gudang</span><strong>${esc(warehouse?.code ?? '—')}</strong></div>
+      </div>
+      ${task.qtyMm || roll || project ? `<table style="margin-top:6px">
+        <thead><tr><th>Target</th><th>Referensi</th></tr></thead>
+        <tbody><tr>
+          <td>${task.qtyMm ? fmt.m(task.qtyMm) : '—'}</td>
+          <td>${roll ? `Roll ${esc(roll.id)} · lot ${esc(roll.lot)}` : ''}${project ? `<br>${esc(project.name)}` : ''}${!roll && !project ? '—' : ''}</td>
+        </tr></tbody>
+      </table>` : ''}
+      ${task.notes ? `<p class="note">${esc(task.notes)}</p>` : ''}
+      <div style="margin-top:12px;font-size:11px">
+        <strong>Checklist manual</strong>
+        <div style="margin-top:6px">☐ Terima tiket &amp; periksa barang/roll</div>
+        <div>☐ Mulai kerja — update “Mulai” di aplikasi</div>
+        <div>☐ Selesai — update “Selesai” + catatan di aplikasi</div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:2px" aria-hidden="true">
+        ${Array.from({ length: 48 }, (_, i) => `<i style="display:inline-block;width:${i % 4 === 0 ? 3 : i % 3 === 0 ? 2 : 1}px;height:30px;background:#172b3a"></i>`).join('')}
+      </div>
+      <div style="font-size:8px;color:#62727c;margin-top:3px">${esc(task.id)} · ${esc(task.type)} · dicetak ${esc(task.printCount ?? 0)}×</div>
+      <div style="display:flex;gap:30px;margin-top:26px;font-size:10px">
+        <div style="flex:1;border-top:1px solid #172b3a;padding-top:4px">Petugas / tanda tangan</div>
+        <div style="flex:1;border-top:1px solid #172b3a;padding-top:4px">Supervisor</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 export function printInstructionsHtml(db, project) {

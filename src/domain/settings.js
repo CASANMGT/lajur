@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS = {
   taskDueDays: 1,
   requireProofOnReceipt: false,
   uiMode: 'simple',
+  onlineAssignmentEnabled: true,
   salesOrderEnabled: false,
   productionEnabled: false,
   operatorCanSeeCosts: false,

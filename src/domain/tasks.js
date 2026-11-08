@@ -101,6 +101,17 @@ export function assignTask(db, { id, assigneeId, user }) {
   return task;
 }
 
+export function markTaskPrinted(db, { id, user }) {
+  const task = requireTask(db, id);
+  assert(task.status !== 'cancelled', 'INVALID_STATUS', 'Tiket tugas yang dibatalkan tidak dapat dicetak.');
+  task.printCount = (task.printCount ?? 0) + 1;
+  task.printedAt = isoNow();
+  task.printedBy = user?.name ?? 'Sistem';
+  task.history.push({ at: isoNow(), by: user?.name ?? 'Sistem', action: 'Tiket tugas dicetak', note: `Cetakan ke-${task.printCount}` });
+  audit(db, user, 'cetak_tiket_tugas', 'task', task.id, `Cetakan ke-${task.printCount}`);
+  return task;
+}
+
 export function startTask(db, { id, user }) {
   const task = requireTask(db, id);
   assert(['open', 'blocked'].includes(task.status), 'INVALID_STATUS', 'Tugas tidak dapat dimulai.');
