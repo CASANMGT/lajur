@@ -1,4 +1,4 @@
-# Design System — Lajur v2.6
+# Design System — Lajur v2.7
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -218,7 +218,16 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Optional modules:** WIP Production and Pesanan are off by default. Settings shows two plain checkboxes; when off, no navigation item, dashboard shortcut or report tab may remain. Direct routes redirect to the role home. Copy should say “opsional”, not “coming soon”.
 - **Copy:** use “pesanan penjualan”, “bukan faktur”, “kurs terkunci”, “harga pemasok terbaru”. Never call a supplier quote a tax invoice or a payroll entry a bank transfer.
 
-### 5.13 Empty, loading, error
+### 5.13 Invoice discount, tax invoice and surat jalan
+
+- **Invoice form:** line prices must be prefilled from master data when a roll/part is selected; a blank price field is a defect. Discount has two explicit modes — fixed Rp and percent — and the computed total updates immediately. Never hide the discount label in print.
+- **Invoice detail:** show the discount mode in the totals block (`Diskon (10%)` or `Diskon`). Use a real `<dl>` for the totals so screen readers understand `dt`/`dd`.
+- **Faktur pajak card:** show DPP, PPN 11% and total including PPN as read-only values. Issuing is a single action with number/NPWP; no price inputs. After issuing show number, NPWP, issue time and a print action. Use “bukan e-faktur resmi” in the demo note.
+- **Surat jalan card:** show status, PIC pengiriman, driver/vehicle, address, receiver and a short history. Primary actions follow the state: Buat → Edit PIC/Kirim → Tandai tiba → Konfirmasi terima. Printing must not imply another stock movement.
+- **Status labels:** `Dibuat`, `Dikirim`, `Tiba`, `Diterima & dikonfirmasi`. Do not use “selesai” until the receiver is confirmed.
+- **No hidden stock event:** never show a second “keluarkan stok” action on the surat jalan. The invoice already issued the stock.
+
+### 5.14 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.
@@ -276,7 +285,7 @@ Rules:
 - Icons are `aria-hidden`; icon-only controls have accessible names.
 - Target sizes: 44 px minimum on touch (≤ 820 px), 40 px desktop.
 - Reduced motion respected.
-- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, sales-order detail, samples, master, settings and simulation.
+- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, samples, master, settings and simulation.
 
 Known gaps: no full screen-reader manual pass; no forced-colours/high-contrast theme yet; print documents are not tagged PDFs.
 

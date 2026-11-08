@@ -4,6 +4,7 @@ import { esc, fmt } from '../dom.js';
 import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
+import { DELIVERY_STATUS } from '../../domain/deliveries.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
 
@@ -66,6 +67,9 @@ export function printTransferHtml(db, transfer, kind = 'permintaan') {
 export function printInvoiceHtml(db, invoice) {
   const customer = byId(db.customers, invoice.customerId);
   const outstanding = invoiceOutstanding(invoice);
+  const discountLabel = invoice.discountType === 'percent'
+    ? `Diskon (${Number(invoice.discountValue ?? 0).toLocaleString('id-ID')}%)`
+    : 'Diskon';
   return `
     <h1>FAKTUR</h1>
     <p class="pill">${esc(invoice.id)} · ${esc(invoice.status)}</p>
@@ -74,7 +78,7 @@ export function printInvoiceHtml(db, invoice) {
       <div><span>Tanggal</span><strong>${esc(invoice.date)}</strong></div>
       <div><span>Jatuh tempo</span><strong>${esc(invoice.dueDate)}</strong></div>
       <div><span>Alamat</span><strong>${esc(customer?.address ?? '—')}</strong></div>
-      <div><span>Proyek</span><strong>${esc(invoice.projectId ?? '—')}</strong></div>
+      <div><span>NPWP</span><strong>${esc(customer?.npwp ?? '—')}</strong></div>
       <div><span>Sales</span><strong>${esc(byId(db.users, invoice.salespersonId)?.name ?? '—')}</strong></div>
     </div>
     <table>
@@ -88,14 +92,81 @@ export function printInvoiceHtml(db, invoice) {
     </table>
     <div style="margin-left:auto;max-width:300px">
       <div class="doc-total"><dt>Subtotal</dt><dd>${fmt.money(invoice.subtotal)}</dd></div>
-      ${invoice.discount ? `<div class="doc-total"><dt>Diskon</dt><dd>−${fmt.money(invoice.discount)}</dd></div>` : ''}
+      ${invoice.discount ? `<div class="doc-total"><dt>${esc(discountLabel)}</dt><dd>−${fmt.money(invoice.discount)}</dd></div>` : ''}
       <div class="doc-total"><dt>Total</dt><dd>${fmt.money(invoice.total)}</dd></div>
       ${invoice.depositApplied ? `<div class="doc-total"><dt>Deposit</dt><dd>−${fmt.money(invoice.depositApplied)}</dd></div>` : ''}
       ${invoice.credited ? `<div class="doc-total"><dt>Retur</dt><dd>−${fmt.money(invoice.credited)}</dd></div>` : ''}
       <div class="doc-total"><dt>Sisa tagihan</dt><dd>${fmt.money(outstanding)}</dd></div>
     </div>
+    ${invoice.taxInvoice ? `<p class="note" style="margin-top:14px">Faktur pajak ${esc(invoice.taxInvoice.number)} · DPP ${fmt.money(invoice.taxInvoice.dpp)} · PPN ${fmt.money(invoice.taxInvoice.ppn)}</p>` : ''}
     ${invoice.notes ? `<p class="note" style="margin-top:16px">${esc(invoice.notes)}</p>` : ''}
     <p class="note" style="margin-top:10px">Demo — bukan e-faktur pajak dan bukan dokumen akuntansi resmi.</p>`;
+}
+
+export function printTaxInvoiceHtml(db, invoice) {
+  const tax = invoice.taxInvoice;
+  if (!tax) return '<p class="note">Faktur pajak belum diterbitkan.</p>';
+  const customer = byId(db.customers, invoice.customerId);
+  return `
+    <h1>FAKTUR PAJAK</h1>
+    <p class="pill">${esc(tax.number)} · ${esc(invoice.id)}</p>
+    <div class="meta" style="margin-top:12px">
+      <div><span>Pelanggan</span><strong>${esc(customer?.name ?? invoice.customerName)}</strong></div>
+      <div><span>NPWP</span><strong>${esc(tax.npwp || customer?.npwp || '—')}</strong></div>
+      <div><span>Tanggal faktur</span><strong>${esc(invoice.date)}</strong></div>
+      <div><span>Alamat</span><strong>${esc(customer?.address ?? '—')}</strong></div>
+      <div><span>Diterbitkan</span><strong>${esc(tax.issuedAt ? new Date(tax.issuedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '—')}</strong></div>
+      <div><span>Oleh</span><strong>${esc(tax.issuedBy ?? '—')}</strong></div>
+    </div>
+    <table>
+      <thead><tr><th>Deskripsi</th><th class="num">Qty</th><th class="num">Harga</th><th class="num">Jumlah</th></tr></thead>
+      <tbody>${invoice.lines.map((l) => `<tr>
+        <td>${esc(l.description)}</td>
+        <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : l.kind === 'part' ? `${fmt.pcs(l.qtyPcs)} pcs` : '1 jasa'}</td>
+        <td class="num">${fmt.money(l.unitPrice)}</td>
+        <td class="num">${fmt.money(l.amount)}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    <div style="margin-left:auto;max-width:320px">
+      <div class="doc-total"><dt>Subtotal baris</dt><dd>${fmt.money(invoice.subtotal)}</dd></div>
+      ${invoice.discount ? `<div class="doc-total"><dt>Diskon</dt><dd>−${fmt.money(invoice.discount)}</dd></div>` : ''}
+      <div class="doc-total"><dt>DPP</dt><dd>${fmt.money(tax.dpp)}</dd></div>
+      <div class="doc-total"><dt>PPN ${Number(tax.ratePercent).toLocaleString('id-ID')}%</dt><dd>${fmt.money(tax.ppn)}</dd></div>
+      <div class="doc-total"><dt>Total termasuk PPN</dt><dd>${fmt.money(tax.total)}</dd></div>
+    </div>
+    <p class="note" style="margin-top:14px">Harga, DPP, dan PPN dihitung otomatis dari faktur; tidak ada input harga manual di dokumen ini.</p>
+    <p class="note">Demo — bukan e-faktur pajak resmi. Nomor dan NPWP hanya contoh.</p>`;
+}
+
+export function printDeliveryHtml(db, delivery) {
+  const customer = byId(db.customers, delivery.customerId);
+  const invoice = db.invoices.find((i) => i.id === delivery.invoiceId);
+  return `
+    <h1>SURAT JALAN</h1>
+    <p class="pill">${esc(delivery.id)} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</p>
+    <div class="meta" style="margin-top:12px">
+      <div><span>Faktur</span><strong>${esc(delivery.invoiceId)}</strong></div>
+      <div><span>Pelanggan</span><strong>${esc(customer?.name ?? delivery.customerName)}</strong></div>
+      <div><span>Tanggal</span><strong>${esc(delivery.date)}</strong></div>
+      <div><span>Alamat</span><strong>${esc(delivery.address || customer?.address || '—')}</strong></div>
+      <div><span>PIC pengiriman</span><strong>${esc(delivery.pic)}</strong></div>
+      <div><span>Pengemudi / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicle ? ` · ${esc(delivery.vehicle)}` : ''}</strong></div>
+    </div>
+    <table>
+      <thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead>
+      <tbody>${delivery.lines.map((l) => `<tr>
+        <td>${esc(l.description)}</td>
+        <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : `${fmt.pcs(l.qtyPcs)} pcs`}</td>
+        <td>${esc(l.note || '—')}</td>
+      </tr>`).join('')}</tbody>
+    </table>
+    ${delivery.notes ? `<p class="note">${esc(delivery.notes)}</p>` : ''}
+    <div style="display:flex;gap:40px;margin-top:34px;font-size:11px">
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:6px">PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div>
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:6px">Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div>
+    </div>
+    <p class="note" style="margin-top:14px">Barang di atas sudah dikeluarkan dari stok saat faktur ${esc(delivery.invoiceId)} diterbitkan. Surat jalan ini bukan faktur dan tidak mengurangi stok lagi.</p>
+    ${invoice ? `<p class="note">Total faktur ${fmt.money(invoice.total)} · status ${esc(delivery.status)}</p>` : ''}`;
 }
 
 export function printSalesOrderHtml(db, order) {

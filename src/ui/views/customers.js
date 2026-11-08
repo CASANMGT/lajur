@@ -182,7 +182,8 @@ function renderDetail(ctx) {
           </div>
           <hr class="divider" />
           <div class="stack-sm">
-            <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(c.phone || '—')}</span></div>
+            <div class="row-between"><span class="small muted">NPWP</span><span class="small mono">${esc(c.npwp || '-')}</span></div>
+          <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(c.phone || '-')}</span></div>
             <div class="row-between"><span class="small muted">Email</span><span class="small">${esc(c.email || '—')}</span></div>
             <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(c.address || '—')}</span></div>
             <div class="row-between"><span class="small muted">Kota</span><span class="small">${esc(c.city || '—')}</span></div>
@@ -216,6 +217,7 @@ function openEdit(ctx, c) {
     body: `<div class="form-grid">
       ${field('Nama', `<input class="input" name="name" value="${esc(c.name)}" required />`)}
       ${field('Perusahaan', `<input class="input" name="company" value="${esc(c.company)}" />`)}
+      ${field('NPWP', `<input class="input" name="npwp" value="${esc(c.npwp ?? '')}" placeholder="00.000.000.0-000.000" />`)}
       ${field('Telepon', `<input class="input" name="phone" value="${esc(c.phone)}" />`)}
       ${field('Email', `<input class="input" name="email" value="${esc(c.email)}" />`)}
       ${field('Alamat', `<input class="input" name="address" value="${esc(c.address)}" />`, { full: true })}
@@ -232,6 +234,7 @@ function openEdit(ctx, c) {
         patch: {
           name: form.name.value.trim(),
           company: form.company.value,
+          npwp: form.npwp.value,
           phone: form.phone.value,
           email: form.email.value,
           address: form.address.value,
@@ -386,6 +389,7 @@ export function openCreate(ctx) {
     body: `<div class="form-grid">
       ${field('Nama', `<input class="input" name="name" required />`)}
       ${field('Perusahaan', `<input class="input" name="company" />`)}
+      ${field('NPWP', `<input class="input" name="npwp" placeholder="00.000.000.0-000.000" />`)}
       ${field('Telepon', `<input class="input" name="phone" />`)}
       ${field('Email', `<input class="input" name="email" />`)}
       ${field('Kota', `<input class="input" name="city" />`)}
@@ -398,6 +402,7 @@ export function openCreate(ctx) {
       const customer = ctx.store.update((db) => createCustomer(db, {
         name: form.name.value,
         company: form.company.value,
+        npwp: form.npwp.value,
         phone: form.phone.value,
         email: form.email.value,
         address: form.address.value,

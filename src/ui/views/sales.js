@@ -1,19 +1,24 @@
 /** Penjualan: faktur multi-baris, pembayaran, deposit, retur. */
 
 import {
-  esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, amountCell,
+  esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, amountCell, confirmAction,
 } from '../dom.js';
 import { MM_PER_M, byId, daysBetween, parseM, todayJakarta } from '../../domain/core.js';
 import {
   INVOICE_STATUS, createCustomerReturn, createInvoice, invoiceMargin, invoiceOutstanding,
-  invoiceStatusLabel, postCustomerReturn, postInvoice, recordPayment, returnedQty,
+  invoiceStatusLabel, issueTaxInvoice, postCustomerReturn, postInvoice, recordPayment, returnedQty,
+  taxBreakdown,
 } from '../../domain/sales.js';
+import {
+  DELIVERY_STATUS, confirmDelivery, createDelivery, deliveryForInvoice, dispatchDelivery,
+  markDelivered, updateDelivery,
+} from '../../domain/deliveries.js';
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
 import { createSalesOrder } from '../../domain/orders.js';
 import { settingsOf } from '../../domain/settings.js';
 import { availableMm, partAvailable, sellableRolls, totalParts } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
-import { printInvoiceHtml } from './print.js';
+import { printDeliveryHtml, printInvoiceHtml, printTaxInvoiceHtml } from './print.js';
 
 let statusFilter = 'all';
 
@@ -62,8 +67,9 @@ export function render(ctx) {
           <tbody>${invoices.map((inv) => {
             const out = invoiceOutstanding(inv);
             const days = daysBetween(inv.dueDate, todayJakarta());
+            const delivery = deliveryForInvoice(db, inv.id);
             return `<tr data-href="#/penjualan/${inv.id}" tabindex="0" role="link">
-              <td><span class="mono strong">${esc(inv.id)}</span>${inv.projectId ? `<div class="xs muted">${esc(inv.projectId)}</div>` : ''}</td>
+              <td><span class="mono strong">${esc(inv.id)}</span>${inv.projectId ? `<div class="xs muted">${esc(inv.projectId)}</div>` : ''}${delivery ? `<div class="xs muted">${esc(delivery.id)} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>` : ''}</td>
               <td>${esc(inv.customerName)}</td>
               <td class="hide-sm">${esc(inv.date)}<div class="xs muted">due ${esc(inv.dueDate)}</div></td>
               <td class="num">${fmt.money(inv.total)}</td>
@@ -78,6 +84,7 @@ export function render(ctx) {
           <div class="top"><span class="id">${esc(inv.id)}</span>${badge(invoiceStatusLabel(inv), invoiceOutstanding(inv) ? 'warn' : 'ok')}</div>
           <div class="small strong">${esc(inv.customerName)}</div>
           <div class="xs muted">${esc(inv.date)} · jatuh tempo ${esc(inv.dueDate)}</div>
+          ${deliveryForInvoice(db, inv.id) ? `<div class="xs muted">${esc(deliveryForInvoice(db, inv.id).id)} · ${esc(DELIVERY_STATUS[deliveryForInvoice(db, inv.id).status]?.label ?? '')}</div>` : ''}
           <div class="grid3">
             <div class="kv"><span>Total</span><strong>${fmt.money(inv.total)}</strong></div>
             <div class="kv"><span>Sisa</span><strong>${fmt.money(invoiceOutstanding(inv))}</strong></div>
@@ -99,6 +106,9 @@ function renderDetail(ctx) {
   const out = invoiceOutstanding(inv);
   const customer = byId(db.customers, inv.customerId);
   const margin = invoiceMargin(inv);
+  const delivery = deliveryForInvoice(db, inv.id);
+  const tax = inv.taxInvoice;
+  const taxPreview = taxBreakdown(inv);
   const deposits = db.deposits.filter((d) => d.customerId === inv.customerId && depositBalance(d) > 0);
   const applicableDeposits = deposits.filter((d) => d.kind === 'indent');
   const days = daysBetween(inv.dueDate, todayJakarta());
@@ -108,6 +118,7 @@ function renderDetail(ctx) {
   if (inv.status === 'posted' && out > 0 && can(role, 'invoice.pay')) actions.push(`<button class="btn btn-primary" data-act="pay">${icon('wallet')} Terima pembayaran</button>`);
   if (inv.status === 'posted' && out > 0 && applicableDeposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
   if (inv.status === 'posted' && can(role, 'return.create')) actions.push(`<button class="btn" data-act="return">${icon('refresh')} Retur</button>`);
+  if (inv.status === 'posted' && !delivery && can(role, 'invoice.create')) actions.push(`<button class="btn" data-act="new-delivery">${icon('truck')} Surat jalan</button>`);
   actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak</button>`);
 
   return `
@@ -144,15 +155,37 @@ function renderDetail(ctx) {
               </tr>`).join('')}</tbody>
             </table>
           </div>
-          <div class="card-pad">
+          <dl class="card-pad" style="margin:0">
             <div class="doc-total"><dt>Subtotal</dt><dd>${fmt.money(inv.subtotal)}</dd></div>
-            ${inv.discount ? `<div class="doc-total"><dt>Diskon</dt><dd>−${fmt.money(inv.discount)}</dd></div>` : ''}
+            ${inv.discount ? `<div class="doc-total"><dt>${inv.discountType === 'percent' ? `Diskon (${Number(inv.discountValue ?? 0).toLocaleString('id-ID')}%)` : 'Diskon'}</dt><dd>−${fmt.money(inv.discount)}</dd></div>` : ''}
             <div class="doc-total"><dt>Total</dt><dd>${fmt.money(inv.total)}</dd></div>
             ${inv.depositApplied ? `<div class="doc-total"><dt>Deposit</dt><dd>−${fmt.money(inv.depositApplied)}</dd></div>` : ''}
             ${inv.credited ? `<div class="doc-total"><dt>Retur</dt><dd>−${fmt.money(inv.credited)}</dd></div>` : ''}
             <div class="doc-total"><dt>Dibayar</dt><dd>${fmt.money(inv.payments?.reduce((a, p) => a + p.amount, 0) ?? 0)}</dd></div>
             <div class="doc-total" style="font-size:15px"><dt class="strong">Sisa tagihan</dt><dd>${fmt.money(out)}</dd></div>
+          </dl>
+        </section>
+
+        <section class="card card-pad">
+          <div class="row-between">
+            <div><h2>Faktur pajak</h2><p class="xs muted">PPN 11% dihitung dari total faktur; harga tidak diinput ulang.</p></div>
+            ${tax ? badge('Terbit', 'ok') : badge('Belum terbit', 'muted')}
           </div>
+          ${inv.status !== 'posted' ? `<p class="small muted" style="margin-top:8px">Faktur pajak dapat diterbitkan setelah faktur diposting.</p>` : tax ? `
+            <div class="stack-sm" style="margin-top:10px">
+              <div class="row-between"><span class="small muted">Nomor</span><span class="small mono">${esc(tax.number)}</span></div>
+              <div class="row-between"><span class="small muted">NPWP</span><span class="small mono">${esc(tax.npwp || '—')}</span></div>
+              <div class="row-between"><span class="small muted">DPP</span><span class="small num">${fmt.money(tax.dpp)}</span></div>
+              <div class="row-between"><span class="small muted">PPN ${Number(tax.ratePercent).toLocaleString('id-ID')}%</span><span class="small num">${fmt.money(tax.ppn)}</span></div>
+              <div class="row-between"><span class="small muted">Total termasuk PPN</span><span class="small num strong">${fmt.money(tax.total)}</span></div>
+            </div>
+            <button class="btn btn-sm btn-block" style="margin-top:10px" data-act="print-tax">${icon('printer')} Cetak faktur pajak</button>` : `
+            <div class="stack-sm" style="margin-top:10px">
+              <div class="row-between"><span class="small muted">DPP (dari total)</span><span class="small num">${fmt.money(taxPreview.dpp)}</span></div>
+              <div class="row-between"><span class="small muted">PPN ${Number(taxPreview.ratePercent).toLocaleString('id-ID')}%</span><span class="small num">${fmt.money(taxPreview.ppn)}</span></div>
+              <div class="row-between"><span class="small muted">Total termasuk PPN</span><span class="small num strong">${fmt.money(taxPreview.total)}</span></div>
+            </div>
+            ${can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="issue-tax">${icon('receipt')} Terbitkan faktur pajak</button>` : ''}`}
         </section>
 
         <section class="card">
@@ -186,6 +219,32 @@ function renderDetail(ctx) {
           </div>
           ${inv.notes ? `<hr class="divider" /><div class="xs muted">Catatan</div><p class="small" style="margin-top:4px">${esc(inv.notes)}</p>` : ''}
           <div class="notice notice-info" style="margin-top:12px">${icon('alert')}<div>Margin dihitung dari snapshot harga pokok; bukan laba per gudang.</div></div>
+        </section>
+
+        <section class="card card-pad">
+          <div class="row-between">
+            <div><h2>Pengiriman & surat jalan</h2><p class="xs muted">Status logistik setelah faktur; tidak mengubah stok lagi.</p></div>
+            ${delivery ? badge(DELIVERY_STATUS[delivery.status].label, DELIVERY_STATUS[delivery.status].tone) : ''}
+          </div>
+          ${!delivery ? `
+            <p class="small muted" style="margin-top:8px">${inv.status === 'posted' ? 'Belum ada surat jalan untuk faktur ini.' : 'Surat jalan dibuat setelah faktur terbit.'}</p>
+            ${inv.status === 'posted' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="new-delivery">${icon('truck')} Buat surat jalan</button>` : ''}
+          ` : `
+            <div class="stack-sm" style="margin-top:10px">
+              <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
+              <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}</span></div>
+              <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicle ? ` · ${esc(delivery.vehicle)}` : ''}</span></div>
+              <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
+              ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
+            </div>
+            <div class="row" style="margin-top:10px;flex-wrap:wrap">
+              <button class="btn btn-sm" data-act="print-delivery">${icon('printer')} Surat jalan</button>
+              ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit PIC</button><button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
+              ${delivery.status === 'dispatched' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="deliver-delivery">Tandai tiba</button>` : ''}
+              ${delivery.status === 'delivered' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="confirm-delivery">Konfirmasi terima</button>` : ''}
+            </div>
+            ${delivery.history?.length ? `<hr class="divider" /><ul class="timeline">${delivery.history.slice(0, 3).map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by)}${h.note ? ` · ${esc(h.note)}` : ''}</div></li>`).join('')}</ul>` : ''}
+          `}
         </section>
 
         <section class="card card-pad">
@@ -258,8 +317,9 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
       <div class="form-grid">
         ${field('Pelanggan', `<select class="select" name="customer">${customerOptions}</select>`)}
         ${field('Gudang pengeluaran part', `<select class="select" name="warehouse">${warehouseOptions(db, defaultWh)}</select>`)}
-        ${field('Jatuh tempo (hari)', `<input class="input" type="number" name="dueDays" min="0" max="120" value="14" />`)}
-        ${field('Diskon (Rp)', `<input class="input" name="discount" inputmode="numeric" placeholder="0" />`)}
+        ${!isOrder ? field('Jatuh tempo (hari)', `<input class="input" type="number" name="dueDays" min="0" max="120" value="14" />`) : ''}
+        ${!isOrder ? field('Tipe diskon', `<select class="select" name="discountType"><option value="amount">Nominal (Rp)</option><option value="percent">Persentase (%)</option></select>`) : ''}
+        ${!isOrder ? field('Diskon', `<input class="input" name="discountValue" inputmode="decimal" value="0" />`, { hint: 'Nominal rupiah atau persen dari subtotal.' }) : ''}
         ${field('Catatan', `<input class="input" name="notes" placeholder="Referensi proyek / instruksi" />`, { full: true })}
       </div>
       <div class="section-title" style="margin:18px 0 6px"><h3>Kain</h3><span class="xs muted">${rolls.length} roll tersedia di gudang ini</span></div>
@@ -295,9 +355,22 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
           const price = Number(row.querySelector('.part-price').value || opt?.dataset.price || 0);
           subtotal += Math.round(qty * price);
         });
-        const disc = Number(String(form.discount?.value ?? '').replace(/\D/g, '')) || 0;
+        const discType = form.discountType?.value ?? 'amount';
+        const discRaw = String(form.discountValue?.value ?? '');
+        const discValue = discType === 'percent'
+          ? Number(discRaw.replace(',', '.')) || 0
+          : Number(discRaw.replace(/\D/g, '')) || 0;
+        const disc = discType === 'percent'
+          ? Math.round(subtotal * Math.min(discValue, 100) / 100)
+          : Math.min(Math.round(discValue), subtotal);
         document.getElementById('inv-subtotal').textContent = fmt.money(subtotal);
         document.getElementById('inv-total').textContent = fmt.money(Math.max(0, subtotal - disc));
+      };
+
+      const applyDefaultPrice = (row) => {
+        const product = row.querySelector('.fab-roll, .part-id');
+        const price = row.querySelector('.fab-price, .part-price');
+        if (product && price && !price.value) price.value = product.selectedOptions[0]?.dataset.price ?? '';
       };
 
       const bindRow = (row) => {
@@ -307,9 +380,17 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
           row.querySelector('.fab-qty').disabled = whole;
           recalc();
         });
+        row.querySelector('.fab-roll, .part-id')?.addEventListener('change', () => {
+          const product = row.querySelector('.fab-roll, .part-id');
+          row.querySelector('.fab-price, .part-price').value = product.selectedOptions[0]?.dataset.price ?? '';
+          recalc();
+        });
         row.querySelector('[data-remove]')?.addEventListener('click', () => { row.remove(); recalc(); });
+        applyDefaultPrice(row);
       };
       form.querySelectorAll('[data-fab], [data-part]').forEach(bindRow);
+      form.discountType?.addEventListener('change', recalc);
+      form.discountValue?.addEventListener('input', recalc);
 
       form.querySelector('[data-add-fab]')?.addEventListener('click', () => {
         fabRows.insertAdjacentHTML('beforeend', fabricRow());
@@ -360,7 +441,11 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
       const save = (post) => {
         try {
           const lines = collect();
-          const discount = Number(String(form.discount.value ?? '').replace(/\D/g, '')) || 0;
+          const discountType = form.discountType?.value ?? 'amount';
+          const discRaw = String(form.discountValue?.value ?? '');
+          const discountValue = discountType === 'percent'
+            ? Number(discRaw.replace(',', '.')) || 0
+            : Number(discRaw.replace(/\D/g, '')) || 0;
           if (isOrder) {
             const order = ctx.store.update((db) => createSalesOrder(db, {
               customerId: form.customer.value,
@@ -377,7 +462,8 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
             const inv = createInvoice(db, {
               customerId: form.customer.value,
               lines,
-              discount,
+              discountType,
+              discountValue,
               dueDays: Number(form.dueDays.value || 14),
               notes: form.notes.value,
               user: ctx.user,
@@ -521,6 +607,122 @@ function openApplyDeposit(ctx, inv) {
   });
 }
 
+function openIssueTax(ctx, inv) {
+  const customer = byId(ctx.db.customers, inv.customerId);
+  const preview = taxBreakdown(inv);
+  openModal({
+    title: `Faktur pajak ${inv.id}`,
+    description: 'Nilai DPP dan PPN dihitung otomatis dari total faktur. Tidak ada input harga manual.',
+    submitLabel: 'Terbitkan faktur pajak',
+    body: `
+      <div class="table-wrap" style="margin-bottom:14px"><table class="data">
+        <tbody>
+          <tr><td>DPP</td><td class="num strong">${fmt.money(preview.dpp)}</td></tr>
+          <tr><td>PPN ${Number(preview.ratePercent).toLocaleString('id-ID')}%</td><td class="num strong">${fmt.money(preview.ppn)}</td></tr>
+          <tr><td>Total termasuk PPN</td><td class="num strong">${fmt.money(preview.total)}</td></tr>
+        </tbody>
+      </table></div>
+      ${field('Nomor faktur pajak', `<input class="input" name="number" placeholder="FP-${esc(inv.id.replace('INV-', ''))}/${esc(inv.date.slice(0, 4))}" />`, { hint: 'Kosongkan untuk nomor otomatis.' })}
+      ${field('NPWP pelanggan', `<input class="input" name="npwp" value="${esc(customer?.npwp ?? '')}" placeholder="00.000.000.0-000.000" />`)}
+      <div class="notice notice-info">${icon('alert')}<div>Demo — bukan e-faktur pajak resmi. PPN memakai tarif 11% dan tidak mengubah total tagihan faktur.</div></div>
+    `,
+    onSubmit(form, close) {
+      ctx.store.update((db) => issueTaxInvoice(db, {
+        id: inv.id,
+        number: form.number.value,
+        npwp: form.npwp.value,
+        ratePercent: 11,
+        user: ctx.user,
+      }));
+      close();
+      toast('Faktur pajak diterbitkan; DPP/PPN dihitung dari total faktur.', { tone: 'success' });
+    },
+  });
+}
+
+function openCreateDelivery(ctx, inv) {
+  const customer = byId(ctx.db.customers, inv.customerId);
+  openModal({
+    title: `Surat jalan ${inv.id}`,
+    description: 'Catat PIC pengiriman dan alamat. Stok sudah keluar saat faktur terbit; surat jalan tidak mengurangi stok lagi.',
+    submitLabel: 'Buat surat jalan',
+    body: `
+      ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(ctx.user.name)}" required />`, { hint: 'Penanggung jawab pengiriman dari gudang.' })}
+      ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
+      ${field('Pengemudi', `<input class="input" name="driver" placeholder="Nama pengemudi" />`)}
+      ${field('Kendaraan', `<input class="input" name="vehicle" placeholder="Nomor polisi / jenis" />`)}
+      ${field('Alamat kirim', `<input class="input" name="address" value="${esc(customer?.address ?? '')}" />`, { full: true })}
+      ${field('Catatan', `<input class="input" name="notes" placeholder="Instruksi bongkar / kontak penerima" />`, { full: true })}
+    `,
+    onSubmit(form, close) {
+      ctx.store.update((db) => createDelivery(db, {
+        invoiceId: inv.id,
+        pic: form.pic.value,
+        date: form.date.value,
+        driver: form.driver.value,
+        vehicle: form.vehicle.value,
+        address: form.address.value,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast('Surat jalan dibuat. Kirim barang, tandai tiba, lalu konfirmasi penerimaan.', { tone: 'success' });
+    },
+  });
+}
+
+function openEditDelivery(ctx, delivery) {
+  openModal({
+    title: `Edit PIC ${delivery.id}`,
+    description: 'PIC dan data pengiriman dapat diubah sebelum barang dikirim.',
+    submitLabel: 'Simpan',
+    body: `
+      ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(delivery.pic)}" required />`)}
+      ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${esc(delivery.date)}" />`)}
+      ${field('Pengemudi', `<input class="input" name="driver" value="${esc(delivery.driver)}" />`)}
+      ${field('Kendaraan', `<input class="input" name="vehicle" value="${esc(delivery.vehicle)}" />`)}
+      ${field('Alamat kirim', `<input class="input" name="address" value="${esc(delivery.address)}" />`, { full: true })}
+      ${field('Catatan', `<input class="input" name="notes" value="${esc(delivery.notes)}" />`, { full: true })}
+    `,
+    onSubmit(form, close) {
+      ctx.store.update((db) => updateDelivery(db, {
+        id: delivery.id,
+        pic: form.pic.value,
+        date: form.date.value,
+        driver: form.driver.value,
+        vehicle: form.vehicle.value,
+        address: form.address.value,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast('Data surat jalan diperbarui.', { tone: 'success' });
+    },
+  });
+}
+
+function openConfirmDelivery(ctx, delivery) {
+  openModal({
+    title: `Konfirmasi terima ${delivery.id}`,
+    description: 'Konfirmasi penerimaan oleh PIC pelanggan. Tidak ada pergerakan stok baru.',
+    submitLabel: 'Konfirmasi diterima',
+    body: `
+      ${field('Nama PIC penerima', `<input class="input" name="receivedBy" placeholder="Nama penerima di lokasi" required />`)}
+      ${field('Catatan penerimaan', `<input class="input" name="note" placeholder="Jumlah sesuai, kondisi baik, dsb." />`, { full: true })}
+    `,
+    onSubmit(form, close) {
+      ctx.store.update((db) => confirmDelivery(db, {
+        id: delivery.id,
+        receivedBy: form.receivedBy.value,
+        note: form.note.value,
+        user: ctx.user,
+      }));
+      close();
+      toast('Penerimaan dikonfirmasi oleh PIC pelanggan.', { tone: 'success' });
+    },
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /* Mount                                                                      */
 /* -------------------------------------------------------------------------- */
@@ -542,6 +744,39 @@ export function mount(ctx) {
     on('return', () => openReturn(ctx, inv));
     on('apply-deposit', () => openApplyDeposit(ctx, inv));
     on('print', () => printDocument(`Faktur ${inv.id}`, printInvoiceHtml(ctx.db, inv)));
+    on('issue-tax', () => openIssueTax(ctx, inv));
+    on('print-tax', () => {
+      if (inv.taxInvoice) printDocument(`Faktur pajak ${inv.taxInvoice.number}`, printTaxInvoiceHtml(ctx.db, inv));
+    });
+    on('new-delivery', () => openCreateDelivery(ctx, inv));
+    on('print-delivery', () => {
+      const delivery = deliveryForInvoice(ctx.db, inv.id);
+      if (delivery) printDocument(`Surat jalan ${delivery.id}`, printDeliveryHtml(ctx.db, delivery));
+    });
+    on('edit-delivery', () => {
+      const delivery = deliveryForInvoice(ctx.db, inv.id);
+      if (delivery) openEditDelivery(ctx, delivery);
+    });
+    on('dispatch-delivery', async () => {
+      const delivery = deliveryForInvoice(ctx.db, inv.id);
+      if (!delivery) return;
+      const ok = await confirmAction({ title: 'Kirim barang?', message: `Surat jalan ${delivery.id} akan ditandai dikirim. Stok tidak berubah lagi.`, confirmLabel: 'Kirim' });
+      if (!ok) return;
+      ctx.store.update((db) => dispatchDelivery(db, { id: delivery.id, user: ctx.user }));
+      toast('Surat jalan ditandai dikirim.', { tone: 'success' });
+    });
+    on('deliver-delivery', async () => {
+      const delivery = deliveryForInvoice(ctx.db, inv.id);
+      if (!delivery) return;
+      const ok = await confirmAction({ title: 'Tandai barang tiba?', message: 'Barang sudah sampai di alamat pelanggan; menunggu konfirmasi PIC penerima.', confirmLabel: 'Tandai tiba' });
+      if (!ok) return;
+      ctx.store.update((db) => markDelivered(db, { id: delivery.id, user: ctx.user }));
+      toast('Barang ditandai tiba.', { tone: 'success' });
+    });
+    on('confirm-delivery', () => {
+      const delivery = deliveryForInvoice(ctx.db, inv.id);
+      if (delivery) openConfirmDelivery(ctx, delivery);
+    });
     document.querySelectorAll('tr[data-href]').forEach((tr) => tr.addEventListener('click', () => {
       window.location.hash = tr.dataset.href.replace('#', '');
     }));

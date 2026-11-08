@@ -35,6 +35,7 @@ export function createCustomer(db, input, user) {
     id: nextId(db, 'customer', 'CUS', 4),
     name: input.name.trim(),
     company: input.company ?? '',
+    npwp: input.npwp ?? '',
     phone: input.phone ?? '',
     email: input.email ?? '',
     address: input.address ?? '',

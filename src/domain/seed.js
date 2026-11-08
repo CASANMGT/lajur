@@ -21,6 +21,7 @@ import { createShipment, updateShipmentStatus } from './shipments.js';
 import { completeTask, createTask, startTask } from './tasks.js';
 import { confirmOrder, createSalesOrder } from './orders.js';
 import { createProductionOrder, cutOrder, qcPiece, releaseOrder, sewPiece } from './production.js';
+import { confirmDelivery, createDelivery, dispatchDelivery, markDelivered } from './deliveries.js';
 
 export const USERS = {
   operator: { id: 'u-op', name: 'Rani Pratama', role: 'operator' },
@@ -73,7 +74,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 8,
+      version: 9,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -106,6 +107,7 @@ function skeleton(dataset) {
     shipments: [],
     tasks: [],
     orders: [],
+    deliveries: [],
     productionOrders: [],
     productionPieces: [],
     payrollEntries: [],
@@ -211,9 +213,9 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.fxRate = db.fxRates.length;
 
   /* ------------------------------------------------------------- customers */
-  const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);
+  const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', npwp: '01.234.567.8-901.000', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);
   const c2 = createCustomer(db, { name: 'Sari Wijaya', company: 'Rumah pribadi', phone: '0813-2000-3002', email: 'sari.wijaya@mail.id', address: 'Jl. Kemang Selatan 8', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Jadwalkan survei ukur', followUpDate: '2026-11-08', notes: 'Preferensi warna netral.' }, sales);
-  const c3 = createCustomer(db, { name: 'Graha Nusantara', company: 'PT Graha Nusantara', phone: '021-3000-4003', email: 'facility@grahanusantara.co.id', address: 'Jl. Gatot Subroto 55', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Kirim sample Aria-02', followUpDate: '2026-11-12' }, sales);
+  const c3 = createCustomer(db, { name: 'Graha Nusantara', company: 'PT Graha Nusantara', npwp: '02.345.678.9-012.000', phone: '021-3000-4003', email: 'facility@grahanusantara.co.id', address: 'Jl. Gatot Subroto 55', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Kirim sample Aria-02', followUpDate: '2026-11-12' }, sales);
   const c4 = createCustomer(db, { name: 'Klinik Sehat Bersama', company: 'Yayasan Sehat Bersama', phone: '0821-4000-5004', email: 'admin@sehatbersama.id', address: 'Jl. Raya Bogor 77', city: 'Depok', stage: 'sample', nextAction: 'Tunggu keputusan sample Nova', followUpDate: '2026-11-14' }, sales);
   const c5 = createCustomer(db, { name: 'Butik Melati', company: 'Butik Melati', phone: '0857-5000-6005', email: 'hello@butikmelati.id', address: 'Jl. Braga 20', city: 'Bandung', stage: 'dormant', nextAction: 'Reaktivasi Q1 2027', followUpDate: '2027-01-15', notes: 'Terakhir beli Februari 2026.' }, sales);
 
@@ -326,6 +328,18 @@ export function buildSeed({ dataset = 'main' } = {}) {
     notes: 'Pilot lantai 5.',
   });
   postInvoice(db, { id: invGraha.id, user: sales });
+  const deliveryGraha = createDelivery(db, {
+    invoiceId: invGraha.id,
+    pic: 'Rani Pratama',
+    date: '2026-10-06',
+    driver: 'Asep',
+    vehicle: 'B 1234 CD',
+    notes: 'Antar ke lobi gedung, hubungi PIC fasilitas.',
+    user: op,
+  });
+  dispatchDelivery(db, { id: deliveryGraha.id, user: op, note: 'Berangkat dari Gudang Jakarta.' });
+  markDelivered(db, { id: deliveryGraha.id, user: op, note: 'Diterima satpam gedung.' });
+  confirmDelivery(db, { id: deliveryGraha.id, receivedBy: 'Budi Santoso', note: '6 roll sesuai, kondisi baik.', user: op });
 
   const invRumah = createInvoice(db, {
     customerId: c2.id,

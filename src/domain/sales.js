@@ -38,6 +38,42 @@ export function requireInvoice(db, id) {
   return inv;
 }
 
+export const PPN_RATE = 0.11;
+
+export function taxBreakdown(invoice, ratePercent = 11) {
+  const rate = Math.min(Math.max(Number(ratePercent) || 0, 0), 100) / 100;
+  const total = money(invoice.total);
+  const dpp = rate > 0 ? money(total / (1 + rate)) : total;
+  const ppn = total - dpp;
+  return { ratePercent: rate * 100, dpp, ppn, total };
+}
+
+export function issueTaxInvoice(db, { id, number = '', npwp = '', ratePercent = 11, user }) {
+  const inv = requireInvoice(db, id);
+  assert(inv.status === 'posted', 'INVALID_STATUS', 'Faktur pajak hanya untuk faktur yang sudah terbit.');
+  assert(!inv.taxInvoice, 'TAX_INVOICE_EXISTS', 'Faktur pajak untuk faktur ini sudah diterbitkan.');
+  const customer = byId(db.customers, inv.customerId);
+  const breakdown = taxBreakdown(inv, ratePercent);
+  const tax = {
+    number: String(number ?? '').trim() || `FP-${inv.id.replace('INV-', '')}/${inv.date.slice(0, 4)}`,
+    npwp: String(npwp ?? '').trim() || customer?.npwp || '',
+    customerName: inv.customerName,
+    invoiceId: inv.id,
+    date: inv.date,
+    ratePercent: breakdown.ratePercent,
+    dpp: breakdown.dpp,
+    ppn: breakdown.ppn,
+    total: breakdown.total,
+    issuedAt: isoNow(),
+    issuedBy: user?.name ?? 'Sistem',
+  };
+  inv.taxInvoice = tax;
+  audit(db, user, 'terbit_faktur_pajak', 'invoice', inv.id, `${tax.number} · PPN ${fmtTax(tax.ppn)}`);
+  return tax;
+}
+
+const fmtTax = (value) => `Rp ${Number(value).toLocaleString('id-ID')}`;
+
 export function invoicePaid(invoice) {
   return invoice.payments?.reduce((acc, p) => acc + p.amount, 0) ?? 0;
 }
@@ -138,7 +174,10 @@ function buildServiceLine(db, input) {
   };
 }
 
-export function createInvoice(db, { customerId, projectId = null, lines, discount = 0, date = todayJakarta(), dueDays = 14, notes = '', user, salespersonId = null, reservationRef = null }) {
+export function createInvoice(db, {
+  customerId, projectId = null, lines, discount = 0, discountType = 'amount', discountValue = null,
+  date = todayJakarta(), dueDays = 14, notes = '', user, salespersonId = null, reservationRef = null,
+}) {
   const customer = byId(db.customers, customerId);
   assert(customer, 'CUSTOMER_NOT_FOUND', 'Pelanggan tidak ditemukan.');
   assert(Array.isArray(lines) && lines.length > 0, 'EMPTY_LINES', 'Faktur harus memiliki minimal satu baris.');
@@ -148,7 +187,12 @@ export function createInvoice(db, { customerId, projectId = null, lines, discoun
     return buildFabricLine(db, l, reservationRef);
   });
   const subtotal = built.reduce((acc, l) => acc + l.amount, 0);
-  const disc = Math.min(money(discount), subtotal);
+  const type = discountType === 'percent' ? 'percent' : 'amount';
+  const inputValue = Math.max(0, Number(discountValue ?? discount) || 0);
+  const normalized = type === 'percent' ? Math.min(inputValue, 100) : inputValue;
+  const disc = type === 'percent'
+    ? Math.min(money((subtotal * normalized) / 100), subtotal)
+    : Math.min(money(normalized), subtotal);
   const invoice = {
     id: nextId(db, 'invoice', 'INV', 4),
     customerId,
@@ -160,6 +204,8 @@ export function createInvoice(db, { customerId, projectId = null, lines, discoun
     lines: built,
     subtotal,
     discount: disc,
+    discountType: type,
+    discountValue: type === 'percent' ? normalized : disc,
     total: subtotal - disc,
     depositApplied: 0,
     credited: 0,
@@ -170,6 +216,8 @@ export function createInvoice(db, { customerId, projectId = null, lines, discoun
     createdBy: user?.id ?? 'system',
     postedAt: null,
     postedBy: null,
+    taxInvoice: null,
+    deliveryId: null,
   };
   db.invoices.unshift(invoice);
   audit(db, user, 'buat_faktur_draf', 'invoice', invoice.id, `total ${invoice.total}`);

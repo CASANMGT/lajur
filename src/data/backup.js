@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 8;
+export const BACKUP_VERSION = 9;
 
 export function exportBackup(db) {
   return {
@@ -26,7 +26,7 @@ const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
   'movements', 'customers', 'suppliers', 'supplierPrices', 'projects', 'invoices', 'payments',
   'samples', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
-  'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences', 'fxRates',
+  'shipments', 'tasks', 'orders', 'deliveries', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences', 'fxRates',
 ];
 
 export function validateBackup(payload) {
@@ -42,7 +42,7 @@ export function validateBackup(payload) {
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
       if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
-      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates'].includes(key)) continue;
+      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries'].includes(key)) continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }
@@ -157,6 +157,12 @@ export function validateBackup(payload) {
       if (line.partId) need(parts, line.partId, 'Part', `Pesanan ${order.id}`);
     }
     if (order.invoiceId) need(invoiceIds, order.invoiceId, 'Faktur', `Pesanan ${order.id}`);
+  }
+  for (const delivery of db.deliveries ?? []) {
+    need(invoiceIds, delivery.invoiceId, 'Faktur', `Surat jalan ${delivery.id}`);
+    need(customers, delivery.customerId, 'Pelanggan', `Surat jalan ${delivery.id}`);
+    if (!delivery.pic) errors.push(`Surat jalan ${delivery.id}: PIC pengiriman hilang.`);
+    if (delivery.status === 'confirmed' && !delivery.receivedBy) errors.push(`Surat jalan ${delivery.id}: penerima belum dikonfirmasi.`);
   }
   for (const wo of db.productionOrders ?? []) {
     need(warehouses, wo.warehouseId, 'Gudang', `Produksi ${wo.id}`);

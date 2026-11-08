@@ -2,6 +2,46 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.7.0] — 2026-11-08
+
+**Release name: Faktur & Pengiriman.** Adds invoice discounts, printable faktur pajak, post-invoice surat jalan with PIC and receiver confirmation, and role QA fixes.
+
+### Added
+
+- **Invoice discount:** fixed rupiah or percentage of subtotal, shown before posting and snapshotted on the invoice; label in detail and print.
+- **Faktur pajak:** issue once for a posted invoice; DPP + PPN 11% calculated from the invoice total, NPWP/number stored, printable tax invoice; no manual price fields.
+- **Surat jalan:** created from a posted invoice with PIC pengiriman, driver, vehicle, address; status draft → dispatched → delivered → confirmed; receiver name/note; printable surat jalan; stock never moves again.
+- Customer NPWP field, prefilled into the tax invoice.
+- Invoice detail delivery card and list/mobile delivery status; new `deliveries` collection.
+- Invoice line prices prefill from master data for both fabric and spare parts (blank part price fixed).
+- Role QA matrix across manager, sales and operator.
+
+### Changed
+
+- Invoice totals use a semantic `<dl>` (Lighthouse `dlitem` fixed).
+- Version bumped to 2.7.0, schema 9, backup v9; migration adds `deliveries` and invoice tax/delivery fields.
+- README/PRD/design system updated for invoice documents, tax invoice and surat jalan.
+
+### Verification
+
+- `node --test`: **55 passed** (29 invariants + 4 operations + 8 admin + 5 orders/pricing + 3 invoice/delivery + 4 production + 2 auth).
+- Module imports 42/42; render 24/24; browser route sweep 21 default / 24 with optional modules.
+- Invoice: part price 85.000 auto-filled; 4 × 85.000 with 10% discount → Rp 306.000.
+- Faktur pajak: DPP 275.676 + PPN 30.324 = 306.000; duplicate issue rejected; print includes DPP/PPN.
+- Surat jalan: seed SJ-0001 (PIC Rani) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; part stock unchanged (22 → 22 in QA).
+- Role QA: manager full; sales invoice/tax/delivery yes, purchasing/master/settings redirect; operator receiving/stock yes, invoice/prices redirect/absent.
+- Mobile 320/390/768: invoice detail overflow 0; tax/delivery cards visible.
+- Lighthouse accessibility 100 on invoice detail, invoice list and customer detail.
+
+### Known limitations
+
+- Faktur pajak is a demo, not an e-faktur integration; PPN is fixed at 11% and tax-inclusive.
+- One surat jalan per invoice; delivery changes are status-only.
+- Images remain local SVG/data URLs; object storage planned.
+- Reference server is still not wired to the static UI.
+
+---
+
 ## [2.6.0] — 2026-11-08
 
 **Release name: Gudang Ringkas.** Parts get a category parent/child hierarchy in stock, all product/part thumbnails open a full-size preview, and WIP Production + Pesanan become optional modules hidden by default.
@@ -39,7 +79,7 @@ All notable changes to Lajur. Dates use Asia/Jakarta.
 
 ### Verification
 
-- `node --test`: **52 passed** (30 invariants + 4 operations + 8 admin + 5 orders/pricing + 4 production + 2 auth).
+- `node --test`: **52 passed** (29 invariants + 4 operations + 8 admin + 5 orders/pricing + 4 production + 2 auth).
 - Module imports 41/41; render 24/24; browser route sweep 21 default routes and 24/24 with WIP + Pesanan enabled, zero console errors.
 - Part hierarchy: Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m at Jakarta.
 - Image preview: 320/390 preview 279 px / 345 px wide, 0 page overflow; manager and operator.

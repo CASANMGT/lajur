@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.6 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.7 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -27,7 +27,7 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Supplier invoices, partial payments, returns | Done | Payables, supplier return |
 | Customer profiles, contacts, stage, next action | Done | Pelanggan |
 | Customer projects/samples/purchases/deposits | Done | Customer profile |
-| Quotes / orders / invoices | **Partial** | Sales order with detail/edit/print + invoice; formal quote document still planned |
+| Quotes / orders / invoices | **Partial** | Sales order + invoice + discount + faktur pajak + surat jalan; formal quote document still planned |
 | Samples free / paid / refundable deposit | Done | Sample & Deposit page |
 | Sample cuts reduce the source roll | Done | `createSample` → `splitRoll` |
 | Sample-to-purchase linking and conversion | Done | Link invoice, sample report |
@@ -62,6 +62,9 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Part parent/child per category in stock** | **Done in v2.6** | Category cards; Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m |
 | **Image preview for both roles** | **Done in v2.6** | Click/tap thumbnails in Master Data and Gudang; full-size modal |
 | **WIP + Pesanan optional** | **Done in v2.6** | Off by default; Settings toggles; menu/routes/report tabs gated |
+| **Invoice discount fixed/percent** | **Done in v2.7** | Snapshot on invoice; shown in detail and print |
+| **Faktur pajak** | **Done in v2.7** | DPP/PPN 11% from total; NPWP, number, print; no manual price |
+| **Surat jalan / PIC / confirmation** | **Done in v2.7** | Draft → dispatched → delivered → confirmed; no second stock move |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |
