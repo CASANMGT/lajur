@@ -5,7 +5,7 @@ import { ROLE_HOME, ensureAccounts, sessionUser } from '../data/auth.js';
 import { dashboardMetrics } from '../domain/reports.js';
 import { invoiceOutstanding } from '../domain/sales.js';
 import { renderShell, mountShell, ROUTE_META, canAccess } from './shell.js';
-import { icon, toast, closeModal } from './dom.js';
+import { icon, toast, closeModal, openImagePreview } from './dom.js';
 import * as login from './views/login.js';
 import * as dashboard from './views/dashboard.js';
 import * as inventory from './views/inventory.js';
@@ -124,6 +124,13 @@ export function renderApp() {
       return;
     }
   }
+  if (route.name === 'produksi' && store.db.settings?.productionEnabled === false) {
+    const home = ROLE_HOME[user.role] ?? '#/ringkasan';
+    if (window.location.hash !== home) {
+      window.location.hash = home;
+      return;
+    }
+  }
   const activeWh = store.db.warehouses.filter((w) => w.active !== false);
   if (store.ui.warehouseId !== 'all' && !activeWh.some((w) => w.id === store.ui.warehouseId)) {
     store.setUi({ warehouseId: activeWh[0]?.id ?? 'all' }, { rerender: false });
@@ -171,6 +178,25 @@ export async function start() {
     renderApp();
     document.getElementById('main')?.focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: 'auto' });
+  });
+  document.addEventListener('click', (e) => {
+    const zoom = e.target.closest?.('[data-zoom]');
+    if (!zoom) return;
+    e.preventDefault();
+    openImagePreview({
+      src: zoom.dataset.zoom,
+      alt: zoom.getAttribute('alt') || '',
+      title: zoom.dataset.zoomTitle || 'Pratinjau gambar',
+    });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!['Enter', ' '].includes(e.key) || !e.target.matches?.('[data-zoom]')) return;
+    e.preventDefault();
+    openImagePreview({
+      src: e.target.dataset.zoom,
+      alt: e.target.getAttribute('alt') || '',
+      title: e.target.dataset.zoomTitle || 'Pratinjau gambar',
+    });
   });
   window.setInterval(() => {
     if (!sessionUser(store.db.users) && !document.querySelector('.auth-screen')) renderApp();

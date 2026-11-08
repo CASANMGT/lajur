@@ -10,6 +10,7 @@ import {
 import { receivablesAging } from '../../domain/sales.js';
 import { payablesAging } from '../../domain/purchasing.js';
 import { capacityLoad, orderStats, productionStats } from '../../domain/production.js';
+import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, barChart, warehouseOf, movementRow } from './common.js';
 
 let tab = 'persediaan';
@@ -28,6 +29,13 @@ export function render(ctx) {
   const value = inventoryValue(db);
   const ar = receivablesAging(db);
   const ap = payablesAging(db);
+  const prefs = settingsOf(db);
+  const tabs = [
+    ['persediaan', 'Persediaan'], ['penjualan', 'Penjualan'],
+    ...(prefs.productionEnabled ? [['produksi', 'Produksi & payroll']] : []),
+    ['keuangan', 'Keuangan'], ['kontrol', 'Kontrol & audit'],
+  ];
+  if (!tabs.some(([k]) => k === tab)) tab = 'persediaan';
 
   return `
     ${pageHead({
@@ -39,12 +47,12 @@ export function render(ctx) {
     <div class="notice notice-info" style="margin-bottom:14px">${icon('alert')}<div><strong>Laporan keuangan bersifat perusahaan.</strong> Laba per gudang memerlukan kebijakan atribusi eksplisit; transfer internal tidak pernah menghasilkan laba. Angka di sini adalah ringkasan manajemen, bukan laporan pajak/akuntansi lengkap.</div></div>
 
     <div class="tabs" role="tablist">
-      ${[['persediaan', 'Persediaan'], ['penjualan', 'Penjualan'], ['produksi', 'Produksi & payroll'], ['keuangan', 'Keuangan'], ['kontrol', 'Kontrol & audit']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${tabs.map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
 
     ${tab === 'persediaan' ? renderStock(ctx, value) : ''}
     ${tab === 'penjualan' ? renderSales(ctx, sales) : ''}
-    ${tab === 'produksi' ? renderProduction(ctx) : ''}
+    ${tab === 'produksi' && prefs.productionEnabled ? renderProduction(ctx) : ''}
     ${tab === 'keuangan' ? renderFinance(ctx, ar, ap) : ''}
     ${tab === 'kontrol' ? renderControl(ctx) : ''}`;
 }
@@ -156,7 +164,7 @@ function renderSales(ctx, sales) {
       </table></div>
     </section>
 
-    <div class="section-title"><h2>Pesanan penjualan</h2><span class="small muted">${db.orders.length} pesanan</span></div>
+    ${settingsOf(db).salesOrderEnabled ? `<div class="section-title"><h2>Pesanan penjualan</h2><span class="small muted">${db.orders.length} pesanan</span></div>
     <section class="card">
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Pesanan</th><th>Pelanggan</th><th>Status</th><th class="num">Total</th><th>Faktur</th></tr></thead>
@@ -167,7 +175,7 @@ function renderSales(ctx, sales) {
           <td>${o.invoiceId ? `<a class="mono xs" href="#/penjualan/${o.invoiceId}">${esc(o.invoiceId)}</a>` : '—'}</td>
         </tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada pesanan.</td></tr>'}</tbody>
       </table></div>
-    </section>
+    </section>` : ''}
 
     <div class="section-title"><h2>Proyek & kekurangan</h2><a class="small" href="#/proyek">Buka proyek</a></div>
     <section class="card">

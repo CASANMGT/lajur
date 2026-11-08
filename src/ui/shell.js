@@ -88,12 +88,16 @@ export function countsFor(db) {
 
 export function renderShell(ctx, contentHtml) {
   const { db, ui, role, dataset, simulation } = ctx;
+  const prefs = settingsOf(db);
   const counts = countsFor(db);
   const activeWh = ui.warehouseId === 'all' ? null : byId(db.warehouses, ui.warehouseId);
   const navHtml = NAV.map((group) => `
     <nav class="nav-group" aria-label="${esc(group.group)}">
       <span class="nav-label">${esc(group.group)}</span>
-      ${group.items.filter((item) => canAccess(role, item.id)).filter((item) => item.id !== 'pesanan' || settingsOf(db).salesOrderEnabled !== false).map((item) => {
+      ${group.items.filter((item) => canAccess(role, item.id))
+        .filter((item) => item.id !== 'pesanan' || prefs.salesOrderEnabled)
+        .filter((item) => item.id !== 'produksi' || prefs.productionEnabled)
+        .map((item) => {
         const active = ctx.route.name === item.id;
         const count = item.id === 'transfer' ? counts.transfer : item.id === 'opname' ? counts.opname : 0;
         return `<a class="nav-link" href="#/${item.id}" ${active ? 'aria-current="page"' : ''}>

@@ -278,6 +278,44 @@ export function openModal({
   return { form, close, modal };
 }
 
+/**
+ * Full-screen image preview. Opens in the shared modal root without a form so
+ * closing cannot submit anything and no unsaved form data is discarded.
+ */
+export function openImagePreview({ src, alt = '', title = 'Pratinjau gambar' } = {}) {
+  const root = document.getElementById('modal-root');
+  if (!root || !src) return;
+  closeModal();
+  lastFocus = document.activeElement;
+  root.innerHTML = `
+    <div class="modal-wrap" data-modal-wrap>
+      <div class="modal image-modal" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+        <div class="modal-head">
+          <div style="flex:1"><h2>${esc(title)}</h2></div>
+          <button type="button" class="icon-btn" data-modal-close aria-label="Tutup">${icon('x')}</button>
+        </div>
+        <div class="modal-body image-body">
+          <img src="${esc(src)}" alt="${esc(alt || title)}" class="image-preview" />
+        </div>
+      </div>
+    </div>`;
+  document.body.style.overflow = 'hidden';
+  const wrap = root.querySelector('[data-modal-wrap]');
+  const close = () => closeModal();
+  activeModal = { close };
+  root.querySelectorAll('[data-modal-close]').forEach((btn) => btn.addEventListener('click', close));
+  wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(); });
+  const onKey = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      close();
+    }
+  };
+  document.addEventListener('keydown', onKey);
+  activeKeyHandler = onKey;
+  root.querySelector('[data-modal-close]')?.focus();
+}
+
 export function promptText({ title = 'Masukkan data', label = 'Nilai', value = '', hint = '', placeholder = '', required = true, submitLabel = 'Simpan', tone = 'primary' }) {
   return new Promise((resolve) => {
     let result = null;

@@ -1,9 +1,9 @@
-# PRD — Lajur v2.5
+# PRD — Lajur v2.6
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.5.0 (schema 7)
+**Version:** 2.6.0 (schema 8)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.5: **operator** can reach summary, tasks, production WIP, stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders, projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.6: **operator** can reach summary, tasks, production WIP (when enabled), stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders (when enabled), projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -130,7 +130,10 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Foreign buying | Explicit IDR/CNY, latest CNY→IDR rate shown and **snapshotted on the PO** with timestamp/source; IDR HPP, bill and payment |
 | Production WIP | Per-piece order: cutting → sewing → QC, reject/rework, piece-rate payroll, work-centre capacity, source roll/lot trace |
 | Reporting | Stock, sales/margin, production WIP/payroll/capacity, orders, AR/AP, deposits, returns, samples, slow-moving |
-| Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products with brand/image/notes; parts with brand/image/notes; suppliers local/import |
+| Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products with brand/image/notes; parts with brand/image/notes and optional parent part in the same category; suppliers local/import |
+| Part hierarchy in stock | Parts grouped by category, with parent/child rows when `parentPartId` is set; stocked children remain visible when the parent has no stock in the selected warehouse |
+| Image preview | Click/tap any product or part thumbnail to open a full-size preview; available to manager, sales and operator |
+| Optional modules | WIP Production and Pesanan are hidden by default; manager enables them in Settings. Menu, dashboard links, report tabs and direct routes follow the flag |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
 | Purchasing | Suppliers, price list, PO, approval, partial receiving with per-roll lengths and lots, duplicate receipt block, over-receipt block, auto supplier bill (demo simplification), payables, supplier returns |
 | Sales | Multi-line invoice, fabric + parts + service lines, draft → post, snapshot description/price/cost, payments, deposit application, customer returns with credit and quarantine, print |
@@ -170,7 +173,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `warehouse` | id, code, name, bin prefix, address, phone, **active** |
 | `collection` | id, name, category, description |
 | `sku` (colour variant) | id, collectionId, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, brand/notes/image optional, active/dormant |
-| `part` | id, SKU, name, category, brand, unit `pcs`, buy/sell price, image/notes optional, active |
+| `part` | id, SKU, name, category, brand, unit `pcs`, buy/sell price, image/notes optional, parentPartId optional (same category), active |
 | `roll` | id, skuId, lot, receivedAt, receiptRef, originalMm, currentMm, reservedMm, warehouseId, bin, status, condition, costPerM, parentRollId, rootRollId, transit, reservations[] |
 | `movement` | id, at, type, ref, warehouse from/to, sku/part/roll, qty, before/after, unit cost, value, user, role, note |
 | `transfer` | id, from/to warehouse, neededBy, reason, projectId, status, lines[] |
@@ -191,7 +194,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `production piece` | id, orderId, lineId, roll/lot, qtyMm, stage cutting/sewing/done/rejected, worker, QC note, operations[] |
 | `payroll entry` | id, orderId, pieceId, stage, worker, rate, amount, date, paid |
 | `work centre` | stage, name, capacityPerDay, ratePerPiece |
-| `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, salesOrderEnabled, operatorCanSeeCosts, sampleDepositRequired |
+| `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
 | `return` | id, type customer/supplier, source invoice/receipt, lines, credit, status |
@@ -337,7 +340,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 5. Capacity shows active pieces per stage versus daily capacity and estimated days. It is an estimate, not a machine calendar.
 6. Production never creates a sales invoice; invoicing remains a separate event. Cancellation before cutting releases the reservation; after cutting it requires a scrap workflow (planned).
 
-### 6.11 Roll hierarchy, order documents and supplier pricing
+### 6.11 Roll/part hierarchy, order documents and supplier pricing
 
 1. **Roll hierarchy:** each roll has at most one parent. A split creates a child with `parentRollId` and the original `rootRollId`; the parent and child lengths conserve the original. Stock exposes a toggle between the flat roll list and a collection → colour/SKU → root → child tree.
 2. **Sales order visibility:** the list shows the creator; the detail shows customer, project, creator, dates, history, every line with quantity/price/amount and the reservation. A confirmed or converted order is read-only except for printing.
@@ -345,6 +348,9 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 4. **Sales order document:** printing produces “Pesanan Penjualan” with creator, lines, roll/lot, prices, total and signature space. It is not a tax invoice.
 5. **Supplier price book:** each SKU/part can have quotes from multiple suppliers. The latest valid quote on the PO date is the default PO price; saving a newer quote refreshes the master IDR buy price.
 6. **Import rate:** when buying in CNY, the PO shows the latest rate before saving. The consumed rate, its timestamp and source are stored on the PO; a different entered rate becomes the new latest rate.
+7. **Part hierarchy:** a part can point at one parent part in the same category. Stock groups parts by category and renders parents first with indented children; a stocked child whose parent has no stock in the selected warehouse is shown as a root so stock never disappears.
+8. **Image preview:** product and part thumbnails are buttons. Activating one opens the full image in a modal; Escape, the close button or the backdrop returns to the previous screen. This works for every role that can see the image.
+9. **Optional modules:** WIP Production and Pesanan are disabled by default. The manager can enable either in Settings; all entry points and direct routes are gated by the same flags.
 
 ---
 
@@ -402,6 +408,9 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-48 | A printable sales order is a commercial order document, not a tax invoice; stock still moves only when the order is converted and the invoice is posted. |
 | BR-49 | Supplier price records are the source of truth for PO defaults: the latest price valid on the PO date is used, and saving a newer quote refreshes the master buy price in IDR. |
 | BR-50 | Every import PO stores the CNY→IDR rate, timestamp and source used at buying time; a rate different from the latest known rate is appended to the FX history. |
+| BR-51 | A spare part may have one parent part only within the same category; cycles are rejected. Stock groups parts by category and renders parents before their children; a child with stock remains visible if its parent has no stock in the selected warehouse. |
+| BR-52 | Product and part thumbnails open a full-size preview for every role; closing returns focus to the thumbnail. |
+| BR-53 | WIP Production and Pesanan are optional modules, off by default. When off, their navigation entries, dashboard links, report tabs and direct routes are unavailable; enabling the setting restores all of them. |
 
 ---
 
@@ -409,7 +418,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.5 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.6 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -520,8 +529,11 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-54 | Printable sales order contains creator, lines, prices and “bukan faktur” note | Pass |
 | AC-55 | Product/part master lists suppliers and latest price; a new quote updates buy price | Pass |
 | AC-56 | PO defaults to latest supplier price; CNY PO stores latest rate, timestamp and source | Pass |
+| AC-57 | Part parent must share category, cycles are rejected, and stock shows parent/child rows by category | Pass |
+| AC-58 | Product/part thumbnail opens a full-size preview for manager, sales and operator | Pass |
+| AC-59 | Fresh seed hides WIP + Pesanan; enabling/disabling the setting updates menu, routes, dashboard and report tabs | Pass |
 
-Test evidence: `node --test` → 51/51 passing; browser route sweep → 24/24 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 52/52 passing; browser route sweep → 21 default routes and 24/24 with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, sales-order detail, master, settings and simulation. Part hierarchy and image preview verified at 320/390 for manager and operator.
 
 ---
 
@@ -564,7 +576,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, roll hierarchy, sales orders with edit/print, supplier price book, FX snapshots, WIP production, payroll, capacity | 51/51 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, roll hierarchy, part hierarchy, image preview, optional WIP/Pesanan, sales orders with edit/print, supplier price book, FX snapshots, production, payroll, capacity | 52/52 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

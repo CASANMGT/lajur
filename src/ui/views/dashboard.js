@@ -9,6 +9,7 @@ import { depositBalance } from '../../domain/crm.js';
 import { activeSessions } from '../../domain/opname.js';
 import { cuttingQueue, isOverdue, taskList, taskStats, TASK_TYPE } from '../../domain/tasks.js';
 import { productionStats } from '../../domain/production.js';
+import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, barChart, movementRow, warehouseOf } from './common.js';
 
 const ICON_BY_NAME = {
@@ -149,7 +150,7 @@ export function render(ctx) {
           <h2>Aksi cepat</h2>
           <a class="btn btn-primary btn-block" href="#/transfer?new=1">${icon('plus')} Buat permintaan gudang</a>
           <a class="btn btn-block" href="#/opname?new=1">${icon('clipboard')} Mulai stock opname</a>
-          <a class="btn btn-block" href="#/produksi">${icon('needle')} Produksi WIP</a>
+          ${settingsOf(db).productionEnabled ? `<a class="btn btn-block" href="#/produksi">${icon('needle')} Produksi WIP</a>` : ''}
           <a class="btn btn-block" href="#/stok">${icon('search')} Cari roll / lot</a>
           <a class="btn btn-block" href="#/pembelian">${icon('truck')} Terima barang pemasok</a>
           <p class="xs muted" style="margin-top:4px">Peran demo membatasi tombol; otorisasi produksi harus dicek di server.</p>
@@ -265,7 +266,7 @@ export function render(ctx) {
             <div><div class="xs muted">Potong kain</div><div class="strong num">${ops.cutting}</div></div>
           </div>
           <hr class="divider" />
-          <div class="row" style="margin-bottom:8px"><a class="small strong" href="#/produksi">Produksi WIP: ${prod.wipPieces} piece · ${fmt.money(prod.payrollOpen)} payroll</a></div>
+          ${settingsOf(db).productionEnabled ? `<div class="row" style="margin-bottom:8px"><a class="small strong" href="#/produksi">Produksi WIP: ${prod.wipPieces} piece · ${fmt.money(prod.payrollOpen)} payroll</a></div>` : ''}
           ${cutting.length ? `<div class="stack-sm">${cutting.map((c) => `<div class="row-between">
             <div><strong class="small">${esc(c.task.title)}</strong><div class="xs muted">${esc(c.roll?.id ?? '')} · ${fmt.m(c.task.qtyMm ?? 0)} · ${esc(c.assignee?.name ?? 'Belum ditugaskan')}</div></div>
             ${isOverdue(c.task) ? badge('Lewat', 'danger') : badge(c.task.dueDate, 'muted')}

@@ -2,6 +2,60 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.6.0] — 2026-11-08
+
+**Release name: Gudang Ringkas.** Parts get a category parent/child hierarchy in stock, all product/part thumbnails open a full-size preview, and WIP Production + Pesanan become optional modules hidden by default.
+
+### Added
+
+- **Part hierarchy in Gudang:**
+  - Spare parts are grouped by category with parent/child rows.
+  - `parentPartId` on parts; parent must be in the same category; cycles rejected.
+  - Seed examples: Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m.
+  - Jakarta stock added for Rel 4 m (6 pcs) and Motor (2 pcs) so the hierarchy is visible by default.
+- **Image preview:**
+  - Click/tap any product or part thumbnail in Master Data or Gudang.
+  - Full-size modal with close button, Escape and backdrop.
+  - Keyboard activation (Enter/Space); focus returns to the thumbnail.
+  - Works for manager, sales and operator.
+- **Optional modules:**
+  - WIP Production and Pesanan are off by default.
+  - Settings → Preferensi has separate toggles.
+  - Menu, dashboard shortcuts, report tabs and direct routes follow the flags.
+- Part edit form: optional parent part selector, with same-category and cycle validation.
+- Seed settings now ship with `salesOrderEnabled: false` and `productionEnabled: false`.
+
+### Changed
+
+- Version bumped to 2.6.0, schema 8, backup v8.
+- Migration from schema ≤7 turns both optional modules off once; managers can re-enable them in Settings.
+- Part stock view reuses the category grouping and shows thumbnails.
+- README/PRD/design system updated for the optional modules and image preview.
+
+### Fixed
+
+- A stocked child part no longer disappears when its parent has no stock in the selected warehouse.
+- Image preview does not close or submit any form.
+
+### Verification
+
+- `node --test`: **52 passed** (30 invariants + 4 operations + 8 admin + 5 orders/pricing + 4 production + 2 auth).
+- Module imports 41/41; render 24/24; browser route sweep 21 default routes and 24/24 with WIP + Pesanan enabled, zero console errors.
+- Part hierarchy: Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m at Jakarta.
+- Image preview: 320/390 preview 279 px / 345 px wide, 0 page overflow; manager and operator.
+- Optional modules: fresh seed hides WIP + Pesanan; enabling restores menu and direct routes; direct `#/produksi` redirects while off.
+- Lighthouse accessibility 100 on stock, master and settings.
+
+### Known limitations
+
+- Part hierarchy is display-level; a part has one parent, not a full bill of materials.
+- Images remain local SVG/data URLs; object storage is still planned.
+- Reference server is still not wired to the static UI.
+- Pesanan remains available as an optional module, not a replacement for invoice drafts.
+- Payroll is a piece-rate ledger, not HR/tax.
+
+---
+
 ## [2.5.0] — 2026-11-08
 
 **Release name: Hierarki & Pesanan.** Adds roll parent/child hierarchy per collection, sales-order detail/edit/print, a supplier price book, latest-price defaults on PO and a CNY→IDR rate snapshot on import POs.

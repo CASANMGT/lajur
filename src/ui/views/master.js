@@ -58,7 +58,7 @@ function renderProducts(ctx) {
     <div class="table-wrap"><table class="data">
       <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="hide-sm">Pemasok</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.skus.map((s) => `<tr>
-        <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
+        <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="Foto ${esc(s.code)}" class="thumb zoomable" data-zoom="${esc(s.image)}" data-zoom-title="Foto ${esc(s.code)}" role="button" tabindex="0" aria-label="Perbesar foto ${esc(s.code)}" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
         <td>${esc(s.collectionName)}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span><div class="xs mono">${s.swatch ? esc(s.swatch) : 'hex belum diset'}</div></span></div></td>
         <td class="hide-sm">${supplierNames(db, { skuId: s.id })}</td>
@@ -85,8 +85,8 @@ function renderParts(ctx) {
       <tbody>${db.parts.map((p) => {
         const qty = db.partStock.filter((s) => s.partId === p.id).reduce((a, s) => a + s.qty, 0);
         return `<tr>
-          <td><div class="cell-main">${p.image ? `<img src="${esc(p.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${icon('box')}</span>`}<div class="txt"><strong class="mono">${esc(p.sku)}</strong><span>${esc(p.brand || 'Tanpa brand')}</span></div></div></td>
-          <td>${esc(p.name)}<div class="xs muted">${esc(p.id)}</div></td>
+          <td><div class="cell-main">${p.image ? `<img src="${esc(p.image)}" alt="Foto ${esc(p.name)}" class="thumb zoomable" data-zoom="${esc(p.image)}" data-zoom-title="${esc(p.sku)} · ${esc(p.name)}" role="button" tabindex="0" aria-label="Perbesar foto ${esc(p.name)}" />` : `<span class="thumb thumb-empty">${icon('box')}</span>`}<div class="txt"><strong class="mono">${esc(p.sku)}</strong><span>${esc(p.brand || 'Tanpa brand')}</span></div></div></td>
+          <td>${esc(p.name)}<div class="xs muted">${esc(p.id)}${p.parentPartId ? ` · induk ${esc(byId(db.parts, p.parentPartId)?.sku ?? p.parentPartId)}` : ''}</div></td>
           <td class="hide-sm">${supplierNames(db, { partId: p.id })}</td>
           <td>${esc(byId(db.categories, p.categoryId)?.name ?? '—')}</td>
           <td class="num">${fmt.money(p.buyPrice)}${latestPriceNote(db, { partId: p.id })}</td>
@@ -315,6 +315,7 @@ function openPart(ctx, part = null) {
       ${field('Nama', `<input class="input" name="name" value="${esc(part?.name ?? '')}" required />`)}
       ${field('Brand', `<input class="input" name="brand" value="${esc(part?.brand ?? '')}" placeholder="Contoh: Somfy / lokal" />`)}
       ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${part?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
+      ${field('Part induk (opsional)', `<select class="select" name="parent"><option value="">— Tanpa induk —</option>${ctx.db.parts.filter((p) => p.id !== part?.id).map((p) => `<option value="${p.id}" ${part?.parentPartId === p.id ? 'selected' : ''}>${esc(p.sku)} · ${esc(p.name)} — ${esc(byId(ctx.db.categories, p.categoryId)?.name ?? '')}</option>`).join('')}</select>`, { hint: 'Child harus satu kategori dengan induk.' })}
       ${field('Harga beli / pcs', `<input class="input" name="buyPrice" inputmode="numeric" value="${part?.buyPrice ?? ''}" />`)}
       ${field('Harga jual / pcs', `<input class="input" name="sellPrice" inputmode="numeric" value="${part?.sellPrice ?? ''}" />`)}
       ${field('Status', `<select class="select" name="active"><option value="1" ${part?.active !== false ? 'selected' : ''}>Aktif</option><option value="0" ${part?.active === false ? 'selected' : ''}>Nonaktif</option></select>`)}
@@ -347,6 +348,7 @@ function openPart(ctx, part = null) {
         name: form.name.value,
         brand: form.brand.value,
         categoryId: form.category.value,
+        parentPartId: form.parent.value || null,
         buyPrice: Number(String(form.buyPrice.value).replace(/\D/g, '')) || 0,
         sellPrice: Number(String(form.sellPrice.value).replace(/\D/g, '')) || 0,
         active: form.active.value === '1',

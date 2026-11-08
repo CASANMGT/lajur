@@ -114,11 +114,29 @@ test('cancelled order cannot be converted', () => {
   );
 });
 
+test('part parent must share a category and cannot form a cycle', () => {
+  const db = buildSeed();
+  assert.equal(db.parts.find((p) => p.id === 'part-rel-4').parentPartId, 'part-rel-3');
+  assert.equal(db.parts.find((p) => p.id === 'part-bracket-set').parentPartId, 'part-bracket');
+
+  assert.throws(() => savePart(db, {
+    id: 'part-rel-4', sku: 'REL-400', name: 'Rel gorden 4 m', categoryId: 'cat-motor',
+    parentPartId: 'part-rel-3', user: MGR,
+  }), (err) => err.code === 'PARENT_CATEGORY');
+
+  assert.throws(() => savePart(db, {
+    id: 'part-rel-3', sku: 'REL-300', name: 'Rel gorden 3 m', categoryId: 'cat-part',
+    parentPartId: 'part-rel-4', user: MGR,
+  }), (err) => err.code === 'PARENT_CYCLE');
+});
+
 test('settings are merged, persisted and audited', () => {
   const db = buildSeed();
-  assert.equal(settingsOf(db).salesOrderEnabled, true);
-  saveSettings(db, { requireProofOnReceipt: true, taskDueDays: 3 }, MGR);
+  assert.equal(settingsOf(db).salesOrderEnabled, false);
+  assert.equal(settingsOf(db).productionEnabled, false);
+  saveSettings(db, { requireProofOnReceipt: true, taskDueDays: 3, salesOrderEnabled: true }, MGR);
   assert.equal(settingsOf(db).requireProofOnReceipt, true);
   assert.equal(settingsOf(db).taskDueDays, 3);
+  assert.equal(settingsOf(db).salesOrderEnabled, true);
   assert.ok(db.audit.some((a) => a.action === 'ubah_pengaturan'));
 });

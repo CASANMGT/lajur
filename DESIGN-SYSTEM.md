@@ -1,4 +1,4 @@
-# Design System — Lajur v2.5
+# Design System — Lajur v2.6
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -189,10 +189,10 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Settings:** tabs Akun saya / Pengguna & peran / Preferensi / Audit / Data. Managers only; other roles are redirected.
 - **User row:** name + stable ID, role badge, active state, PIN state, edit and reset-PIN actions. Reset PIN never reveals the old PIN.
 - **Preferences:** low-stock threshold, default task due days, proof-required toggle, sales-order toggle, operator cost visibility, sample-deposit requirement.
-- **Sales order:** status chips Draft / Dikonfirmasi / Menjadi faktur / Dibatalkan. The detail page shows creator, customer, project, line contents and prices. “Edit” is available on drafts only and warns that reservations are recalculated. “Fakturkan” is the primary action and warns that stock issues once. “Cetak pesanan” produces a sales-order document, never a tax invoice.
+- **Sales order:** optional module, hidden by default. When enabled: status chips Draft / Dikonfirmasi / Menjadi faktur / Dibatalkan. The detail page shows creator, customer, project, line contents and prices. “Edit” is available on drafts only and warns that reservations are recalculated. “Fakturkan” is the primary action and warns that stock issues once. “Cetak pesanan” produces a sales-order document, never a tax invoice.
 - **Product/part rows:** 34 px image thumbnail or neutral swatch; SKU/brand; status; edit. Product/part forms show optional image preview (≤250 KB) and an audit timeline.
 - **Supplier cards:** local (teal) vs import/CNY (copper), FX, incoterm, port; add/edit.
-- **Role visibility:** navigation is filtered by role, not merely button-disabled. Operator: summary, tasks, production, stock, requests, purchasing, opname, simulation. Sales: summary, tasks, stock (read-only), invoices, orders, projects, customers, samples, simulation.
+- **Role visibility:** navigation is filtered by role, not merely button-disabled. Operator: summary, tasks, production (when enabled), stock, requests, purchasing, opname, simulation. Sales: summary, tasks, stock (read-only), invoices, orders (when enabled), projects, customers, samples, simulation.
 
 ### 5.11 WIP production, imagery, mobile layering
 
@@ -205,14 +205,17 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Bottom nav:** four 52 px items; content bottom padding 104 px; safe-area padding; account opens the account sheet.
 - **Tables on phones:** production/payroll tables scroll inside `.table-wrap`; action buttons stay 44 px.
 
-### 5.12 Roll hierarchy, supplier price book, import FX
+### 5.12 Roll/part hierarchy, images, supplier price book, import FX
 
 - **Stock hierarchy toggle:** two chips — “Daftar roll” and “Hierarki koleksi”. The tree is grouped collection → colour/SKU → root roll → children. Deep levels are indented with a dashed left rule; child rows are not visually flattened into the parent.
 - **Tree row:** roll ID in mono, lot and warehouse/bin, physical / reserved / available metres, status badge. Each row links to the roll detail. Mobile row collapses to a wrapped two-line layout; the page must not scroll horizontally.
+- **Part hierarchy:** spare parts are grouped into category cards; parent parts are rows and children are indented with a muted “↳”. A child with stock remains visible if the parent has no stock in the selected warehouse. Show category totals in pcs, never mixed with metres.
 - **Roll detail:** show parent, root roll, direct children, total descendants and a breadcrumb-style path from root to current roll. Splitting must be legible as lineage, not as an average.
+- **Image preview:** thumbnails are 34 px in tables but are buttons. Click/tap opens a centred full image in a modal; it must not submit a form or close an editor with unsaved changes. Escape, close button and backdrop close it. Use `zoom-in` cursor and visible focus ring. Available to manager, sales and operator wherever the image appears.
 - **Supplier price book:** product/part lists show supplier names and the latest quote. “Harga” opens history + a new-quote form; the saved quote updates the IDR master buy price and is used as the PO default. Never hide the supplier behind a tooltip.
 - **PO price list:** before saving a PO, show the selected supplier's latest prices with currency, IDR equivalent, MOQ and validity. “Tambah” copies a price into a new line.
 - **Import FX:** when currency is CNY, show the latest CNY→IDR rate with timestamp and source. The input remains editable; the rate actually saved is displayed on the PO detail with its timestamp/source.
+- **Optional modules:** WIP Production and Pesanan are off by default. Settings shows two plain checkboxes; when off, no navigation item, dashboard shortcut or report tab may remain. Direct routes redirect to the role home. Copy should say “opsional”, not “coming soon”.
 - **Copy:** use “pesanan penjualan”, “bukan faktur”, “kurs terkunci”, “harga pemasok terbaru”. Never call a supplier quote a tax invoice or a payroll entry a bank transfer.
 
 ### 5.13 Empty, loading, error

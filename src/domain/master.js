@@ -217,7 +217,7 @@ export function saveSku(db, {
 
 export function savePart(db, {
   id = null, sku, name, categoryId, brand = '', unit = 'pcs', buyPrice = 0, sellPrice = 0,
-  active = true, image = '', notes = '', user,
+  active = true, image = '', notes = '', parentPartId = null, user,
 }) {
   const cleanSku = String(sku ?? '').trim().toUpperCase();
   const cleanName = String(name ?? '').trim();
@@ -225,6 +225,22 @@ export function savePart(db, {
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama part minimal 2 karakter.');
   assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
   assert(!db.parts.some((p) => p.id !== id && p.sku.toLowerCase() === cleanSku.toLowerCase()), 'DUPLICATE_SKU', `SKU ${cleanSku} sudah dipakai.`);
+
+  let parent = null;
+  if (parentPartId) {
+    parent = byId(db.parts, parentPartId);
+    assert(parent, 'PARENT_NOT_FOUND', 'Part induk tidak ditemukan.');
+    assert(parent.id !== id, 'INVALID_PARENT', 'Part tidak boleh menjadi induk dirinya sendiri.');
+    assert(parent.categoryId === categoryId, 'PARENT_CATEGORY', 'Part induk harus berada di kategori yang sama.');
+    const seen = new Set();
+    let cursor = parent;
+    while (cursor) {
+      assert(cursor.id !== id, 'PARENT_CYCLE', 'Relasi induk/turunan tidak boleh melingkar.');
+      if (seen.has(cursor.id)) break;
+      seen.add(cursor.id);
+      cursor = cursor.parentPartId ? byId(db.parts, cursor.parentPartId) : null;
+    }
+  }
 
   const patch = {
     sku: cleanSku,
@@ -237,6 +253,7 @@ export function savePart(db, {
     active,
     image: image || '',
     notes: String(notes ?? '').trim(),
+    parentPartId: parent?.id ?? null,
     updatedAt: isoNow(),
   };
 

@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.5 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.6 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -59,6 +59,9 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Sales order detail, editing and print** | **Done in v2.5** | Creator, contents, prices, draft edit with re-reservation, printable Pesanan Penjualan |
 | **Supplier price book** | **Done in v2.5** | Supplier(s), latest price/MOQ/validity per SKU/part; new quote updates master buy price |
 | **Latest CNY rate on import PO** | **Done in v2.5** | Rate, timestamp and source snapshotted; manual rate appended to FX history |
+| **Part parent/child per category in stock** | **Done in v2.6** | Category cards; Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m |
+| **Image preview for both roles** | **Done in v2.6** | Click/tap thumbnails in Master Data and Gudang; full-size modal |
+| **WIP + Pesanan optional** | **Done in v2.6** | Off by default; Settings toggles; menu/routes/report tabs gated |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |
@@ -88,6 +91,9 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Sample swatches and unset state | Done | Swatch never derived from code |
 | Flow: Pesan → Planning → Cutting → Jahit → QC → Transit → Selesai | **Partial** | Sales order → WIP → shipment done; machine planning/calendar partial |
 | Desktop workspace hierarchy tree (collection → colour → lot → roll → bin) | **Done in v2.5** | *Hierarki koleksi* toggle with root/child roll tree |
+| Spare-part hierarchy by category | **Done in v2.6** | Parent/child rows in Gudang; optional parent field in Master Data |
+| Image preview / enlarge | **Done in v2.6** | Full-size modal from any product/part thumbnail |
+| Optional WIP and Pesanan | **Done in v2.6** | Hidden by default; manager toggles in Settings |
 | Hero illustration / decorative waves | Not needed | Functional UI prioritised; brand mark used |
 | 320 / 390 / 768 / desktop | Done | Verified, 0 overflow |
 | Simulation badges | Done | Copper banner + badges |
@@ -98,8 +104,8 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Role | Default landing | Sees first | Cannot |
 |---|---|---|---|
 | Manajer | Ringkasan | exceptions, sales chart, task/cutting monitor, approvals, settings | — |
-| Operator | Ringkasan | task tiles, my tasks, warehouse KPIs, work queue, receiving/opname | invoices, orders, sales/CRM, reports, master/settings |
-| Sales / CS | Penjualan | receivables, follow-ups, samples/deposits, orders | purchasing, opname, master/settings, approvals |
+| Operator | Ringkasan | task tiles, my tasks, warehouse KPIs, work queue, receiving/opname, WIP when enabled | invoices, orders, sales/CRM, reports, master/settings |
+| Sales / CS | Penjualan | receivables, follow-ups, samples/deposits, orders when enabled | purchasing, opname, master/settings, approvals |
 
 ## 4. Highest-value remaining gaps
 

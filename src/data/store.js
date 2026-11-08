@@ -64,6 +64,7 @@ function persist(dataset = state.dataset) {
 /** Forward-compatible migration for datasets created before v2.1. */
 export function migrate(db) {
   if (!db || typeof db !== 'object') return db;
+  const previousVersion = Number(db.meta?.version) || 0;
   db.meta = db.meta ?? {};
   db.meta.version = SCHEMA_VERSION;
   db.warehouses = db.warehouses ?? [];
@@ -122,6 +123,16 @@ export function migrate(db) {
     if (bill.paidForeign === undefined) bill.paidForeign = bill.paid ?? 0;
   }
   db.settings = { ...DEFAULT_SETTINGS, ...(db.settings ?? {}) };
+  if (previousVersion > 0 && previousVersion < 8) {
+    // v2.6 ships with Pesanan and WIP hidden; managers can re-enable them in Settings.
+    db.settings.salesOrderEnabled = false;
+    db.settings.productionEnabled = false;
+  }
+  for (const part of db.parts ?? []) {
+    if (!part.parentPartId) continue;
+    const parent = db.parts.find((p) => p.id === part.parentPartId);
+    if (!parent || parent.id === part.id || parent.categoryId !== part.categoryId) part.parentPartId = null;
+  }
   for (const u of db.users ?? []) {
     if (u.active === undefined) u.active = true;
   }

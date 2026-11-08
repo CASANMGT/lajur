@@ -98,7 +98,8 @@ function renderPreferences(ctx) {
           ${field('Tenggat tugas default (hari)', `<input class="input" type="number" name="taskDueDays" min="0" max="30" value="${s.taskDueDays}" />`)}
         </div>
         <label class="checkline"><input type="checkbox" name="requireProof" ${s.requireProofOnReceipt ? 'checked' : ''} /> Wajibkan bukti fisik saat menerima barang</label>
-        <label class="checkline"><input type="checkbox" name="salesOrder" ${s.salesOrderEnabled ? 'checked' : ''} /> Aktifkan pesanan penjualan (sales order)</label>
+        <label class="checkline"><input type="checkbox" name="salesOrder" ${s.salesOrderEnabled ? 'checked' : ''} /> Aktifkan pesanan penjualan (sales order / pesanan)</label>
+        <label class="checkline"><input type="checkbox" name="production" ${s.productionEnabled ? 'checked' : ''} /> Aktifkan produksi WIP (potong → jahit → QC)</label>
         <label class="checkline"><input type="checkbox" name="operatorCosts" ${s.operatorCanSeeCosts ? 'checked' : ''} /> Operator boleh melihat harga pokok / nilai stok</label>
         <label class="checkline"><input type="checkbox" name="sampleDeposit" ${s.sampleDepositRequired ? 'checked' : ''} /> Sample berbayar/deposit wajib nominal</label>
         <div class="row"><button class="btn btn-primary" type="submit">Simpan preferensi</button></div>
@@ -110,7 +111,8 @@ function renderPreferences(ctx) {
         <li><strong>Stok rendah</strong> — penanda pada ringkasan stok (rencana: notifikasi).</li>
         <li><strong>Tenggat tugas</strong> — tanggal default saat membuat tugas baru.</li>
         <li><strong>Bukti fisik</strong> — form penerimaan menolak tanpa lampiran.</li>
-        <li><strong>Sales order</strong> — tab Pesanan muncul di Penjualan.</li>
+        <li><strong>Sales order</strong> — menu Pesanan, tombol di Penjualan, dan laporan pesanan muncul kembali. Nonaktif secara default; faktur draf tetap tersedia.</li>
+        <li><strong>Produksi WIP</strong> — menu Produksi, tautan dashboard, dan laporan produksi muncul kembali. Nonaktif secara default.</li>
         <li><strong>Harga pokok</strong> — operator melihat/menyembunyikan biaya.</li>
       </ul>
     </section>
@@ -257,6 +259,7 @@ export function mount(ctx) {
       taskDueDays: Math.max(0, Number(pref.taskDueDays.value) || 0),
       requireProofOnReceipt: pref.requireProof.checked,
       salesOrderEnabled: pref.salesOrder.checked,
+      productionEnabled: pref.production.checked,
       operatorCanSeeCosts: pref.operatorCosts.checked,
       sampleDepositRequired: pref.sampleDeposit.checked,
     }, ctx.user));

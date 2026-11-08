@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 7;
+export const BACKUP_VERSION = 8;
 
 export function exportBackup(db) {
   return {

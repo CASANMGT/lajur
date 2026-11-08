@@ -239,33 +239,59 @@ export function render(ctx) {
 function partsSection(ctx) {
   const { db, ui } = ctx;
   const whId = ui.warehouseId;
-  const parts = db.parts.filter((p) => {
-    const qty = db.partStock
-      .filter((s) => s.partId === p.id && (whId === 'all' || s.warehouseId === whId))
-      .reduce((a, s) => a + s.qty, 0);
-    return qty > 0;
-  });
-  if (!parts.length) return '';
-  return `<div class="section-title"><h2>Spare part</h2><span class="small muted">Satuan pcs — terpisah dari meter</span></div>
-    <section class="card">
-      <div class="table-wrap">
-        <table class="data">
-          <thead><tr><th>SKU</th><th>Nama</th><th class="num">Stok</th><th class="num">Tersedia</th><th>Gudang</th></tr></thead>
-          <tbody>${parts.map((p) => {
-            const rows = db.partStock.filter((s) => s.partId === p.id && (whId === 'all' || s.warehouseId === whId));
-            const qty = rows.reduce((a, s) => a + s.qty, 0);
-            const avail = rows.reduce((a, s) => a + (s.qty - (s.reserved || 0)), 0);
-            return `<tr>
-              <td class="mono">${esc(p.sku)}</td>
-              <td>${esc(p.name)}</td>
-              <td class="num">${fmt.pcs(qty)} pcs</td>
-              <td class="num">${fmt.pcs(avail)} pcs</td>
-              <td class="small muted">${rows.map((r) => `${warehouseOf(db, r.warehouseId)?.code}: ${r.qty}`).join(' · ')}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>
+  const items = db.parts.map((part) => {
+    const rows = db.partStock.filter((s) => s.partId === part.id && (whId === 'all' || s.warehouseId === whId));
+    const qty = rows.reduce((a, s) => a + s.qty, 0);
+    const avail = rows.reduce((a, s) => a + (s.qty - (s.reserved || 0)), 0);
+    return { part, rows, qty, avail };
+  }).filter((x) => x.qty > 0);
+  if (!items.length) return '';
+
+  const groups = new Map();
+  for (const item of items) {
+    const key = item.part.categoryId ?? '__none';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(item);
+  }
+
+  const renderRows = (item, groupItems, depth = 0) => {
+    const { part, rows, qty, avail } = item;
+    const children = groupItems
+      .filter((x) => x.part.parentPartId === part.id)
+      .sort((a, b) => a.part.sku.localeCompare(b.part.sku));
+    const image = part.image
+      ? `<img src="${esc(part.image)}" alt="Foto ${esc(part.name)}" class="thumb zoomable" data-zoom="${esc(part.image)}" data-zoom-title="${esc(part.sku)} · ${esc(part.name)}" role="button" tabindex="0" aria-label="Perbesar foto ${esc(part.name)}" />`
+      : `<span class="thumb thumb-empty">${icon('box')}</span>`;
+    return `<tr>
+      <td style="${depth ? `padding-left:${8 + depth * 20}px` : ''}">
+        <div class="cell-main">${image}<div class="txt"><strong>${depth ? '<span class="muted" aria-hidden="true">↳ </span>' : ''}${esc(part.name)}</strong><span>${esc(part.sku)}${part.brand ? ` · ${esc(part.brand)}` : ''}</span></div></div>
+      </td>
+      <td class="num">${fmt.pcs(qty)} pcs</td>
+      <td class="num">${fmt.pcs(avail)} pcs</td>
+      <td class="small muted">${rows.map((r) => `${warehouseOf(db, r.warehouseId)?.code}: ${r.qty}`).join(' · ')}</td>
+    </tr>${children.map((child) => renderRows(child, groupItems, depth + 1)).join('')}`;
+  };
+
+  const cards = [...groups.entries()].sort((a, b) => String(byId(db.categories, a[0])?.name ?? '').localeCompare(String(byId(db.categories, b[0])?.name ?? ''))).map(([categoryId, groupItems]) => {
+    const ids = new Set(groupItems.map((x) => x.part.id));
+    const roots = groupItems
+      .filter((x) => !x.part.parentPartId || !ids.has(x.part.parentPartId))
+      .sort((a, b) => a.part.sku.localeCompare(b.part.sku));
+    const totalQty = groupItems.reduce((a, x) => a + x.qty, 0);
+    return `<section class="card" style="margin-bottom:14px">
+      <div class="card-head">
+        <div><h2>${esc(byId(db.categories, categoryId)?.name ?? 'Tanpa kategori')}</h2><p>${roots.length} induk · ${groupItems.length - roots.length} child · stok dalam pcs</p></div>
+        <span class="badge no-dot">${fmt.pcs(totalQty)} pcs</span>
       </div>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Part</th><th class="num">Stok</th><th class="num">Tersedia</th><th>Gudang</th></tr></thead>
+        <tbody>${roots.map((item) => renderRows(item, groupItems)).join('')}</tbody>
+      </table></div>
     </section>`;
+  }).join('');
+
+  return `<div class="section-title"><h2>Spare part</h2><span class="small muted">Satuan pcs — induk/child per kategori · klik gambar untuk memperbesar</span></div>
+    ${cards}`;
 }
 
 /* -------------------------------------------------------------------------- */
