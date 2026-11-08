@@ -16,6 +16,8 @@ test('import PO in CNY carries FX, landed cost and CNY payable', () => {
     supplierId: 'SUP-004',
     date: '2026-11-01',
     expectedDate: '2026-12-01',
+    currency: 'CNY',
+    fxRate: 2250,
     lines: [{ kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 50000, unitPrice: 26.5 }],
     user: OP,
   });

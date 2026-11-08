@@ -98,33 +98,45 @@ test('supplier price history feeds master buy price and lists all suppliers', ()
   assert.equal(latestSupplierPrice(db, { supplierId: 'SUP-001', skuId: 'sku-luna-01', date: '2026-11-08' }).price, 71500);
 });
 
-test('import PO uses latest supplier price and snapshots the latest CNY rate', () => {
+test('import PO requires a user-entered FX rate and records it', () => {
   const db = buildSeed();
   assert.equal(latestFxRate(db, 'CNY').rate, 2250);
+  assert.throws(() => createPO(db, {
+    supplierId: 'SUP-004',
+    date: '2026-11-08',
+    lines: [{ kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 100000 }],
+    user: MGR,
+  }), (err) => err.code === 'INVALID_FX');
 
   const po = createPO(db, {
     supplierId: 'SUP-004',
     date: '2026-11-08',
+    currency: 'CNY',
+    fxRate: 2250,
     lines: [{ kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 100000 }],
     user: MGR,
   });
   assert.equal(po.currency, 'CNY');
   assert.equal(po.fxRate, 2250);
   assert.equal(po.lines[0].unitPrice, 27);
-  assert.equal(po.fxSource, 'Bank Indonesia (demo)');
+  assert.equal(po.fxSource, 'Kurs manual PO');
   assert.equal(Boolean(po.fxAsOf), true);
+  assert.equal(latestFxRate(db, 'CNY').rate, 2250);
+  assert.equal(db.fxRates.filter((r) => r.currency === 'CNY').length, 4);
 
   const manual = createPO(db, {
     supplierId: 'SUP-004',
     date: '2026-11-08',
+    currency: 'CNY',
     fxRate: 2300,
+    fxSource: 'Kurs manual PO',
     lines: [{ kind: 'fabric', skuId: 'sku-luna-01', qtyMm: 1000 }],
     user: MGR,
   });
   assert.equal(manual.fxRate, 2300);
   assert.equal(manual.fxSource, 'Kurs manual PO');
   assert.equal(latestFxRate(db, 'CNY').rate, 2300);
-  assert.equal(db.fxRates.filter((r) => r.currency === 'CNY').length, 4);
+  assert.equal(db.fxRates.filter((r) => r.currency === 'CNY').length, 5);
 });
 
 test('local PO defaults to the latest recorded supplier price', () => {

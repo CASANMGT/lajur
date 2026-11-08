@@ -214,7 +214,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Image preview:** thumbnails are 34 px in tables but are buttons. Click/tap opens a centred full image in a modal; it must not submit a form or close an editor with unsaved changes. Escape, close button and backdrop close it. Use `zoom-in` cursor and visible focus ring. Available to manager, sales and operator wherever the image appears.
 - **Supplier price book:** product/part lists show supplier names and the latest quote. “Harga” opens history + a new-quote form; the saved quote updates the IDR master buy price and is used as the PO default. Never hide the supplier behind a tooltip.
 - **PO price list:** before saving a PO, show the selected supplier's latest prices with currency, IDR equivalent, MOQ and validity. “Tambah” copies a price into a new line.
-- **Import FX:** when currency is CNY, show the latest CNY→IDR rate with timestamp and source. The input remains editable; the rate actually saved is displayed on the PO detail with its timestamp/source.
+- **Import FX:** when currency is CNY, show the latest CNY→IDR rate only as a reference. The rate field must start empty and the user must enter it; the rate actually saved is displayed on the PO detail with its timestamp/source. Never prefill a rate.
 - **Optional modules:** WIP Production and Pesanan are off by default. Settings shows two plain checkboxes; when off, no navigation item, dashboard shortcut or report tab may remain. Direct routes redirect to the role home. Copy should say “opsional”, not “coming soon”.
 - **Copy:** use “pesanan penjualan”, “bukan faktur”, “kurs terkunci”, “harga pemasok terbaru”. Never call a supplier quote a tax invoice or a payroll entry a bank transfer.
 

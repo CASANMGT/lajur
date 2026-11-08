@@ -2,6 +2,26 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.8.1] — 2026-11-08
+
+**Release name: Kurs Manual.** Removes every default FX rate from purchase orders.
+
+### Changed
+
+- **No PO rate default.** The CNY→IDR field starts empty for foreign POs. The latest rate is shown only as reference text, never prefilled or applied automatically.
+- Saving a foreign PO without a rate is rejected (`INVALID_FX`).
+- Every foreign PO enters a user-determined rate, recorded with timestamp and source `Kurs manual PO`.
+- Line price conversion shows values only after a rate is entered (unless the supplier quote already matches the PO currency).
+- Seed POs keep their historical rates but do not append duplicate FX records.
+
+### Verification
+
+- `node --test`: **55 passed**, including missing-rate rejection and user-entered rate snapshot.
+- UI: CNY supplier selected → rate field empty; latest reference shown as text; entering 2.250 enables totals and save.
+- No automatic fallback to supplier FX, latest FX or previous PO.
+
+---
+
 ## [2.8.0] — 2026-11-08
 
 **Release name: Mode Kerja.** Splits the UI into Simple daily operations and Advanced analysis/setup, and renames the demo team.

@@ -58,7 +58,7 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Roll parent/child hierarchy per collection** | **Done in v2.5** | Collection → colour → root → child tree; lineage path and conserved metres |
 | **Sales order detail, editing and print** | **Done in v2.5** | Creator, contents, prices, draft edit with re-reservation, printable Pesanan Penjualan |
 | **Supplier price book** | **Done in v2.5** | Supplier(s), latest price/MOQ/validity per SKU/part; new quote updates master buy price |
-| **Latest CNY rate on import PO** | **Done in v2.5** | Rate, timestamp and source snapshotted; manual rate appended to FX history |
+| **User-entered CNY rate on import PO** | **Done in v2.8.1** | No default; latest shown as reference only; user rate + timestamp/source snapshotted |
 | **Part parent/child per category in stock** | **Done in v2.6** | Category cards; Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m |
 | **Image preview for both roles** | **Done in v2.6** | Click/tap thumbnails in Master Data and Gudang; full-size modal |
 | **WIP + Pesanan optional** | **Done in v2.6** | Off by default; Settings toggles; menu/routes/report tabs gated |

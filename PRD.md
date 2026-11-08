@@ -130,7 +130,7 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Surat jalan | After posting: PIC pengiriman, driver/vehicle, address, draft → dispatched → delivered → receiver confirmation; print; stock never moves again |
 | Roll hierarchy | Collection → colour/SKU → root roll → child rolls, parent/root identity, split lineage and conserved metres |
 | Supplier price book | Every fabric/part lists its supplier(s), latest price, currency, MOQ and validity; new quotes update master buy price; PO defaults to latest supplier price |
-| Foreign buying | Explicit IDR/CNY, latest CNY→IDR rate shown and **snapshotted on the PO** with timestamp/source; IDR HPP, bill and payment |
+| Foreign buying | Explicit IDR/CNY; latest CNY→IDR shown only as reference, the **user must enter the rate**, which is snapshotted on the PO with timestamp/source; IDR HPP, bill and payment |
 | Production WIP | Per-piece order: cutting → sewing → QC, reject/rework, piece-rate payroll, work-centre capacity, source roll/lot trace |
 | Reporting | Stock, sales/margin, production WIP/payroll/capacity, orders, AR/AP, deposits, returns, samples, slow-moving |
 | Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products with brand/image/notes; parts with brand/image/notes and optional parent part in the same category; suppliers local/import |
@@ -352,7 +352,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 3. **Draft order editing:** editing releases the old fabric/part reservations and reserves the new lines in one operation. A failed edit leaves the previous order and reservations intact.
 4. **Sales order document:** printing produces “Pesanan Penjualan” with creator, lines, roll/lot, prices, total and signature space. It is not a tax invoice.
 5. **Supplier price book:** each SKU/part can have quotes from multiple suppliers. The latest valid quote on the PO date is the default PO price; saving a newer quote refreshes the master IDR buy price.
-6. **Import rate:** when buying in CNY, the PO shows the latest rate before saving. The consumed rate, its timestamp and source are stored on the PO; a different entered rate becomes the new latest rate.
+6. **Import rate:** when buying in CNY, the PO shows the latest rate only as a reference and never prefills it. The user must enter the rate; that value, its timestamp and source are stored on the PO and become the new latest reference.
 7. **Part hierarchy:** a part can point at one parent part in the same category. Stock groups parts by category and renders parents first with indented children; a stocked child whose parent has no stock in the selected warehouse is shown as a root so stock never disappears.
 8. **Image preview:** product and part thumbnails are buttons. Activating one opens the full image in a modal; Escape, the close button or the backdrop returns to the previous screen. This works for every role that can see the image.
 9. **Optional modules:** WIP Production and Pesanan are disabled by default. The manager can enable either in Settings; all entry points and direct routes are gated by the same flags.
@@ -422,12 +422,12 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-42 | Cutting a production order consumes its reservation and creates one WIP piece per piece length; the piece keeps the source roll, lot and code. |
 | BR-43 | Each completed production stage writes one payroll entry at the work-centre piece rate; payroll is marked paid without a bank transfer. |
 | BR-44 | Production never creates a sales invoice; invoicing is a separate commercial event. Capacity is a daily estimate from active pieces. |
-| BR-45 | Import PO currency and FX can be set at buying time, independent of the supplier default; received HPP and supplier bills use that snapshot. |
+| BR-45 | Import PO currency and FX are entered at buying time; the rate is never prefilled from the supplier, latest reference or previous PO. Received HPP and supplier bills use that snapshot. |
 | BR-46 | Rolls form a parent/child forest per collection: a split creates a child whose `parentRollId` and `rootRollId` preserve lineage, and parent + child lengths conserve the original. |
 | BR-47 | A sales order records its creator, line quantities and unit prices. Only a draft can be edited; saving releases the old reservations and reserves the new lines in the same operation. |
 | BR-48 | A printable sales order is a commercial order document, not a tax invoice; stock still moves only when the order is converted and the invoice is posted. |
 | BR-49 | Supplier price records are the source of truth for PO defaults: the latest price valid on the PO date is used, and saving a newer quote refreshes the master buy price in IDR. |
-| BR-50 | Every import PO stores the CNY→IDR rate, timestamp and source used at buying time; a rate different from the latest known rate is appended to the FX history. |
+| BR-50 | Every import PO requires a user-entered CNY→IDR rate and stores it with timestamp and source; each saved rate is appended to the FX history as the new reference. |
 | BR-51 | A spare part may have one parent part only within the same category; cycles are rejected. Stock groups parts by category and renders parents before their children; a child with stock remains visible if its parent has no stock in the selected warehouse. |
 | BR-52 | Product and part thumbnails open a full-size preview for every role; closing returns focus to the thumbnail. |
 | BR-53 | WIP Production and Pesanan are optional modules, off by default. When off, their navigation entries, dashboard links, report tabs and direct routes are unavailable; enabling the setting restores all of them. |
@@ -555,7 +555,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-53 | Sales order shows creator, contents and prices; draft edit re-reserves and recalculates total | Pass |
 | AC-54 | Printable sales order contains creator, lines, prices and “bukan faktur” note | Pass |
 | AC-55 | Product/part master lists suppliers and latest price; a new quote updates buy price | Pass |
-| AC-56 | PO defaults to latest supplier price; CNY PO stores latest rate, timestamp and source | Pass |
+| AC-56 | PO defaults to latest supplier price; CNY PO requires a user-entered rate and stores it with timestamp/source | Pass |
 | AC-57 | Part parent must share category, cycles are rejected, and stock shows parent/child rows by category | Pass |
 | AC-58 | Product/part thumbnail opens a full-size preview for manager, sales and operator | Pass |
 | AC-59 | Fresh seed hides WIP + Pesanan; enabling/disabling the setting updates menu, routes, dashboard and report tabs | Pass |

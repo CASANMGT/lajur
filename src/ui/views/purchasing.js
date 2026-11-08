@@ -402,7 +402,7 @@ export function openCreatePo(ctx) {
       <div class="form-grid">
         ${field('Pemasok', `<select class="select" name="supplier">${db.suppliers.map((s) => `<option value="${s.id}" data-currency="${esc(s.currency ?? 'IDR')}" data-fx="${s.fxRate ?? 1}" data-origin="${esc(s.origin ?? 'local')}">${esc(s.name)}${s.origin === 'import' ? ' (impor)' : ''}</option>`).join('')}</select>`)}
         ${field('Mata uang beli', `<select class="select" name="currency"><option value="IDR">IDR</option><option value="CNY">CNY (yuan)</option></select>`, { hint: 'Pilih CNY untuk pembelian impor.' })}
-        ${field('Kurs ke IDR', `<input class="input" name="fxRate" inputmode="decimal" value="1" />`)}
+        ${field('Kurs ke IDR', `<input class="input" name="fxRate" inputmode="decimal" value="" placeholder="wajib untuk CNY" />`, { hint: 'Tidak diisi otomatis. Masukkan kurs yang berlaku saat PO.' })}
         ${field('Tanggal PO', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
         ${field('Estimasi tiba', `<input class="input" type="date" name="expectedDate" value="${new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)}" />`)}
         ${field('Termin (hari)', `<input class="input" type="number" name="terms" value="30" min="0" max="180" />`)}
@@ -418,13 +418,13 @@ export function openCreatePo(ctx) {
     onMount(form) {
       const rows = form.querySelector('#po-rows');
       const supplierOf = () => byId(db.suppliers, form.supplier.value);
-      const parseFx = () => Number(String(form.fxRate.value ?? '').replace(',', '.')) || 1;
+      const parseFx = () => Number(String(form.fxRate.value ?? '').replace(',', '.')) || 0;
 
       const syncCurrency = () => {
         const s = supplierOf();
         form.currency.value = s?.currency ?? 'IDR';
         if (form.currency.value === 'IDR') form.fxRate.value = '1';
-        else form.fxRate.value = String(latestFxRate(db, form.currency.value)?.rate ?? s?.fxRate ?? 1);
+        else form.fxRate.value = '';
         form.fxRate.disabled = form.currency.value === 'IDR';
         delete form.fxRate.dataset.manual;
       };
@@ -434,7 +434,7 @@ export function openCreatePo(ctx) {
         const hint = form.querySelector('[data-fx-hint]');
         const latest = latestFxRate(db, currency);
         if (currency === 'CNY') {
-          hint.innerHTML = `${icon('globe')}<div><strong>Pembelian CNY.</strong> Kurs PO <strong>${fmt.money(parseFx())}</strong> / CNY. ${latest ? `Kurs terbaru ${fmt.money(latest.rate)} · ${esc(latest.asOf)} · ${esc(latest.source)}.` : 'Belum ada kurs tercatat.'}<div class="xs">Kurs yang dipakai dicatat ke PO saat disimpan.</div></div>`;
+          hint.innerHTML = `${icon('globe')}<div><strong>Pembelian CNY.</strong> Masukkan kurs CNY→IDR yang berlaku saat PO. ${latest ? `Referensi terbaru: ${fmt.money(latest.rate)} · ${esc(latest.asOf)} · ${esc(latest.source)}.` : ''}<div class="xs">Kurs tidak diisi otomatis; angka yang Anda isi dicatat ke PO saat disimpan.</div></div>`;
         } else {
           hint.innerHTML = `${icon('alert')}<div>Harga dalam IDR. PO lokal tidak memakai kurs.</div>`;
         }
@@ -461,10 +461,22 @@ export function openCreatePo(ctx) {
           let value;
           if (rec) {
             const recCurrency = rec.currency ?? supplier?.currency ?? 'IDR';
-            const recRate = recCurrency === 'IDR' ? 1 : (latestFxRate(db, recCurrency)?.rate ?? supplier?.fxRate ?? fx);
-            const idr = Number(rec.price) * recRate;
-            value = currency === 'IDR' ? idr : idr / fx;
+            if (recCurrency === currency) {
+              value = Number(rec.price);
+            } else {
+              if (currency !== 'IDR' && !(fx > 0)) {
+                r.querySelector('.l-price').value = '';
+                return;
+              }
+              const recRate = recCurrency === 'IDR' ? 1 : (latestFxRate(db, recCurrency)?.rate ?? supplier?.fxRate ?? fx);
+              const idr = Number(rec.price) * recRate;
+              value = currency === 'IDR' ? idr : idr / fx;
+            }
           } else {
+            if (currency !== 'IDR' && !(fx > 0)) {
+              r.querySelector('.l-price').value = '';
+              return;
+            }
             value = currency === 'IDR' ? item.buyPrice : item.buyPrice / fx;
           }
           r.querySelector('.l-price').value = String(Math.round(value * 100) / 100);
@@ -504,7 +516,7 @@ export function openCreatePo(ctx) {
       form.currency.addEventListener('change', () => {
         form.fxRate.disabled = form.currency.value === 'IDR';
         if (form.currency.value === 'IDR') form.fxRate.value = '1';
-        else form.fxRate.value = String(latestFxRate(db, form.currency.value)?.rate ?? supplierOf()?.fxRate ?? 1);
+        else form.fxRate.value = '';
         delete form.fxRate.dataset.manual;
         updateHint();
         reprice();
@@ -535,7 +547,7 @@ export function openCreatePo(ctx) {
         supplierId: form.supplier.value,
         currency,
         fxRate,
-        fxSource: form.fxRate.dataset.manual ? 'Kurs manual PO' : latestFxRate(db, currency)?.source,
+        fxSource: 'Kurs manual PO',
         date: form.date.value,
         expectedDate: form.expectedDate.value,
         termsDays: Number(form.terms.value || 30),
