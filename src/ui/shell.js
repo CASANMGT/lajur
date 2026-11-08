@@ -15,6 +15,7 @@ export const NAV = [
     items: [
       { id: 'ringkasan', label: 'Ringkasan', icon: 'home' },
       { id: 'tugas', label: 'Tugas Operasi', icon: 'listCheck' },
+      { id: 'produksi', label: 'Produksi WIP', icon: 'needle' },
       { id: 'stok', label: 'Stok & Roll', icon: 'box' },
       { id: 'transfer', label: 'Permintaan Gudang', icon: 'transfer' },
       { id: 'pembelian', label: 'Pembelian', icon: 'truck' },
@@ -44,7 +45,7 @@ export const NAV = [
 
 const ACCESS = {
   manager: null,
-  operator: new Set(['ringkasan', 'tugas', 'stok', 'transfer', 'pembelian', 'opname', 'simulasi']),
+  operator: new Set(['ringkasan', 'tugas', 'produksi', 'stok', 'transfer', 'pembelian', 'opname', 'simulasi']),
   sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pesanan', 'proyek', 'pelanggan', 'sampel', 'simulasi']),
 };
 
@@ -56,6 +57,7 @@ export function canAccess(role, view) {
 export const ROUTE_META = {
   ringkasan: { title: 'Ringkasan', sub: 'Kondisi operasi hari ini' },
   tugas: { title: 'Tugas Operasi', sub: 'Antrean potong, terima, picking, QC, dan kirim' },
+  produksi: { title: 'Produksi WIP', sub: 'Potong → jahit → QC per piece, payroll, dan kapasitas' },
   stok: { title: 'Stok & Roll', sub: 'Fisik, terpesan, tersedia, karantina, dan transit' },
   transfer: { title: 'Permintaan Gudang', sub: 'PO internal antar gudang — tanpa pemasok' },
   pembelian: { title: 'Pembelian', sub: 'PO pemasok, penerimaan, dan utang' },

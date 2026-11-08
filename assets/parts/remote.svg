@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" role="img" aria-label="Remote motor">
+  <defs>
+    <linearGradient id="r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#243f4e"/><stop offset="1" stop-color="#10212d"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="320" fill="#f6f3ed"/>
+  <rect x="112" y="62" width="96" height="196" rx="18" fill="url(#r)" stroke="#0b1820"/>
+  <rect x="126" y="76" width="68" height="34" rx="6" fill="#2f504f"/>
+  <circle cx="160" cy="128" r="13" fill="#4d7a78"/><circle cx="160" cy="128" r="6" fill="#b87552"/>
+  <circle cx="140" cy="176" r="10" fill="#dfe7e9"/><circle cx="180" cy="176" r="10" fill="#dfe7e9"/>
+  <circle cx="140" cy="212" r="10" fill="#dfe7e9"/><circle cx="180" cy="212" r="10" fill="#dfe7e9"/>
+  <text x="160" y="290" text-anchor="middle" font-family="Inter,Segoe UI,sans-serif" font-size="14" fill="#5a6973">Remote · 5 kanal</text>
+</svg>

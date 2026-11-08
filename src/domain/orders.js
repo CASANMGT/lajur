@@ -6,7 +6,7 @@
 import {
   DomainError, MM_PER_M, assert, audit, byId, isoNow, money, nextId, todayJakarta,
 } from './core.js';
-import { availableMm, requireRoll } from './inventory.js';
+import { availableMm, releaseAllReservations, releasePartReservation, requireRoll, reservePart, reserveRoll } from './inventory.js';
 import { createInvoice, postInvoice } from './sales.js';
 
 export const ORDER_STATUS = {
@@ -38,12 +38,13 @@ export function createSalesOrder(db, { customerId, projectId = null, date = toda
       assert(part.active !== false, 'INACTIVE_PART', 'Spare part nonaktif tidak dapat dipesan.');
       const qty = Math.round(Number(line.qtyPcs));
       assert(qty > 0, 'INVALID_QTY', 'Jumlah part harus bilangan bulat lebih dari 0.');
+      assert(line.warehouseId, 'WAREHOUSE_REQUIRED', 'Gudang part wajib dipilih.');
       const unitPrice = money(line.unitPrice ?? part.sellPrice);
       return {
         id: nextId(db, 'orderLine', 'OL', 5),
         kind: 'part', partId: part.id, rollId: null,
         description: part.name, qtyPcs: qty, qtyMm: null, unitPrice,
-        amount: qty * unitPrice, warehouseId: line.warehouseId ?? null,
+        amount: qty * unitPrice, warehouseId: line.warehouseId,
       };
     }
     const roll = requireRoll(db, line.rollId);
@@ -71,8 +72,17 @@ export function createSalesOrder(db, { customerId, projectId = null, date = toda
     };
   });
 
+  const id = nextId(db, 'order', 'SO', 4);
+  for (const line of built) {
+    if (line.kind === 'fabric') {
+      reserveRoll(db, { rollId: line.rollId, qtyMm: line.qtyMm, ref: id, user, note: `Pesanan ${id}` });
+    } else {
+      reservePart(db, { partId: line.partId, warehouseId: line.warehouseId, qty: line.qtyPcs, ref: id, user, note: `Pesanan ${id}` });
+    }
+  }
+
   const order = {
-    id: nextId(db, 'order', 'SO', 4),
+    id,
     customerId,
     customerName: customer.name,
     projectId,
@@ -105,6 +115,10 @@ export function confirmOrder(db, { id, user }) {
 export function cancelOrder(db, { id, reason = '', user }) {
   const order = requireOrder(db, id);
   assert(['draft', 'confirmed'].includes(order.status), 'INVALID_STATUS', 'Pesanan sudah menjadi faktur.');
+  releaseAllReservations(db, order.id, user, `Batal pesanan ${order.id}`);
+  for (const line of order.lines.filter((l) => l.kind === 'part')) {
+    releasePartReservation(db, { partId: line.partId, warehouseId: line.warehouseId, ref: order.id, user });
+  }
   order.status = 'cancelled';
   order.history.push({ at: isoNow(), by: user?.name ?? 'Sistem', action: 'Dibatalkan', note: reason });
   audit(db, user, 'batalkan_pesanan', 'order', order.id, reason);
@@ -125,7 +139,11 @@ export function convertOrderToInvoice(db, { id, user, dueDays = 14 }) {
     notes: order.notes || `Pesanan ${order.id}`,
     user,
   });
-  postInvoice(db, { id: invoice.id, user });
+  postInvoice(db, { id: invoice.id, user, reservationRef: order.id });
+  releaseAllReservations(db, order.id, user, `Pesanan ${order.id} difakturkan`);
+  for (const line of order.lines.filter((l) => l.kind === 'part')) {
+    releasePartReservation(db, { partId: line.partId, warehouseId: line.warehouseId, ref: order.id, user });
+  }
   order.status = 'converted';
   order.invoiceId = invoice.id;
   order.convertedAt = isoNow();

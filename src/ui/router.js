@@ -22,10 +22,12 @@ import * as tasks from './views/tasks.js';
 import * as samples from './views/samples.js';
 import * as settings from './views/settings.js';
 import * as orders from './views/orders.js';
+import * as production from './views/production.js';
 
 const VIEWS = {
   ringkasan: dashboard,
   tugas: tasks,
+  produksi: production,
   stok: inventory,
   transfer: transfers,
   pembelian: purchasing,
@@ -109,6 +111,13 @@ export function renderApp() {
 
   const route = parseHash();
   if (!canAccess(user.role, route.name)) {
+    const home = ROLE_HOME[user.role] ?? '#/ringkasan';
+    if (window.location.hash !== home) {
+      window.location.hash = home;
+      return;
+    }
+  }
+  if (route.name === 'pesanan' && store.db.settings?.salesOrderEnabled === false) {
     const home = ROLE_HOME[user.role] ?? '#/ringkasan';
     if (window.location.hash !== home) {
       window.location.hash = home;

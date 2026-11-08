@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-42%2F42-brightgreen) ![Version](https://img.shields.io/badge/version-2.3.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-46%2F46-brightgreen) ![Version](https://img.shields.io/badge/version-2.4.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -57,10 +57,16 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
+
+### Shared backend (reference)
+
+`npm run server` starts `server/server.mjs` on `127.0.0.1:8790`: scrypt PIN auth, HttpOnly sessions, RBAC per action, revisioned shared state and atomic file writes. It exposes `/api/actions/*` for production cut/sew/QC, task updates, transfer receive, sales orders and invoice posting.
+
+The static Vercel demo intentionally remains browser-local; the UI is not yet wired to this API. See [server/README.md](./server/README.md) for endpoints, RBAC and production gaps.
 
 ---
 
@@ -76,7 +82,8 @@ Lajur/
 ├── GAP-ANALYSIS.md           requirement-by-requirement status
 ├── CHANGELOG.md
 ├── .github/workflows/ci.yml  tests on every push and PR
-├── assets/                   mark + favicon
+├── server/                    reference shared API (auth/RBAC/transactions)
+├── assets/                    mark + favicon + part illustrations
 ├── src/
 │   ├── version.js            app version + schema version
 │   ├── domain/               pure business logic (no DOM)
@@ -88,6 +95,7 @@ Lajur/
 │   │   ├── shipments.js      import shipment tracking + landed cost
 │   │   ├── tasks.js          receive/pick/cut/sew/QC/opname tasks
 │   │   ├── orders.js         sales orders before invoice
+│   │   ├── production.js     WIP orders, pieces, payroll, capacity
 │   │   ├── settings.js       operational preferences
 │   │   ├── attachments.js    optional physical-proof metadata
 │   │   ├── projects.js       allocation, reservation, issue, handover
@@ -105,9 +113,9 @@ Lajur/
 │   │   ├── dom.js            escaping, icons, modal, toast, print
 │   │   ├── shell.js          sidebar, topbar, account menu, simulation banner
 │   │   ├── router.js         auth gate, hash routes, error boundary
-│   │   └── views/            login, dashboard, tasks, inventory, transfers, purchasing,
-│   │                         sales, orders, projects, customers, samples, opname, reports,
-│   │                         master, settings, simulation, print documents
+│   │   └── views/            login, dashboard, tasks, production, inventory, transfers,
+│   │                         purchasing, sales, orders, projects, customers, samples,
+│   │                         opname, reports, master, settings, simulation, print documents
 │   └── styles/
 │       ├── tokens.css
 │       └── app.css
@@ -115,6 +123,7 @@ Lajur/
 │   ├── invariants.test.js    29 business invariant tests
 │   ├── operations.test.js    4 import/task/shipment tests
 │   ├── admin.test.js         7 master/user/order/settings tests
+│   ├── production.test.js    4 WIP/payroll/capacity tests
 │   └── auth.test.js          2 PIN hashing / policy tests
 └── tools/
     ├── serve.mjs             tiny static server
@@ -156,14 +165,16 @@ Lajur/
 16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, edit preferences, see master audit, export/restore.
 17. **Pesanan** (`#/pesanan`) — create a sales order, confirm, convert to invoice; stock moves only at conversion.
 18. **Master data** — add/edit spare part with brand + optional image, product images, supplier local/import; each edit writes to audit.
+19. **Produksi WIP** — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
+20. **Laporan → Produksi & payroll** — WIP metres, open payroll, QC rejects, capacity and order progress.
 
 ### Role experience
 
 | Role | Sees | Cannot do |
 |------|------|-----------|
 | Manajer | Approvals, all reports, master, settings, refunds | — |
-| Operator Gudang | Stock, receiving, dispatch/receive, opname counting, direct intake, tasks | Invoices/orders, sales/CRM, reports, master/settings, approvals |
-| Sales / CS | Invoices, orders, projects, customers, samples, deposits, read-only stock | Purchasing, opname, master/settings, approvals, dispatch |
+| Operator Gudang | Stock, receiving, dispatch/receive, opname, production cut/sew/QC, tasks | Invoices/orders, sales/CRM, reports, master/settings, approvals |
+| Sales / CS | Invoices, orders, projects, customers, samples, deposits, read-only stock | Purchasing, production, opname, master/settings, approvals, dispatch |
 
 Log in as each account to see the difference. Hiding a button is still not server authorization.
 
@@ -205,11 +216,17 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **42 passed, 0 failed** (40 business + 2 auth) |
-| Module import check | **39/39 modules** |
-| Server-side render of all views | **22/22 render, no exceptions** (incl. login and 3 roles) |
-| Browser route sweep | **22/22 routes**, zero console errors |
+| `node --test` | **46 passed, 0 failed** (44 business + 2 auth) |
+| Module import check | **40/40 modules** |
+| Server-side render of all views | **23/23 render, no exceptions** (incl. login and 3 roles) |
+| Browser route sweep | **23/23 routes**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
+| WIP production | 10 m cut into 5 pieces, payroll Rp 25.000, sew/QC, reject + rework, capacity load |
+| Sales order reserve | 10 m reserved at order; conversion released reservation and reduced stock once |
+| Nota CNY | PO currency explicit; 26.5 CNY × 2.250 + landed Rp 600.000 → roll HPP Rp 71.625/m |
+| Server auth | reference API login (scrypt), shared revision, operator task action; operator invoice action → 403 |
+| Part imagery | 10 parts with local SVG product images; bracket set displays **Rp 140.000** |
+| Mobile drawer | bottom nav 61 px, sidebar z60 / scrim z55 / nav z45; Esc closes; 0 overflow |
 | Import CNY | PO `26.5 CNY × 2.250`, landed `Rp 600.000`, roll HPP `Rp 71.625/m`; bill `CNY 1.325` |
 | Shipment tracking | ETD/ETA, in-transit → received, landed cost, progress |
 | Direct intake proof | optional file metadata on receiving/task/shipment/transfer receipt |
@@ -229,7 +246,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Sales order | created 5 m order, stock unchanged; converted to invoice, stock 60 → 55 m once |
 | Master product/part | part with brand `Somfy`, prices and audit entry; product image field |
 | Preferences | disabling sales orders removed the Pesanan menu; re-enabled |
-| Lighthouse (login, dashboard, tasks, stock, purchasing, orders, samples, master, settings, simulation) | **Accessibility 100, Best Practices 100, SEO 100** |
+| Lighthouse (login, dashboard, tasks, production, stock, purchasing, orders, samples, master, settings, simulation) | **Accessibility 100, Best Practices 100, SEO 100** |
 
 Reproduce:
 
@@ -249,7 +266,12 @@ node tools/render-check.mjs
 - **Settings workspace:** account/PIN, staff user management (add, edit role, activate/deactivate, reset PIN), preferences, audit and data.
 - **Dynamic users:** new staff accounts appear on the login screen; role changes and deactivation apply immediately.
 - **Role-restricted navigation:** operator sees only warehouse work; sales sees sales/CRM/sample; manager sees all, settings and master.
-- **Sales orders:** draft/confirmed orders, convert to invoice (stock issues once), customer/available-product checks.
+- **WIP production orders:** cut → sew → QC per piece, reject/rework, payroll per piece, work-centre capacity, source roll/lot trace.
+- **Sales orders reserve stock:** reservation at order, release on cancel, consume once at invoice conversion.
+- **CNY buying:** explicit currency + FX on PO, foreign line prices, IDR HPP including landed cost.
+- **Production reporting:** WIP metres, payroll open/paid, QC rejects, capacity load and order progress.
+- **Part imagery:** local product illustrations and optional uploaded image; hex swatch values shown.
+- **Reference shared backend:** scrypt login, HttpOnly session, RBAC per action, revisioned shared state (not wired to static UI).
 - **Product & part master:** create/edit SKU with brand, optional image, notes and active flag; audit history per record.
 - **Supplier master:** create/edit local or import supplier, CNY/FX/incoterm/port, with audit trail.
 - Editable warehouses (create, rename, recoordinate, deactivate with usage guard) and editable collections.
@@ -273,26 +295,25 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.3.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.4.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
 - Supplier bill is created with goods receipt (demo simplification).
 - One invoice per project; no partial project fulfilment.
-- **Production flow is task-based.** Cutting/sewing/QC exist as tasks; there is no WIP production order with per-piece routing, piece-rate payroll, or machine capacity.
-- Attachments store metadata only (no bytes).
+- **Production WIP is implemented.** Payroll is piece-rate records (no tax/HR), capacity is a daily estimate without machine calendar or shift scheduling.
+- Attachments and product images are metadata/data URLs; no object storage or CDN.
 - Landed cost is allocated per unit at receipt; reallocation after a later shipment cost change is manual.
 - Paid sample uses a service invoice; no separate sample price list.
 - As-of inventory balances are not reconstructed; movement history is.
 - Barcode labels are visual; no scanner integration.
-- Permissions are UI-level only; PIN is a local gate, not server authorization.
-- Quote/order documents are not separate from invoices.
+- Permissions are UI-level only in the static demo; a reference API exists but the UI is not wired to it.
+- Quotes are not a separate document; sales orders are.
 - Return credit above the remaining invoice balance is not carried as a customer credit balance.
 
 ### Planned
 
-- Server-side auth, RBAC, warehouse scoping and audit.
-- PostgreSQL transactional posting with idempotency and immutable documents.
+- Wire the reference shared API to the UI; PostgreSQL transactional posting with idempotency and immutable documents.
 - GR/IR reconciliation and supplier invoice matching.
 - Partial project invoicing and deliveries.
 - Barcode/QR scanning and label printer integration.
@@ -311,8 +332,8 @@ node tools/render-check.mjs
 - **No actual payments, bank messages, or supplier communication.** Payment records are local.
 - **Local persistence only.** Clearing site data deletes the demo (and resets PINs); the backup JSON is the escape hatch.
 - **Not accounting.** Reports are management summaries, not a ledger, tax invoice, or P&L.
-- **Production is task-based, not a WIP production order.** Cutting/sewing/QC are tracked as tasks; per-piece routing, payroll and capacity are planned.
-- **Proof and product images are local metadata/data URLs.** Production needs object storage.
+- **Production WIP is per piece**; payroll is a recorded piece-rate ledger, not a payroll/tax system.
+- **Object storage is not available.** Product images are local SVG/data URLs and proof is metadata; production needs S3/R2.
 - **No shared settings across devices.** Settings live in the local dataset; restore does not include PIN hashes.
 - **Single currency and time zone** (IDR, Asia/Jakarta) by design.
 

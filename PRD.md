@@ -1,9 +1,9 @@
-# PRD — Lajur v2.3
+# PRD — Lajur v2.4
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, multiple warehouses
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.3.0 (schema 5)
+**Version:** 2.4.0 (schema 6)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.3: **operator** can reach summary, tasks, stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders, projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings.
+Role scope in v2.4: **operator** can reach summary, tasks, production WIP, stock, internal requests, supplier receiving, opname and simulation; **sales** can reach summary, tasks, read-only stock, invoices, sales orders, projects, customers, samples and simulation; **manager** can reach everything including reports, master data and settings.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -124,7 +124,9 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Import purchasing | Local and Chinese suppliers; CNY prices and locked FX; PO value in CNY + IDR; CNY bills and payments; landed cost (freight/insurance/duty) in roll HPP; shipment BL/container, ETD/ETA, customs, arrival, documents |
 | Access | Per-role login (manager/operator/sales) with PBKDF2 PIN, 8-hour session, 5-attempt lockout, PIN change, logout; role-specific home and action gating |
 | Settings | Account/PIN, staff users (add/edit role/activate/deactivate/reset PIN), operational preferences, audit, backup/restore |
-| Sales orders | Draft/confirmed order, customer + available roll/part, convert to invoice once; stock only moves at invoice |
+| Sales orders | Draft/confirmed order, customer + available roll/part, **reserves stock**, convert to invoice once; stock only moves at invoice |
+| Production WIP | Per-piece order: cutting → sewing → QC, reject/rework, piece-rate payroll, work-centre capacity, source roll/lot trace |
+| Reporting | Stock, sales/margin, production WIP/payroll/capacity, orders, AR/AP, deposits, returns, samples, slow-moving |
 | Master | Editable warehouses (create, code, name, prefix, contact, deactivate with usage guard); editable collections; categories; products with brand/image/notes; parts with brand/image/notes; suppliers local/import |
 | Internal requests | Create, submit, approve/reject, cancel before dispatch, dispatch from exact rolls, partial dispatch, partial receive, print request and surat jalan, 5-quantity progress |
 | Purchasing | Suppliers, price list, PO, approval, partial receiving with per-roll lengths and lots, duplicate receipt block, over-receipt block, auto supplier bill (demo simplification), payables, supplier returns |
@@ -180,6 +182,10 @@ Authentication and server authorization; transactional posting with idempotency;
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discount, total, credited, depositApplied, payments[] |
 | `sales order` | id, customer, project, date, status draft/confirmed/converted/cancelled, lines[], total, invoiceId, history[] |
+| `production order` | id, customer/project, warehouse, targetDate, status, lines[] (roll, qty, piece length), notes |
+| `production piece` | id, orderId, lineId, roll/lot, qtyMm, stage cutting/sewing/done/rejected, worker, QC note, operations[] |
+| `payroll entry` | id, orderId, pieceId, stage, worker, rate, amount, date, paid |
+| `work centre` | stage, name, capacityPerDay, ratePerPiece |
 | `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, salesOrderEnabled, operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
@@ -310,13 +316,21 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 7. Landed cost is not a stock quantity, revenue or payable; it is part of inventory cost.
 
 ### 6.9 Operational tasks
-
 - Task types: receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname, sample.
 - Any task can link a warehouse, assignee, project, roll, target metres, priority and due date.
 - Lifecycle: open → in progress → blocked/resumed → done, or cancelled.
 - **Tasks never post stock.** Cutting is completed as a task, but the actual cut is recorded through an invoice/project issue.
 - Managers see all tasks and the cutting queue; operators default to their own tasks; sales can create sample tasks.
 - Completion accepts a note and optional physical proof metadata.
+
+### 6.10 WIP production orders
+
+1. Create a production order from one or more available rolls, total metres and a piece length (e.g. 2.4 m per panel). The roll is reserved.
+2. Cutting consumes the reservation, reduces the source roll and creates one WIP piece per length. Each piece keeps the source roll, lot and a unique code.
+3. Each piece moves cutting → sewing → QC. QC can pass (done) or fail (rejected); rejected pieces can be reworked back to sewing.
+4. Every completed stage writes one payroll entry at the work-centre piece rate. Payroll can be marked paid without a bank transfer.
+5. Capacity shows active pieces per stage versus daily capacity and estimated days. It is an estimate, not a machine calendar.
+6. Production never creates a sales invoice; invoicing remains a separate event. Cancellation before cutting releases the reservation; after cutting it requires a scrap workflow (planned).
 
 ---
 
@@ -364,6 +378,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-38 | A sales order posts no stock. Converting it to an invoice posts stock exactly once; a converted or cancelled order cannot be converted again. |
 | BR-39 | At least one active manager must remain; deactivating the last manager is rejected. |
 | BR-40 | Product, part, supplier, warehouse, user and settings edits are written to the audit trail; images are optional and stored as small data URLs in the demo. |
+| BR-41 | A sales order reserves fabric and parts immediately; cancelling releases them, converting consumes them and posts stock exactly once. |
+| BR-42 | Cutting a production order consumes its reservation and creates one WIP piece per piece length; the piece keeps the source roll, lot and code. |
+| BR-43 | Each completed production stage writes one payroll entry at the work-centre piece rate; payroll is marked paid without a bank transfer. |
+| BR-44 | Production never creates a sales invoice; invoicing is a separate commercial event. Capacity is a daily estimate from active pieces. |
+| BR-45 | Import PO currency and FX can be set at buying time, independent of the supplier default; received HPP and supplier bills use that snapshot. |
 
 ---
 
@@ -371,7 +390,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.3 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.4 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -470,8 +489,15 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-42 | Sales order does not move stock; conversion issues stock once | Pass |
 | AC-43 | Operator cannot reach sales/CRM/settings; sales cannot reach purchasing/opname/master | Pass |
 | AC-44 | Preference “sales order off” hides the menu and document | Pass |
+| AC-45 | Sales order reserves stock; conversion releases and issues once | Pass |
+| AC-46 | Production order cuts 10 m into 5 pieces, payroll 25k, and preserves qty | Pass |
+| AC-47 | Piece can be sewn, QC pass/reject, reworked; stats update | Pass |
+| AC-48 | Capacity load and payroll payment are derived from pieces | Pass |
+| AC-49 | Import PO accepts explicit CNY + FX at buying | Pass |
+| AC-50 | Production/payroll/capacity report derives from same pieces | Pass |
+| AC-51 | Reference server: scrypt login, shared revision, RBAC action; operator cannot post invoice | Pass |
 
-Test evidence: `node --test` → 42/42 passing; browser route sweep → 22/22 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, stock, purchasing, orders, samples, master, settings and simulation.
+Test evidence: `node --test` → 46/46 passing; browser route sweep → 23/23 routes with zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; Lighthouse accessibility 100 on login, dashboard, tasks, production, stock, purchasing, orders, samples, master, settings and simulation.
 
 ---
 
@@ -488,6 +514,8 @@ Test evidence: `node --test` → 42/42 passing; browser route sweep → 22/22 ro
 ## 12. Production architecture
 
 ### 12.1 Target stack
+
+A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN, HttpOnly session, RBAC per action, revisioned JSON state, atomic writes). It proves the auth/transaction contract but is not wired to the static demo and is not multi-node. Production replaces its file store with PostgreSQL and a managed session store.
 
 - **API:** modular monolith (e.g., Node/NestJS or Laravel) with domain modules mirroring `src/domain`.
 - **Database:** PostgreSQL. Rolls, reservations and ledger as rows; unique constraints on receipt refs; `SELECT … FOR UPDATE` or serializable transactions.
@@ -512,7 +540,7 @@ Test evidence: `node --test` → 42/42 passing; browser route sweep → 22/22 ro
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Interactive demo, domain invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, sales orders | 42/42 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, orders, WIP production, payroll, capacity | 46/46 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

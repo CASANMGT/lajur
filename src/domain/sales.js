@@ -13,8 +13,8 @@ import {
   DomainError, MM_PER_M, assert, audit, byId, daysBetween, isoNow, money, nextId, todayJakarta,
 } from './core.js';
 import {
-  assertWarehouseOpen, availableMm, consumeReservation, createRoll, issueParts, partStockRow,
-  recordMovement, requireRoll, sellWholeRoll,
+  assertWarehouseOpen, availableMm, consumePartReservation, consumeReservation, createRoll, issueParts,
+  partReservedFor, partStockRow, recordMovement, requireRoll, sellWholeRoll,
 } from './inventory.js';
 
 export function reservedFor(roll, ref) {
@@ -207,7 +207,8 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
       assert(sku && sku.active !== false && !sku.dormant, 'DORMANT_PRODUCT',
         `${sku?.code ?? roll.skuId} dormant/tidak aktif; penjualan baru diblokir.`);
       if (line.mode === 'whole') {
-        assert((roll.reservedMm || 0) === 0, 'ROLL_RESERVED', `Roll ${roll.id} terpesan untuk dokumen lain.`);
+        const held = reservedFor(roll, reservationRef);
+        assert((roll.reservedMm || 0) - held === 0, 'ROLL_RESERVED', `Roll ${roll.id} terpesan untuk dokumen lain.`);
         assert(roll.status === 'available', 'ROLL_NOT_AVAILABLE', `Roll ${roll.id} tidak tersedia.`);
         assert(roll.currentMm === line.qtyMm, 'ROLL_CHANGED',
           `Panjang ${roll.id} berubah sejak draf (${line.qtyMm / MM_PER_M} m → ${roll.currentMm / MM_PER_M} m). Buat ulang baris faktur.`);
@@ -224,7 +225,8 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
       const wh = line.warehouseId ?? warehouseId;
       assertWarehouseOpen(db, wh, 'Penjualan');
       const row = partStockRow(db, line.partId, wh);
-      assert(row && row.qty - (row.reserved || 0) >= line.qtyPcs, 'INSUFFICIENT_PART',
+      const held = reservationRef ? partReservedFor(row, reservationRef) : 0;
+      assert(row && row.qty - (row.reserved || 0) + held >= line.qtyPcs, 'INSUFFICIENT_PART',
         `Stok ${line.description} tidak cukup di gudang ini.`);
     }
   }
@@ -235,6 +237,8 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
     if (line.kind === 'fabric') {
       const roll = requireRoll(db, line.rollId);
       if (line.mode === 'whole') {
+        const heldWhole = reservedFor(roll, reservationRef);
+        if (reservationRef && heldWhole) consumeReservation(roll, reservationRef, heldWhole);
         sellWholeRoll(db, { rollId: roll.id, user, ref: inv.id, invoiceId: inv.id, note: line.description });
       } else {
         const before = roll.currentMm;
@@ -275,6 +279,8 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
         });
       }
     } else {
+      const row = partStockRow(db, line.partId, line.warehouseId);
+      if (reservationRef) consumePartReservation(row, reservationRef, line.qtyPcs);
       issueParts(db, {
         partId: line.partId,
         warehouseId: line.warehouseId,

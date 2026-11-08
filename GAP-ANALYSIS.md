@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.3 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.4 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -52,6 +52,11 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Mobile 320/390/768, drawer, 44 px, 16 px, cards, wide table containment | Done | Bottom nav added in v2.2 |
 | Reduced motion, focus, validation, empty/error/loading | Done | Lighthouse 100 |
 | **Task / operation management** | **Done in v2.2** | Tugas Operasi: receive, picking, cutting, sewing, QC, transfer, shipment, opname, sample |
+| **WIP production / payroll / capacity** | **Done in v2.4** | Per-piece cutting → sewing → QC, rework, piece-rate payroll, capacity load |
+| **Sales order reserves stock** | **Done in v2.4** | Reserve at order, release on cancel, consume once at invoice |
+| **Explicit CNY buying** | **Done in v2.4** | Currency + FX chosen on PO; IDR HPP and bill |
+| **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
+| **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |
 | **Settings, users & roles** | **Done in v2.3** | Account/PIN, staff add/edit/deactivate, reset PIN, preferences, audit, data |
 | **Sales orders** | **Done in v2.3** | Draft/confirmed → invoice once; stock moves only at invoice |
@@ -77,7 +82,7 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Partial internal receiving with transit control | Done | Receive modal + transfer detail |
 | Blind opname with manager-only variance | Done | Expected hidden while counting, shown in review |
 | Sample swatches and unset state | Done | Swatch never derived from code |
-| Flow: Pesan → Planning → Cutting → Jahit → QC → Transit → Selesai | **Partial** | Task types cover cutting/sewing/QC/transit; no production order/WIP planning |
+| Flow: Pesan → Planning → Cutting → Jahit → QC → Transit → Selesai | **Partial** | Cutting/sewing/QC WIP + shipment done; order planning and machine calendar partial |
 | Desktop workspace hierarchy tree (collection → colour → lot → roll → bin) | **Partial** | Flat filtered table + roll detail; collapsible tree is planned |
 | Hero illustration / decorative waves | Not needed | Functional UI prioritised; brand mark used |
 | 320 / 390 / 768 / desktop | Done | Verified, 0 overflow |
@@ -94,10 +99,10 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 
 ## 4. Highest-value remaining gaps
 
-1. **Full production orders** — cutting → sewing → QC as one WIP document with per-piece tracking, not just tasks.
-2. **Server auth/RBAC and transactional posting** — the demo remains local.
-3. **Real file storage** for proof photos, product images and project documents.
-4. **Partial project fulfilment** and quote → order → delivery documents.
-5. **As-of inventory valuation** and import FX revaluation.
-6. **Barcode/QR scanner** and label printer integration.
-7. **Corporate accounting** integration (GL/PPN) and warehouse attribution policy.
+1. **Wire the shared backend to the UI** and move posting to PostgreSQL with idempotency.
+2. **Object storage** for product photos and proof, plus virus scanning.
+3. **Partial project fulfilment** and quote documents.
+4. **As-of inventory valuation** and import FX revaluation.
+5. **Barcode/QR scanner** and label printer integration.
+6. **Corporate accounting** integration (GL/PPN) and warehouse attribution policy.
+7. **Full production planning**: machine calendar, shifts, capacity reservations, HR/tax payroll.

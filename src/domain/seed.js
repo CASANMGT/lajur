@@ -20,6 +20,7 @@ import { approveOpname, saveCounts, startOpname, submitOpname } from './opname.j
 import { createShipment, updateShipmentStatus } from './shipments.js';
 import { completeTask, createTask, startTask } from './tasks.js';
 import { confirmOrder, createSalesOrder } from './orders.js';
+import { createProductionOrder, cutOrder, qcPiece, releaseOrder, sewPiece } from './production.js';
 
 export const USERS = {
   operator: { id: 'u-op', name: 'Rani Pratama', role: 'operator' },
@@ -56,22 +57,23 @@ export const MASTER = {
     { id: 'sku-nova-02', collectionId: 'col-nova', collectionName: 'Nova', code: 'Nova-02', colourCode: '02', colourName: 'Terracotta', swatch: '#A85F45', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, active: false, dormant: true, dormantSince: '2026-01-15' },
   ],
   parts: [
-    { id: 'part-rel-3', sku: 'REL-300', name: 'Rel gorden 3 m', categoryId: 'cat-part', unit: 'pcs', sellPrice: 85000, buyPrice: 52000 },
-    { id: 'part-rel-4', sku: 'REL-400', name: 'Rel gorden 4 m', categoryId: 'cat-part', unit: 'pcs', sellPrice: 105000, buyPrice: 64000 },
-    { id: 'part-runner', sku: 'RUN-01', name: 'Runner rel', categoryId: 'cat-part', unit: 'pcs', sellPrice: 12000, buyPrice: 6500 },
-    { id: 'part-bracket', sku: 'BRK-01', name: 'Bracket dinding', categoryId: 'cat-part', unit: 'pcs', sellPrice: 25000, buyPrice: 14000 },
-    { id: 'part-hook', sku: 'HK-01', name: 'Hook gorden', categoryId: 'cat-part', unit: 'pcs', sellPrice: 3500, buyPrice: 1500 },
-    { id: 'part-ring', sku: 'RNG-01', name: 'Ring gorden', categoryId: 'cat-part', unit: 'pcs', sellPrice: 5000, buyPrice: 2200 },
-    { id: 'part-endcap', sku: 'END-01', name: 'End cap rel', categoryId: 'cat-part', unit: 'pcs', sellPrice: 4500, buyPrice: 2000 },
-    { id: 'part-motor', sku: 'MTR-01', name: 'Motor gorden', categoryId: 'cat-motor', unit: 'pcs', sellPrice: 1850000, buyPrice: 1250000 },
-    { id: 'part-remote', sku: 'RMT-01', name: 'Remote motor', categoryId: 'cat-motor', unit: 'pcs', sellPrice: 350000, buyPrice: 210000 },
+    { id: 'part-rel-3', sku: 'REL-300', name: 'Rel gorden 3 m', categoryId: 'cat-part', brand: 'Alumindo', unit: 'pcs', sellPrice: 85000, buyPrice: 52000, image: '/assets/parts/rail.svg', active: true },
+    { id: 'part-rel-4', sku: 'REL-400', name: 'Rel gorden 4 m', categoryId: 'cat-part', brand: 'Alumindo', unit: 'pcs', sellPrice: 105000, buyPrice: 64000, image: '/assets/parts/rail.svg', active: true },
+    { id: 'part-runner', sku: 'RUN-01', name: 'Runner rel', categoryId: 'cat-part', brand: 'Lajur', unit: 'pcs', sellPrice: 12000, buyPrice: 6500, image: '/assets/parts/rail.svg', active: true },
+    { id: 'part-bracket', sku: 'BRK-01', name: 'Bracket dinding', categoryId: 'cat-part', brand: 'Lajur', unit: 'pcs', sellPrice: 25000, buyPrice: 14000, image: '/assets/parts/bracket.svg', active: true },
+    { id: 'part-bracket-set', sku: 'BRK-04', name: 'Bracket set 4 pcs', categoryId: 'cat-part', brand: 'Lajur', unit: 'pcs', sellPrice: 140000, buyPrice: 90000, image: '/assets/parts/bracket.svg', active: true, notes: 'Set 4 bracket + sekrup.' },
+    { id: 'part-hook', sku: 'HK-01', name: 'Hook gorden', categoryId: 'cat-part', brand: 'Lajur', unit: 'pcs', sellPrice: 3500, buyPrice: 1500, image: '/assets/parts/rail.svg', active: true },
+    { id: 'part-ring', sku: 'RNG-01', name: 'Ring gorden', categoryId: 'cat-part', brand: 'Lajur', unit: 'pcs', sellPrice: 5000, buyPrice: 2200, image: '/assets/parts/rail.svg', active: true },
+    { id: 'part-endcap', sku: 'END-01', name: 'End cap rel', categoryId: 'cat-part', brand: 'Lajur', unit: 'pcs', sellPrice: 4500, buyPrice: 2000, image: '/assets/parts/rail.svg', active: true },
+    { id: 'part-motor', sku: 'MTR-01', name: 'Motor gorden', categoryId: 'cat-motor', brand: 'Somfy', unit: 'pcs', sellPrice: 1850000, buyPrice: 1250000, image: '/assets/parts/motor.svg', active: true },
+    { id: 'part-remote', sku: 'RMT-01', name: 'Remote motor', categoryId: 'cat-motor', brand: 'Somfy', unit: 'pcs', sellPrice: 350000, buyPrice: 210000, image: '/assets/parts/remote.svg', active: true },
   ],
 };
 
 function skeleton(dataset) {
   return {
     meta: {
-      version: 5,
+      version: 6,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -103,6 +105,14 @@ function skeleton(dataset) {
     shipments: [],
     tasks: [],
     orders: [],
+    productionOrders: [],
+    productionPieces: [],
+    payrollEntries: [],
+    workCenters: [
+      { id: 'wc-cut', stage: 'cutting', name: 'Meja potong', capacityPerDay: 40, ratePerPiece: 5000 },
+      { id: 'wc-sew', stage: 'sewing', name: 'Meja jahit', capacityPerDay: 25, ratePerPiece: 12000 },
+      { id: 'wc-qc', stage: 'qc', name: 'QC & packing', capacityPerDay: 35, ratePerPiece: 3000 },
+    ],
     returns: [],
     opnameSessions: [],
     audit: [],
@@ -190,6 +200,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   addParts(db, 'part-hook', 'wh-jkt', 200);
   addParts(db, 'part-remote', 'wh-jkt', 6);
   addParts(db, 'part-bracket', 'wh-jkt', 30);
+  addParts(db, 'part-bracket-set', 'wh-jkt', 15);
   addParts(db, 'part-runner', 'wh-jkt', 60);
   addParts(db, 'part-ring', 'wh-jkt', 120);
   addParts(db, 'part-endcap', 'wh-jkt', 30);
@@ -556,6 +567,31 @@ export function buildSeed({ dataset = 'main' } = {}) {
   });
   startTask(db, { id: qc.id, user: op });
   completeTask(db, { id: qc.id, note: 'Lolos QC; tepi rapi.', user: op });
+
+  /* ------------------------------------------------------------ production */
+  const wo1 = createProductionOrder(db, {
+    customerId: c4.id,
+    warehouseId: 'wh-jkt',
+    targetDate: '2026-11-15',
+    notes: 'Panel jendela ruang tunggu, jahit keliling.',
+    lines: [{ rollId: roll(13), qtyMm: 12000, pieceLengthMm: 2400 }],
+    user: sales,
+  });
+  releaseOrder(db, { id: wo1.id, user: op });
+  cutOrder(db, { id: wo1.id, user: op });
+  const wo1Pieces = db.productionPieces.filter((p) => p.orderId === wo1.id);
+  wo1Pieces.slice(0, 3).forEach((piece) => sewPiece(db, { pieceId: piece.id, workerId: 'u-op', user: op }));
+  qcPiece(db, { pieceId: wo1Pieces[0].id, pass: true, note: 'Jahitan rapi, ukuran sesuai.', user: op });
+  qcPiece(db, { pieceId: wo1Pieces[1].id, pass: false, note: 'Sisi kiri melengkung 5 mm.', user: op });
+
+  createProductionOrder(db, {
+    customerId: c4.id,
+    warehouseId: 'wh-jkt',
+    targetDate: '2026-11-20',
+    notes: 'Panel blackout tambahan, menunggu rilis.',
+    lines: [{ rollId: roll(14), qtyMm: 8000, pieceLengthMm: 2000 }],
+    user: sales,
+  });
 
   /* ------------------------------------------------------ customer return */
   const invRumahLine = invRumah.lines.find((l) => l.kind === 'fabric');

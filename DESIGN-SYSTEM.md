@@ -1,4 +1,4 @@
-# Design System — Lajur v2.3
+# Design System — Lajur v2.4
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -192,9 +192,20 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Sales order:** status chips Draft / Dikonfirmasi / Menjadi faktur / Dibatalkan. “Fakturkan” is the primary action and warns that stock issues once.
 - **Product/part rows:** 34 px image thumbnail or neutral swatch; SKU/brand; status; edit. Product/part forms show optional image preview (≤250 KB) and an audit timeline.
 - **Supplier cards:** local (teal) vs import/CNY (copper), FX, incoterm, port; add/edit.
-- **Role visibility:** navigation is filtered by role, not merely button-disabled. Operator: summary, tasks, stock, requests, purchasing, opname, simulation. Sales: summary, tasks, stock (read-only), invoices, orders, projects, customers, samples, simulation.
+- **Role visibility:** navigation is filtered by role, not merely button-disabled. Operator: summary, tasks, production, stock, requests, purchasing, opname, simulation. Sales: summary, tasks, stock (read-only), invoices, orders, projects, customers, samples, simulation.
 
-### 5.11 Empty, loading, error
+### 5.11 WIP production, imagery, mobile layering
+
+- **Production order:** status chips Draft / Siap / Berjalan / Menunggu QC / Selesai. Flow strip cutting → sewing → QC → done; piece table shows code, source roll/lot, metres, stage, worker.
+- **Piece actions:** Jahit (cutting piece), QC (sewing), Jahit ulang (rejected). QC dialog has pass/fail, note and optional proof.
+- **Payroll:** one row per piece per stage with rate, worker and paid/open status; total per order. Never label it a bank payment.
+- **Capacity:** three bars (potong, jahit, QC) showing load/capacity, utilisation colour (teal <70%, copper 70–100%, red >100%) and estimated days.
+- **Product imagery:** 34 px row thumbnail, 54 px form preview, optional upload ≤250 KB; neutral placeholder when absent. Show hex swatch (`#C9B79C`) beside the colour code; never derive it from the numeric code.
+- **Mobile layering:** bottom nav z45, drawer scrim z55, sidebar z60, modal z110. A drawer must cover the bottom nav, and the scrim covers both. Never let the bottom nav float above an open drawer.
+- **Bottom nav:** four 52 px items; content bottom padding 104 px; safe-area padding; account opens the account sheet.
+- **Tables on phones:** production/payroll tables scroll inside `.table-wrap`; action buttons stay 44 px.
+
+### 5.12 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.
@@ -252,7 +263,7 @@ Rules:
 - Icons are `aria-hidden`; icon-only controls have accessible names.
 - Target sizes: 44 px minimum on touch (≤ 820 px), 40 px desktop.
 - Reduced motion respected.
-- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, stock, purchasing, orders, samples, master, settings and simulation.
+- Verified with Lighthouse: accessibility 100, best practices 100, SEO 100 on login, dashboard, tasks, production, stock, purchasing, orders, samples, master, settings and simulation.
 
 Known gaps: no full screen-reader manual pass; no forced-colours/high-contrast theme yet; print documents are not tagged PDFs.
 

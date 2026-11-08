@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 5;
+export const BACKUP_VERSION = 6;
 
 export function exportBackup(db) {
   return {
@@ -26,7 +26,7 @@ const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
   'movements', 'customers', 'suppliers', 'supplierPrices', 'projects', 'invoices', 'payments',
   'samples', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
-  'shipments', 'tasks', 'orders', 'returns', 'opnameSessions', 'audit', 'sequences',
+  'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences',
 ];
 
 export function validateBackup(payload) {
@@ -42,6 +42,7 @@ export function validateBackup(payload) {
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
       if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
+      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters'].includes(key)) continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }
@@ -156,6 +157,14 @@ export function validateBackup(payload) {
       if (line.partId) need(parts, line.partId, 'Part', `Pesanan ${order.id}`);
     }
     if (order.invoiceId) need(invoiceIds, order.invoiceId, 'Faktur', `Pesanan ${order.id}`);
+  }
+  for (const wo of db.productionOrders ?? []) {
+    need(warehouses, wo.warehouseId, 'Gudang', `Produksi ${wo.id}`);
+    for (const line of wo.lines ?? []) need(rollIds, line.rollId, 'Roll', `Produksi ${wo.id}`);
+  }
+  for (const piece of db.productionPieces ?? []) {
+    if (!db.productionOrders.some((o) => o.id === piece.orderId)) errors.push(`Piece ${piece.id}: order ${piece.orderId} hilang.`);
+    if (!rollIds.has(piece.rollId)) errors.push(`Piece ${piece.id}: roll ${piece.rollId} hilang.`);
   }
   for (const s of db.suppliers) {
     if (s.currency && !['IDR', 'CNY', 'USD'].includes(s.currency)) errors.push(`Pemasok ${s.id}: mata uang tidak dikenal.`);

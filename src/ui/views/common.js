@@ -54,7 +54,7 @@ const CAPS = {
   operator: [
     'transfer.create', 'transfer.submit', 'transfer.dispatch', 'transfer.receive',
     'opname.start', 'opname.count', 'po.receive', 'stock.view', 'stock.quarantine', 'stock.add',
-    'task.complete', 'shipment.update',
+    'task.complete', 'shipment.update', 'production.execute',
   ],
   sales: [
     'invoice.create', 'invoice.post', 'invoice.pay', 'return.create',

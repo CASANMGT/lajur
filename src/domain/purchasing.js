@@ -41,11 +41,11 @@ export function poLineOpen(line) {
     : Math.max(0, line.qtyPcs - line.receivedPcs);
 }
 
-export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, lines, note = '', termsDays = 30, user }) {
+export function createPO(db, { supplierId, date = todayJakarta(), expectedDate, lines, note = '', termsDays = 30, currency: currencyInput = null, fxRate: fxInput = null, user }) {
   const supplier = byId(db.suppliers, supplierId);
   assert(supplier, 'SUPPLIER_NOT_FOUND', 'Pemasok tidak ditemukan.');
-  const currency = supplier.currency ?? 'IDR';
-  const fxRate = currency === 'IDR' ? 1 : Number(supplier.fxRate ?? 0);
+  const currency = currencyInput ?? supplier.currency ?? 'IDR';
+  const fxRate = currency === 'IDR' ? 1 : Number(fxInput ?? supplier.fxRate ?? 0);
   assert(fxRate > 0, 'INVALID_FX', 'Kurs pemasok harus lebih dari 0.');
   assert(Array.isArray(lines) && lines.length > 0, 'EMPTY_LINES', 'PO harus memiliki minimal satu baris.');
   const built = lines.map((l) => {

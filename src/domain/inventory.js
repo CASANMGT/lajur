@@ -604,8 +604,7 @@ export function whBinPrefix(db, warehouseId) {
 /* Reservations                                                               */
 /* -------------------------------------------------------------------------- */
 
-export function reserveRoll(db, { rollId, qtyMm, ref, user, note = '' }) {
-  const roll = requireRoll(db, rollId);
+export function reserveRoll(db, { rollId, qtyMm, ref, user, note = '' }) {  const roll = requireRoll(db, rollId);
   const qty = Math.round(qtyMm);
   assert(qty > 0, 'INVALID_LENGTH', 'Jumlah reservasi harus lebih dari 0 m.');
   assert(availableMm(roll) >= qty, 'INSUFFICIENT_AVAILABLE', `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
@@ -617,6 +616,53 @@ export function reserveRoll(db, { rollId, qtyMm, ref, user, note = '' }) {
     qtyMm: qty, unitCost: roll.costPerM, user, note: note || `Reservasi ${qty / MM_PER_M} m`,
   });
   return roll;
+}
+
+export function partReservedFor(row, ref) {
+  if (!row || !ref) return 0;
+  return (row.reservations ?? []).filter((r) => r.ref === ref).reduce((acc, r) => acc + r.qty, 0);
+}
+
+export function reservePart(db, { partId, warehouseId, qty, ref, user, note = '' }) {
+  const row = partStockRow(db, partId, warehouseId);
+  const n = Math.round(Number(qty));
+  assert(n > 0, 'INVALID_QTY', 'Jumlah reservasi part harus lebih dari 0.');
+  assert(row, 'NO_STOCK', 'Stok part tidak ada di gudang ini.');
+  assert(row.qty - (row.reserved || 0) >= n, 'INSUFFICIENT_PART', `Tersedia ${row.qty - (row.reserved || 0)} pcs.`);
+  row.reserved = (row.reserved || 0) + n;
+  row.reservations = row.reservations ?? [];
+  row.reservations.push({ ref, qty: n, at: isoNow(), by: user?.id ?? 'system', note });
+  recordMovement(db, {
+    type: 'reserve_part', ref, warehouseId, partId, qtyPcs: n, unitCost: byId(db.parts, partId)?.buyPrice ?? 0,
+    user, note: note || `Reservasi ${n} pcs`,
+  });
+  return row;
+}
+
+export function consumePartReservation(row, ref, qty) {
+  if (!row || !ref) return;
+  let remaining = Math.round(Number(qty));
+  for (const res of row.reservations ?? []) {
+    if (res.ref !== ref || remaining <= 0) continue;
+    const take = Math.min(res.qty, remaining);
+    res.qty -= take;
+    remaining -= take;
+  }
+  row.reservations = (row.reservations ?? []).filter((r) => r.qty > 0);
+  row.reserved = Math.max(0, (row.reserved || 0) - Math.round(Number(qty)));
+}
+
+export function releasePartReservation(db, { partId, warehouseId, ref, user, note = '' }) {
+  const row = partStockRow(db, partId, warehouseId);
+  const qty = partReservedFor(row, ref);
+  if (!row || !qty) return row;
+  row.reserved = Math.max(0, (row.reserved || 0) - qty);
+  row.reservations = (row.reservations ?? []).filter((r) => r.ref !== ref);
+  recordMovement(db, {
+    type: 'release_part', ref, warehouseId, partId, qtyPcs: qty, user,
+    note: note || `Reservasi part dilepas ${qty} pcs`,
+  });
+  return row;
 }
 
 export function releaseReservation(db, { rollId, ref, user, note = '' }) {

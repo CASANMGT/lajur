@@ -86,12 +86,14 @@ test('sales order does not move stock until converted, and converts once', () =>
   });
   assert.equal(order.status, 'draft');
   assert.equal(db.rolls.find((r) => r.id === 'RL-0001').currentMm, before);
+  assert.equal(db.rolls.find((r) => r.id === 'RL-0001').reservedMm, 10000);
   confirmOrder(db, { id: order.id, user: SALES });
   assert.equal(order.status, 'confirmed');
   const result = convertOrderToInvoice(db, { id: order.id, user: SALES });
   assert.equal(result.invoice.status, 'posted');
   assert.equal(order.status, 'converted');
   assert.equal(db.rolls.find((r) => r.id === 'RL-0001').currentMm, before - 10000);
+  assert.equal(db.rolls.find((r) => r.id === 'RL-0001').reservedMm, 0);
   assert.throws(
     () => convertOrderToInvoice(db, { id: order.id, user: SALES }),
     (err) => err.code === 'INVALID_STATUS',

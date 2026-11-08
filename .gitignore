@@ -3,5 +3,6 @@ node_modules/
 *.log
 .vercel
 coverage/
+server/data/
 
 .vercel

@@ -70,8 +70,15 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'returns', 'opnameSessions', 'audit']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit']) {
     if (!Array.isArray(db[key])) db[key] = [];
+  }
+  if (!Array.isArray(db.workCenters) || !db.workCenters.length) {
+    db.workCenters = [
+      { id: 'wc-cut', stage: 'cutting', name: 'Meja potong', capacityPerDay: 40, ratePerPiece: 5000 },
+      { id: 'wc-sew', stage: 'sewing', name: 'Meja jahit', capacityPerDay: 25, ratePerPiece: 12000 },
+      { id: 'wc-qc', stage: 'qc', name: 'QC & packing', capacityPerDay: 35, ratePerPiece: 3000 },
+    ];
   }
   for (const s of db.suppliers ?? []) {
     if (!s.origin) s.origin = 'local';

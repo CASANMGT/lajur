@@ -9,6 +9,7 @@ import {
 } from '../../domain/reports.js';
 import { receivablesAging } from '../../domain/sales.js';
 import { payablesAging } from '../../domain/purchasing.js';
+import { capacityLoad, orderStats, productionStats } from '../../domain/production.js';
 import { pageHead, statCard, barChart, warehouseOf, movementRow } from './common.js';
 
 let tab = 'persediaan';
@@ -38,11 +39,12 @@ export function render(ctx) {
     <div class="notice notice-info" style="margin-bottom:14px">${icon('alert')}<div><strong>Laporan keuangan bersifat perusahaan.</strong> Laba per gudang memerlukan kebijakan atribusi eksplisit; transfer internal tidak pernah menghasilkan laba. Angka di sini adalah ringkasan manajemen, bukan laporan pajak/akuntansi lengkap.</div></div>
 
     <div class="tabs" role="tablist">
-      ${[['persediaan', 'Persediaan'], ['penjualan', 'Penjualan'], ['keuangan', 'Keuangan'], ['kontrol', 'Kontrol & audit']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${[['persediaan', 'Persediaan'], ['penjualan', 'Penjualan'], ['produksi', 'Produksi & payroll'], ['keuangan', 'Keuangan'], ['kontrol', 'Kontrol & audit']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
 
     ${tab === 'persediaan' ? renderStock(ctx, value) : ''}
     ${tab === 'penjualan' ? renderSales(ctx, sales) : ''}
+    ${tab === 'produksi' ? renderProduction(ctx) : ''}
     ${tab === 'keuangan' ? renderFinance(ctx, ar, ap) : ''}
     ${tab === 'kontrol' ? renderControl(ctx) : ''}`;
 }
@@ -154,6 +156,19 @@ function renderSales(ctx, sales) {
       </table></div>
     </section>
 
+    <div class="section-title"><h2>Pesanan penjualan</h2><span class="small muted">${db.orders.length} pesanan</span></div>
+    <section class="card">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Pesanan</th><th>Pelanggan</th><th>Status</th><th class="num">Total</th><th>Faktur</th></tr></thead>
+        <tbody>${db.orders.map((o) => `<tr>
+          <td class="mono">${esc(o.id)}</td><td>${esc(o.customerName)}</td>
+          <td>${badge(o.status, o.status === 'converted' ? 'ok' : o.status === 'cancelled' ? 'danger' : 'muted')}</td>
+          <td class="num">${fmt.money(o.total)}</td>
+          <td>${o.invoiceId ? `<a class="mono xs" href="#/penjualan/${o.invoiceId}">${esc(o.invoiceId)}</a>` : '—'}</td>
+        </tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada pesanan.</td></tr>'}</tbody>
+      </table></div>
+    </section>
+
     <div class="section-title"><h2>Proyek & kekurangan</h2><a class="small" href="#/proyek">Buka proyek</a></div>
     <section class="card">
       <div class="table-wrap"><table class="data">
@@ -167,6 +182,55 @@ function renderSales(ctx, sales) {
         </tr>`).join('')}</tbody>
       </table></div>
     </section>`;
+}
+
+function renderProduction(ctx) {
+  const { db } = ctx;
+  const stats = productionStats(db);
+  const capacity = capacityLoad(db);
+  const orders = [...db.productionOrders].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const payroll = [...db.payrollEntries].slice(0, 20);
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px">
+      ${statCard({ label: 'Order aktif', value: String(stats.activeOrders), meta: `${stats.wipPieces} piece WIP` })}
+      ${statCard({ label: 'Kain WIP', value: fmt.m(stats.wipMm), meta: 'Sudah dipotong, belum selesai', tone: 'accent' })}
+      ${statCard({ label: 'Payroll terbuka', value: fmt.money(stats.payrollOpen), meta: 'Borongan per piece', tone: 'warn' })}
+      ${statCard({ label: 'QC gagal', value: String(stats.rejected), meta: `${stats.done} piece selesai`, tone: stats.rejected ? 'warn' : '' })}
+    </div>
+    <div class="grid grid-main">
+      <section class="card">
+        <div class="card-head"><div><h2>Order produksi</h2><p>Progres per piece dan payroll.</p></div></div>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>Order</th><th>Pelanggan</th><th>Target</th><th class="num">Piece</th><th class="num">Payroll</th><th>Status</th></tr></thead>
+          <tbody>${orders.map((o) => {
+            const s = orderStats(db, o);
+            return `<tr><td class="mono"><a href="#/produksi/${o.id}">${esc(o.id)}</a></td>
+              <td>${esc(byId(db.customers, o.customerId)?.name ?? '—')}</td>
+              <td>${esc(o.targetDate)}</td>
+              <td class="num">${s.done}/${s.pieces}</td>
+              <td class="num">${fmt.money(s.payroll)}</td>
+              <td>${badge(o.status, 'muted')}</td></tr>`;
+          }).join('') || '<tr><td colspan="6" class="muted">Belum ada order.</td></tr>'}</tbody>
+        </table></div>
+      </section>
+      <section class="card card-pad">
+        <h2>Kapasitas</h2>
+        <div class="stack" style="margin-top:10px">
+          ${capacity.map((c) => `<div><div class="row-between"><span class="small strong">${esc(c.label)}</span><span class="xs muted">${c.load}/${c.capacity} · ${c.days} hari</span></div>
+            <div class="meter" style="margin-top:4px"><i class="${c.utilPct > 100 ? 'danger' : c.utilPct > 70 ? 'warn' : ''}" style="width:${Math.min(100, c.utilPct)}%"></i></div>
+            <div class="xs muted">${fmt.money(c.rate)} / piece</div></div>`).join('')}
+        </div>
+      </section>
+    </div>
+    <div class="section-title"><h2>Payroll borongan terbaru</h2><span class="small muted">${db.payrollEntries.length} entri</span></div>
+    <section class="card"><div class="table-wrap"><table class="data">
+      <thead><tr><th>Piece</th><th>Order</th><th>Tahap</th><th>Petugas</th><th class="num">Nominal</th><th>Status</th></tr></thead>
+      <tbody>${payroll.map((p) => `<tr>
+        <td class="mono">${esc(p.pieceId)}</td><td class="mono">${esc(p.orderId)}</td>
+        <td>${esc(p.stage)}</td><td>${esc(byId(db.users, p.workerId)?.name ?? '—')}</td>
+        <td class="num">${fmt.money(p.amount)}</td><td>${badge(p.paid ? 'Lunas' : 'Terbuka', p.paid ? 'ok' : 'warn')}</td>
+      </tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada payroll.</td></tr>'}</tbody>
+    </table></div></section>`;
 }
 
 function renderFinance(ctx, ar, ap) {

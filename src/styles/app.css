@@ -130,7 +130,7 @@ textarea {
     radial-gradient(120% 70% at 0% 0%, #1d3747 0%, transparent 60%),
     var(--navy-800);
   color: #dfe7e9;
-  z-index: 40;
+  z-index: 60;
 }
 
 .brand {
@@ -885,7 +885,7 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
 .drawer-scrim {
   position: fixed;
   inset: 0;
-  z-index: 39;
+  z-index: 55;
   background: rgba(13, 26, 35, 0.45);
   border: 0;
   padding: 0;

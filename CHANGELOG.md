@@ -2,6 +2,60 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.4.0] — 2026-11-08
+
+**Release name: Produksi & Kontrol.** Adds WIP production with payroll/capacity, stock-reserving sales orders, richer reporting, explicit CNY buying, part imagery and mobile layering fixes.
+
+### Added
+
+- **WIP production orders** (`#/produksi`):
+  - Order from available rolls, total metres and piece length.
+  - Cutting consumes the reservation and creates one WIP piece per length, keeping source roll/lot.
+  - Piece flow cutting → sewing → QC, with QC pass/fail and rework.
+  - Piece-rate payroll ledger per stage/worker, mark paid.
+  - Work-centre capacity/load/estimated days.
+  - Production/payroll/capacity report tab.
+- **Sales orders reserve stock** at creation for fabric and parts; cancel releases; converting to invoice consumes the reservation and issues stock once.
+- **Explicit CNY buying:** choose IDR/CNY and FX on the PO independently of the supplier default; foreign prices convert to IDR HPP and bills.
+- **Richer reporting:** WIP metres, open payroll, QC rejects, capacity, order progress, payroll entries.
+- **Part imagery:** local SVG product renders for 10 parts, optional uploaded image, brand and hex swatch display.
+- **Demo part at Rp 140.000:** “Bracket set 4 pcs” (`BRK-04`).
+- **Reference shared backend** (`server/`): scrypt PIN login, HttpOnly session, RBAC per action, revisioned shared state, atomic writes and domain transactions. `npm run server`.
+- UI/mobile: bottom nav z45, drawer scrim z55, sidebar z60, 61 px nav, safe-area padding.
+
+### Changed
+
+- Production cut moves stock from raw roll to WIP; it does not create an invoice.
+- Operator can execute production (cut/sew/QC) but cannot create/release/payroll; managers own production administration.
+- Operator no longer sees supplier bills, supplier master or PO prices; purchasing shows only PO/receiving/shipment for operator.
+- Field labels are programmatically associated across all forms.
+
+### Fixed
+
+- Sales order whole-roll conversion with reservation.
+- Part reservations are consumed/released during order conversion.
+- Production capacity/landed costs no longer divide millimetres as metres.
+- Table action headers, settings labels and production detail accessibility.
+- Drawer/bottom-nav stacking and mobile overflow at 320/390.
+
+### Verification
+
+- `node --test`: **46 passed** (29 invariants + 4 operations + 7 admin + 4 production + 2 auth).
+- Module imports 40/40; render 23/23; browser route sweep 23/23.
+- Production: 10 m → 5 pieces, payroll Rp 25.000, reject/rework, capacity load.
+- Sales order: 10 m reserved; conversion issued once.
+- Server: operator login + `task.start` 200; operator `invoice.post` 403.
+- Lighthouse accessibility 100 on production, production detail, reports and settings.
+
+### Known limitations
+
+- Reference server is not wired to the static Vercel UI; no PostgreSQL/multi-node locking yet.
+- Object storage is still absent: product images are local SVG/data URLs; proof is metadata.
+- Payroll is a piece-rate ledger, not HR/tax.
+- Partial project fulfilment, quotes, as-of valuation and accounting/PPN remain planned.
+
+---
+
 ## [2.3.0] — 2026-11-08
 
 **Release name: Kontrol & Peran.** Adds a settings workspace, staff/role management, sales orders, richer master data and strict role-based navigation.

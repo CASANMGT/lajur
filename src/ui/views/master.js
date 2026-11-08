@@ -42,7 +42,7 @@ function renderProducts(ctx) {
       <tbody>${db.skus.map((s) => `<tr>
         <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="" class="thumb" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
         <td>${esc(s.collectionName)}</td>
-        <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span></span></div></td>
+        <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span><div class="xs mono">${s.swatch ? esc(s.swatch) : 'hex belum diset'}</div></span></div></td>
         <td class="num">${s.widthCm ? `${s.widthCm} cm` : '—'}</td>
         <td class="num">${fmt.money(s.buyPrice)}</td>
         <td class="num">${fmt.money(s.sellPrice)}</td>

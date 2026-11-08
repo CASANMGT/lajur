@@ -59,11 +59,12 @@ export function render(ctx) {
 
 function renderPoTab(ctx) {
   const { db } = ctx;
+  const showMoney = ctx.role === 'manager';
   const rows = [...db.purchaseOrders].sort((a, b) => (a.date < b.date ? 1 : -1));
   return `<section class="card">
     <div class="table-wrap desktop-table">
       <table class="data">
-        <thead><tr><th>PO</th><th>Pemasok</th><th class="hide-sm">Estimasi</th><th style="min-width:150px">Diterima</th><th class="num">Total</th><th>Status</th></tr></thead>
+        <thead><tr><th>PO</th><th>Pemasok</th><th class="hide-sm">Estimasi</th><th style="min-width:150px">Diterima</th>${showMoney ? '<th class="num">Total</th>' : ''}<th>Status</th></tr></thead>
         <tbody>${rows.map((po) => {
           const lines = po.lines;
           const ordered = lines.reduce((a, l) => a + (l.qtyMm ?? 0) + (l.qtyPcs ?? 0), 0);
@@ -74,7 +75,7 @@ function renderPoTab(ctx) {
             <td>${esc(po.supplierName)}</td>
             <td class="hide-sm">${esc(po.expectedDate)}${po.expectedDate < todayJakarta() && ['approved', 'partial'].includes(po.status) ? ' <span class="badge badge-warn no-dot">lewat</span>' : ''}</td>
             <td><div class="meter"><i style="width:${pct}%" class="${pct < 100 ? 'warn' : ''}"></i></div><div class="xs muted">${pct}%</div></td>
-            <td class="num">${fmt.money(po.total)}</td>
+            ${showMoney ? `<td class="num">${fmt.money(po.total)}</td>` : ''}
             <td>${badge(PO_STATUS[po.status].label, PO_STATUS[po.status].tone)}</td>
           </tr>`;
         }).join('')}</tbody>
@@ -85,7 +86,7 @@ function renderPoTab(ctx) {
         <div class="top"><span class="id">${esc(po.id)}</span>${badge(PO_STATUS[po.status].label, PO_STATUS[po.status].tone)}</div>
         <div class="small strong">${esc(po.supplierName)}</div>
         <div class="xs muted">Estimasi ${esc(po.expectedDate)} · ${esc(po.note || '')}</div>
-        <div class="grid3"><div class="kv"><span>Total</span><strong>${fmt.money(po.total)}</strong></div><div class="kv"><span>Baris</span><strong>${po.lines.length}</strong></div><div class="kv"><span>Status</span><strong>${esc(PO_STATUS[po.status].label)}</strong></div></div>
+        <div class="grid3">${showMoney ? `<div class="kv"><span>Total</span><strong>${fmt.money(po.total)}</strong></div>` : ''}<div class="kv"><span>Baris</span><strong>${po.lines.length}</strong></div><div class="kv"><span>Status</span><strong>${esc(PO_STATUS[po.status].label)}</strong></div></div>
       </a>`).join('')}
     </div>
   </section>`;
@@ -346,6 +347,8 @@ export function openCreatePo(ctx) {
     body: `
       <div class="form-grid">
         ${field('Pemasok', `<select class="select" name="supplier">${db.suppliers.map((s) => `<option value="${s.id}" data-currency="${esc(s.currency ?? 'IDR')}" data-fx="${s.fxRate ?? 1}" data-origin="${esc(s.origin ?? 'local')}">${esc(s.name)}${s.origin === 'import' ? ' (impor)' : ''}</option>`).join('')}</select>`)}
+        ${field('Mata uang beli', `<select class="select" name="currency"><option value="IDR">IDR</option><option value="CNY">CNY (yuan)</option></select>`, { hint: 'Pilih CNY untuk pembelian impor.' })}
+        ${field('Kurs ke IDR', `<input class="input" name="fxRate" inputmode="decimal" value="1" />`)}
         ${field('Tanggal PO', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
         ${field('Estimasi tiba', `<input class="input" type="date" name="expectedDate" value="${new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10)}" />`)}
         ${field('Termin (hari)', `<input class="input" type="number" name="terms" value="30" min="0" max="180" />`)}
@@ -359,16 +362,22 @@ export function openCreatePo(ctx) {
     onMount(form) {
       const rows = form.querySelector('#po-rows');
       const supplierOf = () => db.suppliers.find((s) => s.id === form.supplier.value);
-      const updateHint = () => {
+      const syncCurrency = () => {
         const s = supplierOf();
+        form.currency.value = s?.currency ?? 'IDR';
+        form.fxRate.value = String(s?.fxRate ?? 1);
+        form.fxRate.disabled = form.currency.value === 'IDR';
+      };
+      const updateHint = () => {
+        const currency = form.currency.value;
         const hint = form.querySelector('[data-fx-hint]');
-        hint.innerHTML = s?.origin === 'import'
-          ? `${icon('globe')}<div><strong>Impor ${esc(s.currency)}.</strong> Harga baris dalam ${esc(s.currency)}; kurs ${fmt.money(s.fxRate)} / ${esc(s.currency)} → HPP IDR dihitung otomatis.</div>`
+        hint.innerHTML = currency === 'CNY'
+          ? `${icon('globe')}<div><strong>Pembelian CNY.</strong> Harga baris dalam CNY; kurs ${fmt.money(Number(form.fxRate.value) || 0)} / CNY → HPP IDR dihitung otomatis.</div>`
           : `${icon('alert')}<div>Harga dalam IDR. PO lokal tidak memakai kurs.</div>`;
       };
       const reprice = () => {
-        const s = supplierOf();
-        const fx = s?.currency === 'IDR' ? 1 : (s?.fxRate ?? 1);
+        const currency = form.currency.value;
+        const fx = currency === 'IDR' ? 1 : (Number(String(form.fxRate.value).replace(',', '.')) || 1);
         rows.querySelectorAll('[data-line]').forEach((r) => {
           const id = r.querySelector('.l-product').value;
           const item = db.skus.find((x) => x.id === id) ?? db.parts.find((x) => x.id === id);
@@ -384,7 +393,15 @@ export function openCreatePo(ctx) {
         r.querySelector('[data-remove]').addEventListener('click', () => { if (rows.children.length > 1) r.remove(); });
         r.querySelector('.l-product').addEventListener('change', () => reprice());
       };
-      form.supplier.addEventListener('change', () => { updateHint(); reprice(); });
+      form.supplier.addEventListener('change', () => { syncCurrency(); updateHint(); reprice(); });
+      form.currency.addEventListener('change', () => {
+        form.fxRate.disabled = form.currency.value === 'IDR';
+        if (form.currency.value === 'IDR') form.fxRate.value = '1';
+        updateHint();
+        reprice();
+      });
+      form.fxRate.addEventListener('input', () => { updateHint(); reprice(); });
+      syncCurrency();
       updateHint();
       form.querySelectorAll('[data-line]').forEach(bind);
       form.querySelector('[data-add]').addEventListener('click', () => {
@@ -406,6 +423,8 @@ export function openCreatePo(ctx) {
       if (!lines.length) throw new Error('Tambahkan minimal satu baris PO.');
       const po = ctx.store.update((db) => createPO(db, {
         supplierId: form.supplier.value,
+        currency: form.currency.value,
+        fxRate: Number(String(form.fxRate.value).replace(',', '.')),
         date: form.date.value,
         expectedDate: form.expectedDate.value,
         termsDays: Number(form.terms.value || 30),
