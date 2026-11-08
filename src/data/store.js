@@ -94,7 +94,7 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'fxRates']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'fxRates']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }
   if (!db.fxRates.length) {
@@ -118,6 +118,8 @@ export function migrate(db) {
   db.sequences.supplierPrice = Math.max(Number(db.sequences.supplierPrice) || 0, db.supplierPrices.length);
   db.sequences.fxRate = Math.max(Number(db.sequences.fxRate) || 0, db.fxRates.length);
   db.sequences.driver = Math.max(Number(db.sequences.driver) || 0, (db.drivers ?? []).length);
+  db.sequences.transport = Math.max(Number(db.sequences.transport) || 0, (db.transportCompanies ?? []).length);
+  db.sequences.sampleBook = Math.max(Number(db.sequences.sampleBook) || 0, (db.sampleBooks ?? []).length);
   if (!Array.isArray(db.workCenters) || !db.workCenters.length) {
     db.workCenters = [
       { id: 'wc-cut', stage: 'cutting', name: 'Meja potong', capacityPerDay: 40, ratePerPiece: 5000 },

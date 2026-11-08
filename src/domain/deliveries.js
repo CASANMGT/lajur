@@ -23,6 +23,7 @@ export const COURIERS = {
   lalamove: { label: 'Lalamove' },
   gosend: { label: 'GoSend' },
   grabexpress: { label: 'GrabExpress' },
+  'bali-kargo': { label: 'Bali Kargo Utama' },
 };
 
 export function getDelivery(db, id) {

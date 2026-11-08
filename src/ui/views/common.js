@@ -62,6 +62,7 @@ const CAPS = {
     'customer.create', 'customer.edit', 'sample.create', 'deposit.create', 'deposit.apply',
     'stock.view', 'task.create', 'task.complete', 'shipment.create',
   ],
+  driver: ['task.complete'],
   manager: ['*'],
 };
 

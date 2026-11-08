@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 11;
+export const BACKUP_VERSION = 12;
 
 export function exportBackup(db) {
   return {
@@ -24,8 +24,8 @@ export function exportBackup(db) {
 
 const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
-  'movements', 'customers', 'suppliers', 'supplierPrices', 'drivers', 'projects', 'invoices', 'payments',
-  'samples', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
+  'movements', 'customers', 'suppliers', 'supplierPrices', 'drivers', 'transportCompanies', 'projects', 'invoices', 'payments',
+  'samples', 'sampleBooks', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
   'shipments', 'tasks', 'orders', 'deliveries', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences', 'fxRates',
 ];
 
@@ -42,7 +42,7 @@ export function validateBackup(payload) {
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
       if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
-      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries', 'drivers'].includes(key)) continue;
+      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries', 'drivers', 'transportCompanies', 'sampleBooks'].includes(key)) continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }
@@ -55,6 +55,7 @@ export function validateBackup(payload) {
   const customers = ids(db.customers);
   const suppliers = ids(db.suppliers);
   const driverIds = ids(db.drivers ?? []);
+  const transportIds = ids(db.transportCompanies ?? []);
   const rollIds = new Set(db.rolls.map((r) => r.id));
   const invoiceIds = new Set(db.invoices.map((i) => i.id));
   const projectIds = new Set(db.projects.map((p) => p.id));
@@ -159,6 +160,10 @@ export function validateBackup(payload) {
     }
     if (order.invoiceId) need(invoiceIds, order.invoiceId, 'Faktur', `Pesanan ${order.id}`);
   }
+  for (const driver of db.drivers ?? []) {
+    if (driver.userId && !db.users.some((u) => u.id === driver.userId)) errors.push(`Driver ${driver.id}: akun ${driver.userId} hilang.`);
+    if (driver.transportId) need(transportIds, driver.transportId, 'Transport', `Driver ${driver.id}`);
+  }
   for (const delivery of db.deliveries ?? []) {
     need(invoiceIds, delivery.invoiceId, 'Faktur', `Surat jalan ${delivery.id}`);
     need(customers, delivery.customerId, 'Pelanggan', `Surat jalan ${delivery.id}`);
@@ -173,6 +178,12 @@ export function validateBackup(payload) {
   for (const piece of db.productionPieces ?? []) {
     if (!db.productionOrders.some((o) => o.id === piece.orderId)) errors.push(`Piece ${piece.id}: order ${piece.orderId} hilang.`);
     if (!rollIds.has(piece.rollId)) errors.push(`Piece ${piece.id}: roll ${piece.rollId} hilang.`);
+  }
+  for (const book of db.sampleBooks ?? []) {
+    need(customers, book.customerId, 'Pelanggan', `Buku sample ${book.id}`);
+    for (const item of book.items ?? []) {
+      if (!db.samples.some((s) => s.id === item.sampleId)) errors.push(`Buku sample ${book.id}: sample ${item.sampleId} hilang.`);
+    }
   }
   for (const s of db.suppliers) {
     if (s.currency && !['IDR', 'CNY', 'USD'].includes(s.currency)) errors.push(`Pemasok ${s.id}: mata uang tidak dikenal.`);

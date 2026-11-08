@@ -1,4 +1,4 @@
-# Design System — Lajur v2.10
+# Design System — Lajur v2.11
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -251,7 +251,15 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Warehouses:** demo is Jakarta (JKT) and Bali (DPS) only. Do not label the Bali site Bandung/Surabaya.
 - **Chinese suppliers:** Advanced purchasing shows Ningbo, Shaoxing, Yiwu and Guangzhou import suppliers; each uses CNY and a manually entered PO rate.
 
-### 5.16 Empty, loading, error
+### 5.16 Driver role, sample book, catalog, guide
+
+- **Driver account:** show driver name/vehicle, only Ringkasan/Tugas/Pengiriman/Panduan in nav, no prices or master. Driver actions are Kirim and Tiba; receiver confirmation belongs to sales/manager.
+- **Transport master:** driver rows show linked user account, transport company, vehicle and plate. Transport table is separate and editable.
+- **Sample book:** create from multiple roll cuts, show item count/status, print/PDF. Use “Beri” with recipient and date; never show a second stock movement after giving the book.
+- **Catalog:** card grid with swatch, colour/code, width, sell price and availability; no cost/margin. Provide Cetak/PDF.
+- **Guide:** accordion sections with numbered steps and links. Keep copy practical (“Buka → isi → simpan”), not marketing.
+
+### 5.17 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.

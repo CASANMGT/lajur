@@ -135,7 +135,7 @@ export function createCollection(db, { name, categoryId, description = '', user 
 /* Users                                                                      */
 /* -------------------------------------------------------------------------- */
 
-const ROLES = new Set(['manager', 'operator', 'sales']);
+const ROLES = new Set(['manager', 'operator', 'sales', 'driver']);
 
 export function saveUser(db, { id = null, name, role, active = true, user }) {
   const clean = String(name ?? '').trim();
@@ -279,6 +279,53 @@ export const VEHICLE_TYPES = {
   truk: { label: 'Truk' },
 };
 
+export const TRANSPORT_TYPES = {
+  internal: { label: 'Internal' },
+  third_party: { label: 'Pihak ketiga' },
+};
+
+export function activeTransports(db) {
+  return (db.transportCompanies ?? []).filter((t) => t.active !== false);
+}
+
+export function transportOf(db, id) {
+  return (db.transportCompanies ?? []).find((t) => t.id === id) ?? null;
+}
+
+export function saveTransport(db, {
+  id = null, code, name, type = 'third_party', contact = '', phone = '', address = '', active = true, notes = '', user,
+}) {
+  const cleanCode = String(code ?? '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  const cleanName = String(name ?? '').trim();
+  assert(cleanCode.length >= 2, 'INVALID_CODE', 'Kode transport minimal 2 karakter.');
+  assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama transport minimal 2 karakter.');
+  assert(TRANSPORT_TYPES[type], 'INVALID_TYPE', 'Jenis transport tidak dikenal.');
+  db.transportCompanies = db.transportCompanies ?? [];
+  assert(!db.transportCompanies.some((t) => t.id !== id && t.code === cleanCode), 'DUPLICATE_CODE', `Kode ${cleanCode} sudah dipakai.`);
+  const patch = {
+    code: cleanCode,
+    name: cleanName,
+    type,
+    contact,
+    phone,
+    address,
+    active,
+    notes,
+    updatedAt: isoNow(),
+  };
+  if (id) {
+    const existing = transportOf(db, id);
+    assert(existing, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
+    Object.assign(existing, patch);
+    audit(db, user, 'ubah_transport', 'transport', id, cleanName);
+    return existing;
+  }
+  const transport = { id: nextId(db, 'transport', 'TRP', 3), ...patch, createdAt: isoNow() };
+  db.transportCompanies.push(transport);
+  audit(db, user, 'buat_transport', 'transport', transport.id, cleanName);
+  return transport;
+}
+
 export function activeDrivers(db) {
   return (db.drivers ?? []).filter((d) => d.active !== false);
 }
@@ -288,13 +335,16 @@ export function driverOf(db, id) {
 }
 
 export function saveDriver(db, {
-  id = null, name, phone = '', vehicleType = 'motor', plateNumber = '', active = true, notes = '', user,
+  id = null, name, phone = '', vehicleType = 'motor', plateNumber = '', transportId = null,
+  active = true, notes = '', user,
 }) {
   const cleanName = String(name ?? '').trim();
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama driver minimal 2 karakter.');
   assert(VEHICLE_TYPES[vehicleType], 'INVALID_VEHICLE', 'Jenis kendaraan tidak dikenal.');
   const plate = String(plateNumber ?? '').trim().toUpperCase();
   assert(!plate || plate.length >= 3, 'INVALID_PLATE', 'Nomor polisi minimal 3 karakter.');
+  const transport = transportId ? transportOf(db, transportId) : null;
+  if (transportId) assert(transport, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
   db.drivers = db.drivers ?? [];
   assert(!db.drivers.some((d) => d.id !== id && plate && d.plateNumber?.toUpperCase() === plate), 'DUPLICATE_PLATE', `Nomor polisi ${plate} sudah dipakai.`);
 
@@ -303,6 +353,7 @@ export function saveDriver(db, {
     phone: String(phone ?? '').trim(),
     vehicleType,
     plateNumber: plate,
+    transportId: transport?.id ?? null,
     active,
     notes: String(notes ?? '').trim(),
     updatedAt: isoNow(),

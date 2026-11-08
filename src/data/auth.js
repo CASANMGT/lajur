@@ -24,12 +24,16 @@ export const DEFAULT_PINS = {
   'u-mgr': '2468',
   'u-op': '1357',
   'u-sales': '8642',
+  'u-drv1': '1212',
+  'u-drv2': '2323',
+  'u-drv3': '3434',
 };
 
 export const ROLE_HOME = {
   manager: '#/ringkasan',
   operator: '#/ringkasan',
   sales: '#/penjualan',
+  driver: '#/pengiriman',
 };
 
 let cached = null;

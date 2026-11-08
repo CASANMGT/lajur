@@ -46,7 +46,7 @@ function taskCard(ctx, task) {
 
 export function render(ctx) {
   const { db, role, ui, user } = ctx;
-  const mineDefault = role === 'operator';
+  const mineDefault = role === 'operator' || role === 'driver';
   if (lastRole !== role) {
     filter.mine = mineDefault;
     lastRole = role;

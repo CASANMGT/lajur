@@ -8,12 +8,14 @@ const ROLE_TEXT = {
   manager: 'Manajer / pemilik',
   operator: 'Operator gudang',
   sales: 'Sales & customer service',
+  driver: 'Driver / transport',
 };
 
 const ROLE_NOTE = {
   manager: 'Persetujuan, laporan, master',
   operator: 'Stok, transfer, opname',
   sales: 'Faktur, pesanan, proyek, pelanggan',
+  driver: 'Surat jalan dan tugas pengiriman',
 };
 
 const initials = (name) => name.split(' ').filter(Boolean).slice(0, 2).map((n) => n[0]).join('').toUpperCase();

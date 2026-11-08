@@ -32,12 +32,13 @@ const AUTH_FILE = path.join(DATA_DIR, 'auth.json');
 const PORT = Number(process.env.PORT ?? 8790);
 const SESSION_MS = 8 * 3_600_000;
 
-const DEFAULT_PINS = { 'u-mgr': '2468', 'u-op': '1357', 'u-sales': '8642' };
+const DEFAULT_PINS = { 'u-mgr': '2468', 'u-op': '1357', 'u-sales': '8642', 'u-drv1': '1212', 'u-drv2': '2323', 'u-drv3': '3434' };
 
 const CAPS = {
   manager: new Set(['*']),
   operator: new Set(['task.start', 'task.complete', 'production.cut', 'production.sew', 'production.qc', 'transfer.receive']),
   sales: new Set(['task.create', 'order.create', 'order.confirm', 'order.convert', 'invoice.post']),
+  driver: new Set(['task.start', 'task.complete']),
 };
 
 fs.mkdirSync(DATA_DIR, { recursive: true });

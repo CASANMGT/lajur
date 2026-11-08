@@ -2,6 +2,43 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.11.0] — 2026-11-09
+
+**Release name: Driver, Sample & Panduan.** Adds driver user accounts and corporate transport, sample books from roll cuts, customer catalog, and an in-app tutorial for every process.
+
+### Added
+
+- **Driver user role:** Asep, Rudi and Slamet are users (PIN 1212/2323/3434) linked to driver records. Driver sees Ringkasan/Tugas/Pengiriman/Panduan; can Kirim/Tiba, not confirm receiver or see prices/master.
+- **Transport master:** Lajur Fleet (internal), Lalamove, GoSend, Bali Kargo Utama; drivers link to a transport company.
+- **Sample book:** create a giveaway book from multiple roll cuts, each cut reduces stock and creates a sample; print/PDF and mark recipient/date.
+- **Catalog:** active colours, width, sell price and availability; print/PDF for customers.
+- **In-app guide:** 14 tutorial sections covering every business-process input.
+- Driver seed accounts and transport links; driver dashboard.
+
+### Changed
+
+- Version bumped to 2.11.0, schema 12, backup v12.
+- Sales/nav gains Katalog and Pengiriman; all roles gain Panduan; Master Data remains in Simple.
+- Auth defaults and reference server RBAC include driver accounts.
+
+### Verification
+
+- `node --test`: **57 passed** (30 invariants + 4 operations + 9 admin + 5 orders/pricing + 3 invoice/delivery + 4 production + 2 auth).
+- Module imports 46/46; render 24+ views including Katalog, Pengiriman and Panduan.
+- Simple routes **22/22**; Advanced with WIP+Pesanan **28/28**, zero console errors.
+- Driver login: only Ringkasan/Tugas/Pengiriman/Panduan; invoice URL redirects to Pengiriman.
+- Sample book SB-0001: 2 roll cuts, stock reduced, given to Budi Prospek, print contains BUKU SAMPLE.
+- Catalog: 5 active SKUs, print/PDF output.
+- Guide: 14 sections.
+
+### Known limitations
+
+- Driver role is demo-level; server API includes driver login but no driver-specific delivery endpoints yet.
+- Sample book is an index for a physical book; there is no printed cover design editor.
+- Catalog is fabric-only and shows current stock, not a reserved order quantity.
+
+---
+
 ## [2.10.0] — 2026-11-08
 
 **Release name: Gudang & Tiket.** Consolidates warehouses to Jakarta + Bali, moves Master Data into Simple mode, adds printed task tickets/online-assignment option, manual stock shortcut, delivery schedules and Chinese supplier demos.

@@ -21,12 +21,15 @@ import * as samples from '../src/ui/views/samples.js';
 import * as orders from '../src/ui/views/orders.js';
 import * as settings from '../src/ui/views/settings.js';
 import * as production from '../src/ui/views/production.js';
+import * as deliveries from '../src/ui/views/deliveries.js';
+import * as catalog from '../src/ui/views/catalog.js';
+import * as guide from '../src/ui/views/guide.js';
 
 const db = buildSeed({ dataset: 'main' });
-const views = { ringkasan: dashboard, tugas: tasks, produksi: production, stok: inventory, transfer: transfers, pembelian: purchasing, penjualan: sales, pesanan: orders, proyek: projects, pelanggan: customers, sampel: samples, opname, laporan: reports, master, pengaturan: settings, simulasi: simulation };
+const views = { ringkasan: dashboard, tugas: tasks, produksi: production, stok: inventory, transfer: transfers, pembelian: purchasing, pengiriman: deliveries, penjualan: sales, pesanan: orders, proyek: projects, pelanggan: customers, sampel: samples, katalog: catalog, opname, laporan: reports, master, pengaturan: settings, panduan: guide, simulasi: simulation };
 const samplesById = {
-  ringkasan: null, tugas: null, produksi: null, stok: 'RL-0001', transfer: 'TRF-0001', pembelian: 'PO-0001', penjualan: 'INV-0003',
-  pesanan: 'SO-0002', proyek: 'PRJ-001', pelanggan: 'CUS-0002', sampel: null, opname: 'OPN-001', laporan: null, master: null, pengaturan: null, simulasi: null,
+  ringkasan: null, tugas: null, produksi: null, stok: 'RL-0001', transfer: 'TRF-0001', pembelian: 'PO-0001', pengiriman: null, penjualan: 'INV-0003',
+  pesanan: 'SO-0002', proyek: 'PRJ-001', pelanggan: 'CUS-0002', sampel: null, katalog: null, opname: 'OPN-001', laporan: null, master: null, pengaturan: null, panduan: null, simulasi: null,
 };
 
 let failed = 0;

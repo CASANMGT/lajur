@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.10 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.11 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -77,6 +77,11 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Manual stock** | **Done** | Tambah stok manual / `#/stok?add=1` |
 | **Delivery schedule** | **Done in v2.10** | Driver/date/courier/status + same-day conflict |
 | **Chinese suppliers + draft PO** | **Done in v2.10** | Ningbo, Shaoxing, Yiwu, Guangzhou; PO-0006 |
+| **Driver user accounts** | **Done in v2.11** | Asep/Rudi/Slamet login as driver; assigned deliveries/tasks only |
+| **Corporate transport master** | **Done in v2.11** | Lajur Fleet, Lalamove, GoSend, Bali Kargo |
+| **Sample book from rolls** | **Done in v2.11** | Multi-cut book, print/PDF, give to prospect |
+| **Customer catalog** | **Done in v2.11** | Colours/width/price/availability, print/PDF |
+| **In-app tutorial** | **Done in v2.11** | 14 process guides with links |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |

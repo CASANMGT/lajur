@@ -280,6 +280,68 @@ export function printTaskTicketsHtml(db, tasks) {
   }).join('');
 }
 
+export function printSampleBookHtml(db, book) {
+  const customer = byId(db.customers, book.customerId);
+  return `
+    <h1>BUKU SAMPLE</h1>
+    <p class="pill">${esc(book.id)} · ${esc(book.status === 'given' ? 'Sudah diberikan' : 'Siap diberikan')}</p>
+    <div class="meta" style="margin-top:12px">
+      <div><span>Nama buku</span><strong>${esc(book.name)}</strong></div>
+      <div><span>Pelanggan / prospek</span><strong>${esc(customer?.name ?? book.customerName)}</strong></div>
+      <div><span>Tanggal</span><strong>${esc(book.date)}</strong></div>
+      <div><span>Diberikan kepada</span><strong>${esc(book.givenTo || '—')}</strong></div>
+      <div><span>Jumlah sample</span><strong>${book.items.length}</strong></div>
+      <div><span>Dibuat oleh</span><strong>${esc(book.createdBy ?? '—')}</strong></div>
+    </div>
+    <table>
+      <thead><tr><th>Warna / produk</th><th>Kode</th><th class="num">Ukuran</th><th>Roll / lot</th><th>Catatan</th></tr></thead>
+      <tbody>${book.items.map((item) => {
+        const sku = byId(db.skus, item.skuId);
+        const roll = db.rolls.find((r) => r.id === item.rollId);
+        const sample = db.samples.find((s) => s.id === item.sampleId);
+        return `<tr>
+          <td><span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${esc(sku?.swatch || '#e4ded2')};border:1px solid #cfc6b6;vertical-align:middle;margin-right:6px"></span><strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}</strong></td>
+          <td>${esc(sku?.code)}</td>
+          <td class="num">${fmt.m(item.qtyMm)}</td>
+          <td>${esc(item.rollId)} · ${esc(roll?.lot ?? '')}</td>
+          <td>${esc(sample?.notes ?? '')}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>
+    ${book.notes ? `<p class="note">${esc(book.notes)}</p>` : ''}
+    <p class="note">Buku sample fisik berisi potongan kain dari roll di atas. Stok fisik sudah berkurang saat sample dibuat. Bukan faktur.</p>
+    <div style="display:flex;gap:40px;margin-top:34px;font-size:10px">
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:4px">Dibuat oleh<br><strong>${esc(book.createdBy ?? '')}</strong></div>
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:4px">Diterima<br><strong>${book.givenTo ? esc(book.givenTo) : '&nbsp;'}</strong></div>
+    </div>`;
+}
+
+export function printCatalogHtml(db, items) {
+  const groups = (db.collections ?? []).filter((c) => items.some((s) => s.collectionId === c.id));
+  return `
+    <h1>KATALOG KOLEKSI</h1>
+    <p class="pill">Lajur · ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}</p>
+    <p class="note" style="margin-top:10px">Harga per meter. Ketersediaan warna dan lot dapat berubah; konfirmasi stok sebelum order.</p>
+    ${groups.map((collection) => `
+      <h2>${esc(collection.name)}</h2>
+      <table>
+        <thead><tr><th>Warna</th><th>Kode</th><th class="num">Lebar</th><th class="num">Harga / m</th><th class="num">Tersedia</th></tr></thead>
+        <tbody>${items.filter((s) => s.collectionId === collection.id).map((sku) => {
+          const available = db.rolls
+            .filter((r) => r.skuId === sku.id && r.status === 'available' && !r.transit)
+            .reduce((a, r) => a + Math.max(0, r.currentMm - (r.reservedMm || 0)), 0);
+          return `<tr>
+            <td><span style="display:inline-block;width:22px;height:22px;border-radius:5px;background:${esc(sku.swatch || '#e4ded2')};border:1px solid #cfc6b6;vertical-align:middle;margin-right:8px"></span><strong>${esc(sku.colourName || sku.colourCode)}</strong></td>
+            <td class="mono">${esc(sku.code)}</td>
+            <td class="num">${sku.widthCm ? `${sku.widthCm} cm` : '—'}</td>
+            <td class="num">${fmt.money(sku.sellPrice)}</td>
+            <td class="num">${fmt.m(available)}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`).join('')}
+    <p class="note">Katalog demo — harga dan stok dapat berubah. Hubungi sales Lajur untuk sample fisik dan penawaran.</p>`;
+}
+
 export function printInstructionsHtml(db, project) {
   const customer = byId(db.customers, project.customerId);
   return `

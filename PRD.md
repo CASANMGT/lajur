@@ -1,9 +1,9 @@
-# PRD — Lajur v2.10
+# PRD — Lajur v2.11
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.10.0 (schema 11)
+**Version:** 2.11.0 (schema 12)
 **Status:** interactive demo complete (browser-only), production architecture defined but not built
 **Date:** 7 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.10: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), projects, customers, samples and simulation (Advanced); **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.11: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -142,6 +142,11 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Optional modules | WIP Production and Pesanan are hidden by default; manager enables them in Settings. Menu, dashboard links, report tabs and direct routes follow the flag |
 | Simple / Advanced mode | Simple is the default daily operation: stock, tasks, transfers, purchasing, invoices, projects, customers, samples, opname and master-data updates. Advanced adds reports, simulation, tax invoice, surat jalan, import tabs, and unlocks optional WIP/Pesanan. Direct advanced routes redirect in Simple |
 | Task tickets + online assignment | Task detail and filtered queue print tickets/PDF; printing is counted; online assignment can be disabled so tickets are printed and workers update status manually |
+| Driver accounts | Asep/Rudi/Slamet are users with role driver and linked driver records; driver sees assigned deliveries/tasks, can Kirim/Tiba, but not confirm receiver |
+| Transport master | Corporate transport records (Lajur Fleet, Lalamove, GoSend, Bali Kargo) linked to drivers |
+| Sample book | Build a giveaway book from several roll cuts; each cut consumes stock; print/PDF and mark who received it |
+| Catalog | Customer-facing colour/width/price/availability listing; print/PDF |
+| In-app guide | 14 tutorial sections covering every business-process input |
 | Manual stock | Stok → Tambah stok manual records fabric rolls or parts without a PO |
 | Delivery schedule | Driver/date/courier/status overview; surat jalan warns about another delivery for the same driver on the same day |
 | Chinese supplier demos | Ningbo, Shaoxing, Yiwu and Guangzhou suppliers, CNY price records and a draft Shaoxing PO |
@@ -199,7 +204,8 @@ Authentication and server authorization; transactional posting with idempotency;
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discountType, discountValue, discount, total, taxInvoice{number,npwp,ratePercent,dpp,ppn,total,issuedAt,issuedBy}, deliveryId, credited, depositApplied, payments[] |
 | `delivery` | id, invoiceId, customer, date, pic, address, courier, driverId, driver, driverPhone, vehicleType, plateNumber, trackingRef, status draft/dispatched/delivered/confirmed, lines[], receivedBy, confirmationNote, history[] |
-| `driver` | id, name, phone, vehicleType motor/mobil/truk, plateNumber, active, notes, audit timestamps |
+| `driver` | id, userId (role driver), name, phone, vehicleType motor/mobil/truk, plateNumber, transportId, active, notes |
+| `transport company` | id, code, name, type internal/third_party, contact, phone, address, active, notes |
 | `sales order` | id, customer, project, date, status draft/confirmed/converted/cancelled, createdBy/userId, lines[] with qty + unit price + amount, total, invoiceId, history[] |
 | `supplier price` | id, supplierId, skuId/partId, price, currency, unit, moqMm/moqPcs, validFrom, validTo, priceIdr, createdAt, createdBy |
 | `fx rate` | id, currency, rate, asOf, source, poId, createdBy |
@@ -209,6 +215,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `work centre` | stage, name, capacityPerDay, ratePerPiece |
 | `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, uiMode simple/advanced (default simple), onlineAssignmentEnabled (default on), salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
+| `sample book` | id, name, customer/prospect, date, status ready/given, items[] (sampleId, skuId, rollId, qtyMm), givenTo, givenAt, history[] |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
 | `return` | id, type customer/supplier, source invoice/receipt, lines, credit, status |
 | `opname session` | id, warehouse, status, snapshot lines (expected, counted), adjustments, approvals, history[] |
@@ -394,6 +401,14 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 10. **Warehouses:** only Jakarta (`JKT`) and Bali (`DPS`) are active demo locations; legacy Bandung/Surabaya references migrate to Bali.
 11. **Chinese suppliers:** at least four import suppliers (Ningbo, Shaoxing, Yiwu, Guangzhou), CNY price records and a draft Chinese PO are available in Advanced mode.
 
+### 6.15 Driver accounts, sample books, catalog and guide
+
+1. **Driver users:** Asep/Rudi/Slamet exist as users with role `driver`, each linked to a driver record. Driver can log in, see assigned surat jalan/tasks, Kirim/Tiba; sales/manager confirms the receiver.
+2. **Transport:** master records for internal Lajur Fleet and third-party Lalamove/GoSend/Bali Kargo; drivers link to a transport.
+3. **Sample book:** choose a customer/prospect, add several roll cuts and sizes, create the book. Each cut reduces stock and produces a sample record. Print/PDF the book and mark who received it.
+4. **Catalog:** customer-facing colors, width, sell price and availability; print/PDF; no cost/margin.
+5. **Guide:** in-app Panduan with 14 sections covering every input flow and links to the relevant screen.
+
 ---
 
 ## 7. Business rules (normative)
@@ -463,6 +478,10 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-61 | Printing a task ticket increments `printCount` and records who/when. When online assignment is off, task creation omits the online assignee and the printed ticket carries the manual assignment. |
 | BR-62 | Manual stock addition is the only stock-in path that does not need a PO; it still writes movements, lot/roll identity and audit. |
 | BR-63 | Only Jakarta and Bali are active demo warehouses. Legacy Bandung/Surabaya references migrate to Bali. |
+| BR-64 | A driver is a user with role `driver` linked to a driver record. Driver access is limited to assigned deliveries/tasks; drivers may dispatch/mark arrived but only sales/manager confirm receipt. |
+| BR-65 | Corporate transport companies are master data; a driver may be linked to one. Delivery keeps the driver/vehicle snapshot. |
+| BR-66 | A sample book is built from one or more roll cuts. Each cut consumes stock and creates a normal sample; giving the book records recipient/date and does not move stock again. |
+| BR-67 | The catalog shows active sellable colours, width, sell price and available stock; it never exposes cost, supplier or margin. |
 
 ---
 
@@ -470,7 +489,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.10 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.11 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -590,7 +609,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-60 | Invoice applies fixed or percentage discount; 10% of Rp 340.000 gives Rp 306.000 total | Pass |
 | AC-61 | Posted invoice issues one tax invoice; DPP + PPN equals total; duplicate issue rejected | Pass |
 | AC-62 | Surat jalan captures PIC, follows draft → dispatched → delivered → confirmed, and leaves stock unchanged | Pass |
-| AC-63 | Simple mode exposes 19 core routes (including Master Data); Advanced exposes 25 with WIP+Pesanan; advanced URLs redirect in Simple | Pass |
+| AC-63 | Simple mode exposes 22 core routes (incl. Master Data, Pengiriman, Katalog, Panduan); Advanced exposes 28 with WIP+Pesanan; advanced URLs redirect in Simple | Pass |
 | AC-64 | Every print preview offers Cetak and Unduh PDF; PDF file generated from the document | Pass |
 | AC-65 | Driver master stores name/phone/vehicle/plate; surat jalan selects a driver and snapshots vehicle + plate | Pass |
 | AC-66 | Courier options include Lalamove/GoSend; address autocomplete and map preview work; mobile sidebar scrolls at 320/390 | Pass |
@@ -598,8 +617,12 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-68 | Manual stock add works from Stok/`?add=1`; warehouse list is Jakarta + Bali only | Pass |
 | AC-69 | Driver schedule shows driver/date/courier/status and warns about same-day double assignment | Pass |
 | AC-70 | Four Chinese suppliers and a draft Chinese PO are present and selectable | Pass |
+| AC-71 | Driver users can log in, see only assigned deliveries/tasks, and cannot open invoices/master/settings | Pass |
+| AC-72 | Transport master shows 4 companies; drivers link to internal/Bali Kargo | Pass |
+| AC-73 | Sample book built from 2 roll cuts reduces stock and can be marked given to a prospect | Pass |
+| AC-74 | Catalog renders active colours/prices and prints/PDFs; in-app guide renders 14 sections | Pass |
 
-Test evidence: `node --test` → 56/56 passing; browser route sweep → 19/19 Simple routes and 25/25 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 57/57 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -642,7 +665,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, Simple/Advanced mode, roll/part hierarchy, image preview, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity | 56/56 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity | 57/57 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

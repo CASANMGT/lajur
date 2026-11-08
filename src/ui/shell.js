@@ -20,6 +20,7 @@ export const NAV = [
       { id: 'stok', label: 'Stok & Roll', icon: 'box' },
       { id: 'transfer', label: 'Permintaan Gudang', icon: 'transfer' },
       { id: 'pembelian', label: 'Pembelian', icon: 'truck' },
+      { id: 'pengiriman', label: 'Pengiriman', icon: 'ship' },
       { id: 'opname', label: 'Stock Opname', icon: 'clipboard' },
     ],
   },
@@ -31,6 +32,7 @@ export const NAV = [
       { id: 'proyek', label: 'Proyek', icon: 'layers' },
       { id: 'pelanggan', label: 'Pelanggan', icon: 'users' },
       { id: 'sampel', label: 'Sample & Deposit', icon: 'spark' },
+      { id: 'katalog', label: 'Katalog', icon: 'layers' },
     ],
   },
   {
@@ -39,6 +41,7 @@ export const NAV = [
       { id: 'laporan', label: 'Laporan', icon: 'chart' },
       { id: 'master', label: 'Master Data', icon: 'settings' },
       { id: 'pengaturan', label: 'Pengaturan', icon: 'userCheck' },
+      { id: 'panduan', label: 'Panduan', icon: 'listCheck' },
       { id: 'simulasi', label: 'Simulasi Data', icon: 'flask' },
     ],
   },
@@ -46,8 +49,9 @@ export const NAV = [
 
 const ACCESS = {
   manager: null,
-  operator: new Set(['ringkasan', 'tugas', 'produksi', 'stok', 'transfer', 'pembelian', 'opname', 'simulasi']),
-  sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pesanan', 'proyek', 'pelanggan', 'sampel', 'simulasi']),
+  operator: new Set(['ringkasan', 'tugas', 'produksi', 'stok', 'transfer', 'pembelian', 'opname', 'panduan', 'simulasi']),
+  sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pesanan', 'pengiriman', 'proyek', 'pelanggan', 'sampel', 'katalog', 'panduan', 'simulasi']),
+  driver: new Set(['ringkasan', 'tugas', 'pengiriman', 'panduan']),
 };
 
 export function canAccess(role, view) {
@@ -62,15 +66,18 @@ export const ROUTE_META = {
   stok: { title: 'Stok & Roll', sub: 'Fisik, terpesan, tersedia, karantina, dan transit' },
   transfer: { title: 'Permintaan Gudang', sub: 'PO internal antar gudang — tanpa pemasok' },
   pembelian: { title: 'Pembelian', sub: 'PO pemasok, penerimaan, dan utang' },
+  pengiriman: { title: 'Pengiriman', sub: 'Surat jalan, driver, kurir, dan konfirmasi penerimaan' },
   penjualan: { title: 'Penjualan', sub: 'Faktur, pembayaran, dan retur' },
   pesanan: { title: 'Pesanan Penjualan', sub: 'Pesanan sebelum menjadi faktur — stok belum keluar' },
   proyek: { title: 'Proyek', sub: 'Reservasi material sampai serah terima' },
   pelanggan: { title: 'Pelanggan', sub: 'CRM, sample, deposit, dan riwayat' },
-  sampel: { title: 'Sample & Deposit', sub: 'Sample pelanggan, konversi, dan saldo deposit' },
+  sampel: { title: 'Sample & Deposit', sub: 'Sample pelanggan, buku sample, konversi, dan saldo deposit' },
+  katalog: { title: 'Katalog', sub: 'Daftar produk dan harga untuk pelanggan — cetak/PDF' },
   opname: { title: 'Stock Opname', sub: 'Hitung buta, review, dan penyesuaian' },
   laporan: { title: 'Laporan', sub: 'Saldo saat ini dan riwayat — bukan buku besar' },
   master: { title: 'Master Data', sub: 'Produk, kategori, pemasok, dan cadangan data' },
   pengaturan: { title: 'Pengaturan', sub: 'Akun, PIN, pengguna, peran, dan preferensi' },
+  panduan: { title: 'Panduan', sub: 'Langkah input untuk setiap proses bisnis' },
   simulasi: { title: 'Simulasi Data', sub: 'Dataset terpisah untuk uji alur' },
 };
 
@@ -78,6 +85,7 @@ const ROLE_LABEL = {
   manager: 'Manajer',
   operator: 'Operator Gudang',
   sales: 'Sales / CS',
+  driver: 'Driver / Transport',
 };
 
 export function countsFor(db) {
@@ -93,14 +101,16 @@ export function renderShell(ctx, contentHtml) {
   const advanced = isAdvancedMode(db);
   const counts = countsFor(db);
   const activeWh = ui.warehouseId === 'all' ? null : byId(db.warehouses, ui.warehouseId);
-  const navHtml = NAV.map((group) => `
-    <nav class="nav-group" aria-label="${esc(group.group)}">
+  const navHtml = NAV.map((group) => {
+    const items = group.items
+      .filter((item) => canAccess(role, item.id))
+      .filter((item) => !ADVANCED_VIEWS.has(item.id) || advanced)
+      .filter((item) => item.id !== 'pesanan' || prefs.salesOrderEnabled)
+      .filter((item) => item.id !== 'produksi' || prefs.productionEnabled);
+    if (!items.length) return '';
+    return `<nav class="nav-group" aria-label="${esc(group.group)}">
       <span class="nav-label">${esc(group.group)}</span>
-      ${group.items.filter((item) => canAccess(role, item.id))
-        .filter((item) => !ADVANCED_VIEWS.has(item.id) || advanced)
-        .filter((item) => item.id !== 'pesanan' || prefs.salesOrderEnabled)
-        .filter((item) => item.id !== 'produksi' || prefs.productionEnabled)
-        .map((item) => {
+      ${items.map((item) => {
         const active = ctx.route.name === item.id;
         const count = item.id === 'transfer' ? counts.transfer : item.id === 'opname' ? counts.opname : 0;
         return `<a class="nav-link" href="#/${item.id}" ${active ? 'aria-current="page"' : ''}>
@@ -109,7 +119,8 @@ export function renderShell(ctx, contentHtml) {
           ${count ? `<span class="nav-count">${count}</span>` : ''}
         </a>`;
       }).join('')}
-    </nav>`).join('');
+    </nav>`;
+  }).join('');
 
   const banner = dataset === 'sim' ? `
     <div class="sim-banner" role="status">

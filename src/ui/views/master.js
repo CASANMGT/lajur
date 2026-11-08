@@ -6,7 +6,7 @@ import {
 import { byId, uid, todayJakarta } from '../../domain/core.js';
 import {
   activeWarehouses, auditTrail, createCollection, renameCollection, saveDriver, savePart, saveSku,
-  saveWarehouse, VEHICLE_TYPES,
+  saveTransport, saveWarehouse, TRANSPORT_TYPES, VEHICLE_TYPES,
 } from '../../domain/master.js';
 import {
   latestSupplierPrice, saveSupplierPrice, supplierPriceHistory, suppliersOfItem,
@@ -26,7 +26,7 @@ export function render(ctx) {
       actions: `${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-product">${icon('plus')} Produk kain</button>` : ''}`,
     })}
     <div class="tabs" role="tablist">
-      ${[['produk', 'Produk kain'], ['part', 'Spare part'], ['driver', 'Driver & kendaraan'], ['kategori', 'Kategori & koleksi'], ['gudang', 'Gudang'], ['data', 'Data & peran']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${[['produk', 'Produk kain'], ['part', 'Spare part'], ['driver', 'Driver & transport'], ['kategori', 'Kategori & koleksi'], ['gudang', 'Gudang'], ['data', 'Data & peran']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
     ${tab === 'produk' ? renderProducts(ctx) : ''}
     ${tab === 'part' ? renderParts(ctx) : ''}
@@ -106,23 +106,45 @@ function renderParts(ctx) {
 function renderDrivers(ctx) {
   const { db, role } = ctx;
   const drivers = db.drivers ?? [];
+  const transports = db.transportCompanies ?? [];
   return `<div class="row-between" style="margin-bottom:12px">
-      <div><h2>Driver & kendaraan</h2><p class="xs muted">Nama driver, telepon, jenis kendaraan, dan nomor polisi dipakai pada surat jalan.</p></div>
-      ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Tambah driver</button>` : ''}
+      <div><h2>Driver & transport</h2><p class="xs muted">Driver punya akun pengguna dan terhubung ke transport internal/pihak ketiga.</p></div>
+      ${role === 'manager' ? `<div class="row"><button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Driver</button><button class="btn" type="button" data-act="new-transport">${icon('plus')} Transport</button></div>` : ''}
     </div>
-    <section class="card">
+    <section class="card" style="margin-bottom:16px">
+      <div class="card-head"><div><h2>Driver</h2><p>Nama, akun pengguna, telepon, kendaraan, nomor polisi.</p></div><span class="badge no-dot">${drivers.length}</span></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Driver</th><th>Telepon</th><th>Kendaraan</th><th>Nomor polisi</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
-        <tbody>${drivers.map((d) => `<tr>
-          <td><strong>${esc(d.name)}</strong><div class="xs muted">${esc(d.id)}</div></td>
-          <td>${esc(d.phone || '—')}</td>
-          <td>${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)}</td>
-          <td class="mono">${esc(d.plateNumber || '—')}</td>
-          <td>${d.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
-          <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-driver="${d.id}">Edit</button>` : ''}</td>
-        </tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada driver.</td></tr>'}</tbody>
+        <thead><tr><th>Driver</th><th>Akun</th><th>Telepon</th><th>Transport</th><th>Kendaraan</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${drivers.map((d) => {
+          const user = byId(db.users, d.userId);
+          const transport = byId(db.transportCompanies, d.transportId);
+          return `<tr>
+            <td><strong>${esc(d.name)}</strong><div class="xs muted">${esc(d.id)}</div></td>
+            <td class="small">${user ? `${esc(user.name)}<div class="xs muted">${esc(user.role)}</div>` : '<span class="muted">Belum tertaut</span>'}</td>
+            <td>${esc(d.phone || '—')}</td>
+            <td class="small">${esc(transport?.name ?? '—')}</td>
+            <td>${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)}<div class="xs muted mono">${esc(d.plateNumber || '—')}</div></td>
+            <td>${d.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
+            <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-driver="${d.id}">Edit</button>` : ''}</td>
+          </tr>`;
+        }).join('') || '<tr><td colspan="7" class="muted">Belum ada driver.</td></tr>'}</tbody>
       </table></div>
-      <div class="card-pad"><p class="xs muted">Driver nonaktif tidak muncul pada form surat jalan baru. Kendaraan mendukung motor, mobil, dan truk.</p></div>
+    </section>
+    <section class="card">
+      <div class="card-head"><div><h2>Transport perusahaan</h2><p>Internal, Lalamove, GoSend, kargo Bali, dan vendor lain.</p></div><span class="badge no-dot">${transports.length}</span></div>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Transport</th><th>Jenis</th><th>Kontak</th><th>Telepon</th><th>Alamat</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${transports.map((t) => `<tr>
+          <td><strong>${esc(t.name)}</strong><div class="xs muted mono">${esc(t.code)} · ${esc(t.id)}</div></td>
+          <td>${badge(TRANSPORT_TYPES[t.type]?.label ?? t.type, t.type === 'internal' ? 'teal' : 'copper')}</td>
+          <td>${esc(t.contact || '—')}</td>
+          <td>${esc(t.phone || '—')}</td>
+          <td class="small muted">${esc(t.address || '—')}</td>
+          <td>${t.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
+          <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-transport="${t.id}">Edit</button>` : ''}</td>
+        </tr>`).join('') || '<tr><td colspan="7" class="muted">Belum ada transport.</td></tr>'}</tbody>
+      </table></div>
+      <div class="card-pad"><p class="xs muted">Transport nonaktif tidak muncul pada pilihan driver/surat jalan baru. Driver tetap menyimpan snapshot nama dan kendaraannya.</p></div>
     </section>`;
 }
 
@@ -468,6 +490,7 @@ function openDriver(ctx, driver = null) {
       ${field('Telepon', `<input class="input" name="phone" value="${esc(driver?.phone ?? '')}" />`)}
       ${field('Jenis kendaraan', `<select class="select" name="vehicleType">${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${driver?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
       ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(driver?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
+      ${field('Transport', `<select class="select" name="transport"><option value="">— Tanpa transport —</option>${(ctx.db.transportCompanies ?? []).map((t) => `<option value="${t.id}" ${driver?.transportId === t.id ? 'selected' : ''}>${esc(t.name)} · ${esc(TRANSPORT_TYPES[t.type]?.label ?? t.type)}</option>`).join('')}</select>`, { hint: 'Internal atau pihak ketiga.' })}
       ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${driver.active !== false ? 'checked' : ''} /> Driver aktif dan dapat dipilih</label>` : ''}
       ${field('Catatan', `<input class="input" name="notes" value="${esc(driver?.notes ?? '')}" placeholder="Area, kapasitas, atau catatan" />`, { full: true })}
     </div>`,
@@ -478,12 +501,48 @@ function openDriver(ctx, driver = null) {
         phone: form.phone.value,
         vehicleType: form.vehicleType.value,
         plateNumber: form.plateNumber.value,
+        transportId: form.transport.value || null,
         active: editing ? form.active.checked : true,
         notes: form.notes.value,
         user: ctx.user,
       }));
       close();
       toast(editing ? 'Driver diperbarui.' : 'Driver dibuat.', { tone: 'success' });
+    },
+  });
+}
+
+function openTransport(ctx, transport = null) {
+  const editing = Boolean(transport);
+  openModal({
+    title: editing ? `Edit ${transport.name}` : 'Transport baru',
+    description: 'Transport internal atau pihak ketiga. Data ini dipakai pada driver dan surat jalan.',
+    submitLabel: editing ? 'Simpan transport' : 'Buat transport',
+    body: `<div class="form-grid">
+      ${field('Kode', `<input class="input" name="code" value="${esc(transport?.code ?? '')}" placeholder="bali-kargo" required />`)}
+      ${field('Nama', `<input class="input" name="name" value="${esc(transport?.name ?? '')}" required />`)}
+      ${field('Jenis', `<select class="select" name="type">${Object.entries(TRANSPORT_TYPES).map(([k, v]) => `<option value="${k}" ${transport?.type === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+      ${field('Kontak', `<input class="input" name="contact" value="${esc(transport?.contact ?? '')}" />`)}
+      ${field('Telepon', `<input class="input" name="phone" value="${esc(transport?.phone ?? '')}" />`)}
+      ${field('Alamat', `<input class="input" name="address" value="${esc(transport?.address ?? '')}" />`)}
+      ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${transport.active !== false ? 'checked' : ''} /> Transport aktif</label>` : ''}
+      ${field('Catatan', `<input class="input" name="notes" value="${esc(transport?.notes ?? '')}" />`, { full: true })}
+    </div>`,
+    onSubmit(form, close) {
+      ctx.store.update((db) => saveTransport(db, {
+        id: transport?.id ?? null,
+        code: form.code.value,
+        name: form.name.value,
+        type: form.type.value,
+        contact: form.contact.value,
+        phone: form.phone.value,
+        address: form.address.value,
+        active: editing ? form.active.checked : true,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast(editing ? 'Transport diperbarui.' : 'Transport dibuat.', { tone: 'success' });
     },
   });
 }
@@ -605,9 +664,14 @@ export function mount(ctx) {
   }));
   document.querySelector('[data-act="new-category"]')?.addEventListener('click', () => openCategory(ctx));
   document.querySelector('[data-act="new-driver"]')?.addEventListener('click', () => openDriver(ctx));
+  document.querySelector('[data-act="new-transport"]')?.addEventListener('click', () => openTransport(ctx));
   document.querySelectorAll('[data-edit-driver]').forEach((btn) => btn.addEventListener('click', () => {
     const driver = (ctx.db.drivers ?? []).find((d) => d.id === btn.dataset.editDriver);
     if (driver) openDriver(ctx, driver);
+  }));
+  document.querySelectorAll('[data-edit-transport]').forEach((btn) => btn.addEventListener('click', () => {
+    const transport = (ctx.db.transportCompanies ?? []).find((t) => t.id === btn.dataset.editTransport);
+    if (transport) openTransport(ctx, transport);
   }));
   document.querySelector('[data-act="new-warehouse"]')?.addEventListener('click', () => openWarehouse(ctx));
   document.querySelectorAll('[data-edit-warehouse]').forEach((btn) => btn.addEventListener('click', () => {

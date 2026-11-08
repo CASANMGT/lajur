@@ -24,6 +24,9 @@ import * as samples from './views/samples.js';
 import * as settings from './views/settings.js';
 import * as orders from './views/orders.js';
 import * as production from './views/production.js';
+import * as deliveries from './views/deliveries.js';
+import * as catalog from './views/catalog.js';
+import * as guide from './views/guide.js';
 
 const VIEWS = {
   ringkasan: dashboard,
@@ -32,15 +35,18 @@ const VIEWS = {
   stok: inventory,
   transfer: transfers,
   pembelian: purchasing,
+  pengiriman: deliveries,
   penjualan: sales,
   pesanan: orders,
   proyek: projects,
   pelanggan: customers,
   sampel: samples,
+  katalog: catalog,
   opname,
   laporan: reports,
   master,
   pengaturan: settings,
+  panduan: guide,
   simulasi: simulation,
 };
 

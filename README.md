@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-56%2F56-brightgreen) ![Version](https://img.shields.io/badge/version-2.10.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-57%2F57-brightgreen) ![Version](https://img.shields.io/badge/version-2.11.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -49,6 +49,9 @@ Each role has its own account and PIN. The PIN is hashed with PBKDF2-SHA256 and 
 | Henry Martin | Manajer / pemilik | `2468` |
 | Henny | Operator gudang | `1357` |
 | Belinda | Sales & customer service | `8642` |
+| Asep | Driver / transport | `1212` |
+| Rudi | Driver / transport | `2323` |
+| Slamet | Driver / transport | `3434` |
 
 Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN hint disappears once a PIN is changed. Resetting site data restores the defaults.
 
@@ -57,7 +60,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -162,18 +165,19 @@ Lajur/
 9. **Laporan** — stock by warehouse/SKU, valuation, AR/AP aging, slow-moving, sample conversion, project shortage, audit trail.
 10. **Simulasi Data** — click the copper button, start, then run the cycle:
     **receive 60 m → sell 10 m → 50 m left → 40% dummy payment.** Main data stays at 60 m.
-11. **Tambah stok** — on Stok, “Tambah stok” records opening stock or a correction without a PO: unique document, lot, each roll length, cost, reason, and a movement per roll.
+11. **Tambah stok manual** — on Stok, “Tambah stok manual” records opening stock or a correction without a PO: unique document, lot, each roll length, cost, reason, and a movement per roll.
 12. **Master Data → Gudang** — add or rename a warehouse, change its code/prefix/contact, or deactivate an empty one. Deactivation is refused while stock, transit, parts, active requests, or an opname still reference it. Collection names can be renamed without changing SKU IDs.
 13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Henny, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
 14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty. The rate is entered by the user at PO time and stored with timestamp/source.
-15. **Sample & Deposit** — sample conversion, deposit ledger and refunds in one workspace.
-16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
-17. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
-18. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & kendaraan** stores driver names, phone, motor/mobil/truk and plate.
-19. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
-20. **Laporan → Produksi & payroll** (when WIP is enabled) — WIP metres, open payroll, QC rejects, capacity and order progress.
-21. **Laporan → Penjualan** — invoice performance; the optional sales-order table appears only when Pesanan is enabled.
-22. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create **Surat Jalan** with PIC/courier/driver/vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**.
+15. **Sample & Deposit** — sample conversion, deposit ledger and refunds. **Buku sample** builds a giveaway book from several roll cuts; **Katalog** lists colours/prices for customers. Both print/PDF.
+16. **Panduan** — open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, sample book and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
+17. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
+18. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
+19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & transport** stores driver names, phone, motor/mobil/truk, plate and transport company.
+20. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
+21. **Laporan → Produksi & payroll** (when WIP is enabled) — WIP metres, open payroll, QC rejects, capacity and order progress.
+22. **Laporan → Penjualan** — invoice performance; the optional sales-order table appears only when Pesanan is enabled.
+23. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create **Surat Jalan** with PIC/courier/driver/vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**.
 
 ### Role experience
 
@@ -181,7 +185,8 @@ Lajur/
 |------|------|-----------|
 | Manajer | Approvals, all reports, master, settings, refunds | — |
 | Operator Gudang | Stock, receiving, dispatch/receive, opname, production cut/sew/QC (when WIP enabled), tasks | Invoices/orders, sales/CRM, reports, master/settings, approvals |
-| Sales / CS | Invoices, orders (when Pesanan enabled), projects, customers, samples, deposits, read-only stock | Purchasing, production, opname, master/settings, approvals, dispatch |
+| Sales / CS | Invoices, orders (when Pesanan enabled), projects, customers, samples, catalog, deliveries, read-only stock | Purchasing, production, opname, master/settings, approvals, dispatch |
+| Driver | Ringkasan, Tugas, Pengiriman, Panduan; only assigned surat jalan/tasks | Invoices, prices, stock/master/settings, purchasing, reports |
 
 Log in as each account to see the difference. Hiding a button is still not server authorization.
 
@@ -219,14 +224,14 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 ## Verification (actually run)
 
-**Date:** 8 November 2026 · Node 24.14.0 · Chromium via OpenCode browser
+**Date:** 9 November 2026 · Node 24.14.0 · Chromium via OpenCode browser
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **56 passed, 0 failed** (54 business + 2 auth) |
-| Module import check | **43/43 modules** |
+| `node --test` | **57 passed, 0 failed** (55 business + 2 auth) |
+| Module import check | **46/46 modules** |
 | Server-side render of all views | **24/24 render, no exceptions** (incl. login and 3 roles) |
-| Browser route sweep | **19/19 simple routes (incl. Master Data)** and **25/25 advanced routes with WIP + Pesanan enabled**, zero console errors |
+| Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
 | WIP production | 10 m cut into 5 pieces, payroll Rp 25.000, sew/QC, reject + rework, capacity load |
 | Roll hierarchy | Split RL-0001 → child keeps parent/root; collection tree conserves physical metres |
@@ -241,12 +246,18 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Part hierarchy | Category cards; Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m (6 pcs in Jakarta) |
 | Image enlarge | Thumbnail click opens full preview at 320/390; manager, sales and operator see it; 0 overflow |
 | Optional modules | Fresh seed hides WIP + Pesanan; enabling both restores menu, routes, dashboard links and report tabs |
-| Simple / Advanced | Simple default: 19 routes incl. Master Data; no reports/simulation/tax/delivery/import tabs; Advanced: 25 routes with WIP + Pesanan enabled; direct advanced URLs redirect in Simple |
+| Simple / Advanced | Simple default: 22 routes incl. Master Data, Pengiriman, Katalog, Panduan; no reports/simulation/tax/delivery/import tabs; Advanced: 28 routes with WIP + Pesanan enabled; direct advanced URLs redirect in Simple |
 | Invoice discount | Part price auto-filled 85.000; 4 × 85.000 with 10% discount → total Rp 306.000 |
 | Faktur pajak | INV-0005: DPP 275.676 + PPN 30.324 = 306.000; second issue blocked; print shows DPP/PPN |
 | Surat jalan | Seed SJ-0001 (PIC Henny) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; stock unchanged |
 | Print + PDF | Print preview has Cetak + Unduh PDF; test PDF generated 60.370 bytes (`Tes-PDF-Lajur.pdf`) |
 | Driver master | 3 drivers seeded (motor/mobil/truk); form autofills vehicle + plate; delivery snapshots driver/vehicle |
+| Driver accounts | Asep/Rudi/Slamet login with driver role; nav only Ringkasan/Tugas/Pengiriman/Panduan; invoice redirect |
+| Transport master | Lajur Fleet, Lalamove, GoSend, Bali Kargo; drivers linked to Lajur Fleet/Bali Kargo |
+| Sample book | SB-0001 from 2 roll cuts; stock cut; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
+| Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
+| Guide | 14 in-app tutorial sections rendered |
+| Courier + map | Internal/Lalamove/GoSend/GrabExpress/Bali Kargo; address autocomplete; map iframe updates |
 | Courier + map | Internal/Lalamove/GoSend/GrabExpress; address autocomplete from customers/history; map iframe updates with address |
 | Mobile sidebar | Advanced mode at 320/390: scrollHeight 1037/1021 > viewport; scrollTop 220 works |
 | Task simulation | Create → Mulai → Selesai with note; history created/mulai/selesai |
@@ -321,6 +332,11 @@ node tools/render-check.mjs
 - **Supplier master:** create/edit local or import supplier, CNY/FX/incoterm/port, with audit trail.
 - Editable warehouses (create, rename, recoordinate, deactivate with usage guard) and editable collections.
 - Direct stock intake without PO (opening balance/correction) with unique document, lot, per-roll lengths, cost, reason and audit.
+- **Driver role & portal:** Asep/Rudi/Slamet have user accounts (PIN 1212/2323/3434), see only their deliveries/tasks, and can Kirim/Tiba; receiver confirmation stays with sales/manager.
+- **Transport master:** internal Lajur Fleet + Lalamove, GoSend, Bali Kargo; drivers link to a transport company.
+- **Sample books:** build a giveaway book from multiple roll cuts, print/PDF, and mark who received it.
+- **Catalog:** colour/width/price/availability listing with Cetak/PDF for potential customers.
+- **In-app tutorial:** Panduan covers 14 processes from stock and purchasing to tax/surat jalan, sample books, catalog, tasks and reporting.
 - **Task operations:** receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname and sample tasks; assign, start, block, resume, complete, cancel; due dates, priority, cutting queue, manager board; completion note and optional physical proof.
 - **Printed task tickets:** task detail and filtered queue print tickets with Cetak/PDF; printing increments the ticket count. Online assignment can be disabled in Settings so managers print tickets and workers update Mulai/Selesai manually.
 - **Manual stock addition:** Stok → **Tambah stok manual** (also `#/stok?add=1`) records opening stock/correction without a PO for fabric or parts.
@@ -344,7 +360,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.10.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.11.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

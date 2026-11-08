@@ -11,8 +11,8 @@ import { pageHead } from './common.js';
 
 let tab = 'akun';
 
-const ROLE_LABEL = { manager: 'Manajer', operator: 'Operator', sales: 'Sales/CS' };
-const ROLE_TONE = { manager: 'navy', operator: 'teal', sales: 'copper' };
+const ROLE_LABEL = { manager: 'Manajer', operator: 'Operator', sales: 'Sales/CS', driver: 'Driver / Transport' };
+const ROLE_TONE = { manager: 'navy', operator: 'teal', sales: 'copper', driver: 'info' };
 
 export function render(ctx) {
   const { db, user, role } = ctx;

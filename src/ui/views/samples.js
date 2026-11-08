@@ -1,15 +1,17 @@
 /** Sample & Deposit — dedicated customer-sample and deposit workspace. */
 
 import {
-  esc, icon, fmt, badge, toast, openModal, field,
+  esc, icon, fmt, badge, toast, openModal, field, printDocument,
 } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
 import {
-  SAMPLE_MODE, createSample, depositBalance, linkSampleToInvoice, refundDeposit,
+  SAMPLE_BOOK_STATUS, SAMPLE_MODE, createSample, createSampleBook, depositBalance, giveSampleBook,
+  linkSampleToInvoice, refundDeposit,
 } from '../../domain/crm.js';
 import { availableMm, sellableRolls } from '../../domain/inventory.js';
 import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, can, warehouseOf } from './common.js';
+import { printSampleBookHtml } from './print.js';
 
 let filter = { status: 'all' };
 
@@ -23,13 +25,14 @@ export function render(ctx) {
   const rate = db.samples.length ? Math.round((converted / db.samples.length) * 100) : 0;
   const deposits = db.deposits.filter((d) => d.kind === 'sample' || d.kind === 'indent');
   const openDeposit = deposits.reduce((a, d) => a + depositBalance(d), 0);
+  const books = db.sampleBooks ?? [];
 
   return `
     ${pageHead({
       eyebrow: 'CRM',
       title: 'Sample & Deposit',
       sub: 'Sample dipotong dari roll tertentu. Deposit adalah kewajiban, bukan omzet.',
-      actions: `${can(role, 'sample.create') ? `<button class="btn btn-primary" type="button" data-act="new-sample">${icon('spark')} Sample baru</button>` : ''}`,
+      actions: `${can(role, 'sample.create') ? `<button class="btn" type="button" data-act="new-book">${icon('layers')} Buku sample</button><button class="btn btn-primary" type="button" data-act="new-sample">${icon('spark')} Sample baru</button>` : ''}`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
       ${statCard({ label: 'Sample aktif', value: String(active), meta: `${db.samples.length} total sample`, tone: 'accent', iconName: 'spark' })}
@@ -76,6 +79,25 @@ export function render(ctx) {
           </div>`;
         }).join('') || `<div class="empty">${icon('spark')}<strong>Belum ada sample</strong></div>`}
       </div>
+    </section>
+
+    <div class="section-title"><h2>Buku sample</h2><span class="small muted">Kumpulan potongan roll untuk diberikan ke pelanggan/prospek</span></div>
+    <section class="card" style="margin-bottom:16px">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Buku</th><th>Pelanggan / prospek</th><th class="num">Sample</th><th>Tanggal</th><th>Status</th><th>Diberikan</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${books.map((b) => `<tr>
+          <td><strong class="small">${esc(b.name)}</strong><div class="xs muted mono">${esc(b.id)}</div></td>
+          <td class="small">${esc(b.customerName)}</td>
+          <td class="num">${b.items.length}</td>
+          <td>${esc(b.date)}</td>
+          <td>${badge(SAMPLE_BOOK_STATUS[b.status]?.label ?? b.status, SAMPLE_BOOK_STATUS[b.status]?.tone ?? 'muted')}</td>
+          <td class="small">${esc(b.givenTo || '—')}${b.givenDate ? `<div class="xs muted">${esc(b.givenDate)}</div>` : ''}</td>
+          <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
+            <button class="btn btn-sm" data-print-book="${b.id}">${icon('printer')} Cetak</button>
+            ${b.status !== 'given' && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" data-give-book="${b.id}">Beri</button>` : ''}
+          </div></td>
+        </tr>`).join('') || `<tr><td colspan="7"><div class="empty">${icon('layers')}<strong>Belum ada buku sample</strong><p>Buat buku dari beberapa potongan roll.</p></div></td></tr>`}</tbody>
+      </table></div>
     </section>
 
     <div class="section-title"><h2>Deposit pelanggan</h2><span class="small muted">Saldo = nominal − dipakai − direfund</span></div>
@@ -192,12 +214,107 @@ function openRefund(ctx, deposit) {
   });
 }
 
+function openNewBook(ctx) {
+  const { db } = ctx;
+  const wh = ctx.ui.warehouseId === 'all' ? null : ctx.ui.warehouseId;
+  const rollList = db.rolls
+    .filter((r) => r.status === 'available' && !r.transit && availableMm(r) > 0 && (!wh || r.warehouseId === wh))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  if (!rollList.length) {
+    toast('Tidak ada roll tersedia untuk sample book.', { tone: 'error' });
+    return;
+  }
+  const rollOptions = rollList.map((r) => {
+    const sku = byId(db.skus, r.skuId);
+    return `<option value="${r.id}">${esc(r.id)} · ${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)} · ${esc(r.lot)} · ${fmt.m(availableMm(r))}</option>`;
+  }).join('');
+  const row = () => `<div class="alloc-row" data-book-line style="grid-template-columns:1.8fr 110px 34px">
+    <select class="select book-roll">${rollOptions}</select>
+    <input class="input book-qty" inputmode="decimal" value="0,3" />
+    <button class="icon-btn" type="button" data-remove aria-label="Hapus">${icon('x')}</button>
+  </div>`;
+  const customers = db.customers.filter((c) => c.stage !== 'dormant');
+  openModal({
+    title: 'Buku sample baru',
+    description: 'Setiap potongan diambil dari roll dan menjadi sample fisik. Stok langsung berkurang.',
+    wide: true,
+    submitLabel: 'Buat buku sample',
+    body: `
+      ${field('Nama buku', `<input class="input" name="name" placeholder="Sample book Hotel Arunika" required />`, { full: true })}
+      ${field('Pelanggan / prospek', `<select class="select" name="customer">${customers.map((c) => `<option value="${c.id}">${esc(c.name)}${c.company ? ` — ${esc(c.company)}` : ''}</option>`).join('')}</select>`)}
+      ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
+      <div class="section-title" style="margin:16px 0 6px"><h3>Potongan sample</h3></div>
+      <div id="book-rows">${row()}</div>
+      <button class="btn btn-sm" type="button" data-add>${icon('plus')} Tambah potongan</button>
+      ${field('Catatan', `<input class="input" name="notes" placeholder="Tujuan, warna yang dicari, instruksi" />`, { full: true })}
+      ${settingsOf(db).sampleDepositRequired ? `<div class="notice notice-warn">${icon('alert')}<div>Sample gratis dinonaktifkan. Buku sample memakai mode gratis; ubah preferensi atau gunakan sample individual.</div></div>` : ''}
+    `,
+    onMount(form) {
+      const rows = form.querySelector('#book-rows');
+      const bind = (r) => {
+        r.querySelector('[data-remove]').addEventListener('click', () => { if (rows.children.length > 1) r.remove(); });
+      };
+      bind(rows.firstElementChild);
+      form.querySelector('[data-add]').addEventListener('click', () => {
+        rows.insertAdjacentHTML('beforeend', row());
+        bind(rows.lastElementChild);
+      });
+    },
+    onSubmit(form, close) {
+      const items = [...form.querySelectorAll('[data-book-line]')].map((r) => ({
+        rollId: r.querySelector('.book-roll').value,
+        qtyMm: parseM(r.querySelector('.book-qty').value),
+      })).filter((i) => i.rollId && i.qtyMm > 0);
+      if (!items.length) throw new Error('Tambahkan minimal satu potongan sample.');
+      const book = ctx.store.update((db) => createSampleBook(db, {
+        name: form.name.value,
+        customerId: form.customer.value,
+        date: form.date.value,
+        items,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast(`Buku ${book.id} dibuat: ${book.items.length} sample dipotong dari roll.`, { tone: 'success' });
+    },
+  });
+}
+
+function openGiveBook(ctx, book) {
+  openModal({
+    title: `Beri buku ${book.name}`,
+    description: 'Catat siapa yang menerima buku sample fisik.',
+    submitLabel: 'Tandai diberikan',
+    body: `
+      ${field('Diberikan kepada', `<input class="input" name="givenTo" value="${esc(book.customerName)}" required />`)}
+      ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
+      ${field('Catatan', `<input class="input" name="note" placeholder="Kontak, lokasi, hasil follow-up" />`, { full: true })}
+    `,
+    onSubmit(form, close) {
+      ctx.store.update((db) => giveSampleBook(db, {
+        id: book.id, givenTo: form.givenTo.value, date: form.date.value, note: form.note.value, user: ctx.user,
+      }));
+      close();
+      toast('Buku sample ditandai sudah diberikan.', { tone: 'success' });
+    },
+  });
+}
+
 export function mount(ctx) {
   document.querySelectorAll('[data-sample-status]').forEach((btn) => btn.addEventListener('click', () => {
     filter.status = btn.dataset.sampleStatus;
     ctx.store.emit();
   }));
   document.querySelector('[data-act="new-sample"]')?.addEventListener('click', () => openNewSample(ctx));
+  document.querySelector('[data-act="new-book"]')?.addEventListener('click', () => openNewBook(ctx));
+  document.querySelectorAll('[data-give-book]').forEach((btn) => btn.addEventListener('click', () => {
+    const book = (ctx.db.sampleBooks ?? []).find((b) => b.id === btn.dataset.giveBook);
+    if (book) openGiveBook(ctx, book);
+  }));
+  document.querySelectorAll('[data-print-book]').forEach((btn) => btn.addEventListener('click', () => {
+    const book = (ctx.db.sampleBooks ?? []).find((b) => b.id === btn.dataset.printBook);
+    if (book) printDocument(`Buku sample ${book.id}`, printSampleBookHtml(ctx.db, book));
+  }));
   document.querySelectorAll('[data-link]').forEach((btn) => btn.addEventListener('click', () => {
     const sample = ctx.db.samples.find((s) => s.id === btn.dataset.link);
     if (sample) openLink(ctx, sample);

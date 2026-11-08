@@ -95,6 +95,11 @@ export const SAMPLE_MODE = {
   deposit: { label: 'Deposit', tone: 'copper' },
 };
 
+export const SAMPLE_BOOK_STATUS = {
+  ready: { label: 'Siap diberikan', tone: 'teal' },
+  given: { label: 'Sudah diberikan', tone: 'ok' },
+};
+
 export function getSample(db, id) {
   return db.samples.find((s) => s.id === id) ?? null;
 }
@@ -194,9 +199,80 @@ export function createSample(db, { customerId, skuId, rollId, qtyMm, mode = 'fre
   return sample;
 }
 
+/**
+ * Build a physical sample book from roll cuts. Each item creates a normal
+ * sample (stock leaves the roll) and is linked back to the book.
+ */
+export function createSampleBook(db, {
+  name, customerId, date = todayJakarta(), items, notes = '', user,
+}) {
+  const customer = requireCustomer(db, customerId);
+  const cleanName = String(name ?? '').trim();
+  assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama buku sample minimal 2 karakter.');
+  assert(Array.isArray(items) && items.length > 0, 'EMPTY_ITEMS', 'Buku sample harus memiliki minimal satu potongan.');
+  const id = nextId(db, 'sampleBook', 'SB', 4);
+  const built = items.map((item) => {
+    const roll = requireRoll(db, item.rollId);
+    const qty = Math.round(Number(item.qtyMm));
+    assert(qty > 0, 'INVALID_LENGTH', 'Panjang sample harus lebih dari 0 m.');
+    const sample = createSample(db, {
+      customerId,
+      skuId: roll.skuId,
+      rollId: roll.id,
+      qtyMm: qty,
+      mode: 'free',
+      date,
+      notes: `Buku sample ${id}`,
+      user,
+    });
+    return {
+      sampleId: sample.id,
+      skuId: sample.skuId,
+      rollId: sample.rollId,
+      qtyMm: sample.qtyMm,
+    };
+  });
+  const book = {
+    id,
+    name: cleanName,
+    customerId,
+    customerName: customer.name,
+    date,
+    status: 'ready',
+    items: built,
+    notes: String(notes ?? '').trim(),
+    createdAt: isoNow(),
+    createdBy: user?.name ?? 'Sistem',
+    givenTo: '',
+    givenAt: null,
+    history: [{ at: isoNow(), by: user?.name ?? 'Sistem', action: 'Buku sample dibuat', note: `${built.length} potongan` }],
+  };
+  db.sampleBooks = db.sampleBooks ?? [];
+  db.sampleBooks.unshift(book);
+  audit(db, user, 'buat_buku_sample', 'sampleBook', id, `${cleanName} · ${built.length} potongan`);
+  return book;
+}
+
+export function giveSampleBook(db, {
+  id, givenTo, date = todayJakarta(), note = '', user,
+}) {
+  const book = (db.sampleBooks ?? []).find((b) => b.id === id);
+  assert(book, 'SAMPLE_BOOK_NOT_FOUND', 'Buku sample tidak ditemukan.');
+  assert(book.status !== 'given', 'INVALID_STATUS', 'Buku sample sudah diberikan.');
+  const recipient = String(givenTo ?? '').trim();
+  assert(recipient.length >= 2, 'RECIPIENT_REQUIRED', 'Nama penerima buku wajib diisi.');
+  book.status = 'given';
+  book.givenTo = recipient;
+  book.givenAt = isoNow();
+  book.givenDate = date;
+  book.notes = String(note ?? book.notes).trim();
+  book.history.push({ at: isoNow(), by: user?.name ?? 'Sistem', action: 'Buku diberikan', note: recipient });
+  audit(db, user, 'beri_buku_sample', 'sampleBook', id, recipient);
+  return book;
+}
+
 /** Explicitly connect a sample to the purchase it produced. */
-export function linkSampleToInvoice(db, { sampleId, invoiceId, user }) {
-  const sample = getSample(db, sampleId);
+export function linkSampleToInvoice(db, { sampleId, invoiceId, user }) {  const sample = getSample(db, sampleId);
   assert(sample, 'SAMPLE_NOT_FOUND', 'Sample tidak ditemukan.');
   const inv = requireInvoice(db, invoiceId);
   assert(inv.status === 'posted', 'INVALID_STATUS', 'Faktur harus terbit.');

@@ -11,7 +11,7 @@ import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTrans
 import { createPO, receivePO } from '../src/domain/purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
-import { createSample, refundDeposit, applyDepositToInvoice } from '../src/domain/crm.js';
+import { createSample, createSampleBook, giveSampleBook, refundDeposit, applyDepositToInvoice } from '../src/domain/crm.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
 import { migrate } from '../src/data/store.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
@@ -276,6 +276,29 @@ test('deposits cannot be refunded twice, nor refunded and applied', async () => 
   assert.equal(indent.applied + indent.refunded, indent.amount);
 });
 
+test('sample book cuts rolls into a giveaway book and can be marked given', () => {
+  const db = buildSeed();
+  const roll = db.rolls.find((r) => r.id === 'RL-0001');
+  const before = roll.currentMm;
+  const book = createSampleBook(db, {
+    name: 'Sample book QA',
+    customerId: 'CUS-0002',
+    items: [
+      { rollId: 'RL-0001', qtyMm: 300 },
+      { rollId: 'RL-0001', qtyMm: 200 },
+    ],
+    notes: 'QA book',
+    user: SALES,
+  });
+  assert.equal(book.status, 'ready');
+  assert.equal(book.items.length, 2);
+  assert.equal(roll.currentMm, before - 500);
+  assert.equal(book.items.every((i) => db.samples.some((s) => s.id === i.sampleId)), true);
+  giveSampleBook(db, { id: book.id, givenTo: 'Budi Prospek', user: SALES });
+  assert.equal(book.status, 'given');
+  assert.equal(book.givenTo, 'Budi Prospek');
+});
+
 test('sample deposit refund requires a linked qualifying purchase', () => {
   const db = buildSeed();
   const deposit = db.deposits.find((d) => d.kind === 'sample' && d.sampleId);
@@ -515,7 +538,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 11);
+  assert.equal(migrated.meta.version, 12);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
 });

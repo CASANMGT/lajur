@@ -27,6 +27,9 @@ export const USERS = {
   operator: { id: 'u-op', name: 'Henny', role: 'operator' },
   sales: { id: 'u-sales', name: 'Belinda', role: 'sales' },
   manager: { id: 'u-mgr', name: 'Henry Martin', role: 'manager' },
+  driverAsep: { id: 'u-drv1', name: 'Asep', role: 'driver' },
+  driverRudi: { id: 'u-drv2', name: 'Rudi', role: 'driver' },
+  driverSlamet: { id: 'u-drv3', name: 'Slamet', role: 'driver' },
 };
 
 export const MASTER = {
@@ -73,7 +76,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 11,
+      version: 12,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -93,12 +96,14 @@ function skeleton(dataset) {
     customers: [],
     suppliers: [],
     drivers: [],
+    transportCompanies: [],
     supplierPrices: [],
     fxRates: [],
     projects: [],
     invoices: [],
     payments: [],
     samples: [],
+    sampleBooks: [],
     deposits: [],
     transfers: [],
     purchaseOrders: [],
@@ -186,10 +191,17 @@ export function buildSeed({ dataset = 'main' } = {}) {
     { id: 'SUP-007', code: 'GZWEAVE', name: 'Guangzhou Weave Import', contact: 'Zhang Min', phone: '+86 20 8888 4000', email: 'trade@gzweave.cn', address: 'Haizhu Textile Market, Guangzhou', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2310, incoterm: 'FOB Guangzhou', port: 'Guangzhou → Tanjung Priok', termsDays: 45, leadTimeDays: 40, notes: 'Dimout dan motor untuk proyek.' },
   );
 
+  db.transportCompanies.push(
+    { id: 'TRP-001', code: 'internal', name: 'Lajur Fleet', type: 'internal', contact: 'Henny', phone: '021-555-0101', address: 'Gudang Pusat Jakarta', active: true, notes: 'Armada internal Jakarta.' },
+    { id: 'TRP-002', code: 'lalamove', name: 'Lalamove Indonesia', type: 'third_party', contact: 'Lalamove', phone: '021-5084-8000', address: 'Jakarta / Bali', active: true, notes: 'Motor dan mobil boks on-demand.' },
+    { id: 'TRP-003', code: 'gosend', name: 'GoSend', type: 'third_party', contact: 'Gojek', phone: '021-5020-1111', address: 'Jakarta / Bali', active: true, notes: 'Same-day delivery.' },
+    { id: 'TRP-004', code: 'bali-kargo', name: 'Bali Kargo Utama', type: 'third_party', contact: 'Made Wirawan', phone: '0361-555-0404', address: 'Denpasar, Bali', active: true, notes: 'Kargo Bali dan sekitarnya.' },
+  );
+
   db.drivers.push(
-    { id: 'DRV-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
-    { id: 'DRV-002', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
-    { id: 'DRV-003', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
+    { id: 'DRV-001', userId: 'u-drv1', transportId: 'TRP-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
+    { id: 'DRV-002', userId: 'u-drv2', transportId: 'TRP-001', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
+    { id: 'DRV-003', userId: 'u-drv3', transportId: 'TRP-004', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
   );
 
   db.supplierPrices.push(
@@ -229,6 +241,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.supplierPrice = db.supplierPrices.length;
   db.sequences.fxRate = db.fxRates.length;
   db.sequences.driver = db.drivers.length;
+  db.sequences.transport = db.transportCompanies.length;
 
   /* ------------------------------------------------------------- customers */
   const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', npwp: '01.234.567.8-901.000', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);

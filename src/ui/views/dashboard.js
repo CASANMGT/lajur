@@ -11,6 +11,7 @@ import { cuttingQueue, isOverdue, taskList, taskStats, TASK_TYPE } from '../../d
 import { productionStats } from '../../domain/production.js';
 import { settingsOf } from '../../domain/settings.js';
 import { isAdvancedMode } from '../../domain/features.js';
+import { DELIVERY_STATUS } from '../../domain/deliveries.js';
 import { pageHead, statCard, barChart, movementRow, warehouseOf } from './common.js';
 
 const ICON_BY_NAME = {
@@ -119,11 +120,45 @@ export function render(ctx) {
   const ops = taskStats(db, { warehouseId: wh?.id ?? null });
   const myTasks = taskList(db, {
     warehouseId: wh?.id ?? null,
-    assigneeId: role === 'operator' ? ctx.user.id : null,
+    assigneeId: role === 'operator' || role === 'driver' ? ctx.user.id : null,
     status: 'open',
   }).slice(0, 4);
   const cutting = cuttingQueue(db).filter((c) => !wh || c.task.warehouseId === wh.id).slice(0, 3);
   const prod = productionStats(db);
+
+  if (role === 'driver') {
+    const driver = (db.drivers ?? []).find((d) => d.userId === ctx.user.id);
+    const today = todayJakarta();
+    const deliveries = (db.deliveries ?? [])
+      .filter((d) => driver && d.driverId === driver.id)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+      .slice(0, 6);
+    const active = deliveries.filter((d) => ['draft', 'dispatched', 'delivered'].includes(d.status)).length;
+    return `
+      ${pageHead({ eyebrow: 'Driver / transport', title: `${greeting()}, ${firstName}`, sub: `${driver ? `${driver.name} · ${driver.plateNumber}` : 'Akun belum tertaut ke driver'} · ${dateLabel}` })}
+      <div class="kpi-strip">
+        ${statCard({ label: 'Tugas kirim aktif', value: String(active), meta: 'Surat jalan belum dikonfirmasi', tone: 'accent', iconName: 'truck' })}
+        ${statCard({ label: 'Hari ini', value: String(deliveries.filter((d) => d.date === today).length), meta: today, iconName: 'clock' })}
+        ${statCard({ label: 'Tugas operasi', value: String(myTasks.length), meta: 'Ditugaskan ke Anda', tone: 'warn', iconName: 'listCheck' })}
+        ${statCard({ label: 'Kendaraan', value: driver?.plateNumber ?? '—', meta: driver ? `${driver.vehicleType}` : 'Hubungi manajer' })}
+      </div>
+      <div class="grid grid-main" style="margin-top:16px">
+        <section class="card">
+          <div class="card-head"><div><h2>Surat jalan saya</h2><p>Perbarui Kirim / Tiba dan lihat status konfirmasi.</p></div><a class="small strong" href="#/pengiriman">Semua pengiriman</a></div>
+          <div class="table-wrap"><table class="data">
+            <thead><tr><th>Surat jalan</th><th>Pelanggan</th><th>Tanggal</th><th>Status</th></tr></thead>
+            <tbody>${deliveries.map((d) => `<tr><td class="mono">${esc(d.id)}<div class="xs muted">${esc(d.invoiceId)}</div></td><td class="small">${esc(d.customerName)}</td><td class="small">${esc(d.date)}</td><td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Belum ada surat jalan.</td></tr>'}</tbody>
+          </table></div>
+        </section>
+        <section class="card card-pad">
+          <h2>Tugas saya</h2>
+          <div class="stack-sm" style="margin-top:10px">
+            ${myTasks.map((t) => `<a class="row-between" href="#/tugas"><span class="small">${esc(t.title)}</span>${badge(TASK_TYPE[t.type]?.label ?? t.type, 'muted')}</a>`).join('') || '<p class="small muted">Tidak ada tugas aktif.</p>'}
+          </div>
+          <a class="btn btn-sm btn-block" style="margin-top:12px" href="#/pengiriman">${icon('truck')} Buka pengiriman</a>
+        </section>
+      </div>`;
+  }
 
   if (role === 'operator') {
     return `
