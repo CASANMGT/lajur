@@ -88,26 +88,33 @@ function renderUsers(ctx) {
 
 function renderPreferences(ctx) {
   const s = settingsOf(ctx.db);
+  const advanced = s.uiMode === 'advanced';
   return `<div class="grid grid-main">
     <section class="card card-pad">
       <h2>Preferensi operasional</h2>
-      <p class="small muted" style="margin-top:4px">Berlaku untuk dataset ini. Beberapa opsi mengubah tampilan atau validasi form.</p>
+      <p class="small muted" style="margin-top:4px">Berlaku untuk dataset ini. Mode menentukan fitur yang ditampilkan; opsi lanjutan hanya muncul pada mode Lanjutan.</p>
       <form data-pref-form class="stack" style="margin-top:14px">
         <div class="form-grid">
+          ${field('Mode tampilan', `<select class="select" name="uiMode"><option value="simple" ${!advanced ? 'selected' : ''}>Sederhana — operasi dasar</option><option value="advanced" ${advanced ? 'selected' : ''}>Lanjutan — analitik, master, dokumen</option></select>`, { full: true, hint: 'Sederhana: stok, tugas, transfer, pembelian, faktur, pelanggan, proyek, sample, opname. Lanjutan menambah laporan, master, simulasi, WIP/Pesanan, faktur pajak, surat jalan, dan impor.' })}
           ${field('Ambang stok rendah (m)', `<input class="input" name="lowStockM" inputmode="decimal" value="${(s.lowStockMm / 1000).toString().replace('.', ',')}" />`, { hint: 'Dipakai untuk penanda stok menipis.' })}
           ${field('Tenggat tugas default (hari)', `<input class="input" type="number" name="taskDueDays" min="0" max="30" value="${s.taskDueDays}" />`)}
         </div>
         <label class="checkline"><input type="checkbox" name="requireProof" ${s.requireProofOnReceipt ? 'checked' : ''} /> Wajibkan bukti fisik saat menerima barang</label>
-        <label class="checkline"><input type="checkbox" name="salesOrder" ${s.salesOrderEnabled ? 'checked' : ''} /> Aktifkan pesanan penjualan (sales order / pesanan)</label>
-        <label class="checkline"><input type="checkbox" name="production" ${s.productionEnabled ? 'checked' : ''} /> Aktifkan produksi WIP (potong → jahit → QC)</label>
-        <label class="checkline"><input type="checkbox" name="operatorCosts" ${s.operatorCanSeeCosts ? 'checked' : ''} /> Operator boleh melihat harga pokok / nilai stok</label>
-        <label class="checkline"><input type="checkbox" name="sampleDeposit" ${s.sampleDepositRequired ? 'checked' : ''} /> Sample berbayar/deposit wajib nominal</label>
+        ${advanced ? `
+          <div class="notice notice-info">${icon('layers')}<div><strong>Opsi lanjutan.</strong> Aktifkan modul dan biaya hanya jika operasi membutuhkannya.</div></div>
+          <label class="checkline"><input type="checkbox" name="salesOrder" ${s.salesOrderEnabled ? 'checked' : ''} /> Aktifkan pesanan penjualan (sales order / pesanan)</label>
+          <label class="checkline"><input type="checkbox" name="production" ${s.productionEnabled ? 'checked' : ''} /> Aktifkan produksi WIP (potong → jahit → QC)</label>
+          <label class="checkline"><input type="checkbox" name="operatorCosts" ${s.operatorCanSeeCosts ? 'checked' : ''} /> Operator boleh melihat harga pokok / nilai stok</label>
+          <label class="checkline"><input type="checkbox" name="sampleDeposit" ${s.sampleDepositRequired ? 'checked' : ''} /> Sample berbayar/deposit wajib nominal</label>
+        ` : `<p class="small muted">Mode Sederhana menyembunyikan laporan, master data, simulasi, WIP/Pesanan, faktur pajak, surat jalan, dan tab impor. Pilih <strong>Lanjutan</strong> lalu simpan untuk membuka opsi tersebut.</p>`}
         <div class="row"><button class="btn btn-primary" type="submit">Simpan preferensi</button></div>
       </form>
     </section>
     <section class="card card-pad">
       <h2>Efek opsi</h2>
       <ul class="small muted" style="padding-left:16px;margin-top:8px;line-height:1.7">
+        <li><strong>Mode Sederhana</strong> — menu inti gudang, pembelian, penjualan, proyek, pelanggan dan sample.</li>
+        <li><strong>Mode Lanjutan</strong> — menambah laporan, master data, simulasi, dokumen pajak/pengiriman, impor, WIP dan Pesanan.</li>
         <li><strong>Stok rendah</strong> — penanda pada ringkasan stok (rencana: notifikasi).</li>
         <li><strong>Tenggat tugas</strong> — tanggal default saat membuat tugas baru.</li>
         <li><strong>Bukti fisik</strong> — form penerimaan menolak tanpa lampiran.</li>
@@ -254,14 +261,16 @@ export function mount(ctx) {
   const pref = document.querySelector('[data-pref-form]');
   pref?.addEventListener('submit', (e) => {
     e.preventDefault();
+    const current = settingsOf(ctx.db);
     ctx.store.update((db) => saveSettings(db, {
       lowStockMm: Math.round(Number(String(pref.lowStockM.value).replace(',', '.')) * 1000) || 0,
       taskDueDays: Math.max(0, Number(pref.taskDueDays.value) || 0),
       requireProofOnReceipt: pref.requireProof.checked,
-      salesOrderEnabled: pref.salesOrder.checked,
-      productionEnabled: pref.production.checked,
-      operatorCanSeeCosts: pref.operatorCosts.checked,
-      sampleDepositRequired: pref.sampleDeposit.checked,
+      uiMode: pref.uiMode.value,
+      salesOrderEnabled: pref.salesOrder ? pref.salesOrder.checked : current.salesOrderEnabled,
+      productionEnabled: pref.production ? pref.production.checked : current.productionEnabled,
+      operatorCanSeeCosts: pref.operatorCosts ? pref.operatorCosts.checked : current.operatorCanSeeCosts,
+      sampleDepositRequired: pref.sampleDeposit ? pref.sampleDeposit.checked : current.sampleDepositRequired,
     }, ctx.user));
     toast('Preferensi disimpan.', { tone: 'success' });
   });

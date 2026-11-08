@@ -15,6 +15,7 @@ import {
 import { attachmentMeta } from '../../domain/attachments.js';
 import { settingsOf } from '../../domain/settings.js';
 import { auditTrail } from '../../domain/master.js';
+import { isAdvancedMode } from '../../domain/features.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { latestFxRate, latestSupplierPrice } from '../../domain/pricing.js';
 import { printPoHtml } from './print.js';
@@ -25,14 +26,16 @@ export function render(ctx) {
   if (ctx.route.id) return renderPoDetail(ctx);
 
   const { db, role } = ctx;
+  const advanced = isAdvancedMode(db);
   const ap = payablesAging(db);
   const open = ap.items.length;
   const late = ap.items.filter((i) => i.daysLate > 0).length;
   const ship = shipmentStats(db);
   const showFinance = role === 'manager';
   const tabs = [
-    ['po', 'Purchase order'], ['penerimaan', 'Penerimaan'], ['pengiriman', 'Pengiriman impor'],
-    ...(showFinance ? [['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']] : []),
+    ['po', 'Purchase order'], ['penerimaan', 'Penerimaan'],
+    ...(advanced ? [['pengiriman', 'Pengiriman impor']] : []),
+    ...(showFinance && advanced ? [['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']] : []),
   ];
   if (!tabs.some(([k]) => k === tab)) tab = 'po';
 
@@ -47,7 +50,7 @@ export function render(ctx) {
       ${showFinance ? statCard({ label: 'Utang pemasok', value: fmt.money(ap.total), meta: `${open} tagihan terbuka`, tone: 'warn', iconName: 'truck' }) : ''}
       ${showFinance ? statCard({ label: 'Lewat jatuh tempo', value: String(late), meta: 'Tagihan perlu dibayar', tone: 'warn' }) : ''}
       ${statCard({ label: 'PO berjalan', value: String(db.purchaseOrders.filter((p) => ['approved', 'partial'].includes(p.status)).length), meta: 'Belum diterima lengkap' })}
-      ${statCard({ label: 'Pengiriman aktif', value: String(ship.active), meta: `${ship.late} lewat ETA · ${ship.customs} di bea cukai`, tone: ship.late ? 'warn' : '' })}
+      ${advanced ? statCard({ label: 'Pengiriman aktif', value: String(ship.active), meta: `${ship.late} lewat ETA · ${ship.customs} di bea cukai`, tone: ship.late ? 'warn' : '' }) : ''}
       ${showFinance ? '' : statCard({ label: 'Penerimaan', value: String(db.goodsReceipts.length), meta: 'Dokumen GR tersimpan' })}
     </div>
 
@@ -216,6 +219,7 @@ function renderSupplierTab(ctx) {
 
 function renderPoDetail(ctx) {
   const { db, role, route } = ctx;
+  const advanced = isAdvancedMode(db);
   const po = db.purchaseOrders.find((p) => p.id === route.id);
   if (!po) return `${pageHead({ title: 'Tidak ditemukan' })}<div class="notice notice-danger">${icon('alert')}<div>PO ${esc(route.id)} tidak ada.</div></div>`;
   const supplier = byId(db.suppliers, po.supplierId);
@@ -227,8 +231,8 @@ function renderPoDetail(ctx) {
   const actions = [];
   if (po.status === 'draft' && role === 'manager') actions.push(`<button class="btn btn-primary" data-act="approve">${icon('check')} Setujui PO</button>`);
   if (['approved', 'partial'].includes(po.status) && can(role, 'po.receive')) actions.push(`<button class="btn btn-primary" data-act="receive">${icon('truck')} Terima barang</button>`);
-  if (['approved', 'partial'].includes(po.status) && !shipment && po.currency !== 'IDR' && can(role, 'shipment.create')) actions.push(`<button class="btn btn-copper" data-act="new-shipment">${icon('ship')} Buat pengiriman</button>`);
-  if (shipment && !['received', 'cancelled'].includes(shipment.status) && can(role, 'shipment.update')) actions.push(`<button class="btn" data-act="shipment-status">${icon('route')} Update pengiriman</button>`);
+  if (['approved', 'partial'].includes(po.status) && !shipment && po.currency !== 'IDR' && can(role, 'shipment.create') && advanced) actions.push(`<button class="btn btn-copper" data-act="new-shipment">${icon('ship')} Buat pengiriman</button>`);
+  if (shipment && !['received', 'cancelled'].includes(shipment.status) && can(role, 'shipment.update') && advanced) actions.push(`<button class="btn" data-act="shipment-status">${icon('route')} Update pengiriman</button>`);
   actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak PO</button>`);
 
   return `
@@ -262,7 +266,7 @@ function renderPoDetail(ctx) {
           </div>
         </section>
 
-        ${shipment ? `<section class="card">
+        ${advanced && shipment ? `<section class="card">
           <div class="card-head"><div><h2>Pengiriman impor</h2><p>${esc(shipment.reference)} · ${esc(SHIPMENT_MODE[shipment.mode]?.label ?? shipment.mode)}</p></div>${badge(SHIPMENT_STATUS[shipment.status].label, SHIPMENT_STATUS[shipment.status].tone)}</div>
           <div class="card-pad">
             <div class="flow" style="grid-template-columns:repeat(5,minmax(0,1fr))">
@@ -283,18 +287,18 @@ function renderPoDetail(ctx) {
             ${shipment.attachments?.length ? `<div class="row" style="margin-top:8px">${shipment.attachments.map((a) => badge(`${a.name}`, 'muted')).join('')}</div>` : ''}
             <div class="row" style="margin-top:10px"><a class="btn btn-sm" href="#/pembelian?tab=pengiriman">${icon('ship')} Semua pengiriman</a></div>
           </div>
-        </section>` : po.currency !== 'IDR' ? `<div class="notice notice-info">${icon('ship')}<div><strong>Belum ada pengiriman.</strong> Buat pengiriman untuk melacak BL/container, ETD/ETA, bea cukai, dan landed cost.</div></div>` : ''}
+        </section>` : advanced && po.currency !== 'IDR' ? `<div class="notice notice-info">${icon('ship')}<div><strong>Belum ada pengiriman.</strong> Jalankan mode Lanjutan untuk melacak BL/container, ETD/ETA, bea cukai, dan landed cost.</div></div>` : ''}
 
         <section class="card">
           <div class="card-head"><div><h2>Penerimaan</h2><p>Setiap baris menyimpan roll dan lot sendiri.</p></div><span class="badge no-dot">${receipts.length}</span></div>
           ${receipts.length ? `<div class="table-wrap"><table class="data">
-            <thead><tr><th>Dokumen</th><th>Tanggal</th><th>Gudang</th>${showMoney ? '<th class="num">Nilai</th><th>Tagihan</th>' : ''}</tr></thead>
+            <thead><tr><th>Dokumen</th><th>Tanggal</th><th>Gudang</th>${showMoney ? '<th class="num">Nilai</th>' : ''}${showMoney && advanced ? '<th>Tagihan</th>' : ''}</tr></thead>
             <tbody>${receipts.map((r) => `<tr>
               <td class="mono">${esc(r.id)}<div class="xs muted">${esc(r.ref)}</div></td>
               <td>${esc(r.date)}</td>
               <td>${esc(warehouseOf(db, r.warehouseId)?.code)}</td>
-              ${showMoney ? `<td class="num">${fmt.money(r.total)}</td>
-              <td>${r.supplierInvoiceId ? `<a class="mono xs" href="#/pembelian?tab=tagihan">${esc(r.supplierInvoiceId)}</a>` : '—'}</td>` : ''}
+              ${showMoney ? `<td class="num">${fmt.money(r.total)}</td>` : ''}
+              ${showMoney && advanced ? `<td>${r.supplierInvoiceId ? `<a class="mono xs" href="#/pembelian?tab=tagihan">${esc(r.supplierInvoiceId)}</a>` : '—'}</td>` : ''}
             </tr>`).join('')}</tbody>
           </table></div>` : `<div class="empty" style="padding:24px">${icon('truck')}<strong>Belum diterima</strong><p>Terima sebagian atau lengkap saat barang tiba.</p></div>`}
         </section>
@@ -310,7 +314,7 @@ function renderPoDetail(ctx) {
             <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(po.approvedBy || '—')}</span></div>
             ${showMoney && po.currency !== 'IDR' ? `<div class="row-between"><span class="small muted">Kurs terkunci</span><span class="small">${fmt.money(po.fxRate)} / ${esc(po.currency)}</span></div>
             <div class="row-between"><span class="small muted">Kurs dicatat</span><span class="small">${esc(po.fxAsOf ?? po.date)}<div class="xs muted">${esc(po.fxSource ?? '—')}</div></span></div>` : ''}
-            <div class="row-between"><span class="small muted">Tagihan</span><span class="small">${bill ? `${esc(bill.id)}` : '—'}</span></div>
+            ${advanced ? `<div class="row-between"><span class="small muted">Tagihan</span><span class="small">${bill ? `${esc(bill.id)}` : '—'}</span></div>` : ''}
           </div>
           ${po.note ? `<hr class="divider" /><p class="small muted">${esc(po.note)}</p>` : ''}
         </section>
@@ -332,6 +336,7 @@ function renderPoDetail(ctx) {
 
 export function openCreatePo(ctx) {
   const { db } = ctx;
+  const advanced = isAdvancedMode(db);
   const skuOptions = db.skus.filter((s) => s.active).map((s) => `<option value="${s.id}">${esc(s.collectionName)} ${esc(s.colourName || s.colourCode)} — ${esc(s.code)}</option>`).join('');
   const partOptions = db.parts.map((p) => `<option value="${p.id}">${esc(p.sku)} · ${esc(p.name)}</option>`).join('');
   const row = () => `<div class="alloc-row" data-line style="grid-template-columns:1fr 1.3fr 90px 110px 34px">
@@ -406,8 +411,8 @@ export function openCreatePo(ctx) {
       <div class="section-title" style="margin:18px 0 6px"><h3>Baris PO</h3><span class="xs muted">Harga default diambil dari harga pemasok terbaru</span></div>
       <div id="po-rows">${row()}</div>
       <button class="btn btn-sm" type="button" data-add>${icon('plus')} Tambah baris</button>
-      <div class="section-title" style="margin:18px 0 6px"><h3>Daftar harga tersedia</h3><span class="xs muted">Klik “Tambah” untuk memakai harga ini</span></div>
-      <div data-price-list>${priceList(db.suppliers[0]?.id, todayJakarta())}</div>
+      ${advanced ? `<div class="section-title" style="margin:18px 0 6px"><h3>Daftar harga tersedia</h3><span class="xs muted">Klik “Tambah” untuk memakai harga ini</span></div>
+      <div data-price-list>${priceList(db.suppliers[0]?.id, todayJakarta())}</div>` : ''}
       <div class="notice notice-info" style="margin-top:12px" data-fx-hint>${icon('alert')}<div>Harga diisi dalam mata uang pemasok. Pemasok impor memakai CNY dan kurs yang dikunci saat PO.</div></div>
     `,
     onMount(form) {
@@ -437,7 +442,7 @@ export function openCreatePo(ctx) {
 
       const updatePriceList = () => {
         const panel = form.querySelector('[data-price-list]');
-        panel.innerHTML = priceList(form.supplier.value, form.date.value);
+        if (panel) panel.innerHTML = priceList(form.supplier.value, form.date.value);
       };
 
       const reprice = () => {

@@ -134,9 +134,11 @@ test('settings are merged, persisted and audited', () => {
   const db = buildSeed();
   assert.equal(settingsOf(db).salesOrderEnabled, false);
   assert.equal(settingsOf(db).productionEnabled, false);
-  saveSettings(db, { requireProofOnReceipt: true, taskDueDays: 3, salesOrderEnabled: true }, MGR);
+  assert.equal(settingsOf(db).uiMode, 'simple');
+  saveSettings(db, { requireProofOnReceipt: true, taskDueDays: 3, salesOrderEnabled: true, uiMode: 'advanced' }, MGR);
   assert.equal(settingsOf(db).requireProofOnReceipt, true);
   assert.equal(settingsOf(db).taskDueDays, 3);
   assert.equal(settingsOf(db).salesOrderEnabled, true);
+  assert.equal(settingsOf(db).uiMode, 'advanced');
   assert.ok(db.audit.some((a) => a.action === 'ubah_pengaturan'));
 });

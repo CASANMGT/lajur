@@ -5,6 +5,7 @@ import { ROLE_HOME, ensureAccounts, sessionUser } from '../data/auth.js';
 import { dashboardMetrics } from '../domain/reports.js';
 import { invoiceOutstanding } from '../domain/sales.js';
 import { renderShell, mountShell, ROUTE_META, canAccess } from './shell.js';
+import { ADVANCED_VIEWS, isAdvancedMode } from '../domain/features.js';
 import { icon, toast, closeModal, openImagePreview } from './dom.js';
 import * as login from './views/login.js';
 import * as dashboard from './views/dashboard.js';
@@ -111,6 +112,13 @@ export function renderApp() {
 
   const route = parseHash();
   if (!canAccess(user.role, route.name)) {
+    const home = ROLE_HOME[user.role] ?? '#/ringkasan';
+    if (window.location.hash !== home) {
+      window.location.hash = home;
+      return;
+    }
+  }
+  if (ADVANCED_VIEWS.has(route.name) && !isAdvancedMode(store.db)) {
     const home = ROLE_HOME[user.role] ?? '#/ringkasan';
     if (window.location.hash !== home) {
       window.location.hash = home;

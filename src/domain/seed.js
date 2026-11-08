@@ -24,9 +24,9 @@ import { createProductionOrder, cutOrder, qcPiece, releaseOrder, sewPiece } from
 import { confirmDelivery, createDelivery, dispatchDelivery, markDelivered } from './deliveries.js';
 
 export const USERS = {
-  operator: { id: 'u-op', name: 'Rani Pratama', role: 'operator' },
-  sales: { id: 'u-sales', name: 'Dimas Anggara', role: 'sales' },
-  manager: { id: 'u-mgr', name: 'Arif Wibowo', role: 'manager' },
+  operator: { id: 'u-op', name: 'Henny', role: 'operator' },
+  sales: { id: 'u-sales', name: 'Belinda', role: 'sales' },
+  manager: { id: 'u-mgr', name: 'Henry Martin', role: 'manager' },
 };
 
 export const MASTER = {
@@ -74,7 +74,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 9,
+      version: 10,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -123,6 +123,7 @@ function skeleton(dataset) {
       lowStockMm: 10000,
       taskDueDays: 1,
       requireProofOnReceipt: false,
+      uiMode: 'simple',
       salesOrderEnabled: false,
       productionEnabled: false,
       operatorCanSeeCosts: false,
@@ -330,7 +331,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   postInvoice(db, { id: invGraha.id, user: sales });
   const deliveryGraha = createDelivery(db, {
     invoiceId: invGraha.id,
-    pic: 'Rani Pratama',
+    pic: 'Henny',
     date: '2026-10-06',
     driver: 'Asep',
     vehicle: 'B 1234 CD',

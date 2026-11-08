@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.7 vs. earlier PRD and design system v2
+# Gap analysis — Lajur v2.8 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -65,6 +65,8 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Invoice discount fixed/percent** | **Done in v2.7** | Snapshot on invoice; shown in detail and print |
 | **Faktur pajak** | **Done in v2.7** | DPP/PPN 11% from total; NPWP, number, print; no manual price |
 | **Surat jalan / PIC / confirmation** | **Done in v2.7** | Draft → dispatched → delivered → confirmed; no second stock move |
+| **Simple / Advanced mode** | **Done in v2.8** | Simple default; manager switch in topbar/settings; advanced routes redirect |
+| **Demo names** | **Done in v2.8** | Henry Martin (manager), Henny (operator), Belinda (sales) |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |

@@ -515,7 +515,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 9);
+  assert.equal(migrated.meta.version, 10);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
 });

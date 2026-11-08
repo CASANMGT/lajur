@@ -16,6 +16,7 @@ import {
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
 import { createSalesOrder } from '../../domain/orders.js';
 import { settingsOf } from '../../domain/settings.js';
+import { isAdvancedMode } from '../../domain/features.js';
 import { availableMm, partAvailable, sellableRolls, totalParts } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
 import { printDeliveryHtml, printInvoiceHtml, printTaxInvoiceHtml } from './print.js';
@@ -26,6 +27,7 @@ export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
 
   const { db, ui, role } = ctx;
+  const advanced = isAdvancedMode(db);
   const invoices = db.invoices
     .filter((i) => statusFilter === 'all' || (statusFilter === 'outstanding' ? i.status === 'posted' && invoiceOutstanding(i) > 0 : i.status === statusFilter))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -43,7 +45,7 @@ export function render(ctx) {
       eyebrow: 'Penjualan',
       title: 'Faktur & pembayaran',
       sub: 'Kain dipotong dari roll tertentu; spare part memakai pcs. Stok keluar satu kali saat faktur diterbitkan.',
-      actions: `${settingsOf(db).salesOrderEnabled !== false ? `<a class="btn" href="#/pesanan">${icon('clipboard')} Pesanan</a>` : ''}
+      actions: `${advanced && settingsOf(db).salesOrderEnabled ? `<a class="btn" href="#/pesanan">${icon('clipboard')} Pesanan</a>` : ''}
         ${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
     })}
     ${roleHint(role, 'invoice.create', 'Membuat faktur adalah wewenang sales/CS atau manajer.')}
@@ -69,7 +71,7 @@ export function render(ctx) {
             const days = daysBetween(inv.dueDate, todayJakarta());
             const delivery = deliveryForInvoice(db, inv.id);
             return `<tr data-href="#/penjualan/${inv.id}" tabindex="0" role="link">
-              <td><span class="mono strong">${esc(inv.id)}</span>${inv.projectId ? `<div class="xs muted">${esc(inv.projectId)}</div>` : ''}${delivery ? `<div class="xs muted">${esc(delivery.id)} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>` : ''}</td>
+              <td><span class="mono strong">${esc(inv.id)}</span>${inv.projectId ? `<div class="xs muted">${esc(inv.projectId)}</div>` : ''}${advanced && delivery ? `<div class="xs muted">${esc(delivery.id)} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>` : ''}</td>
               <td>${esc(inv.customerName)}</td>
               <td class="hide-sm">${esc(inv.date)}<div class="xs muted">due ${esc(inv.dueDate)}</div></td>
               <td class="num">${fmt.money(inv.total)}</td>
@@ -84,7 +86,7 @@ export function render(ctx) {
           <div class="top"><span class="id">${esc(inv.id)}</span>${badge(invoiceStatusLabel(inv), invoiceOutstanding(inv) ? 'warn' : 'ok')}</div>
           <div class="small strong">${esc(inv.customerName)}</div>
           <div class="xs muted">${esc(inv.date)} · jatuh tempo ${esc(inv.dueDate)}</div>
-          ${deliveryForInvoice(db, inv.id) ? `<div class="xs muted">${esc(deliveryForInvoice(db, inv.id).id)} · ${esc(DELIVERY_STATUS[deliveryForInvoice(db, inv.id).status]?.label ?? '')}</div>` : ''}
+          ${advanced && deliveryForInvoice(db, inv.id) ? `<div class="xs muted">${esc(deliveryForInvoice(db, inv.id).id)} · ${esc(DELIVERY_STATUS[deliveryForInvoice(db, inv.id).status]?.label ?? '')}</div>` : ''}
           <div class="grid3">
             <div class="kv"><span>Total</span><strong>${fmt.money(inv.total)}</strong></div>
             <div class="kv"><span>Sisa</span><strong>${fmt.money(invoiceOutstanding(inv))}</strong></div>
@@ -101,6 +103,7 @@ export function render(ctx) {
 
 function renderDetail(ctx) {
   const { db, role, route } = ctx;
+  const advanced = isAdvancedMode(db);
   const inv = db.invoices.find((i) => i.id === route.id);
   if (!inv) return `${pageHead({ title: 'Tidak ditemukan' })}<div class="notice notice-danger">${icon('alert')}<div>Faktur ${esc(route.id)} tidak ada.</div></div>`;
   const out = invoiceOutstanding(inv);
@@ -118,7 +121,7 @@ function renderDetail(ctx) {
   if (inv.status === 'posted' && out > 0 && can(role, 'invoice.pay')) actions.push(`<button class="btn btn-primary" data-act="pay">${icon('wallet')} Terima pembayaran</button>`);
   if (inv.status === 'posted' && out > 0 && applicableDeposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
   if (inv.status === 'posted' && can(role, 'return.create')) actions.push(`<button class="btn" data-act="return">${icon('refresh')} Retur</button>`);
-  if (inv.status === 'posted' && !delivery && can(role, 'invoice.create')) actions.push(`<button class="btn" data-act="new-delivery">${icon('truck')} Surat jalan</button>`);
+  if (inv.status === 'posted' && !delivery && can(role, 'invoice.create') && advanced) actions.push(`<button class="btn" data-act="new-delivery">${icon('truck')} Surat jalan</button>`);
   actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak</button>`);
 
   return `
@@ -166,27 +169,7 @@ function renderDetail(ctx) {
           </dl>
         </section>
 
-        <section class="card card-pad">
-          <div class="row-between">
-            <div><h2>Faktur pajak</h2><p class="xs muted">PPN 11% dihitung dari total faktur; harga tidak diinput ulang.</p></div>
-            ${tax ? badge('Terbit', 'ok') : badge('Belum terbit', 'muted')}
-          </div>
-          ${inv.status !== 'posted' ? `<p class="small muted" style="margin-top:8px">Faktur pajak dapat diterbitkan setelah faktur diposting.</p>` : tax ? `
-            <div class="stack-sm" style="margin-top:10px">
-              <div class="row-between"><span class="small muted">Nomor</span><span class="small mono">${esc(tax.number)}</span></div>
-              <div class="row-between"><span class="small muted">NPWP</span><span class="small mono">${esc(tax.npwp || '—')}</span></div>
-              <div class="row-between"><span class="small muted">DPP</span><span class="small num">${fmt.money(tax.dpp)}</span></div>
-              <div class="row-between"><span class="small muted">PPN ${Number(tax.ratePercent).toLocaleString('id-ID')}%</span><span class="small num">${fmt.money(tax.ppn)}</span></div>
-              <div class="row-between"><span class="small muted">Total termasuk PPN</span><span class="small num strong">${fmt.money(tax.total)}</span></div>
-            </div>
-            <button class="btn btn-sm btn-block" style="margin-top:10px" data-act="print-tax">${icon('printer')} Cetak faktur pajak</button>` : `
-            <div class="stack-sm" style="margin-top:10px">
-              <div class="row-between"><span class="small muted">DPP (dari total)</span><span class="small num">${fmt.money(taxPreview.dpp)}</span></div>
-              <div class="row-between"><span class="small muted">PPN ${Number(taxPreview.ratePercent).toLocaleString('id-ID')}%</span><span class="small num">${fmt.money(taxPreview.ppn)}</span></div>
-              <div class="row-between"><span class="small muted">Total termasuk PPN</span><span class="small num strong">${fmt.money(taxPreview.total)}</span></div>
-            </div>
-            ${can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="issue-tax">${icon('receipt')} Terbitkan faktur pajak</button>` : ''}`}
-        </section>
+        ${advanced ? taxInvoiceCard(inv, tax, taxPreview, role) : ''}
 
         <section class="card">
           <div class="card-head"><div><h2>Pembayaran</h2><p>Sebagian diterima; tidak ada aksi bank nyata di demo.</p></div></div>
@@ -221,31 +204,7 @@ function renderDetail(ctx) {
           <div class="notice notice-info" style="margin-top:12px">${icon('alert')}<div>Margin dihitung dari snapshot harga pokok; bukan laba per gudang.</div></div>
         </section>
 
-        <section class="card card-pad">
-          <div class="row-between">
-            <div><h2>Pengiriman & surat jalan</h2><p class="xs muted">Status logistik setelah faktur; tidak mengubah stok lagi.</p></div>
-            ${delivery ? badge(DELIVERY_STATUS[delivery.status].label, DELIVERY_STATUS[delivery.status].tone) : ''}
-          </div>
-          ${!delivery ? `
-            <p class="small muted" style="margin-top:8px">${inv.status === 'posted' ? 'Belum ada surat jalan untuk faktur ini.' : 'Surat jalan dibuat setelah faktur terbit.'}</p>
-            ${inv.status === 'posted' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="new-delivery">${icon('truck')} Buat surat jalan</button>` : ''}
-          ` : `
-            <div class="stack-sm" style="margin-top:10px">
-              <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
-              <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}</span></div>
-              <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicle ? ` · ${esc(delivery.vehicle)}` : ''}</span></div>
-              <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
-              ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
-            </div>
-            <div class="row" style="margin-top:10px;flex-wrap:wrap">
-              <button class="btn btn-sm" data-act="print-delivery">${icon('printer')} Surat jalan</button>
-              ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit PIC</button><button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
-              ${delivery.status === 'dispatched' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="deliver-delivery">Tandai tiba</button>` : ''}
-              ${delivery.status === 'delivered' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="confirm-delivery">Konfirmasi terima</button>` : ''}
-            </div>
-            ${delivery.history?.length ? `<hr class="divider" /><ul class="timeline">${delivery.history.slice(0, 3).map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by)}${h.note ? ` · ${esc(h.note)}` : ''}</div></li>`).join('')}</ul>` : ''}
-          `}
-        </section>
+        ${advanced ? deliveryCard(inv, delivery, role) : ''}
 
         <section class="card card-pad">
           <h2>Deposit pelanggan</h2>
@@ -257,6 +216,58 @@ function renderDetail(ctx) {
         </section>
       </div>
     </div>`;
+}
+
+function taxInvoiceCard(inv, tax, taxPreview, role) {
+  return `<section class="card card-pad">
+    <div class="row-between">
+      <div><h2>Faktur pajak</h2><p class="xs muted">PPN 11% dihitung dari total faktur; harga tidak diinput ulang.</p></div>
+      ${tax ? badge('Terbit', 'ok') : badge('Belum terbit', 'muted')}
+    </div>
+    ${inv.status !== 'posted' ? `<p class="small muted" style="margin-top:8px">Faktur pajak dapat diterbitkan setelah faktur diposting.</p>` : tax ? `
+      <div class="stack-sm" style="margin-top:10px">
+        <div class="row-between"><span class="small muted">Nomor</span><span class="small mono">${esc(tax.number)}</span></div>
+        <div class="row-between"><span class="small muted">NPWP</span><span class="small mono">${esc(tax.npwp || '—')}</span></div>
+        <div class="row-between"><span class="small muted">DPP</span><span class="small num">${fmt.money(tax.dpp)}</span></div>
+        <div class="row-between"><span class="small muted">PPN ${Number(tax.ratePercent).toLocaleString('id-ID')}%</span><span class="small num">${fmt.money(tax.ppn)}</span></div>
+        <div class="row-between"><span class="small muted">Total termasuk PPN</span><span class="small num strong">${fmt.money(tax.total)}</span></div>
+      </div>
+      <button class="btn btn-sm btn-block" style="margin-top:10px" data-act="print-tax">${icon('printer')} Cetak faktur pajak</button>` : `
+      <div class="stack-sm" style="margin-top:10px">
+        <div class="row-between"><span class="small muted">DPP (dari total)</span><span class="small num">${fmt.money(taxPreview.dpp)}</span></div>
+        <div class="row-between"><span class="small muted">PPN ${Number(taxPreview.ratePercent).toLocaleString('id-ID')}%</span><span class="small num">${fmt.money(taxPreview.ppn)}</span></div>
+        <div class="row-between"><span class="small muted">Total termasuk PPN</span><span class="small num strong">${fmt.money(taxPreview.total)}</span></div>
+      </div>
+      ${can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="issue-tax">${icon('receipt')} Terbitkan faktur pajak</button>` : ''}`}
+  </section>`;
+}
+
+function deliveryCard(inv, delivery, role) {
+  return `<section class="card card-pad">
+    <div class="row-between">
+      <div><h2>Pengiriman & surat jalan</h2><p class="xs muted">Status logistik setelah faktur; tidak mengubah stok lagi.</p></div>
+      ${delivery ? badge(DELIVERY_STATUS[delivery.status].label, DELIVERY_STATUS[delivery.status].tone) : ''}
+    </div>
+    ${!delivery ? `
+      <p class="small muted" style="margin-top:8px">${inv.status === 'posted' ? 'Belum ada surat jalan untuk faktur ini.' : 'Surat jalan dibuat setelah faktur terbit.'}</p>
+      ${inv.status === 'posted' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="new-delivery">${icon('truck')} Buat surat jalan</button>` : ''}
+    ` : `
+      <div class="stack-sm" style="margin-top:10px">
+        <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
+        <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}</span></div>
+        <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicle ? ` · ${esc(delivery.vehicle)}` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
+        ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
+      </div>
+      <div class="row" style="margin-top:10px;flex-wrap:wrap">
+        <button class="btn btn-sm" data-act="print-delivery">${icon('printer')} Surat jalan</button>
+        ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit PIC</button><button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
+        ${delivery.status === 'dispatched' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="deliver-delivery">Tandai tiba</button>` : ''}
+        ${delivery.status === 'delivered' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="confirm-delivery">Konfirmasi terima</button>` : ''}
+      </div>
+      ${delivery.history?.length ? `<hr class="divider" /><ul class="timeline">${delivery.history.slice(0, 3).map((h) => `<li><div class="t-head"><strong>${esc(h.action)}</strong><time>${esc(new Date(h.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}</time></div><div class="t-body">${esc(h.by)}${h.note ? ` · ${esc(h.note)}` : ''}</div></li>`).join('')}</ul>` : ''}
+    `}
+  </section>`;
 }
 
 /* -------------------------------------------------------------------------- */

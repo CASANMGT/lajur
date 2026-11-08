@@ -4,6 +4,7 @@ export const DEFAULT_SETTINGS = {
   lowStockMm: 10000,
   taskDueDays: 1,
   requireProofOnReceipt: false,
+  uiMode: 'simple',
   salesOrderEnabled: false,
   productionEnabled: false,
   operatorCanSeeCosts: false,

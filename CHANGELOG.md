@@ -2,6 +2,52 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.8.0] — 2026-11-08
+
+**Release name: Mode Kerja.** Splits the UI into Simple daily operations and Advanced analysis/setup, and renames the demo team.
+
+### Added
+
+- **Simple mode (default):**
+  - Core menu: Ringkasan, Tugas, Stok, Permintaan Gudang, Pembelian, Penjualan, Proyek, Pelanggan, Sample, Opname, Pengaturan.
+  - Purchasing limited to PO + Penerimaan.
+  - Invoice discount/payment/return remain available.
+  - No reports, master data, simulation, tax invoice, surat jalan, import tabs, WIP or Pesanan.
+- **Advanced mode:**
+  - Adds Laporan, Master Data, Simulasi.
+  - Adds Faktur Pajak and Surat Jalan cards/actions.
+  - Adds import shipment/bill/supplier tabs and PO price list.
+  - Unlocks optional WIP/Pesanan when enabled.
+- **Mode switch:** topbar chip for managers + Settings → Preferensi selector. Non-managers see the current mode in the sidebar footer.
+- **Route guard:** advanced URLs redirect to the role home while Simple is active.
+- **New demo names:** Henry Martin (manager), Henny (operator), Belinda (sales).
+- Migration renames the previous default names once, without touching custom renamed users.
+
+### Changed
+
+- Version bumped to 2.8.0, schema 10, backup v10.
+- `uiMode: 'simple'` added to settings; existing datasets migrate to Simple.
+- Settings advanced toggles are only shown in Advanced mode.
+- Simple invoice detail no longer shows tax/delivery cards; advanced modes do.
+
+### Verification
+
+- `node --test`: **55 passed** (29 invariants + 4 operations + 8 admin + 5 orders/pricing + 3 invoice/delivery + 4 production + 2 auth).
+- Module imports 43/43; render 24/24.
+- Simple route sweep: **18/18** with advanced URLs redirected.
+- Advanced route sweep with WIP + Pesanan: **25/25**, zero console errors.
+- Mode switch: Simple → Advanced restores Laporan, Master, Simulasi, import tabs, tax/delivery cards; Advanced → Simple removes them and redirects.
+- Names: login/users show Henry Martin, Henny, Belinda.
+- Lighthouse accessibility 100 after mode gating.
+
+### Known limitations
+
+- Mode is a dataset-wide setting, not per user; a manager changes it for the demo dataset.
+- Advanced mode does not auto-enable WIP/Pesanan.
+- This is still a browser-local demo; server RBAC remains separate.
+
+---
+
 ## [2.7.0] — 2026-11-08
 
 **Release name: Faktur & Pengiriman.** Adds invoice discounts, printable faktur pajak, post-invoice surat jalan with PIC and receiver confirmation, and role QA fixes.
@@ -28,7 +74,7 @@ All notable changes to Lajur. Dates use Asia/Jakarta.
 - Module imports 42/42; render 24/24; browser route sweep 21 default / 24 with optional modules.
 - Invoice: part price 85.000 auto-filled; 4 × 85.000 with 10% discount → Rp 306.000.
 - Faktur pajak: DPP 275.676 + PPN 30.324 = 306.000; duplicate issue rejected; print includes DPP/PPN.
-- Surat jalan: seed SJ-0001 (PIC Rani) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; part stock unchanged (22 → 22 in QA).
+- Surat jalan: seed SJ-0001 (PIC Henny) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; part stock unchanged (22 → 22 in QA).
 - Role QA: manager full; sales invoice/tax/delivery yes, purchasing/master/settings redirect; operator receiving/stock yes, invoice/prices redirect/absent.
 - Mobile 320/390/768: invoice detail overflow 0; tax/delivery cards visible.
 - Lighthouse accessibility 100 on invoice detail, invoice list and customer detail.

@@ -1,4 +1,4 @@
-# Design System — Lajur v2.7
+# Design System — Lajur v2.8
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -227,7 +227,16 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Status labels:** `Dibuat`, `Dikirim`, `Tiba`, `Diterima & dikonfirmasi`. Do not use “selesai” until the receiver is confirmed.
 - **No hidden stock event:** never show a second “keluarkan stok” action on the surat jalan. The invoice already issued the stock.
 
-### 5.14 Empty, loading, error
+### 5.14 Simple and Advanced modes
+
+- **Simple** is the default and should feel lighter: core nav only, no report/master/simulation items, no tax invoice or surat jalan cards, no import tabs, and no WIP/Pesanan.
+- **Advanced** adds the analytical and setup layers. Do not simply grey out hidden items; remove them from navigation and redirect direct URLs.
+- **Switch placement:** manager sees a topbar chip `Mode Sederhana` / `Mode Lanjutan`; the same choice is in Settings → Preferensi. Non-managers see the current mode in the sidebar footer but cannot switch.
+- **Copy:** explain that Simple is for daily operation and Advanced is for analysis/setup/documents. Never make the user guess why a screen disappeared.
+- **Optional modules remain optional in Advanced:** WIP and Pesanan still need their own toggles.
+- **Role + mode compose:** a route must pass both role permission and mode gate.
+
+### 5.15 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.

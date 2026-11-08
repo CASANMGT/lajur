@@ -135,6 +135,12 @@ export function migrate(db) {
   }
   for (const u of db.users ?? []) {
     if (u.active === undefined) u.active = true;
+    const renamed = {
+      'u-mgr': ['Arif Wibowo', 'Henry Martin'],
+      'u-op': ['Rani Pratama', 'Henny'],
+      'u-sales': ['Dimas Anggara', 'Belinda'],
+    }[u.id];
+    if (renamed && u.name === renamed[0]) u.name = renamed[1];
   }
   return db;
 }

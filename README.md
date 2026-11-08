@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-55%2F55-brightgreen) ![Version](https://img.shields.io/badge/version-2.7.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-55%2F55-brightgreen) ![Version](https://img.shields.io/badge/version-2.8.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -46,9 +46,9 @@ Each role has its own account and PIN. The PIN is hashed with PBKDF2-SHA256 and 
 
 | Akun | Peran | PIN awal |
 |------|-------|----------|
-| Arif Wibowo | Manajer / pemilik | `2468` |
-| Rani Pratama | Operator gudang | `1357` |
-| Dimas Anggara | Sales & customer service | `8642` |
+| Henry Martin | Manajer / pemilik | `2468` |
+| Henny | Operator gudang | `1357` |
+| Belinda | Sales & customer service | `8642` |
 
 Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN hint disappears once a PIN is changed. Resetting site data restores the defaults.
 
@@ -57,7 +57,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -97,6 +97,7 @@ Lajur/
 │   │   ├── orders.js         sales orders, editing, reservations
 │   │   ├── deliveries.js     surat jalan, PIC, delivery status + confirmation
 │   │   ├── pricing.js        supplier prices, latest price, FX snapshots
+│   │   ├── features.js       Simple/Advanced mode and route visibility
 │   │   ├── production.js     WIP orders, pieces, payroll, capacity
 │   │   ├── settings.js       operational preferences
 │   │   ├── attachments.js    optional physical-proof metadata
@@ -163,10 +164,10 @@ Lajur/
     **receive 60 m → sell 10 m → 50 m left → 40% dummy payment.** Main data stays at 60 m.
 11. **Tambah stok** — on Stok, “Tambah stok” records opening stock or a correction without a PO: unique document, lot, each roll length, cost, reason, and a movement per roll.
 12. **Master Data → Gudang** — add or rename a warehouse, change its code/prefix/contact, or deactivate an empty one. Deactivation is refused while stock, transit, parts, active requests, or an opname still reference it. Collection names can be renamed without changing SKU IDs.
-13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Rani, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
+13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Henny, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
 14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty. The latest CNY→IDR rate is snapshotted on the PO with timestamp and source.
 15. **Sample & Deposit** — sample conversion, deposit ledger and refunds in one workspace.
-16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either here when needed.
+16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 17. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
 18. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it.
 19. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
@@ -223,9 +224,9 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Check | Result |
 |-------|--------|
 | `node --test` | **55 passed, 0 failed** (53 business + 2 auth) |
-| Module import check | **42/42 modules** |
+| Module import check | **43/43 modules** |
 | Server-side render of all views | **24/24 render, no exceptions** (incl. login and 3 roles) |
-| Browser route sweep | **24/24 routes with optional modules enabled** (21 default), zero console errors |
+| Browser route sweep | **18/18 simple routes** and **25/25 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
 | WIP production | 10 m cut into 5 pieces, payroll Rp 25.000, sew/QC, reject + rework, capacity load |
 | Roll hierarchy | Split RL-0001 → child keeps parent/root; collection tree conserves physical metres |
@@ -240,9 +241,10 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Part hierarchy | Category cards; Motor → Remote, Bracket → Bracket set, Rel 3 m → Rel 4 m (6 pcs in Jakarta) |
 | Image enlarge | Thumbnail click opens full preview at 320/390; manager, sales and operator see it; 0 overflow |
 | Optional modules | Fresh seed hides WIP + Pesanan; enabling both restores menu, routes, dashboard links and report tabs |
+| Simple / Advanced | Simple default: 18 routes, no reports/master/simulation/tax/delivery/import tabs; Advanced: 25 routes with WIP + Pesanan enabled; direct advanced URLs redirect in Simple |
 | Invoice discount | Part price auto-filled 85.000; 4 × 85.000 with 10% discount → total Rp 306.000 |
 | Faktur pajak | INV-0005: DPP 275.676 + PPN 30.324 = 306.000; second issue blocked; print shows DPP/PPN |
-| Surat jalan | Seed SJ-0001 (PIC Rani) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; stock unchanged |
+| Surat jalan | Seed SJ-0001 (PIC Henny) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; stock unchanged |
 | Role QA | Manager full; sales invoice/tax/delivery yes, purchasing/master/settings redirected; operator receiving/stock yes, invoices/prices redirected/absent |
 | Mobile drawer | bottom nav 61 px, sidebar z60 / scrim z55 / nav z45; Esc closes; 0 overflow |
 | Import CNY | PO `26.5 CNY × 2.250`, landed `Rp 600.000`, roll HPP `Rp 71.625/m`; bill `CNY 1.325` |
@@ -297,6 +299,7 @@ node tools/render-check.mjs
 - **Production reporting:** WIP metres, payroll open/paid, QC rejects, capacity load and order progress.
 - **Part hierarchy in stock:** spare parts are grouped by category with parent/child rows (e.g. rel 3 m → rel 4 m, bracket → bracket set, motor → remote); parents with no stock in the selected warehouse do not hide stocked children.
 - **Image enlarge:** click/tap any product or part thumbnail to open a full-size preview. Works for manager, sales and operator wherever the image appears.
+- **Simple vs Advanced mode:** Simple is the default and keeps the daily flow (stock, tasks, transfers, purchasing, invoices, projects, customers, samples, opname). Advanced adds reports, master data, simulation, tax invoice, surat jalan, import tabs, and enables optional WIP/Pesanan. Switch from the topbar chip or Settings → Preferensi.
 - **Optional modules:** WIP Production and Pesanan are hidden by default. Managers can enable either from **Pengaturan → Preferensi**; the menu, dashboard links, report tabs and direct routes follow the setting.
 - **Part imagery:** local product illustrations and optional uploaded image; hex swatch values shown.
 - **Reference shared backend:** scrypt login, HttpOnly session, RBAC per action, revisioned shared state (not wired to static UI).
@@ -323,7 +326,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.7.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.8.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

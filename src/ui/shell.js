@@ -7,7 +7,8 @@ import { byId } from '../domain/core.js';
 import { activeWarehouses } from '../domain/master.js';
 import { changePin, logout, sessionRemainingMs } from '../data/auth.js';
 import { APP_VERSION } from '../version.js';
-import { settingsOf } from '../domain/settings.js';
+import { saveSettings, settingsOf } from '../domain/settings.js';
+import { ADVANCED_VIEWS, isAdvancedMode, modeLabel } from '../domain/features.js';
 
 export const NAV = [
   {
@@ -89,12 +90,14 @@ export function countsFor(db) {
 export function renderShell(ctx, contentHtml) {
   const { db, ui, role, dataset, simulation } = ctx;
   const prefs = settingsOf(db);
+  const advanced = isAdvancedMode(db);
   const counts = countsFor(db);
   const activeWh = ui.warehouseId === 'all' ? null : byId(db.warehouses, ui.warehouseId);
   const navHtml = NAV.map((group) => `
     <nav class="nav-group" aria-label="${esc(group.group)}">
       <span class="nav-label">${esc(group.group)}</span>
       ${group.items.filter((item) => canAccess(role, item.id))
+        .filter((item) => !ADVANCED_VIEWS.has(item.id) || advanced)
         .filter((item) => item.id !== 'pesanan' || prefs.salesOrderEnabled)
         .filter((item) => item.id !== 'produksi' || prefs.productionEnabled)
         .map((item) => {
@@ -113,7 +116,7 @@ export function renderShell(ctx, contentHtml) {
       ${icon('flask')}
       <div><strong>MODE SIMULASI</strong> — data terpisah; data utama tidak berubah.</div>
       <div class="row">
-        <a class="btn btn-sm" href="#/simulasi">Panel simulasi</a>
+        ${advanced ? `<a class="btn btn-sm" href="#/simulasi">Panel simulasi</a>` : ''}
         <button class="btn btn-sm" type="button" data-action="exit-sim">Kembali ke data utama</button>
       </div>
     </div>` : '';
@@ -129,7 +132,7 @@ export function renderShell(ctx, contentHtml) {
         <div class="sidebar-foot">
           <strong>${esc(db.meta.company)}</strong>
           <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
-          <p class="xs" style="margin-top:6px">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])}</p>
+          <p class="xs" style="margin-top:6px">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])} · Mode ${esc(modeLabel(db))}</p>
         </div>
       </aside>
 
@@ -153,9 +156,10 @@ export function renderShell(ctx, contentHtml) {
                 <option value="all" ${ui.warehouseId === 'all' ? 'selected' : ''}>Semua gudang</option>
               </select>
             </div>
-            <button class="btn ${dataset === 'sim' ? 'btn-copper' : 'btn-navy'} btn-sm hide-sm" type="button" data-action="open-sim">
+            ${role === 'manager' ? `<button class="btn ${advanced ? 'btn-copper' : 'btn-ghost'} btn-sm hide-sm" type="button" data-action="toggle-mode" title="Ganti mode operasi">${icon('layers')} Mode ${esc(modeLabel(db))}</button>` : ''}
+            ${advanced ? `<button class="btn ${dataset === 'sim' ? 'btn-copper' : 'btn-navy'} btn-sm hide-sm" type="button" data-action="open-sim">
               ${icon('flask')} ${dataset === 'sim' ? 'Simulasi aktif' : 'Simulasi Data'}
-            </button>
+            </button>` : ''}
             <button class="account-btn" type="button" data-action="account" title="Akun ${esc(ctx.user.name)}">
               <span class="avatar">${esc(ctx.user.name.split(' ').slice(0, 2).map((n) => n[0]).join(''))}</span>
               <span class="hide-sm">${esc(ctx.user.name.split(' ')[0])}</span>
@@ -248,6 +252,14 @@ export function mountShell(ctx) {
   document.querySelector('[data-action="warehouse-select"]')?.addEventListener('change', (e) => {
     ctx.store.setUi({ warehouseId: e.target.value });
   });
+  document.querySelectorAll('[data-action="toggle-mode"]').forEach((btn) => btn.addEventListener('click', () => {
+    const next = isAdvancedMode(ctx.db) ? 'simple' : 'advanced';
+    ctx.store.update((db) => saveSettings(db, { uiMode: next }, ctx.user));
+    toast(next === 'advanced'
+      ? 'Mode Lanjutan aktif: laporan, master data, dokumen pajak/pengiriman, impor, WIP/Pesanan tersedia bila diaktifkan.'
+      : 'Mode Sederhana aktif: hanya operasi dasar yang ditampilkan.',
+    { tone: 'success' });
+  }));
   document.querySelectorAll('[data-action="account"]').forEach((btn) => btn.addEventListener('click', () => openAccount(ctx)));
   document.querySelectorAll('[data-action="open-sim"]').forEach((btn) =>
     btn.addEventListener('click', () => {
