@@ -3,7 +3,7 @@
  * Display codes may change; internal IDs never do.
  */
 
-import { DomainError, assert, audit, byId, isoNow, uid } from './core.js';
+import { DomainError, assert, audit, byId, isoNow, nextId, uid } from './core.js';
 
 export const WAREHOUSE_IN_USE = [
   'available', 'quarantine',
@@ -218,8 +218,7 @@ export function saveSku(db, {
 export function savePart(db, {
   id = null, sku, name, categoryId, brand = '', unit = 'pcs', buyPrice = 0, sellPrice = 0,
   active = true, image = '', notes = '', parentPartId = null, user,
-}) {
-  const cleanSku = String(sku ?? '').trim().toUpperCase();
+}) {  const cleanSku = String(sku ?? '').trim().toUpperCase();
   const cleanName = String(name ?? '').trim();
   assert(cleanSku.length >= 2, 'INVALID_SKU', 'SKU part minimal 2 karakter.');
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama part minimal 2 karakter.');
@@ -268,4 +267,56 @@ export function savePart(db, {
   db.parts.push(part);
   audit(db, user, 'buat_part', 'part', part.id, `${cleanSku} · ${cleanName}`);
   return part;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Drivers and vehicles                                                       */
+/* -------------------------------------------------------------------------- */
+
+export const VEHICLE_TYPES = {
+  motor: { label: 'Motor' },
+  mobil: { label: 'Mobil' },
+  truk: { label: 'Truk' },
+};
+
+export function activeDrivers(db) {
+  return (db.drivers ?? []).filter((d) => d.active !== false);
+}
+
+export function driverOf(db, id) {
+  return (db.drivers ?? []).find((d) => d.id === id) ?? null;
+}
+
+export function saveDriver(db, {
+  id = null, name, phone = '', vehicleType = 'motor', plateNumber = '', active = true, notes = '', user,
+}) {
+  const cleanName = String(name ?? '').trim();
+  assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama driver minimal 2 karakter.');
+  assert(VEHICLE_TYPES[vehicleType], 'INVALID_VEHICLE', 'Jenis kendaraan tidak dikenal.');
+  const plate = String(plateNumber ?? '').trim().toUpperCase();
+  assert(!plate || plate.length >= 3, 'INVALID_PLATE', 'Nomor polisi minimal 3 karakter.');
+  db.drivers = db.drivers ?? [];
+  assert(!db.drivers.some((d) => d.id !== id && plate && d.plateNumber?.toUpperCase() === plate), 'DUPLICATE_PLATE', `Nomor polisi ${plate} sudah dipakai.`);
+
+  const patch = {
+    name: cleanName,
+    phone: String(phone ?? '').trim(),
+    vehicleType,
+    plateNumber: plate,
+    active,
+    notes: String(notes ?? '').trim(),
+    updatedAt: isoNow(),
+  };
+  db.drivers = db.drivers ?? [];
+  if (id) {
+    const driver = driverOf(db, id);
+    assert(driver, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan.');
+    Object.assign(driver, patch);
+    audit(db, user, active ? 'ubah_driver' : 'nonaktifkan_driver', 'driver', id, `${cleanName} · ${plate}`);
+    return driver;
+  }
+  const driver = { id: nextId(db, 'driver', 'DRV', 3), ...patch, createdAt: isoNow() };
+  db.drivers.push(driver);
+  audit(db, user, 'buat_driver', 'driver', driver.id, `${cleanName} · ${plate}`);
+  return driver;
 }

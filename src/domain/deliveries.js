@@ -18,6 +18,13 @@ export const DELIVERY_STATUS = {
   confirmed: { label: 'Diterima & dikonfirmasi', tone: 'ok' },
 };
 
+export const COURIERS = {
+  internal: { label: 'Internal' },
+  lalamove: { label: 'Lalamove' },
+  gosend: { label: 'GoSend' },
+  grabexpress: { label: 'GrabExpress' },
+};
+
 export function getDelivery(db, id) {
   return db.deliveries?.find((d) => d.id === id) ?? null;
 }
@@ -37,13 +44,17 @@ function pushHistory(delivery, action, user, note = '') {
 }
 
 export function createDelivery(db, {
-  invoiceId, pic, date = todayJakarta(), address = '', driver = '', vehicle = '', notes = '', user,
+  invoiceId, pic, date = todayJakarta(), address = '', courier = 'internal', driverId = null,
+  driver = '', driverPhone = '', vehicleType = '', plateNumber = '', vehicle = '', trackingRef = '',
+  notes = '', user,
 }) {
   const invoice = requireInvoice(db, invoiceId);
   assert(invoice.status === 'posted', 'INVOICE_NOT_POSTED', 'Surat jalan dibuat setelah faktur diterbitkan.');
   assert(!deliveryForInvoice(db, invoiceId), 'DELIVERY_EXISTS', 'Faktur ini sudah memiliki surat jalan.');
   const cleanPic = String(pic ?? '').trim();
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
+  const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
+  if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const customer = byId(db.customers, invoice.customerId);
   const lines = invoice.lines
     .filter((line) => line.kind !== 'service')
@@ -65,8 +76,13 @@ export function createDelivery(db, {
     date,
     pic: cleanPic,
     address: String(address ?? '').trim() || customer?.address || '',
-    driver: String(driver ?? '').trim(),
-    vehicle: String(vehicle ?? '').trim(),
+    courier: String(courier ?? 'internal').trim() || 'internal',
+    driverId: driverMaster?.id ?? null,
+    driver: driverMaster?.name ?? String(driver ?? '').trim(),
+    driverPhone: driverMaster?.phone ?? String(driverPhone ?? '').trim(),
+    vehicleType: driverMaster?.vehicleType ?? String(vehicleType ?? '').trim(),
+    plateNumber: driverMaster?.plateNumber ?? String(plateNumber || vehicle || '').trim(),
+    trackingRef: String(trackingRef ?? '').trim(),
     notes: String(notes ?? '').trim(),
     status: 'draft',
     lines,
@@ -87,18 +103,26 @@ export function createDelivery(db, {
 }
 
 export function updateDelivery(db, {
-  id, pic, date, address, driver, vehicle, notes, user,
+  id, pic, date, address, courier = 'internal', driverId = null, driver = '', driverPhone = '',
+  vehicleType = '', plateNumber = '', trackingRef = '', notes, user,
 }) {
   const delivery = requireDelivery(db, id);
   assert(delivery.status === 'draft', 'INVALID_STATUS', 'Surat jalan hanya dapat diubah sebelum dikirim.');
   const cleanPic = String(pic ?? delivery.pic).trim();
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
+  const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
+  if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   Object.assign(delivery, {
     pic: cleanPic,
     date: date || delivery.date,
     address: String(address ?? delivery.address).trim(),
-    driver: String(driver ?? delivery.driver).trim(),
-    vehicle: String(vehicle ?? delivery.vehicle).trim(),
+    courier: String(courier ?? delivery.courier ?? 'internal').trim() || 'internal',
+    driverId: driverMaster?.id ?? null,
+    driver: driverMaster?.name ?? String(driver ?? delivery.driver ?? '').trim(),
+    driverPhone: driverMaster?.phone ?? String(driverPhone ?? delivery.driverPhone ?? '').trim(),
+    vehicleType: driverMaster?.vehicleType ?? String(vehicleType ?? delivery.vehicleType ?? '').trim(),
+    plateNumber: driverMaster?.plateNumber ?? String(plateNumber ?? delivery.plateNumber ?? '').trim(),
+    trackingRef: String(trackingRef ?? delivery.trackingRef ?? '').trim(),
     notes: String(notes ?? delivery.notes).trim(),
     updatedAt: isoNow(),
   });

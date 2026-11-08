@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildSeed } from '../src/domain/seed.js';
-import { auditTrail, savePart, saveSku, saveUser } from '../src/domain/master.js';
+import { auditTrail, saveDriver, savePart, saveSku, saveUser } from '../src/domain/master.js';
 import { saveSupplier } from '../src/domain/purchasing.js';
 import { createSalesOrder, confirmOrder, convertOrderToInvoice, cancelOrder } from '../src/domain/orders.js';
 import { saveSettings, settingsOf } from '../src/domain/settings.js';
@@ -114,8 +114,7 @@ test('cancelled order cannot be converted', () => {
   );
 });
 
-test('part parent must share a category and cannot form a cycle', () => {
-  const db = buildSeed();
+test('part parent must share a category and cannot form a cycle', () => {  const db = buildSeed();
   assert.equal(db.parts.find((p) => p.id === 'part-rel-4').parentPartId, 'part-rel-3');
   assert.equal(db.parts.find((p) => p.id === 'part-bracket-set').parentPartId, 'part-bracket');
 
@@ -128,6 +127,22 @@ test('part parent must share a category and cannot form a cycle', () => {
     id: 'part-rel-3', sku: 'REL-300', name: 'Rel gorden 3 m', categoryId: 'cat-part',
     parentPartId: 'part-rel-4', user: MGR,
   }), (err) => err.code === 'PARENT_CYCLE');
+});
+
+test('driver master stores name, vehicle type and unique plate', () => {
+  const db = buildSeed();
+  const driver = saveDriver(db, {
+    name: 'Joko', phone: '0812-0000-1111', vehicleType: 'motor', plateNumber: 'B 9999 ZZ', user: MGR,
+  });
+  assert.equal(driver.name, 'Joko');
+  assert.equal(driver.vehicleType, 'motor');
+  assert.equal(driver.plateNumber, 'B 9999 ZZ');
+  assert.equal(db.drivers.some((d) => d.id === driver.id), true);
+  assert.throws(() => saveDriver(db, {
+    name: 'Duplikat', vehicleType: 'mobil', plateNumber: 'b 9999 zz', user: MGR,
+  }), (err) => err.code === 'DUPLICATE_PLATE');
+  saveDriver(db, { id: driver.id, name: 'Joko', vehicleType: 'motor', plateNumber: 'B 9999 ZZ', active: false, user: MGR });
+  assert.equal(db.drivers.find((d) => d.id === driver.id).active, false);
 });
 
 test('settings are merged, persisted and audited', () => {

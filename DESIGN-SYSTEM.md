@@ -1,4 +1,4 @@
-# Design System — Lajur v2.8
+# Design System — Lajur v2.9
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
@@ -236,7 +236,17 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Optional modules remain optional in Advanced:** WIP and Pesanan still need their own toggles.
 - **Role + mode compose:** a route must pass both role permission and mode gate.
 
-### 5.15 Empty, loading, error
+### 5.15 Print/PDF, drivers, couriers, mobile drawer
+
+- **Print preview:** every printable item opens the same window with a top toolbar: **Cetak** and **Unduh PDF**. Do not auto-print, because it prevents using the PDF option. Hide the toolbar in print and when rasterising the PDF.
+- **PDF:** generated from the document layout; show a progress label and a fallback instruction (“Cetak → Simpan sebagai PDF”) if the PDF library cannot load.
+- **Driver master:** Master Data → Driver & kendaraan. Show driver, phone, vehicle type and plate. Vehicle types are Motor, Mobil, Truk. Inactive drivers do not appear in new surat jalan forms.
+- **Surat jalan:** select driver from master; autofill phone, vehicle type and plate. Courier select: Internal, Lalamove, GoSend, GrabExpress. Store a tracking reference for third-party couriers.
+- **Address:** autocomplete from customer and previous delivery addresses; show an inline map preview and an external map link. Never hide the map behind a submit action.
+- **Mobile sidebar:** `overflow-y: auto`, `overscroll-behavior: contain`, safe-area bottom padding. The drawer must scroll at 320/390 with Advanced mode; bottom nav must remain below the drawer.
+- **Task flow:** create → Mulai → Selesai, note/proof optional; no stock movement.
+
+### 5.16 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.

@@ -81,9 +81,14 @@ test('surat jalan tracks PIC and confirmation without moving stock again', () =>
     (err) => err.code === 'PIC_REQUIRED');
 
   const delivery = createDelivery(db, {
-    invoiceId: inv.id, pic: 'Rani', driver: 'Asep', vehicle: 'B 1234 CD', user: OP,
+    invoiceId: inv.id, pic: 'Rani', driverId: 'DRV-001', courier: 'gosend', trackingRef: 'GOSEND-123', user: OP,
   });
   assert.equal(delivery.status, 'draft');
+  assert.equal(delivery.driver, 'Asep');
+  assert.equal(delivery.vehicleType, 'motor');
+  assert.equal(delivery.plateNumber, 'B 1234 CD');
+  assert.equal(delivery.courier, 'gosend');
+  assert.equal(delivery.trackingRef, 'GOSEND-123');
   assert.equal(inv.deliveryId, delivery.id);
   assert.equal(deliveryForInvoice(db, inv.id).id, delivery.id);
   assert.equal(row.qty, stockAfterInvoice);

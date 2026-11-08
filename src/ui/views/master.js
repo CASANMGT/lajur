@@ -5,7 +5,8 @@ import {
 } from '../dom.js';
 import { byId, uid, todayJakarta } from '../../domain/core.js';
 import {
-  activeWarehouses, auditTrail, createCollection, renameCollection, savePart, saveSku, saveWarehouse,
+  activeWarehouses, auditTrail, createCollection, renameCollection, saveDriver, savePart, saveSku,
+  saveWarehouse, VEHICLE_TYPES,
 } from '../../domain/master.js';
 import {
   latestSupplierPrice, saveSupplierPrice, supplierPriceHistory, suppliersOfItem,
@@ -25,10 +26,11 @@ export function render(ctx) {
       actions: `${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-product">${icon('plus')} Produk kain</button>` : ''}`,
     })}
     <div class="tabs" role="tablist">
-      ${[['produk', 'Produk kain'], ['part', 'Spare part'], ['kategori', 'Kategori & koleksi'], ['gudang', 'Gudang'], ['data', 'Data & peran']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${[['produk', 'Produk kain'], ['part', 'Spare part'], ['driver', 'Driver & kendaraan'], ['kategori', 'Kategori & koleksi'], ['gudang', 'Gudang'], ['data', 'Data & peran']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
     ${tab === 'produk' ? renderProducts(ctx) : ''}
     ${tab === 'part' ? renderParts(ctx) : ''}
+    ${tab === 'driver' ? renderDrivers(ctx) : ''}
     ${tab === 'kategori' ? renderCategories(ctx) : ''}
     ${tab === 'gudang' ? renderWarehouses(ctx) : ''}
     ${tab === 'data' ? renderData(ctx) : ''}`;
@@ -99,6 +101,29 @@ function renderParts(ctx) {
     </table></div>
     <div class="card-pad"><p class="xs muted">Harga beli master mengikuti harga pemasok terbaru. Spare part selalu bilangan bulat pcs; tidak pernah diubah menjadi roll atau meter.</p></div>
   </section>`;
+}
+
+function renderDrivers(ctx) {
+  const { db, role } = ctx;
+  const drivers = db.drivers ?? [];
+  return `<div class="row-between" style="margin-bottom:12px">
+      <div><h2>Driver & kendaraan</h2><p class="xs muted">Nama driver, telepon, jenis kendaraan, dan nomor polisi dipakai pada surat jalan.</p></div>
+      ${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Tambah driver</button>` : ''}
+    </div>
+    <section class="card">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Driver</th><th>Telepon</th><th>Kendaraan</th><th>Nomor polisi</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${drivers.map((d) => `<tr>
+          <td><strong>${esc(d.name)}</strong><div class="xs muted">${esc(d.id)}</div></td>
+          <td>${esc(d.phone || '—')}</td>
+          <td>${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)}</td>
+          <td class="mono">${esc(d.plateNumber || '—')}</td>
+          <td>${d.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
+          <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-driver="${d.id}">Edit</button>` : ''}</td>
+        </tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada driver.</td></tr>'}</tbody>
+      </table></div>
+      <div class="card-pad"><p class="xs muted">Driver nonaktif tidak muncul pada form surat jalan baru. Kendaraan mendukung motor, mobil, dan truk.</p></div>
+    </section>`;
 }
 
 function renderCategories(ctx) {
@@ -432,6 +457,37 @@ function openPriceModal(ctx, { kind, item }) {
   });
 }
 
+function openDriver(ctx, driver = null) {
+  const editing = Boolean(driver);
+  openModal({
+    title: editing ? `Edit driver ${driver.name}` : 'Driver baru',
+    description: 'Data ini muncul pada surat jalan dan menyimpan nama driver serta kendaraannya.',
+    submitLabel: editing ? 'Simpan driver' : 'Buat driver',
+    body: `<div class="form-grid">
+      ${field('Nama driver', `<input class="input" name="name" value="${esc(driver?.name ?? '')}" required />`)}
+      ${field('Telepon', `<input class="input" name="phone" value="${esc(driver?.phone ?? '')}" />`)}
+      ${field('Jenis kendaraan', `<select class="select" name="vehicleType">${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${driver?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+      ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(driver?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
+      ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${driver.active !== false ? 'checked' : ''} /> Driver aktif dan dapat dipilih</label>` : ''}
+      ${field('Catatan', `<input class="input" name="notes" value="${esc(driver?.notes ?? '')}" placeholder="Area, kapasitas, atau catatan" />`, { full: true })}
+    </div>`,
+    onSubmit(form, close) {
+      ctx.store.update((db) => saveDriver(db, {
+        id: driver?.id ?? null,
+        name: form.name.value,
+        phone: form.phone.value,
+        vehicleType: form.vehicleType.value,
+        plateNumber: form.plateNumber.value,
+        active: editing ? form.active.checked : true,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast(editing ? 'Driver diperbarui.' : 'Driver dibuat.', { tone: 'success' });
+    },
+  });
+}
+
 function openCategory(ctx) {
   openModal({
     title: 'Kategori baru',
@@ -548,6 +604,11 @@ export function mount(ctx) {
     if (part) openPriceModal(ctx, { kind: 'part', item: part });
   }));
   document.querySelector('[data-act="new-category"]')?.addEventListener('click', () => openCategory(ctx));
+  document.querySelector('[data-act="new-driver"]')?.addEventListener('click', () => openDriver(ctx));
+  document.querySelectorAll('[data-edit-driver]').forEach((btn) => btn.addEventListener('click', () => {
+    const driver = (ctx.db.drivers ?? []).find((d) => d.id === btn.dataset.editDriver);
+    if (driver) openDriver(ctx, driver);
+  }));
   document.querySelector('[data-act="new-warehouse"]')?.addEventListener('click', () => openWarehouse(ctx));
   document.querySelectorAll('[data-edit-warehouse]').forEach((btn) => btn.addEventListener('click', () => {
     const wh = ctx.db.warehouses.find((w) => w.id === btn.dataset.editWarehouse);

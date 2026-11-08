@@ -74,7 +74,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 10,
+      version: 11,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -93,6 +93,7 @@ function skeleton(dataset) {
     movements: [],
     customers: [],
     suppliers: [],
+    drivers: [],
     supplierPrices: [],
     fxRates: [],
     projects: [],
@@ -182,6 +183,12 @@ export function buildSeed({ dataset = 'main' } = {}) {
     { id: 'SUP-004', code: 'NINGBO', name: 'Ningbo Lajur Textiles Co.', contact: 'Chen Wei', phone: '+86 574 8888 1000', email: 'export@ningbolajur.cn', address: 'No. 88 Textile Road, Ningbo, Zhejiang', country: 'CN', origin: 'import', currency: 'CNY', fxRate: 2250, incoterm: 'FOB Ningbo', port: 'Ningbo → Tanjung Priok', termsDays: 45, leadTimeDays: 40, notes: 'Pemasok impor. Pembayaran CNY via TT; kurs dikunci saat PO.' },
   );
 
+  db.drivers.push(
+    { id: 'DRV-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
+    { id: 'DRV-002', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
+    { id: 'DRV-003', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
+  );
+
   db.supplierPrices.push(
     { id: 'SP-001', supplierId: 'SUP-001', skuId: 'sku-luna-01', price: 68000, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-07-01', validTo: '2026-12-31' },
     { id: 'SP-002', supplierId: 'SUP-001', skuId: 'sku-luna-02', price: 68500, currency: 'IDR', unit: 'm', moqMm: 60000, validFrom: '2026-07-01', validTo: '2026-12-31' },
@@ -212,6 +219,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   );
   db.sequences.supplierPrice = db.supplierPrices.length;
   db.sequences.fxRate = db.fxRates.length;
+  db.sequences.driver = db.drivers.length;
 
   /* ------------------------------------------------------------- customers */
   const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', npwp: '01.234.567.8-901.000', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);
@@ -333,8 +341,8 @@ export function buildSeed({ dataset = 'main' } = {}) {
     invoiceId: invGraha.id,
     pic: 'Henny',
     date: '2026-10-06',
-    driver: 'Asep',
-    vehicle: 'B 1234 CD',
+    driverId: 'DRV-001',
+    courier: 'internal',
     notes: 'Antar ke lobi gedung, hubungi PIC fasilitas.',
     user: op,
   });

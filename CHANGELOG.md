@@ -2,6 +2,43 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.9.0] — 2026-11-08
+
+**Release name: Driver & PDF.** Adds print/PDF for every document, driver/vehicle master, third-party couriers, address autocomplete/map, mobile drawer scrolling and task QA.
+
+### Added
+
+- **Print + PDF for all printable items:** print preview now has **Cetak** and **Unduh PDF**. PDF is generated from the document layout in the browser.
+- **Driver & kendaraan master:** name, phone, Motor/Mobil/Truk, plate, active flag, notes; add/edit in Master Data.
+- **Surat jalan driver selection:** choosing a master driver autofills phone, vehicle type and plate; delivery snapshots those values.
+- **Third-party couriers:** Internal, Lalamove, GoSend, GrabExpress + tracking reference.
+- **Address autocomplete + map preview:** suggestions from customers and prior deliveries; inline map and external map link.
+- **Mobile sidebar scrolling:** Advanced-mode drawer now scrolls independently at 320/390.
+
+### Fixed
+
+- Sidebar/nav footer could not be reached on small phones when Advanced mode added menu items.
+- Print preview previously auto-opened the print dialog, preventing a PDF choice.
+
+### Verification
+
+- `node --test`: **56 passed** (29 invariants + 4 operations + 9 admin + 5 orders/pricing + 3 invoice/delivery + 4 production + 2 auth).
+- Module imports 43/43; render 24/24.
+- Print/PDF test: `Tes-PDF-Lajur.pdf`, 60.370 bytes.
+- Driver master: 3 seeded drivers; Asep → motor/B 1234 CD; Rudi → mobil/B 9876 EF; form autofill verified.
+- Delivery form: 4 driver options, address datalist, map iframe updates when address changes.
+- Mobile sidebar: 320/390 scrollHeight 1037/1021, scrollTop 220 works.
+- Task simulation: create → start → complete with note and history.
+- Browser routes: 18 Simple / 25 Advanced with modules; zero console errors.
+
+### Known limitations
+
+- PDF generation uses jsDelivr (jsPDF + html2canvas); offline use falls back to Cetak → Simpan sebagai PDF.
+- Map preview uses Google Maps embed and requires network access.
+- Driver/courier data remains local to the demo dataset.
+
+---
+
 ## [2.8.1] — 2026-11-08
 
 **Release name: Kurs Manual.** Removes every default FX rate from purchase orders.

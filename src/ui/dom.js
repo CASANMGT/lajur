@@ -363,11 +363,12 @@ export function printDocument(title, innerHtml) {
     toast('Jendela cetak diblokir browser. Izinkan popup untuk mencetak.', { tone: 'error' });
     return;
   }
+  const safeTitle = JSON.stringify(title).replace(/</g, '\\u003c');
   win.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${esc(title)}</title>
     <style>
       @page { size: A4; margin: 16mm; }
       * { box-sizing: border-box; }
-      body { font: 12px/1.5 Inter, "Segoe UI", system-ui, sans-serif; color: #172b3a; margin: 0; }
+      body { font: 12px/1.5 Inter, "Segoe UI", system-ui, sans-serif; color: #172b3a; margin: 0; padding-top: 56px; }
       h1 { font-size: 18px; margin: 0 0 2px; letter-spacing: -0.02em; }
       h2 { font-size: 14px; margin: 18px 0 6px; }
       .doc-head { display: flex; justify-content: space-between; border-bottom: 1px solid #cfc6b6; padding-bottom: 10px; margin-bottom: 14px; }
@@ -384,18 +385,83 @@ export function printDocument(title, innerHtml) {
       .sign { border-top: 1px solid #172b3a; margin-top: 44px; padding-top: 4px; }
       .note { background: #f6f3ed; padding: 10px; border-radius: 6px; font-size: 10.5px; }
       .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #eef4f2; font-size: 9px; font-weight: 600; }
-      @media print { .no-print { display: none; } }
+      .pdf-toolbar {
+        position: fixed; inset: 0 0 auto 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+        padding: 10px 14px; background: #172b3a; color: #f6f3ed;
+        font: 12px/1.2 Inter, "Segoe UI", system-ui, sans-serif;
+      }
+      .pdf-toolbar strong { margin-right: auto; font-size: 12px; }
+      .pdf-toolbar button {
+        min-height: 36px; padding: 7px 12px; border-radius: 7px; border: 1px solid #4d7a78;
+        background: #4d7a78; color: #fff; font: inherit; cursor: pointer;
+      }
+      .pdf-toolbar button.secondary { background: transparent; color: #f6f3ed; }
+      .pdf-toolbar button:disabled { opacity: .6; cursor: wait; }
+      @media print {
+        body { padding-top: 0; }
+        .pdf-toolbar, .no-print { display: none !important; }
+      }
     </style></head><body>
+    <div class="pdf-toolbar" id="pdf-toolbar">
+      <strong>Dokumen siap</strong>
+      <button type="button" class="secondary" onclick="window.print()">Cetak</button>
+      <button type="button" id="pdf-download">Unduh PDF</button>
+    </div>
     <div class="doc-head">
       <div><div class="brand">lajur</div><small>PT Lajur Tekstil Nusantara · Gudang Tekstil</small></div>
       <div style="text-align:right"><small>${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}</small></div>
     </div>
     ${innerHtml}
     <div class="foot"><div>Dibuat oleh<div class="sign">Nama & tanggal</div></div><div>Diperiksa<div class="sign">Nama & tanggal</div></div><div>Diterima<div class="sign">Nama & tanggal</div></div></div>
+    <script type="module">
+      const title = ${safeTitle};
+      const button = document.getElementById('pdf-download');
+      const toolbar = document.getElementById('pdf-toolbar');
+      button?.addEventListener('click', async () => {
+        button.disabled = true;
+        button.textContent = 'Menyiapkan PDF...';
+        try {
+          const html2canvasModule = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+          const jspdfModule = await import('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/+esm');
+          const html2canvas = html2canvasModule.default ?? html2canvasModule;
+          const JsPDF = jspdfModule.jsPDF;
+          toolbar.style.display = 'none';
+          document.body.style.paddingTop = '0';
+          const canvas = await html2canvas(document.body, {
+            scale: 2, backgroundColor: '#ffffff', useCORS: true, windowWidth: 794,
+          });
+          const pdf = new JsPDF('p', 'mm', 'a4');
+          const pageWidth = 210;
+          const pageHeight = Math.floor(canvas.width * (297 / pageWidth));
+          const slice = document.createElement('canvas');
+          const ctx = slice.getContext('2d');
+          for (let y = 0; y < canvas.height; y += pageHeight) {
+            const height = Math.min(pageHeight, canvas.height - y);
+            slice.width = canvas.width;
+            slice.height = height;
+            ctx.clearRect(0, 0, canvas.width, height);
+            ctx.drawImage(canvas, 0, y, canvas.width, height, 0, 0, canvas.width, height);
+            if (y > 0) pdf.addPage();
+            pdf.addImage(slice.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, pageWidth, height * pageWidth / canvas.width);
+          }
+          const filename = String(title).replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') || 'lajur-dokumen';
+          pdf.save(filename + '.pdf');
+          toolbar.style.display = '';
+          document.body.style.paddingTop = '';
+        } catch (err) {
+          toolbar.style.display = '';
+          document.body.style.paddingTop = '';
+          alert('PDF belum dapat dibuat (perpustakaan PDF tidak termuat). Gunakan tombol Cetak lalu pilih "Simpan sebagai PDF".');
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Unduh PDF';
+        }
+      });
+    <\/script>
     </body></html>`);
   win.document.close();
   win.focus();
-  window.setTimeout(() => win.print(), 300);
 }
 
 export function downloadFile(filename, content, type = 'application/json') {

@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and multiple warehouses**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-55%2F55-brightgreen) ![Version](https://img.shields.io/badge/version-2.8.1-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-56%2F56-brightgreen) ![Version](https://img.shields.io/badge/version-2.9.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -57,7 +57,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -125,7 +125,7 @@ Lajur/
 ├── tests/
 │   ├── invariants.test.js    29 business invariant tests
 │   ├── operations.test.js    4 import/task/shipment tests
-│   ├── admin.test.js         8 master/user/order/settings/part-parent tests
+│   ├── admin.test.js         9 master/user/driver/order/settings tests
 │   ├── orders-pricing.test.js 5 hierarchy/order/supplier-price/FX tests
 │   ├── invoice-delivery.test.js 3 discount/tax/surat-jalan tests
 │   ├── production.test.js    4 WIP/payroll/capacity tests
@@ -169,11 +169,11 @@ Lajur/
 15. **Sample & Deposit** — sample conversion, deposit ledger and refunds in one workspace.
 16. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 17. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
-18. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it.
+18. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & kendaraan** stores driver names, phone, motor/mobil/truk and plate.
 19. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
 20. **Laporan → Produksi & payroll** (when WIP is enabled) — WIP metres, open payroll, QC rejects, capacity and order progress.
 21. **Laporan → Penjualan** — invoice performance; the optional sales-order table appears only when Pesanan is enabled.
-22. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak** (DPP/PPN 11% auto), create **Surat Jalan** with PIC/driver, then Kirim → Tandai tiba → Konfirmasi terima. Print the tax invoice and surat jalan.
+22. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create **Surat Jalan** with PIC/courier/driver/vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**.
 
 ### Role experience
 
@@ -223,7 +223,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **55 passed, 0 failed** (53 business + 2 auth) |
+| `node --test` | **56 passed, 0 failed** (54 business + 2 auth) |
 | Module import check | **43/43 modules** |
 | Server-side render of all views | **24/24 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **18/18 simple routes** and **25/25 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -245,6 +245,11 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Invoice discount | Part price auto-filled 85.000; 4 × 85.000 with 10% discount → total Rp 306.000 |
 | Faktur pajak | INV-0005: DPP 275.676 + PPN 30.324 = 306.000; second issue blocked; print shows DPP/PPN |
 | Surat jalan | Seed SJ-0001 (PIC Henny) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; stock unchanged |
+| Print + PDF | Print preview has Cetak + Unduh PDF; test PDF generated 60.370 bytes (`Tes-PDF-Lajur.pdf`) |
+| Driver master | 3 drivers seeded (motor/mobil/truk); form autofills vehicle + plate; delivery snapshots driver/vehicle |
+| Courier + map | Internal/Lalamove/GoSend/GrabExpress; address autocomplete from customers/history; map iframe updates with address |
+| Mobile sidebar | Advanced mode at 320/390: scrollHeight 1037/1021 > viewport; scrollTop 220 works |
+| Task simulation | Create → Mulai → Selesai with note; history created/mulai/selesai |
 | Role QA | Manager full; sales invoice/tax/delivery yes, purchasing/master/settings redirected; operator receiving/stock yes, invoices/prices redirected/absent |
 | Mobile drawer | bottom nav 61 px, sidebar z60 / scrim z55 / nav z45; Esc closes; 0 overflow |
 | Import CNY | PO `26.5 CNY × 2.250`, landed `Rp 600.000`, roll HPP `Rp 71.625/m`; bill `CNY 1.325` |
@@ -290,7 +295,10 @@ node tools/render-check.mjs
 - **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”. Optional module.
 - **Invoice discount:** fixed rupiah or percentage, applied to the subtotal with the computed discount shown on screen and in print.
 - **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, NPWP, printable tax invoice; no manual price entry.
-- **Surat jalan & delivery tracking:** PIC pengiriman, driver/vehicle, address, dispatch → arrived → receiver confirmation; printable surat jalan; stock never moves again after the invoice.
+- **Surat jalan & delivery tracking:** PIC pengiriman, driver/vehicle from master, courier (Internal/Lalamove/GoSend/GrabExpress), tracking reference, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan; stock never moves again after the invoice.
+- **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
+- **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected on surat jalan; driver details snapshot into the delivery.
+- **Mobile drawer scroll:** sidebar navigation scrolls independently on small phones, including Advanced mode with many menu items.
 - **Supplier price book:** every product/part lists its suppliers, latest price, MOQ and validity; new quotes update the master buy price.
 - **Manual CNY rate on import POs:** the latest rate is shown only as a reference; the field starts blank, the user must enter the rate, and that value, timestamp and source are snapshotted on the PO.
 - **WIP production orders:** cut → sew → QC per piece, reject/rework, payroll per piece, work-centre capacity, source roll/lot trace.
@@ -326,7 +334,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.8.1`), changelog and GitHub Actions CI.
+- Versioned release (`v2.9.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

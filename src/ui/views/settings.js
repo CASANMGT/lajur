@@ -128,7 +128,7 @@ function renderPreferences(ctx) {
 
 function renderAudit(ctx) {
   const { db } = ctx;
-  const rows = db.audit.filter((a) => ['user', 'sku', 'part', 'supplier', 'settings', 'warehouse'].includes(a.entity)).slice(0, 30);
+  const rows = db.audit.filter((a) => ['user', 'sku', 'part', 'supplier', 'driver', 'settings', 'warehouse'].includes(a.entity)).slice(0, 30);
   return `<section class="card">
     <div class="card-head"><div><h2>Jejak audit master & akun</h2><p>Perubahan produk, part, pemasok, pengguna, gudang, dan pengaturan.</p></div></div>
     <div class="table-wrap"><table class="data">

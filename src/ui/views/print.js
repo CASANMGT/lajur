@@ -4,7 +4,7 @@ import { esc, fmt } from '../dom.js';
 import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
-import { DELIVERY_STATUS } from '../../domain/deliveries.js';
+import { COURIERS, DELIVERY_STATUS } from '../../domain/deliveries.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
 
@@ -150,7 +150,8 @@ export function printDeliveryHtml(db, delivery) {
       <div><span>Tanggal</span><strong>${esc(delivery.date)}</strong></div>
       <div><span>Alamat</span><strong>${esc(delivery.address || customer?.address || '—')}</strong></div>
       <div><span>PIC pengiriman</span><strong>${esc(delivery.pic)}</strong></div>
-      <div><span>Pengemudi / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicle ? ` · ${esc(delivery.vehicle)}` : ''}</strong></div>
+      <div><span>Kurir</span><strong>${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')}${delivery.trackingRef ? ` · ${esc(delivery.trackingRef)}` : ''}</strong></div>
+      <div><span>Pengemudi / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>
     </div>
     <table>
       <thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead>

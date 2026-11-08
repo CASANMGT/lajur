@@ -10,9 +10,10 @@ import {
   taxBreakdown,
 } from '../../domain/sales.js';
 import {
-  DELIVERY_STATUS, confirmDelivery, createDelivery, deliveryForInvoice, dispatchDelivery,
+  DELIVERY_STATUS, COURIERS, confirmDelivery, createDelivery, deliveryForInvoice, dispatchDelivery,
   markDelivered, updateDelivery,
 } from '../../domain/deliveries.js';
+import { VEHICLE_TYPES } from '../../domain/master.js';
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
 import { createSalesOrder } from '../../domain/orders.js';
 import { settingsOf } from '../../domain/settings.js';
@@ -255,7 +256,8 @@ function deliveryCard(inv, delivery, role) {
       <div class="stack-sm" style="margin-top:10px">
         <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
         <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}</span></div>
-        <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicle ? ` · ${esc(delivery.vehicle)}` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Kurir</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')}${delivery.trackingRef ? ` · ${esc(delivery.trackingRef)}` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>
         <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
         ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
       </div>
@@ -651,27 +653,90 @@ function openIssueTax(ctx, inv) {
   });
 }
 
+function addressSuggestions(db, current = '') {
+  const list = [...new Set([
+    ...(db.customers ?? []).map((c) => c.address),
+    ...(db.deliveries ?? []).map((d) => d.address),
+    current,
+    'Jakarta', 'Jakarta Selatan', 'Jakarta Timur', 'Bandung', 'Surabaya', 'Depok', 'Tangerang',
+  ].filter(Boolean))];
+  return `<datalist id="delivery-addresses">${list.map((a) => `<option value="${esc(a)}"></option>`).join('')}</datalist>`;
+}
+
+function mapEmbed(address) {
+  return `https://www.google.com/maps?q=${encodeURIComponent(address || 'Jakarta, Indonesia')}&output=embed`;
+}
+
+function deliveryFields(db, delivery, customer) {
+  const drivers = (db.drivers ?? []).filter((d) => d.active !== false);
+  const address = delivery?.address ?? customer?.address ?? '';
+  return `
+    ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(delivery?.pic ?? '')}" required />`, { hint: 'Penanggung jawab pengiriman dari gudang.' })}
+    ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${esc(delivery?.date ?? todayJakarta())}" />`)}
+    ${field('Kurir / pihak ketiga', `<select class="select" name="courier">${Object.entries(COURIERS).map(([k, v]) => `<option value="${k}" ${delivery?.courier === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+    ${field('Driver dari master', `<select class="select" name="driver"><option value="">— Tanpa driver master —</option>${drivers.map((d) => `<option value="${d.id}" data-type="${esc(d.vehicleType)}" data-plate="${esc(d.plateNumber)}" data-phone="${esc(d.phone ?? '')}" ${delivery?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)} · ${esc(d.plateNumber)}</option>`).join('')}</select>`, { hint: 'Nama dan kendaraan tersimpan di Master Data → Driver.' })}
+    ${field('Telepon driver', `<input class="input" name="driverPhone" value="${esc(delivery?.driverPhone ?? '')}" />`)}
+    ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+    ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
+    ${field('Resi / ID kurir', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="Untuk Lalamove / GoSend" />`)}
+    <div class="span-2">
+      ${field('Alamat kirim', `<input class="input" name="address" list="delivery-addresses" value="${esc(address)}" placeholder="Ketik alamat, pilih saran" />`, { hint: 'Autocomplete dari alamat pelanggan dan pengiriman sebelumnya.' })}
+      ${addressSuggestions(db, address)}
+      <div class="map-preview" style="margin-top:10px">
+        <iframe data-map-frame title="Peta alamat pengiriman" loading="lazy" src="${esc(mapEmbed(address))}"></iframe>
+        <div class="row-between" style="margin-top:6px">
+          <span class="xs muted">Pratinjau peta — periksa titik sebelum kirim.</span>
+          <a class="small strong" data-map-link href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || 'Jakarta')}" target="_blank" rel="noopener">Buka peta</a>
+        </div>
+      </div>
+    </div>
+    ${field('Catatan', `<input class="input" name="notes" value="${esc(delivery?.notes ?? '')}" placeholder="Instruksi bongkar / kontak penerima" />`, { full: true })}
+  `;
+}
+
+function bindDeliveryFields(form) {
+  const syncDriver = () => {
+    const opt = form.driver.selectedOptions[0];
+    if (!opt?.value) return;
+    form.vehicleType.value = opt.dataset.type || '';
+    form.plateNumber.value = opt.dataset.plate || '';
+    form.driverPhone.value = opt.dataset.phone || '';
+  };
+  form.driver?.addEventListener('change', syncDriver);
+  if (form.driver?.value) syncDriver();
+  const syncMap = () => {
+    const address = form.address.value.trim();
+    const frame = form.querySelector('[data-map-frame]');
+    const link = form.querySelector('[data-map-link]');
+    if (frame) frame.src = mapEmbed(address);
+    if (link) link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || 'Jakarta')}`;
+  };
+  form.address?.addEventListener('input', syncMap);
+}
+
 function openCreateDelivery(ctx, inv) {
   const customer = byId(ctx.db.customers, inv.customerId);
   openModal({
     title: `Surat jalan ${inv.id}`,
-    description: 'Catat PIC pengiriman dan alamat. Stok sudah keluar saat faktur terbit; surat jalan tidak mengurangi stok lagi.',
+    description: 'Catat PIC, kurir/driver, kendaraan, dan alamat. Stok sudah keluar saat faktur terbit; surat jalan tidak mengurangi stok lagi.',
+    wide: true,
     submitLabel: 'Buat surat jalan',
-    body: `
-      ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(ctx.user.name)}" required />`, { hint: 'Penanggung jawab pengiriman dari gudang.' })}
-      ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Pengemudi', `<input class="input" name="driver" placeholder="Nama pengemudi" />`)}
-      ${field('Kendaraan', `<input class="input" name="vehicle" placeholder="Nomor polisi / jenis" />`)}
-      ${field('Alamat kirim', `<input class="input" name="address" value="${esc(customer?.address ?? '')}" />`, { full: true })}
-      ${field('Catatan', `<input class="input" name="notes" placeholder="Instruksi bongkar / kontak penerima" />`, { full: true })}
-    `,
+    body: deliveryFields(ctx.db, null, customer),
+    onMount(form) {
+      form.pic.value = form.pic.value || ctx.user.name;
+      bindDeliveryFields(form);
+    },
     onSubmit(form, close) {
       ctx.store.update((db) => createDelivery(db, {
         invoiceId: inv.id,
         pic: form.pic.value,
         date: form.date.value,
-        driver: form.driver.value,
-        vehicle: form.vehicle.value,
+        courier: form.courier.value,
+        driverId: form.driver.value || null,
+        driverPhone: form.driverPhone.value,
+        vehicleType: form.vehicleType.value,
+        plateNumber: form.plateNumber.value,
+        trackingRef: form.trackingRef.value,
         address: form.address.value,
         notes: form.notes.value,
         user: ctx.user,
@@ -683,25 +748,25 @@ function openCreateDelivery(ctx, inv) {
 }
 
 function openEditDelivery(ctx, delivery) {
+  const customer = byId(ctx.db.customers, delivery.customerId);
   openModal({
     title: `Edit PIC ${delivery.id}`,
-    description: 'PIC dan data pengiriman dapat diubah sebelum barang dikirim.',
+    description: 'PIC, driver, kurir, dan alamat dapat diubah sebelum barang dikirim.',
+    wide: true,
     submitLabel: 'Simpan',
-    body: `
-      ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(delivery.pic)}" required />`)}
-      ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${esc(delivery.date)}" />`)}
-      ${field('Pengemudi', `<input class="input" name="driver" value="${esc(delivery.driver)}" />`)}
-      ${field('Kendaraan', `<input class="input" name="vehicle" value="${esc(delivery.vehicle)}" />`)}
-      ${field('Alamat kirim', `<input class="input" name="address" value="${esc(delivery.address)}" />`, { full: true })}
-      ${field('Catatan', `<input class="input" name="notes" value="${esc(delivery.notes)}" />`, { full: true })}
-    `,
+    body: deliveryFields(ctx.db, delivery, customer),
+    onMount(form) { bindDeliveryFields(form); },
     onSubmit(form, close) {
       ctx.store.update((db) => updateDelivery(db, {
         id: delivery.id,
         pic: form.pic.value,
         date: form.date.value,
-        driver: form.driver.value,
-        vehicle: form.vehicle.value,
+        courier: form.courier.value,
+        driverId: form.driver.value || null,
+        driverPhone: form.driverPhone.value,
+        vehicleType: form.vehicleType.value,
+        plateNumber: form.plateNumber.value,
+        trackingRef: form.trackingRef.value,
         address: form.address.value,
         notes: form.notes.value,
         user: ctx.user,
