@@ -2,12 +2,13 @@
  * Reference shared backend for Lajur — Node built-ins only.
  *
  * This is deliberately small but real: HTTP-only cookies, scrypt PIN hashes,
- * RBAC per action, revisioned shared state and atomic file writes. Run it with
- * `npm run server`; the static Vercel demo stays browser-only unless a client
- * is pointed at this API.
+ * RBAC per action, revisioned shared state and atomic writes. Set
+ * `DATABASE_URL` to use the PostgreSQL JSONB store (db/schema.sql); otherwise
+ * state stays in server/data/state.json. Run it with `npm run server`; the
+ * static Vercel demo stays browser-only unless a client is pointed at this API.
  *
- * Not production-grade by itself: single process, file storage, no rate limit
- * per IP, no TLS termination, no multi-node locking.
+ * Not production-grade by itself: single process, auth still file-backed, no
+ * rate limit per IP, no TLS termination and no row-level multi-node locking.
  */
 
 import http from 'node:http';
@@ -57,22 +58,39 @@ function loadAuth() {
   return data;
 }
 
-function loadState() {
+function loadJsonState() {
   if (fs.existsSync(STATE_FILE)) return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
   const data = buildSeed();
   const state = { revision: 1, data };
-  writeState(state);
+  writeJsonState(state);
   return state;
 }
 
-function writeState(state) {
+function writeJsonState(state) {
   const tmp = `${STATE_FILE}.tmp`;
   fs.writeFileSync(tmp, JSON.stringify(state));
   fs.renameSync(tmp, STATE_FILE);
 }
 
+async function loadState() {
+  if (process.env.DATABASE_URL) {
+    const { createPgStateStore } = await import('./pg-store.mjs');
+    stateStore = await createPgStateStore(process.env.DATABASE_URL, {
+      ssl: process.env.PGSSL === 'true' || /sslmode=require/.test(process.env.DATABASE_URL),
+    });
+    return stateStore.load(() => buildSeed());
+  }
+  return loadJsonState();
+}
+
+async function writeState(state, meta = {}) {
+  if (stateStore) return stateStore.save(state, meta);
+  return writeJsonState(state);
+}
+
+let stateStore = null;
 let auth = loadAuth();
-let state = loadState();
+let state = await loadState();
 const sessions = new Map();
 
 const json = (res, status, body, headers = {}) => {
@@ -128,7 +146,7 @@ const ACTIONS = {
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
-    if (url.pathname === '/api/health') return json(res, 200, { ok: true, revision: state.revision });
+    if (url.pathname === '/api/health') return json(res, 200, { ok: true, revision: state.revision, storage: stateStore ? 'postgres' : 'json' });
 
     if (url.pathname === '/api/login' && req.method === 'POST') {
       const { userId, pin } = await body(req);
@@ -166,8 +184,9 @@ const server = http.createServer(async (req, res) => {
       if (payload.baseRevision !== state.revision) return json(res, 409, { error: 'Revisi berubah.', revision: state.revision });
       const check = validateBackup({ format: BACKUP_FORMAT, version: BACKUP_VERSION, data: payload.data });
       if (!check.valid) return json(res, 422, { error: 'Referensi tidak valid.', errors: check.errors });
-      state = { revision: state.revision + 1, data: payload.data };
-      writeState(state);
+      const next = { revision: state.revision + 1, data: payload.data };
+      await writeState(next, { action: 'state.put', actorId: user.id, actorName: user.name, actorRole: user.role });
+      state = next;
       return json(res, 200, { revision: state.revision });
     }
 
@@ -179,13 +198,17 @@ const server = http.createServer(async (req, res) => {
       const payload = await body(req);
       const draft = clone(state.data);
       const result = handler(draft, payload, { id: user.id, name: user.name, role: user.role });
-      state = { revision: state.revision + 1, data: draft };
-      writeState(state);
+      const next = { revision: state.revision + 1, data: draft };
+      await writeState(next, { action, actorId: user.id, actorName: user.name, actorRole: user.role, payload: { action } });
+      state = next;
       return json(res, 200, { revision: state.revision, result });
     }
 
     return json(res, 404, { error: 'Tidak ditemukan.' });
   } catch (err) {
+    if (err.code === 'REVISION_CONFLICT') {
+      return json(res, 409, { error: err.message, revision: err.revision });
+    }
     return json(res, 500, { error: err.message });
   }
 });

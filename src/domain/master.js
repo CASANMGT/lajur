@@ -326,6 +326,62 @@ export function saveTransport(db, {
   return transport;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Fleet assets                                                              */
+/* -------------------------------------------------------------------------- */
+
+export const FLEET_TYPES = {
+  motor: { label: 'Motor' },
+  mobil: { label: 'Mobil' },
+  truk: { label: 'Truk' },
+};
+
+export function activeFleetAssets(db) {
+  return (db.fleetAssets ?? []).filter((a) => a.active !== false);
+}
+
+export function saveFleetAsset(db, {
+  id = null, code, name, type = 'motor', ownership = 'internal', transportId = null,
+  driverId = null, capacityKg = 0, taxExpiry = '', active = true, notes = '', user,
+}) {
+  const cleanCode = String(code ?? '').trim().toUpperCase();
+  const cleanName = String(name ?? '').trim();
+  assert(cleanCode.length >= 3, 'INVALID_CODE', 'Kode/plat aset minimal 3 karakter.');
+  assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama aset minimal 2 karakter.');
+  assert(FLEET_TYPES[type], 'INVALID_TYPE', 'Jenis aset tidak dikenal.');
+  assert(['internal', 'third_party'].includes(ownership), 'INVALID_OWNERSHIP', 'Kepemilikan aset tidak dikenal.');
+  const transport = transportId ? transportOf(db, transportId) : null;
+  if (transportId) assert(transport, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
+  const driver = driverId ? driverOf(db, driverId) : null;
+  if (driverId) assert(driver, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan.');
+  db.fleetAssets = db.fleetAssets ?? [];
+  assert(!db.fleetAssets.some((a) => a.id !== id && a.code.toUpperCase() === cleanCode), 'DUPLICATE_CODE', `Aset ${cleanCode} sudah ada.`);
+  const patch = {
+    code: cleanCode,
+    name: cleanName,
+    type,
+    ownership,
+    transportId: transport?.id ?? null,
+    driverId: driver?.id ?? null,
+    capacityKg: Math.max(0, Number(capacityKg) || 0),
+    taxExpiry,
+    active,
+    notes: String(notes ?? '').trim(),
+    updatedAt: isoNow(),
+  };
+  if (id) {
+    const existing = (db.fleetAssets ?? []).find((a) => a.id === id);
+    assert(existing, 'FLEET_NOT_FOUND', 'Aset transport tidak ditemukan.');
+    Object.assign(existing, patch);
+    audit(db, user, 'ubah_aset_transport', 'fleetAsset', id, cleanCode);
+    return existing;
+  }
+  const asset = { id: nextId(db, 'fleetAsset', 'FLT', 3), ...patch, createdAt: isoNow() };
+  db.fleetAssets.push(asset);
+  audit(db, user, 'buat_aset_transport', 'fleetAsset', asset.id, cleanCode);
+  return asset;
+}
+
 export function activeDrivers(db) {
   return (db.drivers ?? []).filter((d) => d.active !== false);
 }

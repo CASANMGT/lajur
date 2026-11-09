@@ -94,7 +94,7 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'fxRates']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'fxRates']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }
   if (!db.fxRates.length) {
@@ -118,8 +118,80 @@ export function migrate(db) {
   db.sequences.supplierPrice = Math.max(Number(db.sequences.supplierPrice) || 0, db.supplierPrices.length);
   db.sequences.fxRate = Math.max(Number(db.sequences.fxRate) || 0, db.fxRates.length);
   db.sequences.driver = Math.max(Number(db.sequences.driver) || 0, (db.drivers ?? []).length);
-  db.sequences.transport = Math.max(Number(db.sequences.transport) || 0, (db.transportCompanies ?? []).length);
   db.sequences.sampleBook = Math.max(Number(db.sequences.sampleBook) || 0, (db.sampleBooks ?? []).length);
+  for (const delivery of db.deliveries) {
+    if (delivery.recipientName === undefined) delivery.recipientName = delivery.customerName ?? '';
+    if (delivery.recipientPhone === undefined) delivery.recipientPhone = '';
+    if (!delivery.service) delivery.service = 'REG';
+    if (delivery.weightKg === undefined) delivery.weightKg = 0;
+    if (delivery.pieces === undefined) delivery.pieces = 0;
+    if (delivery.shippingCost === undefined) delivery.shippingCost = 0;
+    if (delivery.insurance === undefined) delivery.insurance = 0;
+    if (delivery.codAmount === undefined) delivery.codAmount = 0;
+    if (delivery.instructions === undefined) delivery.instructions = '';
+  }
+  for (const asset of db.fleetAssets) {
+    if (!asset.ownership) asset.ownership = 'internal';
+    if (asset.capacityKg === undefined) asset.capacityKg = 0;
+    if (asset.active === undefined) asset.active = true;
+  }
+  if (previousVersion > 0 && previousVersion < 13 && (db.transportCompanies ?? []).length > 0) {
+    // v2.12 adds J&T/JNE and the demo fleet. Existing datasets keep their
+    // records and gain the missing reference data once during migration.
+    const usedTransportIds = new Set(db.transportCompanies.map((t) => t.id));
+    const ensureTransport = (code, def) => {
+      const existing = db.transportCompanies.find((t) => t.code === code);
+      if (existing) return existing;
+      let n = 1;
+      while (usedTransportIds.has(`TRP-${String(n).padStart(3, '0')}`)) n += 1;
+      const id = `TRP-${String(n).padStart(3, '0')}`;
+      const transport = { id, code, active: true, createdAt: new Date().toISOString(), ...def };
+      usedTransportIds.add(id);
+      db.transportCompanies.push(transport);
+      return transport;
+    };
+    ensureTransport('jnt', {
+      name: 'J&T Express', type: 'third_party', contact: 'J&T Care', phone: '021-8066-1888',
+      address: 'Jakarta / Bali', notes: 'Ekspedisi reguler dan kargo.',
+    });
+    ensureTransport('jne', {
+      name: 'JNE Express', type: 'third_party', contact: 'JNE Care', phone: '021-2927-8888',
+      address: 'Jakarta / Bali', notes: 'REG / YES / OKS.',
+    });
+    if (!db.fleetAssets.length) {
+      const usedFleetIds = new Set();
+      let fleetSeq = 1;
+      const nextFleetId = () => {
+        while (usedFleetIds.has(`FLT-${String(fleetSeq).padStart(3, '0')}`)) fleetSeq += 1;
+        const id = `FLT-${String(fleetSeq).padStart(3, '0')}`;
+        usedFleetIds.add(id);
+        fleetSeq += 1;
+        return id;
+      };
+      const transportOfCode = (code) => db.transportCompanies.find((t) => t.code === code) ?? null;
+      const driverOfId = (id) => (db.drivers ?? []).find((d) => d.id === id) ?? null;
+      const seedAssets = [
+        { code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportCode: 'internal', driverId: 'DRV-001', capacityKg: 50, taxExpiry: '2027-03-31', notes: 'Motor operasional Jakarta.' },
+        { code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportCode: 'internal', driverId: 'DRV-002', capacityKg: 800, taxExpiry: '2027-01-31', notes: 'Mobil boks kecil.' },
+        { code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'third_party', transportCode: 'bali-kargo', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', notes: 'Truk Bali Kargo.' },
+        { code: 'LALAMOVE-MTR', name: 'Lalamove Motor Fleet', type: 'motor', ownership: 'third_party', transportCode: 'lalamove', driverId: null, capacityKg: 30, taxExpiry: '2027-06-30', notes: 'Armada mitra Lalamove.' },
+        { code: 'B 7777 JT', name: 'J&T Van', type: 'mobil', ownership: 'third_party', transportCode: 'jnt', driverId: null, capacityKg: 600, taxExpiry: '2027-05-31', notes: 'Pickup J&T.' },
+        { code: 'B 8888 JNE', name: 'JNE Truck', type: 'truk', ownership: 'third_party', transportCode: 'jne', driverId: null, capacityKg: 3000, taxExpiry: '2027-02-28', notes: 'Truk JNE.' },
+      ];
+      for (const def of seedAssets) {
+        const transport = transportOfCode(def.transportCode);
+        const driver = def.driverId ? driverOfId(def.driverId) : null;
+        db.fleetAssets.push({
+          id: nextFleetId(), code: def.code, name: def.name, type: def.type, ownership: def.ownership,
+          transportId: transport?.id ?? null, driverId: driver?.id ?? null,
+          capacityKg: def.capacityKg, taxExpiry: def.taxExpiry, active: true, notes: def.notes,
+          createdAt: new Date().toISOString(),
+        });
+      }
+    }
+  }
+  db.sequences.transport = Math.max(Number(db.sequences.transport) || 0, (db.transportCompanies ?? []).length);
+  db.sequences.fleetAsset = Math.max(Number(db.sequences.fleetAsset) || 0, (db.fleetAssets ?? []).length);
   if (!Array.isArray(db.workCenters) || !db.workCenters.length) {
     db.workCenters = [
       { id: 'wc-cut', stage: 'cutting', name: 'Meja potong', capacityPerDay: 40, ratePerPiece: 5000 },

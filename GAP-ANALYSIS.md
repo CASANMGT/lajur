@@ -82,7 +82,10 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Sample book from rolls** | **Done in v2.11** | Multi-cut book, print/PDF, give to prospect |
 | **Customer catalog** | **Done in v2.11** | Colours/width/price/availability, print/PDF |
 | **In-app tutorial** | **Done in v2.11** | 14 process guides with links |
-| **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference; UI still static/local |
+| **Fleet asset master** | **Done in v2.12** | 6 seeded motor/mobil/truk assets with ownership, capacity, tax date, driver/transport links |
+| **J&T/JNE consignment surat jalan** | **Done in v2.12** | Recipient, service, AWB, weight, pieces, shipping/insurance/COD, consignment print with barcode + signatures |
+| **PostgreSQL production store** | **Done in v2.12** | `DATABASE_URL` selects JSONB state with ACID transactions, revision guard, audit, users/sessions/idempotency; JSON fallback |
+| **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference with optional PostgreSQL; static UI still local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |
 | **Settings, users & roles** | **Done in v2.3** | Account/PIN, staff add/edit/deactivate, reset PIN, preferences, audit, data |
@@ -91,8 +94,8 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Supplier add/edit** | **Done in v2.3** | Local/import, CNY/FX/incoterm/port |
 | **Optional physical proof on documents** | **Partial** | Metadata on receipts, transfer receipts, tasks, shipments; invoices/opname still planned |
 | Authentication / PIN per role | Done (demo) | PBKDF2, session, lockout, change PIN |
-| Server authorization / shared transactions | Planned | Production architecture in PRD §12 |
-| Immutable posted documents / idempotency | Planned | Demo is single-user local |
+| Server authorization / shared transactions | Partial | Reference API + optional PostgreSQL; UI not wired |
+| Immutable posted documents / idempotency | Partial | PG idempotency table and audit exist; domain still writes a whole JSONB document |
 
 ## 2. Design-system v2 (uploaded) check
 
@@ -126,10 +129,11 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | Manajer | Ringkasan | exceptions, sales chart, task/cutting monitor, approvals, settings | — |
 | Operator | Ringkasan | task tiles, my tasks, warehouse KPIs, work queue, receiving/opname, WIP when enabled | invoices, orders, sales/CRM, reports, master/settings |
 | Sales / CS | Penjualan | receivables, follow-ups, samples/deposits, orders when enabled | purchasing, opname, master/settings, approvals |
+| Driver | Ringkasan | assigned surat jalan/tasks, Kirim/Tiba | invoices, prices, stock/master/settings, purchasing, reports, receiver confirmation |
 
 ## 4. Highest-value remaining gaps
 
-1. **Wire the shared backend to the UI** and move posting to PostgreSQL with idempotency.
+1. **Wire the shared backend to the UI**, then move the JSONB document to row-level immutable posting with idempotency (PostgreSQL schema and store already exist).
 2. **Object storage** for product photos and proof, plus virus scanning.
 3. **Partial project fulfilment** and quote documents.
 4. **As-of inventory valuation** and import FX revaluation.

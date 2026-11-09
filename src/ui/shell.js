@@ -184,7 +184,9 @@ export function renderShell(ctx, contentHtml) {
         <nav class="bottom-nav" aria-label="Navigasi cepat">
           <a href="#/ringkasan" ${ctx.route.name === 'ringkasan' ? 'aria-current="page"' : ''}>${icon('home')}<span>Beranda</span></a>
           <a href="#/tugas" ${ctx.route.name === 'tugas' ? 'aria-current="page"' : ''}>${icon('listCheck')}<span>Tugas</span></a>
-          <a href="#/stok" ${ctx.route.name === 'stok' ? 'aria-current="page"' : ''}>${icon('box')}<span>Stok</span></a>
+          ${role === 'driver'
+            ? `<a href="#/pengiriman" ${ctx.route.name === 'pengiriman' ? 'aria-current="page"' : ''}>${icon('truck')}<span>Kirim</span></a>`
+            : `<a href="#/stok" ${ctx.route.name === 'stok' ? 'aria-current="page"' : ''}>${icon('box')}<span>Stok</span></a>`}
           <button type="button" data-action="account">${icon('users')}<span>Akun</span></button>
         </nav>
       </div>

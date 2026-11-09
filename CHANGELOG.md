@@ -2,6 +2,41 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.12.0] — 2026-11-09
+
+**Release name: Armada, Resi & PostgreSQL.** Adds a fleet-asset master, J&T/JNE-style consignment surat jalan and an optional PostgreSQL production store for the reference API.
+
+### Added
+
+- **Fleet asset master:** motors, cars and trucks with code/plate, internal or third-party ownership, linked transport and driver, capacity (kg) and tax expiry; six seeded assets (Honda Vario, Hilux, Isuzu Elf, Lalamove motor, J&T van, JNE truck), create/edit and duplicate-plate guard.
+- **J&T/JNE consignment fields on surat jalan:** recipient name/phone, courier, service (REG/YES/OKS/COD/CARGO), AWB/resi, weight, pieces, shipping cost, insurance, COD and delivery instructions.
+- **Consignment-note print layout:** sender/recipient blocks, AWB header, service, weight/pieces, charges, pseudo barcode, PIC and receiver signature lines. Prices remain excluded from the goods list.
+- **PostgreSQL store:** `db/schema.sql` and `server/pg-store.mjs`; `DATABASE_URL` selects JSONB state with ACID transactions, optimistic revision guard, audit, users/sessions and idempotency tables. JSON files remain the zero-setup fallback.
+- **Health storage flag:** `/api/health` reports `storage: postgres` or `json`.
+
+### Changed
+
+- Version bumped to 2.12.0, schema 13, backup v13.
+- `pg` added as the reference-server dependency; `package-lock.json` committed.
+- Delivery master/migration backfills consignment and fleet fields for older datasets.
+- Transport master includes J&T Express and JNE Express; couriers include J&T, JNE, SiCepat and AnterAja.
+
+### Verification
+
+- `node --test`: **61 passed** (59 domain/UI + 2 auth), including fleet-asset migration, consignment delivery and price-free consignment print invariants.
+- Module imports 46/46; render 26/26 views including master, delivery and print paths.
+- JSON server starts and `/api/health` returns `storage: json`.
+- PostgreSQL schema and store are ready; a live database was not provisioned in this environment.
+
+### Known limitations
+
+- The static Vercel demo still uses browser-local storage; the API is a reference implementation.
+- PostgreSQL holds the whole domain document in JSONB rather than row-level financial tables; row-level posting and immutable documents remain the next migration step.
+- Server users/sessions are still JSON-backed when running without a database; the PG user/session tables exist but are not yet used by the auth path.
+- Object storage for real product/proof images is still absent.
+
+---
+
 ## [2.11.0] — 2026-11-09
 
 **Release name: Driver, Sample & Panduan.** Adds driver user accounts and corporate transport, sample books from roll cuts, customer catalog, and an in-app tutorial for every process.

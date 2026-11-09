@@ -24,6 +24,10 @@ export const COURIERS = {
   gosend: { label: 'GoSend' },
   grabexpress: { label: 'GrabExpress' },
   'bali-kargo': { label: 'Bali Kargo Utama' },
+  jnt: { label: 'J&T Express' },
+  jne: { label: 'JNE Express' },
+  sicepat: { label: 'SiCepat' },
+  anteraja: { label: 'AnterAja' },
 };
 
 export function getDelivery(db, id) {
@@ -60,7 +64,8 @@ function pushHistory(delivery, action, user, note = '') {
 export function createDelivery(db, {
   invoiceId, pic, date = todayJakarta(), address = '', courier = 'internal', driverId = null,
   driver = '', driverPhone = '', vehicleType = '', plateNumber = '', vehicle = '', trackingRef = '',
-  notes = '', user,
+  recipientName = '', recipientPhone = '', service = 'REG', weightKg = 0, pieces = 0,
+  shippingCost = 0, insurance = 0, codAmount = 0, instructions = '', notes = '', user,
 }) {
   const invoice = requireInvoice(db, invoiceId);
   assert(invoice.status === 'posted', 'INVOICE_NOT_POSTED', 'Surat jalan dibuat setelah faktur diterbitkan.');
@@ -97,6 +102,15 @@ export function createDelivery(db, {
     vehicleType: driverMaster?.vehicleType ?? String(vehicleType ?? '').trim(),
     plateNumber: driverMaster?.plateNumber ?? String(plateNumber || vehicle || '').trim(),
     trackingRef: String(trackingRef ?? '').trim(),
+    recipientName: String(recipientName ?? '').trim() || customer?.name || invoice.customerName,
+    recipientPhone: String(recipientPhone ?? '').trim() || customer?.phone || '',
+    service: String(service ?? 'REG').trim() || 'REG',
+    weightKg: Math.max(0, Number(weightKg) || 0),
+    pieces: Math.max(0, Math.round(Number(pieces) || 0)),
+    shippingCost: Math.max(0, Number(shippingCost) || 0),
+    insurance: Math.max(0, Number(insurance) || 0),
+    codAmount: Math.max(0, Number(codAmount) || 0),
+    instructions: String(instructions ?? '').trim(),
     notes: String(notes ?? '').trim(),
     status: 'draft',
     lines,
@@ -118,7 +132,9 @@ export function createDelivery(db, {
 
 export function updateDelivery(db, {
   id, pic, date, address, courier = 'internal', driverId = null, driver = '', driverPhone = '',
-  vehicleType = '', plateNumber = '', trackingRef = '', notes, user,
+  vehicleType = '', plateNumber = '', trackingRef = '', recipientName = '', recipientPhone = '',
+  service = 'REG', weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
+  instructions = '', notes, user,
 }) {
   const delivery = requireDelivery(db, id);
   assert(delivery.status === 'draft', 'INVALID_STATUS', 'Surat jalan hanya dapat diubah sebelum dikirim.');
@@ -137,6 +153,15 @@ export function updateDelivery(db, {
     vehicleType: driverMaster?.vehicleType ?? String(vehicleType ?? delivery.vehicleType ?? '').trim(),
     plateNumber: driverMaster?.plateNumber ?? String(plateNumber ?? delivery.plateNumber ?? '').trim(),
     trackingRef: String(trackingRef ?? delivery.trackingRef ?? '').trim(),
+    recipientName: String(recipientName ?? delivery.recipientName ?? '').trim(),
+    recipientPhone: String(recipientPhone ?? delivery.recipientPhone ?? '').trim(),
+    service: String(service ?? delivery.service ?? 'REG').trim() || 'REG',
+    weightKg: Math.max(0, Number(weightKg ?? delivery.weightKg) || 0),
+    pieces: Math.max(0, Math.round(Number(pieces ?? delivery.pieces) || 0)),
+    shippingCost: Math.max(0, Number(shippingCost ?? delivery.shippingCost) || 0),
+    insurance: Math.max(0, Number(insurance ?? delivery.insurance) || 0),
+    codAmount: Math.max(0, Number(codAmount ?? delivery.codAmount) || 0),
+    instructions: String(instructions ?? delivery.instructions ?? '').trim(),
     notes: String(notes ?? delivery.notes).trim(),
     updatedAt: isoNow(),
   });

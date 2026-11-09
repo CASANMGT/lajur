@@ -240,8 +240,8 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 - **Print preview:** every printable item opens the same window with a top toolbar: **Cetak** and **Unduh PDF**. Do not auto-print, because it prevents using the PDF option. Hide the toolbar in print and when rasterising the PDF.
 - **PDF:** generated from the document layout; show a progress label and a fallback instruction (“Cetak → Simpan sebagai PDF”) if the PDF library cannot load.
-- **Driver master:** Master Data → Driver & kendaraan. Show driver, phone, vehicle type and plate. Vehicle types are Motor, Mobil, Truk. Inactive drivers do not appear in new surat jalan forms.
-- **Surat jalan:** select driver from master; autofill phone, vehicle type and plate. Courier select: Internal, Lalamove, GoSend, GrabExpress. Store a tracking reference for third-party couriers.
+- **Driver master:** Master Data → Driver & transport. Show driver, phone, vehicle type and plate. Vehicle types are Motor, Mobil, Truk. Inactive drivers do not appear in new surat jalan forms.
+- **Surat jalan:** select driver from master; autofill phone, vehicle type and plate. Courier select: Internal, J&T, JNE, Lalamove, GoSend, SiCepat, AnterAja, Bali Kargo. Capture service, AWB/resi, recipient/phone, weight, pieces, shipping, insurance, COD and instructions for courier-style consignment notes.
 - **Address:** autocomplete from customer and previous delivery addresses; show an inline map preview and an external map link. Never hide the map behind a submit action.
 - **Mobile sidebar:** `overflow-y: auto`, `overscroll-behavior: contain`, safe-area bottom padding. The drawer must scroll at 320/390 with Advanced mode; bottom nav must remain below the drawer.
 - **Task flow:** create → Mulai → Selesai, note/proof optional; no stock movement.
@@ -254,12 +254,19 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 ### 5.16 Driver role, sample book, catalog, guide
 
 - **Driver account:** show driver name/vehicle, only Ringkasan/Tugas/Pengiriman/Panduan in nav, no prices or master. Driver actions are Kirim and Tiba; receiver confirmation belongs to sales/manager.
-- **Transport master:** driver rows show linked user account, transport company, vehicle and plate. Transport table is separate and editable.
+- **Transport master:** driver rows show linked user account, transport company, vehicle and plate. Transport table is separate and editable; fleet assets link to both transport and driver.
 - **Sample book:** create from multiple roll cuts, show item count/status, print/PDF. Use “Beri” with recipient and date; never show a second stock movement after giving the book.
 - **Catalog:** card grid with swatch, colour/code, width, sell price and availability; no cost/margin. Provide Cetak/PDF.
 - **Guide:** accordion sections with numbered steps and links. Keep copy practical (“Buka → isi → simpan”), not marketing.
 
-### 5.17 Empty, loading, error
+### 5.17 Fleet assets, consignment notes and production database
+
+- **Fleet assets:** a dedicated table under Driver & transport with asset name/plate, ownership chip (Internal teal / Pihak ketiga copper), linked transport, linked driver, capacity, tax expiry and active status. One **Aset** action opens a compact modal; duplicate plates show a plain-language error.
+- **Consignment surat jalan:** print as a courier note, not a plain letter. Header: Lajur mark, “SURAT JALAN / CONSIGNMENT NOTE”, courier + service, document ID/date, large AWB/resi and a pseudo barcode. Two address blocks: sender (PT Lajur Tekstil Nusantara, Jakarta/Bali warehouse, PIC) and recipient (name, phone, address). A meta grid carries invoice, weight/pieces, shipping/insurance, COD, driver/vehicle and status. Keep goods lines price-free; finish with PIC and receiver signature lines.
+- **No price leakage:** the consignment note must never show unit prices, invoice subtotal or margin. It is a delivery document; the invoice already moved stock.
+- **Database status:** the reference server is the only place PostgreSQL is used. In the UI, the demo remains browser-local. When documenting production, state which store is active (`storage: postgres` or `json`) and never imply the static demo shares data.
+
+### 5.18 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.

@@ -5,8 +5,8 @@ import {
 } from '../dom.js';
 import { byId, uid, todayJakarta } from '../../domain/core.js';
 import {
-  activeWarehouses, auditTrail, createCollection, renameCollection, saveDriver, savePart, saveSku,
-  saveTransport, saveWarehouse, TRANSPORT_TYPES, VEHICLE_TYPES,
+  activeWarehouses, auditTrail, createCollection, FLEET_TYPES, renameCollection, saveDriver,
+  saveFleetAsset, savePart, saveSku, saveTransport, saveWarehouse, TRANSPORT_TYPES, VEHICLE_TYPES,
 } from '../../domain/master.js';
 import {
   latestSupplierPrice, saveSupplierPrice, supplierPriceHistory, suppliersOfItem,
@@ -107,9 +107,10 @@ function renderDrivers(ctx) {
   const { db, role } = ctx;
   const drivers = db.drivers ?? [];
   const transports = db.transportCompanies ?? [];
+  const fleet = db.fleetAssets ?? [];
   return `<div class="row-between" style="margin-bottom:12px">
       <div><h2>Driver & transport</h2><p class="xs muted">Driver punya akun pengguna dan terhubung ke transport internal/pihak ketiga.</p></div>
-      ${role === 'manager' ? `<div class="row"><button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Driver</button><button class="btn" type="button" data-act="new-transport">${icon('plus')} Transport</button></div>` : ''}
+      ${role === 'manager' ? `<div class="row"><button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Driver</button><button class="btn" type="button" data-act="new-transport">${icon('plus')} Transport</button><button class="btn" type="button" data-act="new-fleet">${icon('plus')} Aset</button></div>` : ''}
     </div>
     <section class="card" style="margin-bottom:16px">
       <div class="card-head"><div><h2>Driver</h2><p>Nama, akun pengguna, telepon, kendaraan, nomor polisi.</p></div><span class="badge no-dot">${drivers.length}</span></div>
@@ -131,7 +132,7 @@ function renderDrivers(ctx) {
       </table></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Transport perusahaan</h2><p>Internal, Lalamove, GoSend, kargo Bali, dan vendor lain.</p></div><span class="badge no-dot">${transports.length}</span></div>
+      <div class="card-head"><div><h2>Transport perusahaan</h2><p>Internal, Lalamove, GoSend, kargo Bali, J&T, JNE, dan vendor lain.</p></div><span class="badge no-dot">${transports.length}</span></div>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Transport</th><th>Jenis</th><th>Kontak</th><th>Telepon</th><th>Alamat</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${transports.map((t) => `<tr>
@@ -145,6 +146,26 @@ function renderDrivers(ctx) {
         </tr>`).join('') || '<tr><td colspan="7" class="muted">Belum ada transport.</td></tr>'}</tbody>
       </table></div>
       <div class="card-pad"><p class="xs muted">Transport nonaktif tidak muncul pada pilihan driver/surat jalan baru. Driver tetap menyimpan snapshot nama dan kendaraannya.</p></div>
+    </section>
+    <section class="card">
+      <div class="card-head"><div><h2>Aset transport</h2><p>Motor, mobil, dan truk internal/pihak ketiga beserta driver dan masa pajak.</p></div><span class="badge no-dot">${fleet.length}</span></div>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Aset</th><th>Kepemilikan</th><th>Transport</th><th>Driver</th><th class="num">Kapasitas</th><th>Pajak</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${fleet.map((a) => {
+          const transport = byId(db.transportCompanies, a.transportId);
+          const driver = byId(db.drivers, a.driverId);
+          return `<tr>
+            <td><strong>${esc(a.name)}</strong><div class="xs muted mono">${esc(a.code)} · ${esc(a.id)}</div></td>
+            <td>${a.ownership === 'internal' ? badge('Internal', 'teal') : badge('Pihak ketiga', 'copper')}</td>
+            <td class="small">${esc(transport?.name ?? '—')}</td>
+            <td class="small">${esc(driver?.name ?? '—')}</td>
+            <td class="num">${a.capacityKg ? `${a.capacityKg} kg` : '—'}</td>
+            <td class="small">${esc(a.taxExpiry || '—')}</td>
+            <td>${a.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
+            <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-fleet="${a.id}">Edit</button>` : ''}</td>
+          </tr>`;
+        }).join('') || '<tr><td colspan="8" class="muted">Belum ada aset transport.</td></tr>'}</tbody>
+      </table></div>
     </section>`;
 }
 
@@ -547,6 +568,45 @@ function openTransport(ctx, transport = null) {
   });
 }
 
+function openFleet(ctx, asset = null) {
+  const editing = Boolean(asset);
+  openModal({
+    title: editing ? `Edit ${asset.name}` : 'Aset transport baru',
+    description: 'Motor/mobil/truk, kepemilikan, transport, driver, kapasitas dan masa pajak.',
+    submitLabel: editing ? 'Simpan aset' : 'Buat aset',
+    body: `<div class="form-grid">
+      ${field('Kode / plat', `<input class="input" name="code" value="${esc(asset?.code ?? '')}" placeholder="B 1234 CD" required />`)}
+      ${field('Nama aset', `<input class="input" name="name" value="${esc(asset?.name ?? '')}" placeholder="Honda Vario" required />`)}
+      ${field('Jenis', `<select class="select" name="type">${Object.entries(FLEET_TYPES).map(([k, v]) => `<option value="${k}" ${asset?.type === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+      ${field('Kepemilikan', `<select class="select" name="ownership"><option value="internal" ${asset?.ownership === 'internal' ? 'selected' : ''}>Internal</option><option value="third_party" ${asset?.ownership === 'third_party' ? 'selected' : ''}>Pihak ketiga</option></select>`)}
+      ${field('Transport', `<select class="select" name="transport"><option value="">— Tanpa transport —</option>${(ctx.db.transportCompanies ?? []).map((t) => `<option value="${t.id}" ${asset?.transportId === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`)}
+      ${field('Driver', `<select class="select" name="driver"><option value="">— Tanpa driver —</option>${(ctx.db.drivers ?? []).map((d) => `<option value="${d.id}" ${asset?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${esc(d.plateNumber)}</option>`).join('')}</select>`)}
+      ${field('Kapasitas (kg)', `<input class="input" type="number" name="capacityKg" min="0" value="${asset?.capacityKg ?? 0}" />`)}
+      ${field('Masa pajak', `<input class="input" type="date" name="taxExpiry" value="${esc(asset?.taxExpiry ?? '')}" />`)}
+      ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${asset.active !== false ? 'checked' : ''} /> Aset aktif</label>` : ''}
+      ${field('Catatan', `<input class="input" name="notes" value="${esc(asset?.notes ?? '')}" />`, { full: true })}
+    </div>`,
+    onSubmit(form, close) {
+      ctx.store.update((db) => saveFleetAsset(db, {
+        id: asset?.id ?? null,
+        code: form.code.value,
+        name: form.name.value,
+        type: form.type.value,
+        ownership: form.ownership.value,
+        transportId: form.transport.value || null,
+        driverId: form.driver.value || null,
+        capacityKg: Number(form.capacityKg.value || 0),
+        taxExpiry: form.taxExpiry.value,
+        active: editing ? form.active.checked : true,
+        notes: form.notes.value,
+        user: ctx.user,
+      }));
+      close();
+      toast(editing ? 'Aset transport diperbarui.' : 'Aset transport dibuat.', { tone: 'success' });
+    },
+  });
+}
+
 function openCategory(ctx) {
   openModal({
     title: 'Kategori baru',
@@ -665,6 +725,7 @@ export function mount(ctx) {
   document.querySelector('[data-act="new-category"]')?.addEventListener('click', () => openCategory(ctx));
   document.querySelector('[data-act="new-driver"]')?.addEventListener('click', () => openDriver(ctx));
   document.querySelector('[data-act="new-transport"]')?.addEventListener('click', () => openTransport(ctx));
+  document.querySelector('[data-act="new-fleet"]')?.addEventListener('click', () => openFleet(ctx));
   document.querySelectorAll('[data-edit-driver]').forEach((btn) => btn.addEventListener('click', () => {
     const driver = (ctx.db.drivers ?? []).find((d) => d.id === btn.dataset.editDriver);
     if (driver) openDriver(ctx, driver);
@@ -672,6 +733,10 @@ export function mount(ctx) {
   document.querySelectorAll('[data-edit-transport]').forEach((btn) => btn.addEventListener('click', () => {
     const transport = (ctx.db.transportCompanies ?? []).find((t) => t.id === btn.dataset.editTransport);
     if (transport) openTransport(ctx, transport);
+  }));
+  document.querySelectorAll('[data-edit-fleet]').forEach((btn) => btn.addEventListener('click', () => {
+    const asset = (ctx.db.fleetAssets ?? []).find((a) => a.id === btn.dataset.editFleet);
+    if (asset) openFleet(ctx, asset);
   }));
   document.querySelector('[data-act="new-warehouse"]')?.addEventListener('click', () => openWarehouse(ctx));
   document.querySelectorAll('[data-edit-warehouse]').forEach((btn) => btn.addEventListener('click', () => {

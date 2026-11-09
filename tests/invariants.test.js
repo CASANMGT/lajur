@@ -5,8 +5,10 @@ import { buildSeed } from '../src/domain/seed.js';
 import {
   availableMm, createRoll, partQty, quarantineRoll, receiveAdhocStock, reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
-import { saveWarehouse, renameCollection } from '../src/domain/master.js';
+import { saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
 import { createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
+import { createDelivery } from '../src/domain/deliveries.js';
+import { printDeliveryHtml } from '../src/ui/views/print.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
 import { createPO, receivePO } from '../src/domain/purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
@@ -538,9 +540,65 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 12);
+  assert.equal(migrated.meta.version, 13);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
+  assert.deepEqual(migrated.fleetAssets, []);
+});
+
+test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
+  const db = buildSeed();
+  db.meta.version = 12;
+  db.fleetAssets = [];
+  db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
+  const migrated = migrate(db);
+  assert.equal(migrated.meta.version, 13);
+  assert.equal(migrated.transportCompanies.length, 6);
+  assert.equal(migrated.fleetAssets.length, 6);
+  assert.equal(migrated.sequences.fleetAsset, 6);
+  assert.ok(migrated.fleetAssets.some((a) => a.code === 'B 7777 JT'));
+});
+
+test('fleet asset master links transport and driver and rejects duplicate plates', () => {
+  const db = buildSeed();
+  const asset = saveFleetAsset(db, {
+    code: 'B 9999 ZZ', name: 'Tes Van', type: 'mobil', ownership: 'third_party',
+    transportId: 'TRP-005', driverId: 'DRV-001', capacityKg: 700, user: MGR,
+  });
+  assert.equal(asset.id, 'FLT-007');
+  assert.equal(asset.transportId, 'TRP-005');
+  assert.equal(asset.driverId, 'DRV-001');
+  expectError(() => saveFleetAsset(db, { code: 'B 9999 ZZ', name: 'Duplikat', user: MGR }), 'DUPLICATE_CODE');
+  expectError(() => saveFleetAsset(db, { code: 'B 1111 AA', name: 'Tanpa transport', transportId: 'TRP-404', user: MGR }), 'TRANSPORT_NOT_FOUND');
+});
+
+test('surat jalan captures J&T/JNE consignment fields', () => {
+  const db = buildSeed();
+  const invoice = db.invoices.find((i) => i.status === 'posted' && !i.deliveryId);
+  const delivery = createDelivery(db, {
+    invoiceId: invoice.id, pic: 'Henny', courier: 'jnt', service: 'EZ', trackingRef: 'JT-0001',
+    recipientName: 'Siti Rahma', recipientPhone: '0812-3456-7890', weightKg: 4.5, pieces: 2,
+    shippingCost: 25000, insurance: 5000, codAmount: 100000,
+    instructions: 'Jangan dibanting.', user: OP,
+  });
+  assert.equal(delivery.courier, 'jnt');
+  assert.equal(delivery.service, 'EZ');
+  assert.equal(delivery.trackingRef, 'JT-0001');
+  assert.equal(delivery.recipientName, 'Siti Rahma');
+  assert.equal(delivery.weightKg, 4.5);
+  assert.equal(delivery.pieces, 2);
+  assert.equal(delivery.codAmount, 100000);
+  assert.equal(validateBackup(exportBackup(db)).valid, true);
+});
+
+test('consignment print shows delivery data and never invoice prices', () => {
+  const db = buildSeed();
+  const html = printDeliveryHtml(db, db.deliveries[0]);
+  assert.match(html, /CONSIGNMENT NOTE/);
+  assert.match(html, /JNE-REG-0001/);
+  assert.match(html, /Budi Santoso/);
+  assert.match(html, /18\.5 kg/);
+  assert.doesNotMatch(html, /Total faktur|Subtotal|Rp 2\.180\.000/);
 });
 
 test('whole-roll draft is rejected if the roll changed before posting', () => {

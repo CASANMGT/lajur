@@ -97,6 +97,7 @@ function skeleton(dataset) {
     suppliers: [],
     drivers: [],
     transportCompanies: [],
+    fleetAssets: [],
     supplierPrices: [],
     fxRates: [],
     projects: [],
@@ -196,12 +197,23 @@ export function buildSeed({ dataset = 'main' } = {}) {
     { id: 'TRP-002', code: 'lalamove', name: 'Lalamove Indonesia', type: 'third_party', contact: 'Lalamove', phone: '021-5084-8000', address: 'Jakarta / Bali', active: true, notes: 'Motor dan mobil boks on-demand.' },
     { id: 'TRP-003', code: 'gosend', name: 'GoSend', type: 'third_party', contact: 'Gojek', phone: '021-5020-1111', address: 'Jakarta / Bali', active: true, notes: 'Same-day delivery.' },
     { id: 'TRP-004', code: 'bali-kargo', name: 'Bali Kargo Utama', type: 'third_party', contact: 'Made Wirawan', phone: '0361-555-0404', address: 'Denpasar, Bali', active: true, notes: 'Kargo Bali dan sekitarnya.' },
+    { id: 'TRP-005', code: 'jnt', name: 'J&T Express', type: 'third_party', contact: 'J&T Care', phone: '021-8066-1888', address: 'Jakarta / Bali', active: true, notes: 'Ekspedisi reguler dan kargo.' },
+    { id: 'TRP-006', code: 'jne', name: 'JNE Express', type: 'third_party', contact: 'JNE Care', phone: '021-2927-8888', address: 'Jakarta / Bali', active: true, notes: 'REG / YES / OKS.' },
   );
 
   db.drivers.push(
     { id: 'DRV-001', userId: 'u-drv1', transportId: 'TRP-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
     { id: 'DRV-002', userId: 'u-drv2', transportId: 'TRP-001', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
     { id: 'DRV-003', userId: 'u-drv3', transportId: 'TRP-004', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
+  );
+
+  db.fleetAssets.push(
+    { id: 'FLT-001', code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-001', capacityKg: 50, taxExpiry: '2027-03-31', active: true, notes: 'Motor operasional Jakarta.' },
+    { id: 'FLT-002', code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-002', capacityKg: 800, taxExpiry: '2027-01-31', active: true, notes: 'Mobil boks kecil.' },
+    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'third_party', transportId: 'TRP-004', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk Bali Kargo.' },
+    { id: 'FLT-004', code: 'LALAMOVE-MTR', name: 'Lalamove Motor Fleet', type: 'motor', ownership: 'third_party', transportId: 'TRP-002', driverId: null, capacityKg: 30, taxExpiry: '2027-06-30', active: true, notes: 'Armada mitra Lalamove.' },
+    { id: 'FLT-005', code: 'B 7777 JT', name: 'J&T Van', type: 'mobil', ownership: 'third_party', transportId: 'TRP-005', driverId: null, capacityKg: 600, taxExpiry: '2027-05-31', active: true, notes: 'Pickup J&T.' },
+    { id: 'FLT-006', code: 'B 8888 JNE', name: 'JNE Truck', type: 'truk', ownership: 'third_party', transportId: 'TRP-006', driverId: null, capacityKg: 3000, taxExpiry: '2027-02-28', active: true, notes: 'Truk JNE.' },
   );
 
   db.supplierPrices.push(
@@ -242,6 +254,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.fxRate = db.fxRates.length;
   db.sequences.driver = db.drivers.length;
   db.sequences.transport = db.transportCompanies.length;
+  db.sequences.fleetAsset = db.fleetAssets.length;
 
   /* ------------------------------------------------------------- customers */
   const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', npwp: '01.234.567.8-901.000', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);
@@ -364,7 +377,16 @@ export function buildSeed({ dataset = 'main' } = {}) {
     pic: 'Henny',
     date: '2026-10-06',
     driverId: 'DRV-001',
-    courier: 'internal',
+    courier: 'jne',
+    service: 'REG',
+    trackingRef: 'JNE-REG-0001',
+    recipientName: 'Budi Santoso',
+    recipientPhone: '021-3000-4003',
+    weightKg: 18.5,
+    pieces: 6,
+    shippingCost: 165000,
+    insurance: 25000,
+    instructions: 'Hubungi resepsionis lantai 5.',
     notes: 'Antar ke lobi gedung, hubungi PIC fasilitas.',
     user: op,
   });

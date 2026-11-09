@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 12;
+export const BACKUP_VERSION = 13;
 
 export function exportBackup(db) {
   return {
@@ -24,7 +24,7 @@ export function exportBackup(db) {
 
 const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
-  'movements', 'customers', 'suppliers', 'supplierPrices', 'drivers', 'transportCompanies', 'projects', 'invoices', 'payments',
+  'movements', 'customers', 'suppliers', 'supplierPrices', 'drivers', 'transportCompanies', 'fleetAssets', 'projects', 'invoices', 'payments',
   'samples', 'sampleBooks', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
   'shipments', 'tasks', 'orders', 'deliveries', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences', 'fxRates',
 ];
@@ -42,7 +42,7 @@ export function validateBackup(payload) {
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
       if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
-      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries', 'drivers', 'transportCompanies', 'sampleBooks'].includes(key)) continue;
+      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleBooks'].includes(key)) continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }
@@ -163,6 +163,10 @@ export function validateBackup(payload) {
   for (const driver of db.drivers ?? []) {
     if (driver.userId && !db.users.some((u) => u.id === driver.userId)) errors.push(`Driver ${driver.id}: akun ${driver.userId} hilang.`);
     if (driver.transportId) need(transportIds, driver.transportId, 'Transport', `Driver ${driver.id}`);
+  }
+  for (const asset of db.fleetAssets ?? []) {
+    if (asset.transportId) need(transportIds, asset.transportId, 'Transport', `Aset ${asset.id}`);
+    if (asset.driverId) need(driverIds, asset.driverId, 'Driver', `Aset ${asset.id}`);
   }
   for (const delivery of db.deliveries ?? []) {
     need(invoiceIds, delivery.invoiceId, 'Faktur', `Surat jalan ${delivery.id}`);

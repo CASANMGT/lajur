@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-57%2F57-brightgreen) ![Version](https://img.shields.io/badge/version-2.11.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-61%2F61-brightgreen) ![Version](https://img.shields.io/badge/version-2.12.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,16 +60,27 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 42 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 61 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
 
-`npm run server` starts `server/server.mjs` on `127.0.0.1:8790`: scrypt PIN auth, HttpOnly sessions, RBAC per action, revisioned shared state and atomic file writes. It exposes `/api/actions/*` for production cut/sew/QC, task updates, transfer receive, sales orders and invoice posting.
+`npm run server` starts `server/server.mjs` on `127.0.0.1:8790`: scrypt PIN auth, HttpOnly sessions, RBAC per action, revisioned shared state and atomic writes. It exposes `/api/actions/*` for production cut/sew/QC, task updates, transfer receive, sales orders and invoice posting.
 
-The static Vercel demo intentionally remains browser-local; the UI is not yet wired to this API. See [server/README.md](./server/README.md) for endpoints, RBAC and production gaps.
+Set `DATABASE_URL` to use PostgreSQL instead of `server/data/state.json`:
+
+```bash
+npm install                         # installs the pg driver
+psql "$DATABASE_URL" -f db/schema.sql
+DATABASE_URL=postgres://... npm run server
+# GET /api/health → { "storage": "postgres" }
+```
+
+The PostgreSQL store keeps the versioned domain document in JSONB inside ACID transactions, with optimistic revision checks (a stale writer gets `REVISION_CONFLICT`), audit rows, users/sessions and idempotency tables. The JSON-file store remains the zero-setup fallback when `DATABASE_URL` is unset.
+
+The static Vercel demo intentionally remains browser-local; the UI is not yet wired to this API. See [server/README.md](./server/README.md) for endpoints, RBAC, PostgreSQL setup and production gaps.
 
 ---
 
@@ -173,11 +184,11 @@ Lajur/
 16. **Panduan** — open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, sample book and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
 17. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 18. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
-19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & transport** stores driver names, phone, motor/mobil/truk, plate and transport company.
+19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & transport** stores driver names, phone, motor/mobil/truk, plate and transport company, plus **Aset transport** (fleet): plate/code, motor/mobil/truk, internal or third-party ownership, linked transport and driver, capacity and tax expiry.
 20. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
 21. **Laporan → Produksi & payroll** (when WIP is enabled) — WIP metres, open payroll, QC rejects, capacity and order progress.
 22. **Laporan → Penjualan** — invoice performance; the optional sales-order table appears only when Pesanan is enabled.
-23. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create **Surat Jalan** with PIC/courier/driver/vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**.
+23. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create **Surat Jalan** with courier (internal, J&T, JNE, Lalamove, GoSend), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**; the surat jalan prints as a J&T/JNE-style consignment note with AWB barcode and signature blocks.
 
 ### Role experience
 
@@ -228,9 +239,9 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **57 passed, 0 failed** (55 business + 2 auth) |
+| `node --test` | **61 passed, 0 failed** (59 domain/UI + 2 auth) |
 | Module import check | **46/46 modules** |
-| Server-side render of all views | **24/24 render, no exceptions** (incl. login and 3 roles) |
+| Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
 | WIP production | 10 m cut into 5 pieces, payroll Rp 25.000, sew/QC, reject + rework, capacity load |
@@ -253,12 +264,14 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Print + PDF | Print preview has Cetak + Unduh PDF; test PDF generated 60.370 bytes (`Tes-PDF-Lajur.pdf`) |
 | Driver master | 3 drivers seeded (motor/mobil/truk); form autofills vehicle + plate; delivery snapshots driver/vehicle |
 | Driver accounts | Asep/Rudi/Slamet login with driver role; nav only Ringkasan/Tugas/Pengiriman/Panduan; invoice redirect |
-| Transport master | Lajur Fleet, Lalamove, GoSend, Bali Kargo; drivers linked to Lajur Fleet/Bali Kargo |
+| Transport master | Lajur Fleet, Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers linked to a transport |
+| Fleet assets | 6 seeded assets (Honda Vario, Hilux, Isuzu Elf, Lalamove motor, J&T van, JNE truck) with ownership, capacity, tax date and driver/transport links; duplicate plate rejected |
+| Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
+| PostgreSQL store | Schema 13 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
 | Sample book | SB-0001 from 2 roll cuts; stock cut; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
 | Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
 | Guide | 14 in-app tutorial sections rendered |
-| Courier + map | Internal/Lalamove/GoSend/GrabExpress/Bali Kargo; address autocomplete; map iframe updates |
-| Courier + map | Internal/Lalamove/GoSend/GrabExpress; address autocomplete from customers/history; map iframe updates with address |
+| Courier + map | Internal/J&T/JNE/Lalamove/GoSend/SiCepat/AnterAja/Bali Kargo; address autocomplete from customers/history; map iframe updates with address |
 | Mobile sidebar | Advanced mode at 320/390: scrollHeight 1037/1021 > viewport; scrollTop 220 works |
 | Task simulation | Create → Mulai → Selesai with note; history created/mulai/selesai |
 | Task tickets | Detail and queue print; TSK-0003 printCount 1, printedBy Henry Martin; PDF toolbar present |
@@ -312,9 +325,10 @@ node tools/render-check.mjs
 - **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”. Optional module.
 - **Invoice discount:** fixed rupiah or percentage, applied to the subtotal with the computed discount shown on screen and in print.
 - **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, NPWP, printable tax invoice; no manual price entry.
-- **Surat jalan & delivery tracking:** PIC pengiriman, driver/vehicle from master, courier (Internal/Lalamove/GoSend/GrabExpress), tracking reference, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan; stock never moves again after the invoice.
+- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle from master, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
 - **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
 - **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected on surat jalan; driver details snapshot into the delivery.
+- **Fleet asset master:** internal and third-party vehicles with code/plate, type, ownership, linked transport/driver, capacity and tax expiry; duplicate plates rejected and audited.
 - **Mobile drawer scroll:** sidebar navigation scrolls independently on small phones, including Advanced mode with many menu items.
 - **Supplier price book:** every product/part lists its suppliers, latest price, MOQ and validity; new quotes update the master buy price.
 - **Manual CNY rate on import POs:** the latest rate is shown only as a reference; the field starts blank, the user must enter the rate, and that value, timestamp and source are snapshotted on the PO.
@@ -327,13 +341,14 @@ node tools/render-check.mjs
 - **Simple vs Advanced mode:** Simple is the default and keeps the daily flow (stock, tasks, transfers, purchasing, invoices, projects, customers, samples, opname) plus **Master Data updates**. Advanced adds reports, simulation, tax invoice, surat jalan, import tabs, and enables optional WIP/Pesanan. Switch from the topbar chip or Settings → Preferensi.
 - **Optional modules:** WIP Production and Pesanan are hidden by default. Managers can enable either from **Pengaturan → Preferensi**; the menu, dashboard links, report tabs and direct routes follow the setting.
 - **Part imagery:** local product illustrations and optional uploaded image; hex swatch values shown.
-- **Reference shared backend:** scrypt login, HttpOnly session, RBAC per action, revisioned shared state (not wired to static UI).
+- **Reference shared backend:** scrypt login, HttpOnly session, RBAC per action, revisioned shared state; optional PostgreSQL JSONB store with ACID transactions, revision guard, audit and idempotency tables (not wired to static UI).
 - **Product & part master:** create/edit SKU with brand, optional image, notes and active flag; audit history per record.
 - **Supplier master:** create/edit local or import supplier, CNY/FX/incoterm/port, with audit trail.
 - Editable warehouses (create, rename, recoordinate, deactivate with usage guard) and editable collections.
 - Direct stock intake without PO (opening balance/correction) with unique document, lot, per-roll lengths, cost, reason and audit.
 - **Driver role & portal:** Asep/Rudi/Slamet have user accounts (PIN 1212/2323/3434), see only their deliveries/tasks, and can Kirim/Tiba; receiver confirmation stays with sales/manager.
-- **Transport master:** internal Lajur Fleet + Lalamove, GoSend, Bali Kargo; drivers link to a transport company.
+- **Transport master:** internal Lajur Fleet + Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers link to a transport company.
+- **Fleet assets:** motor/mobil/truk with ownership, plate, capacity, tax expiry and transport/driver links.
 - **Sample books:** build a giveaway book from multiple roll cuts, print/PDF, and mark who received it.
 - **Catalog:** colour/width/price/availability listing with Cetak/PDF for potential customers.
 - **In-app tutorial:** Panduan covers 14 processes from stock and purchasing to tax/surat jalan, sample books, catalog, tasks and reporting.
@@ -360,7 +375,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.11.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.12.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
@@ -378,7 +393,7 @@ node tools/render-check.mjs
 
 ### Planned
 
-- Wire the reference shared API to the UI; PostgreSQL transactional posting with idempotency and immutable documents.
+- Wire the reference shared API to the UI; move from whole-document JSONB writes to row-level immutable posted documents and idempotency keys.
 - GR/IR reconciliation and supplier invoice matching.
 - Partial project invoicing and deliveries.
 - Barcode/QR scanning and label printer integration.
@@ -392,8 +407,8 @@ node tools/render-check.mjs
 ## Limitations (browser-only demo)
 
 - **PIN login is local, not real authentication.** PINs are hashed, but everything runs in the browser; anyone with the device can clear storage. There is no server, no shared session, and no secure multi-user authorization.
-- **No secure multi-user authorization.** Two browsers do not share data; sessions are per tab.
-- **No shared transactional backend.** No concurrency control, no idempotency, no server audit.
+- **No secure multi-user authorization in the static demo.** Two browsers do not share data; sessions are per tab. A reference API with scrypt auth and RBAC exists, but the static UI is not wired to it.
+- **No shared transactional backend in the static demo.** The reference server provides revision checks, audit and an optional PostgreSQL ACID store, but the browser demo itself has no concurrency control or server audit.
 - **No actual payments, bank messages, or supplier communication.** Payment records are local.
 - **Local persistence only.** Clearing site data deletes the demo (and resets PINs); the backup JSON is the escape hatch.
 - **Not accounting.** Reports are management summaries, not a ledger, tax invoice, or P&L.

@@ -272,7 +272,9 @@ function deliveryCard(inv, delivery, role) {
       <div class="stack-sm" style="margin-top:10px">
         <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
         <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}</span></div>
-        <div class="row-between"><span class="small muted">Kurir</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')}${delivery.trackingRef ? ` · ${esc(delivery.trackingRef)}` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Penerima</span><span class="small">${esc(delivery.recipientName || '—')}<div class="xs muted">${esc(delivery.recipientPhone || '')}</div></span></div>
+        <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Berat / koli</span><span class="small">${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</span></div>
         <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>
         <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
         ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
@@ -689,12 +691,20 @@ function deliveryFields(db, delivery, customer) {
   return `
     ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(delivery?.pic ?? '')}" required />`, { hint: 'Penanggung jawab pengiriman dari gudang.' })}
     ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${esc(delivery?.date ?? todayJakarta())}" />`)}
+    ${field('Penerima', `<input class="input" name="recipientName" value="${esc(delivery?.recipientName ?? customer?.name ?? '')}" placeholder="Nama penerima" />`)}
+    ${field('Telepon penerima', `<input class="input" name="recipientPhone" value="${esc(delivery?.recipientPhone ?? customer?.phone ?? '')}" />`)}
     ${field('Kurir / pihak ketiga', `<select class="select" name="courier">${Object.entries(COURIERS).map(([k, v]) => `<option value="${k}" ${delivery?.courier === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+    ${field('Layanan', `<select class="select" name="service">${['REG', 'YES', 'OKS', 'COD', 'CARGO'].map((s) => `<option value="${s}" ${delivery?.service === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
     ${field('Driver dari master', `<select class="select" name="driver"><option value="">— Tanpa driver master —</option>${drivers.map((d) => `<option value="${d.id}" data-type="${esc(d.vehicleType)}" data-plate="${esc(d.plateNumber)}" data-phone="${esc(d.phone ?? '')}" ${delivery?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)} · ${esc(d.plateNumber)}</option>`).join('')}</select>`, { hint: 'Nama dan kendaraan tersimpan di Master Data → Driver.' })}
     ${field('Telepon driver', `<input class="input" name="driverPhone" value="${esc(delivery?.driverPhone ?? '')}" />`)}
     ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
     ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
-    ${field('Resi / ID kurir', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="Untuk Lalamove / GoSend" />`)}
+    ${field('No. resi / AWB', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="JNE / J&T / Lalamove" />`)}
+    ${field('Berat (kg)', `<input class="input" name="weightKg" inputmode="decimal" value="${delivery?.weightKg ?? 0}" />`)}
+    ${field('Jumlah koli', `<input class="input" name="pieces" inputmode="numeric" value="${delivery?.pieces ?? 1}" />`)}
+    ${field('Ongkir (Rp)', `<input class="input" name="shippingCost" inputmode="numeric" value="${delivery?.shippingCost ?? 0}" />`)}
+    ${field('Asuransi (Rp)', `<input class="input" name="insurance" inputmode="numeric" value="${delivery?.insurance ?? 0}" />`)}
+    ${field('COD (Rp)', `<input class="input" name="codAmount" inputmode="numeric" value="${delivery?.codAmount ?? 0}" />`)}
     <div class="span-2" data-driver-schedule hidden></div>
     <div class="span-2">
       ${field('Alamat kirim', `<input class="input" name="address" list="delivery-addresses" value="${esc(address)}" placeholder="Ketik alamat, pilih saran" />`, { hint: 'Autocomplete dari alamat pelanggan dan pengiriman sebelumnya.' })}
@@ -707,6 +717,7 @@ function deliveryFields(db, delivery, customer) {
         </div>
       </div>
     </div>
+    ${field('Instruksi pengiriman', `<textarea class="textarea" name="instructions" placeholder="Hubungi penerima, jam kirim, letak barang">${esc(delivery?.instructions ?? '')}</textarea>`, { full: true })}
     ${field('Catatan', `<input class="input" name="notes" value="${esc(delivery?.notes ?? '')}" placeholder="Instruksi bongkar / kontak penerima" />`, { full: true })}
   `;
 }
@@ -767,11 +778,20 @@ function openCreateDelivery(ctx, inv) {
         pic: form.pic.value,
         date: form.date.value,
         courier: form.courier.value,
+        service: form.service.value,
         driverId: form.driver.value || null,
         driverPhone: form.driverPhone.value,
         vehicleType: form.vehicleType.value,
         plateNumber: form.plateNumber.value,
         trackingRef: form.trackingRef.value,
+        recipientName: form.recipientName.value,
+        recipientPhone: form.recipientPhone.value,
+        weightKg: Number(String(form.weightKg.value).replace(',', '.')),
+        pieces: Number(form.pieces.value || 0),
+        shippingCost: Number(String(form.shippingCost.value).replace(/\D/g, '')),
+        insurance: Number(String(form.insurance.value).replace(/\D/g, '')),
+        codAmount: Number(String(form.codAmount.value).replace(/\D/g, '')),
+        instructions: form.instructions.value,
         address: form.address.value,
         notes: form.notes.value,
         user: ctx.user,
@@ -797,11 +817,20 @@ function openEditDelivery(ctx, delivery) {
         pic: form.pic.value,
         date: form.date.value,
         courier: form.courier.value,
+        service: form.service.value,
         driverId: form.driver.value || null,
         driverPhone: form.driverPhone.value,
         vehicleType: form.vehicleType.value,
         plateNumber: form.plateNumber.value,
         trackingRef: form.trackingRef.value,
+        recipientName: form.recipientName.value,
+        recipientPhone: form.recipientPhone.value,
+        weightKg: Number(String(form.weightKg.value).replace(',', '.')),
+        pieces: Number(form.pieces.value || 0),
+        shippingCost: Number(String(form.shippingCost.value).replace(/\D/g, '')),
+        insurance: Number(String(form.insurance.value).replace(/\D/g, '')),
+        codAmount: Number(String(form.codAmount.value).replace(/\D/g, '')),
+        instructions: form.instructions.value,
         address: form.address.value,
         notes: form.notes.value,
         user: ctx.user,

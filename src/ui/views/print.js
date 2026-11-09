@@ -5,6 +5,7 @@ import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
 import { COURIERS, DELIVERY_STATUS } from '../../domain/deliveries.js';
+import { VEHICLE_TYPES } from '../../domain/master.js';
 import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
@@ -141,18 +142,45 @@ export function printTaxInvoiceHtml(db, invoice) {
 
 export function printDeliveryHtml(db, delivery) {
   const customer = byId(db.customers, delivery.customerId);
-  const invoice = db.invoices.find((i) => i.id === delivery.invoiceId);
+  const courier = COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal';
+  const recipient = delivery.recipientName || customer?.name || delivery.customerName;
+  const recipientPhone = delivery.recipientPhone || customer?.phone || '—';
+  const address = delivery.address || customer?.address || '—';
   return `
-    <h1>SURAT JALAN</h1>
-    <p class="pill">${esc(delivery.id)} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</p>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #172b3a;padding-bottom:10px">
+      <div>
+        <div class="brand" style="font-size:24px">lajur</div>
+        <div style="font-size:10px;letter-spacing:.14em;color:#62727c">SURAT JALAN / CONSIGNMENT NOTE</div>
+        <div style="margin-top:8px;font-size:16px;font-weight:800">${esc(courier)} · ${esc(delivery.service || 'REG')}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:ui-monospace,monospace;font-size:13px;font-weight:700">${esc(delivery.id)}</div>
+        <div style="font-size:10px;color:#62727c">${esc(delivery.date)}</div>
+        <div style="margin-top:6px;font-family:ui-monospace,monospace;font-size:18px;font-weight:800;letter-spacing:.08em">${esc(delivery.trackingRef || 'NO-AWB')}</div>
+        <div style="font-size:9px;color:#62727c">NO. RESI / AWB</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
+      <div style="border:1px solid #cfc6b6;border-radius:6px;padding:10px">
+        <div style="font-size:9px;letter-spacing:.1em;color:#62727c">PENGIRIM</div>
+        <div style="font-weight:700;margin-top:4px">PT Lajur Tekstil Nusantara</div>
+        <div style="font-size:11px">Gudang Jakarta / Bali</div>
+        <div style="font-size:10px;color:#62727c;margin-top:4px">PIC: ${esc(delivery.pic)}</div>
+      </div>
+      <div style="border:1px solid #cfc6b6;border-radius:6px;padding:10px">
+        <div style="font-size:9px;letter-spacing:.1em;color:#62727c">PENERIMA</div>
+        <div style="font-weight:700;margin-top:4px">${esc(recipient)}</div>
+        <div style="font-size:11px">${esc(recipientPhone)}</div>
+        <div style="font-size:10px;color:#62727c;margin-top:4px">${esc(address)}</div>
+      </div>
+    </div>
     <div class="meta" style="margin-top:12px">
       <div><span>Faktur</span><strong>${esc(delivery.invoiceId)}</strong></div>
-      <div><span>Pelanggan</span><strong>${esc(customer?.name ?? delivery.customerName)}</strong></div>
-      <div><span>Tanggal</span><strong>${esc(delivery.date)}</strong></div>
-      <div><span>Alamat</span><strong>${esc(delivery.address || customer?.address || '—')}</strong></div>
-      <div><span>PIC pengiriman</span><strong>${esc(delivery.pic)}</strong></div>
-      <div><span>Kurir</span><strong>${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')}${delivery.trackingRef ? ` · ${esc(delivery.trackingRef)}` : ''}</strong></div>
-      <div><span>Pengemudi / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>
+      <div><span>Berat / koli</span><strong>${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</strong></div>
+      <div><span>Ongkir / asuransi</span><strong>${fmt.money(delivery.shippingCost || 0)} / ${fmt.money(delivery.insurance || 0)}</strong></div>
+      <div><span>COD</span><strong>${delivery.codAmount ? fmt.money(delivery.codAmount) : '—'}</strong></div>
+      <div><span>Driver / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>
+      <div><span>Status</span><strong>${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</strong></div>
     </div>
     <table>
       <thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead>
@@ -162,13 +190,18 @@ export function printDeliveryHtml(db, delivery) {
         <td>${esc(l.note || '—')}</td>
       </tr>`).join('')}</tbody>
     </table>
+    ${delivery.instructions ? `<p class="note">Instruksi: ${esc(delivery.instructions)}</p>` : ''}
     ${delivery.notes ? `<p class="note">${esc(delivery.notes)}</p>` : ''}
-    <div style="display:flex;gap:40px;margin-top:34px;font-size:11px">
-      <div style="flex:1;border-top:1px solid #172b3a;padding-top:6px">PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div>
-      <div style="flex:1;border-top:1px solid #172b3a;padding-top:6px">Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div>
+    <div style="margin-top:12px;display:flex;gap:2px" aria-hidden="true">
+      ${Array.from({ length: 58 }, (_, i) => `<i style="display:inline-block;width:${i % 5 === 0 ? 3 : i % 3 === 0 ? 2 : 1}px;height:34px;background:#172b3a"></i>`).join('')}
     </div>
-    <p class="note" style="margin-top:14px">Barang di atas sudah dikeluarkan dari stok saat faktur ${esc(delivery.invoiceId)} diterbitkan. Surat jalan ini bukan faktur dan tidak mengurangi stok lagi.</p>
-    ${invoice ? `<p class="note">Total faktur ${fmt.money(invoice.total)} · status ${esc(delivery.status)}</p>` : ''}`;
+    <div style="font-size:8px;color:#62727c;margin-top:3px">${esc(delivery.trackingRef || delivery.id)} · ${esc(courier)} · ${esc(delivery.service || 'REG')}</div>
+    <div style="display:flex;gap:30px;margin-top:24px;font-size:10px">
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:4px">PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div>
+      <div style="flex:1;border-top:1px solid #172b3a;padding-top:4px">Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div>
+    </div>
+    <p class="note" style="margin-top:14px">Barang sudah dikeluarkan dari stok saat faktur ${esc(delivery.invoiceId)} diterbitkan. Surat jalan ini bukan faktur dan tidak mengurangi stok lagi.</p>
+    <p class="note">Faktur ${esc(delivery.invoiceId)} · status ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)} · dokumen pengiriman, bukan faktur.</p>`;
 }
 
 export function printSalesOrderHtml(db, order) {
