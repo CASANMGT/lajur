@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 14;
+export const BACKUP_VERSION = 15;
 
 export function exportBackup(db) {
   return {
@@ -56,6 +56,7 @@ export function validateBackup(payload) {
   const suppliers = ids(db.suppliers);
   const driverIds = ids(db.drivers ?? []);
   const transportIds = ids(db.transportCompanies ?? []);
+  const fleetIds = ids(db.fleetAssets ?? []);
   const rollIds = new Set(db.rolls.map((r) => r.id));
   const invoiceIds = new Set(db.invoices.map((i) => i.id));
   const projectIds = new Set(db.projects.map((p) => p.id));
@@ -172,6 +173,7 @@ export function validateBackup(payload) {
     need(invoiceIds, delivery.invoiceId, 'Faktur', `Surat jalan ${delivery.id}`);
     need(customers, delivery.customerId, 'Pelanggan', `Surat jalan ${delivery.id}`);
     if (delivery.driverId) need(driverIds, delivery.driverId, 'Driver', `Surat jalan ${delivery.id}`);
+    if (delivery.fleetAssetId) need(fleetIds, delivery.fleetAssetId, 'Kendaraan', `Surat jalan ${delivery.id}`);
     if (delivery.transportId) need(transportIds, delivery.transportId, 'Transport', `Surat jalan ${delivery.id}`);
     if (!delivery.pic) errors.push(`Surat jalan ${delivery.id}: PIC pengiriman hilang.`);
     if (delivery.status === 'confirmed' && !delivery.receivedBy) errors.push(`Surat jalan ${delivery.id}: penerima belum dikonfirmasi.`);

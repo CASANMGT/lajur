@@ -2,6 +2,38 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.15.0] — 2026-11-09
+
+**Release name: Armada Internal & Assignment.** Drivers are now attached to an internal vehicle, the fleet asset list contains only Lajur Fleet vehicles, and third-party delivery stays available as a courier option.
+
+### Added
+
+- **Driver ↔ vehicle assignment:** the driver form selects an internal vehicle; the vehicle form can assign a driver. Moving either side keeps the pair in sync and prevents one driver from holding two vehicles.
+- **Internal fleet only:** the Armada internal table lists only Lajur Fleet vehicles. Lalamove, J&T, JNE and other third-party vehicles are no longer fleet assets.
+- **Surat jalan modes:** internal delivery shows driver + assigned vehicle; third-party delivery hides the internal fleet fields, keeps courier/service/AWB, and allows an optional courier driver name.
+- Delivery snapshots now include `fleetAssetId` and `vehicleName`; the card, Pengiriman list and consignment print show the vehicle name.
+- Migration removes old third-party mock vehicles, converts real vehicles to internal, syncs driver assignments and backfills delivery vehicle snapshots.
+
+### Changed
+
+- Version bumped to 2.15.0, schema 15, backup v15.
+- Master Data tab renamed **Driver & armada**; the transport table is now **Transport & kurir**.
+- `saveDriver` accepts `fleetAssetId`; `saveFleetAsset` no longer accepts ownership and always belongs to the internal fleet.
+
+### Verification
+
+- `node --test`: **66 passed**.
+- Module imports and server-side render remain green.
+- Browser QA: Asep → Honda Vario, Rudi → Toyota Hilux, Slamet → Isuzu Elf; moving Asep to the Hilux unassigns Rudi and updates both records.
+- Browser QA: internal SJ-0003 snapshots FLT-002 / Toyota Hilux / Lajur Fleet; J&T SJ-0002 has no fleet asset and uses courier driver “Kurir J&T”; print shows the vehicle and transport.
+
+### Known limitations
+
+- One internal vehicle per driver; there is no assignment history or shift calendar.
+- Third-party couriers have no asset record by design; only the courier, AWB and optional driver name are stored.
+
+---
+
 ## [2.14.0] — 2026-11-09
 
 **Release name: Transport di Surat Jalan.** Connects the transport/armada master to surat jalan generation, so a generated delivery note carries the driver, vehicle and transport company from the mock data.

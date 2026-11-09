@@ -6,7 +6,7 @@ import {
 import { byId, uid, todayJakarta } from '../../domain/core.js';
 import {
   activeWarehouses, auditTrail, createCollection, FLEET_TYPES, renameCollection, saveDriver,
-  saveFleetAsset, savePart, saveSku, saveTransport, saveWarehouse, TRANSPORT_TYPES, VEHICLE_TYPES,
+  saveFleetAsset, savePart, saveSku, saveTransport, saveWarehouse, TRANSPORT_TYPES,
 } from '../../domain/master.js';
 import {
   latestSupplierPrice, saveSupplierPrice, supplierPriceHistory, suppliersOfItem,
@@ -26,7 +26,7 @@ export function render(ctx) {
       actions: `${role === 'manager' ? `<button class="btn btn-primary" type="button" data-act="new-product">${icon('plus')} Produk kain</button>` : ''}`,
     })}
     <div class="tabs" role="tablist">
-      ${[['produk', 'Produk kain'], ['part', 'Spare part'], ['driver', 'Driver & transport'], ['kategori', 'Kategori & koleksi'], ['gudang', 'Gudang'], ['data', 'Data & peran']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
+      ${[['produk', 'Produk kain'], ['part', 'Spare part'], ['driver', 'Driver & armada'], ['kategori', 'Kategori & koleksi'], ['gudang', 'Gudang'], ['data', 'Data & peran']].map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
     ${tab === 'produk' ? renderProducts(ctx) : ''}
     ${tab === 'part' ? renderParts(ctx) : ''}
@@ -109,30 +109,29 @@ function renderDrivers(ctx) {
   const transports = db.transportCompanies ?? [];
   const fleet = db.fleetAssets ?? [];
   return `<div class="row-between" style="margin-bottom:12px">
-      <div><h2>Driver & transport</h2><p class="xs muted">Driver punya akun pengguna dan terhubung ke transport internal/pihak ketiga.</p></div>
-      ${role === 'manager' ? `<div class="row"><button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Driver</button><button class="btn" type="button" data-act="new-transport">${icon('plus')} Transport</button><button class="btn" type="button" data-act="new-fleet">${icon('plus')} Aset</button></div>` : ''}
+      <div><h2>Driver & armada</h2><p class="xs muted">Driver internal ditugaskan ke satu kendaraan. Pihak ketiga dipilih sebagai kurir di surat jalan, bukan sebagai aset.</p></div>
+      ${role === 'manager' ? `<div class="row"><button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Driver</button><button class="btn" type="button" data-act="new-transport">${icon('plus')} Transport</button><button class="btn" type="button" data-act="new-fleet">${icon('plus')} Kendaraan</button></div>` : ''}
     </div>
     <section class="card" style="margin-bottom:16px">
-      <div class="card-head"><div><h2>Driver</h2><p>Nama, akun pengguna, telepon, kendaraan, nomor polisi.</p></div><span class="badge no-dot">${drivers.length}</span></div>
+      <div class="card-head"><div><h2>Driver internal</h2><p>Akun, telepon, dan kendaraan dinas yang ditugaskan.</p></div><span class="badge no-dot">${drivers.length}</span></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Driver</th><th>Akun</th><th>Telepon</th><th>Transport</th><th>Kendaraan</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Driver</th><th>Akun</th><th>Telepon</th><th>Kendaraan dinas</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${drivers.map((d) => {
           const user = byId(db.users, d.userId);
-          const transport = byId(db.transportCompanies, d.transportId);
+          const assigned = fleet.find((a) => a.driverId === d.id) ?? null;
           return `<tr>
             <td><strong>${esc(d.name)}</strong><div class="xs muted">${esc(d.id)}</div></td>
             <td class="small">${user ? `${esc(user.name)}<div class="xs muted">${esc(user.role)}</div>` : '<span class="muted">Belum tertaut</span>'}</td>
             <td>${esc(d.phone || '—')}</td>
-            <td class="small">${esc(transport?.name ?? '—')}</td>
-            <td>${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)}<div class="xs muted mono">${esc(d.plateNumber || '—')}</div></td>
+            <td>${assigned ? `<strong class="small">${esc(assigned.name)}</strong><div class="xs muted mono">${esc(assigned.code)}</div>` : badge('Belum ditugaskan', 'danger')}</td>
             <td>${d.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
             <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-driver="${d.id}">Edit</button>` : ''}</td>
           </tr>`;
-        }).join('') || '<tr><td colspan="7" class="muted">Belum ada driver.</td></tr>'}</tbody>
+        }).join('') || '<tr><td colspan="6" class="muted">Belum ada driver.</td></tr>'}</tbody>
       </table></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Transport perusahaan</h2><p>Internal, Lalamove, GoSend, kargo Bali, J&T, JNE, dan vendor lain.</p></div><span class="badge no-dot">${transports.length}</span></div>
+      <div class="card-head"><div><h2>Transport & kurir</h2><p>Lajur Fleet internal dan opsi pihak ketiga: Lalamove, GoSend, kargo Bali, J&T, JNE.</p></div><span class="badge no-dot">${transports.length}</span></div>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Transport</th><th>Jenis</th><th>Kontak</th><th>Telepon</th><th>Alamat</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${transports.map((t) => `<tr>
@@ -145,26 +144,23 @@ function renderDrivers(ctx) {
           <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-transport="${t.id}">Edit</button>` : ''}</td>
         </tr>`).join('') || '<tr><td colspan="7" class="muted">Belum ada transport.</td></tr>'}</tbody>
       </table></div>
-      <div class="card-pad"><p class="xs muted">Transport nonaktif tidak muncul pada pilihan driver/surat jalan baru. Driver tetap menyimpan snapshot nama dan kendaraannya.</p></div>
+      <div class="card-pad"><p class="xs muted">Pihak ketiga hanya menjadi opsi kurir pada surat jalan dan tidak dihitung sebagai aset armada internal.</p></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Aset transport</h2><p>Motor, mobil, dan truk internal/pihak ketiga beserta driver dan masa pajak.</p></div><span class="badge no-dot">${fleet.length}</span></div>
+      <div class="card-head"><div><h2>Armada internal</h2><p>Motor, mobil, dan truk milik Lajur Fleet beserta driver yang ditugaskan dan masa pajak.</p></div><span class="badge no-dot">${fleet.length}</span></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Aset</th><th>Kepemilikan</th><th>Transport</th><th>Driver</th><th class="num">Kapasitas</th><th>Pajak</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Kendaraan</th><th>Driver ditugaskan</th><th class="num">Kapasitas</th><th>Pajak</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${fleet.map((a) => {
-          const transport = byId(db.transportCompanies, a.transportId);
           const driver = byId(db.drivers, a.driverId);
           return `<tr>
             <td><strong>${esc(a.name)}</strong><div class="xs muted mono">${esc(a.code)} · ${esc(a.id)}</div></td>
-            <td>${a.ownership === 'internal' ? badge('Internal', 'teal') : badge('Pihak ketiga', 'copper')}</td>
-            <td class="small">${esc(transport?.name ?? '—')}</td>
-            <td class="small">${esc(driver?.name ?? '—')}</td>
+            <td class="small">${driver ? `<strong>${esc(driver.name)}</strong>` : badge('Belum ada driver', 'danger')}</td>
             <td class="num">${a.capacityKg ? `${a.capacityKg} kg` : '—'}</td>
             <td class="small">${esc(a.taxExpiry || '—')}</td>
             <td>${a.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
             <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-fleet="${a.id}">Edit</button>` : ''}</td>
           </tr>`;
-        }).join('') || '<tr><td colspan="8" class="muted">Belum ada aset transport.</td></tr>'}</tbody>
+        }).join('') || '<tr><td colspan="6" class="muted">Belum ada kendaraan internal.</td></tr>'}</tbody>
       </table></div>
     </section>`;
 }
@@ -502,16 +498,16 @@ function openPriceModal(ctx, { kind, item }) {
 
 function openDriver(ctx, driver = null) {
   const editing = Boolean(driver);
+  const assigned = (ctx.db.fleetAssets ?? []).find((a) => a.driverId === driver?.id) ?? null;
+  const fleet = (ctx.db.fleetAssets ?? []).filter((a) => a.active !== false && (a.ownership ?? 'internal') === 'internal');
   openModal({
     title: editing ? `Edit driver ${driver.name}` : 'Driver baru',
-    description: 'Data ini muncul pada surat jalan dan menyimpan nama driver serta kendaraannya.',
+    description: 'Pilih kendaraan internal yang ditugaskan. Satu kendaraan hanya untuk satu driver.',
     submitLabel: editing ? 'Simpan driver' : 'Buat driver',
     body: `<div class="form-grid">
       ${field('Nama driver', `<input class="input" name="name" value="${esc(driver?.name ?? '')}" required />`)}
       ${field('Telepon', `<input class="input" name="phone" value="${esc(driver?.phone ?? '')}" />`)}
-      ${field('Jenis kendaraan', `<select class="select" name="vehicleType">${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${driver?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
-      ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(driver?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
-      ${field('Transport', `<select class="select" name="transport"><option value="">— Tanpa transport —</option>${(ctx.db.transportCompanies ?? []).map((t) => `<option value="${t.id}" ${driver?.transportId === t.id ? 'selected' : ''}>${esc(t.name)} · ${esc(TRANSPORT_TYPES[t.type]?.label ?? t.type)}</option>`).join('')}</select>`, { hint: 'Internal atau pihak ketiga.' })}
+      ${field('Kendaraan dinas', `<select class="select" name="fleetAsset"><option value="">— Belum ada kendaraan —</option>${fleet.map((a) => `<option value="${a.id}" ${assigned?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}</option>`).join('')}</select>`, { hint: 'Armada internal Lajur Fleet. Kendaraan juga dapat ditugaskan dari tabel Armada internal.' })}
       ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${driver.active !== false ? 'checked' : ''} /> Driver aktif dan dapat dipilih</label>` : ''}
       ${field('Catatan', `<input class="input" name="notes" value="${esc(driver?.notes ?? '')}" placeholder="Area, kapasitas, atau catatan" />`, { full: true })}
     </div>`,
@@ -520,9 +516,7 @@ function openDriver(ctx, driver = null) {
         id: driver?.id ?? null,
         name: form.name.value,
         phone: form.phone.value,
-        vehicleType: form.vehicleType.value,
-        plateNumber: form.plateNumber.value,
-        transportId: form.transport.value || null,
+        fleetAssetId: form.fleetAsset.value || null,
         active: editing ? form.active.checked : true,
         notes: form.notes.value,
         user: ctx.user,
@@ -570,20 +564,19 @@ function openTransport(ctx, transport = null) {
 
 function openFleet(ctx, asset = null) {
   const editing = Boolean(asset);
+  const drivers = (ctx.db.drivers ?? []).filter((d) => d.active !== false);
   openModal({
-    title: editing ? `Edit ${asset.name}` : 'Aset transport baru',
-    description: 'Motor/mobil/truk, kepemilikan, transport, driver, kapasitas dan masa pajak.',
-    submitLabel: editing ? 'Simpan aset' : 'Buat aset',
+    title: editing ? `Edit ${asset.name}` : 'Kendaraan internal baru',
+    description: 'Motor/mobil/truk Lajur Fleet, driver yang ditugaskan, kapasitas dan masa pajak.',
+    submitLabel: editing ? 'Simpan kendaraan' : 'Buat kendaraan',
     body: `<div class="form-grid">
       ${field('Kode / plat', `<input class="input" name="code" value="${esc(asset?.code ?? '')}" placeholder="B 1234 CD" required />`)}
-      ${field('Nama aset', `<input class="input" name="name" value="${esc(asset?.name ?? '')}" placeholder="Honda Vario" required />`)}
+      ${field('Nama kendaraan', `<input class="input" name="name" value="${esc(asset?.name ?? '')}" placeholder="Honda Vario" required />`)}
       ${field('Jenis', `<select class="select" name="type">${Object.entries(FLEET_TYPES).map(([k, v]) => `<option value="${k}" ${asset?.type === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
-      ${field('Kepemilikan', `<select class="select" name="ownership"><option value="internal" ${asset?.ownership === 'internal' ? 'selected' : ''}>Internal</option><option value="third_party" ${asset?.ownership === 'third_party' ? 'selected' : ''}>Pihak ketiga</option></select>`)}
-      ${field('Transport', `<select class="select" name="transport"><option value="">— Tanpa transport —</option>${(ctx.db.transportCompanies ?? []).map((t) => `<option value="${t.id}" ${asset?.transportId === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`)}
-      ${field('Driver', `<select class="select" name="driver"><option value="">— Tanpa driver —</option>${(ctx.db.drivers ?? []).map((d) => `<option value="${d.id}" ${asset?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${esc(d.plateNumber)}</option>`).join('')}</select>`)}
+      ${field('Driver ditugaskan', `<select class="select" name="driver"><option value="">— Belum ada driver —</option>${drivers.map((d) => `<option value="${d.id}" ${asset?.driverId === d.id ? 'selected' : ''}>${esc(d.name)}</option>`).join('')}</select>`, { hint: 'Memilih driver memindahkannya dari kendaraan lain; satu kendaraan untuk satu driver.' })}
       ${field('Kapasitas (kg)', `<input class="input" type="number" name="capacityKg" min="0" value="${asset?.capacityKg ?? 0}" />`)}
       ${field('Masa pajak', `<input class="input" type="date" name="taxExpiry" value="${esc(asset?.taxExpiry ?? '')}" />`)}
-      ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${asset.active !== false ? 'checked' : ''} /> Aset aktif</label>` : ''}
+      ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${asset.active !== false ? 'checked' : ''} /> Kendaraan aktif</label>` : ''}
       ${field('Catatan', `<input class="input" name="notes" value="${esc(asset?.notes ?? '')}" />`, { full: true })}
     </div>`,
     onSubmit(form, close) {
@@ -592,8 +585,6 @@ function openFleet(ctx, asset = null) {
         code: form.code.value,
         name: form.name.value,
         type: form.type.value,
-        ownership: form.ownership.value,
-        transportId: form.transport.value || null,
         driverId: form.driver.value || null,
         capacityKg: Number(form.capacityKg.value || 0),
         taxExpiry: form.taxExpiry.value,
@@ -602,7 +593,7 @@ function openFleet(ctx, asset = null) {
         user: ctx.user,
       }));
       close();
-      toast(editing ? 'Aset transport diperbarui.' : 'Aset transport dibuat.', { tone: 'success' });
+      toast(editing ? 'Kendaraan internal diperbarui.' : 'Kendaraan internal dibuat.', { tone: 'success' });
     },
   });
 }

@@ -337,11 +337,30 @@ export const FLEET_TYPES = {
 };
 
 export function activeFleetAssets(db) {
-  return (db.fleetAssets ?? []).filter((a) => a.active !== false);
+  return (db.fleetAssets ?? []).filter((a) => a.active !== false && (a.ownership ?? 'internal') === 'internal');
+}
+
+export function fleetAssetOfDriver(db, driverId) {
+  if (!driverId) return null;
+  return (db.fleetAssets ?? []).find((a) => a.driverId === driverId) ?? null;
+}
+
+/** Keep the driver's vehicle snapshot aligned with the internal fleet assignment. */
+function syncDriverVehicle(db, driverId) {
+  const driver = driverOf(db, driverId);
+  if (!driver) return;
+  const asset = fleetAssetOfDriver(db, driver.id);
+  if (asset) {
+    driver.vehicleType = asset.type;
+    driver.plateNumber = asset.code;
+    driver.transportId = asset.transportId ?? driver.transportId ?? null;
+  } else {
+    driver.plateNumber = '';
+  }
 }
 
 export function saveFleetAsset(db, {
-  id = null, code, name, type = 'motor', ownership = 'internal', transportId = null,
+  id = null, code, name, type = 'motor', transportId = null,
   driverId = null, capacityKg = 0, taxExpiry = '', active = true, notes = '', user,
 }) {
   const cleanCode = String(code ?? '').trim().toUpperCase();
@@ -349,18 +368,27 @@ export function saveFleetAsset(db, {
   assert(cleanCode.length >= 3, 'INVALID_CODE', 'Kode/plat aset minimal 3 karakter.');
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama aset minimal 2 karakter.');
   assert(FLEET_TYPES[type], 'INVALID_TYPE', 'Jenis aset tidak dikenal.');
-  assert(['internal', 'third_party'].includes(ownership), 'INVALID_OWNERSHIP', 'Kepemilikan aset tidak dikenal.');
-  const transport = transportId ? transportOf(db, transportId) : null;
+  const transport = transportId
+    ? transportOf(db, transportId)
+    : ((db.transportCompanies ?? []).find((t) => t.code === 'internal') ?? null);
   if (transportId) assert(transport, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
   const driver = driverId ? driverOf(db, driverId) : null;
   if (driverId) assert(driver, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan.');
   db.fleetAssets = db.fleetAssets ?? [];
   assert(!db.fleetAssets.some((a) => a.id !== id && a.code.toUpperCase() === cleanCode), 'DUPLICATE_CODE', `Aset ${cleanCode} sudah ada.`);
+  const existing = id ? db.fleetAssets.find((a) => a.id === id) : null;
+  if (id) assert(existing, 'FLEET_NOT_FOUND', 'Aset transport tidak ditemukan.');
+  const previousDriverId = existing?.driverId ?? null;
+  if (driver?.id) {
+    for (const asset of db.fleetAssets) {
+      if (asset.id !== id && asset.driverId === driver.id) asset.driverId = null;
+    }
+  }
   const patch = {
     code: cleanCode,
     name: cleanName,
     type,
-    ownership,
+    ownership: 'internal',
     transportId: transport?.id ?? null,
     driverId: driver?.id ?? null,
     capacityKg: Math.max(0, Number(capacityKg) || 0),
@@ -369,15 +397,16 @@ export function saveFleetAsset(db, {
     notes: String(notes ?? '').trim(),
     updatedAt: isoNow(),
   };
-  if (id) {
-    const existing = (db.fleetAssets ?? []).find((a) => a.id === id);
-    assert(existing, 'FLEET_NOT_FOUND', 'Aset transport tidak ditemukan.');
+  if (existing) {
     Object.assign(existing, patch);
-    audit(db, user, 'ubah_aset_transport', 'fleetAsset', id, cleanCode);
+    syncDriverVehicle(db, previousDriverId);
+    syncDriverVehicle(db, driver?.id);
+    audit(db, user, 'ubah_aset_transport', 'fleetAsset', existing.id, cleanCode);
     return existing;
   }
   const asset = { id: nextId(db, 'fleetAsset', 'FLT', 3), ...patch, createdAt: isoNow() };
   db.fleetAssets.push(asset);
+  syncDriverVehicle(db, driver?.id);
   audit(db, user, 'buat_aset_transport', 'fleetAsset', asset.id, cleanCode);
   return asset;
 }
@@ -392,17 +421,25 @@ export function driverOf(db, id) {
 
 export function saveDriver(db, {
   id = null, name, phone = '', vehicleType = 'motor', plateNumber = '', transportId = null,
-  active = true, notes = '', user,
+  fleetAssetId = null, active = true, notes = '', user,
 }) {
   const cleanName = String(name ?? '').trim();
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama driver minimal 2 karakter.');
+  const asset = fleetAssetId ? (db.fleetAssets ?? []).find((a) => a.id === fleetAssetId) : null;
+  if (fleetAssetId) assert(asset, 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
+  if (asset) {
+    vehicleType = asset.type;
+    plateNumber = asset.code;
+    if (asset.transportId) transportId = asset.transportId;
+  }
   assert(VEHICLE_TYPES[vehicleType], 'INVALID_VEHICLE', 'Jenis kendaraan tidak dikenal.');
   const plate = String(plateNumber ?? '').trim().toUpperCase();
   assert(!plate || plate.length >= 3, 'INVALID_PLATE', 'Nomor polisi minimal 3 karakter.');
   const transport = transportId ? transportOf(db, transportId) : null;
   if (transportId) assert(transport, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
   db.drivers = db.drivers ?? [];
-  assert(!db.drivers.some((d) => d.id !== id && plate && d.plateNumber?.toUpperCase() === plate), 'DUPLICATE_PLATE', `Nomor polisi ${plate} sudah dipakai.`);
+  assert(!db.drivers.some((d) => d.id !== id && d.id !== asset?.driverId && plate
+    && d.plateNumber?.toUpperCase() === plate), 'DUPLICATE_PLATE', `Nomor polisi ${plate} sudah dipakai.`);
 
   const patch = {
     name: cleanName,
@@ -414,16 +451,32 @@ export function saveDriver(db, {
     notes: String(notes ?? '').trim(),
     updatedAt: isoNow(),
   };
-  db.drivers = db.drivers ?? [];
+  let driver;
   if (id) {
-    const driver = driverOf(db, id);
+    driver = driverOf(db, id);
     assert(driver, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan.');
     Object.assign(driver, patch);
-    audit(db, user, active ? 'ubah_driver' : 'nonaktifkan_driver', 'driver', id, `${cleanName} · ${plate}`);
-    return driver;
+  } else {
+    driver = { id: nextId(db, 'driver', 'DRV', 3), ...patch, createdAt: isoNow() };
+    db.drivers.push(driver);
   }
-  const driver = { id: nextId(db, 'driver', 'DRV', 3), ...patch, createdAt: isoNow() };
-  db.drivers.push(driver);
-  audit(db, user, 'buat_driver', 'driver', driver.id, `${cleanName} · ${plate}`);
+
+  if (asset) {
+    const previousDriverId = asset.driverId && asset.driverId !== driver.id ? asset.driverId : null;
+    for (const other of db.fleetAssets ?? []) {
+      if (other.id !== asset.id && other.driverId === driver.id) other.driverId = null;
+    }
+    asset.driverId = driver.id;
+    syncDriverVehicle(db, previousDriverId);
+    syncDriverVehicle(db, driver.id);
+  } else {
+    for (const other of db.fleetAssets ?? []) {
+      if (other.driverId === driver.id) other.driverId = null;
+    }
+    // Keep an explicitly typed legacy plate when no fleet asset is selected;
+    // otherwise clear the stale snapshot after losing the assignment.
+    if (!plate) syncDriverVehicle(db, driver.id);
+  }
+  audit(db, user, (id && active) ? 'ubah_driver' : (active ? 'buat_driver' : 'nonaktifkan_driver'), 'driver', driver.id, `${cleanName} · ${plate || 'tanpa kendaraan'}`);
   return driver;
 }

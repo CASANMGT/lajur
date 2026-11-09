@@ -241,7 +241,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Print preview:** every printable item opens the same window with a top toolbar: **Cetak** and **Unduh PDF**. Do not auto-print, because it prevents using the PDF option. Hide the toolbar in print and when rasterising the PDF.
 - **PDF:** generated from the document layout; show a progress label and a fallback instruction (“Cetak → Simpan sebagai PDF”) if the PDF library cannot load.
 - **Customer NPWP:** label it optional in both create and edit forms; hint that it feeds faktur pajak. When filled, accept dotted 15-digit or 16-digit NIK/NPWP; keep the field blank-friendly and never block customer creation for a missing NPWP.
-- **Driver master:** Master Data → Driver & transport. Show driver, phone, vehicle type and plate. Vehicle types are Motor, Mobil, Truk. Inactive drivers do not appear in new surat jalan forms.
+- **Driver master:** Master Data → Driver & armada. Show driver, account, phone and the assigned internal vehicle (name + plate). Assign the vehicle from the driver form or from the vehicle row. One driver holds one vehicle; a driver without one is marked **Belum ditugaskan**. Inactive drivers do not appear in new surat jalan forms.
 - **Surat jalan:** select driver from master; autofill phone, vehicle type and plate. Courier select: Internal, J&T, JNE, Lalamove, GoSend, SiCepat, AnterAja, Bali Kargo. Capture service, AWB/resi, recipient/phone, weight, pieces, shipping, insurance, COD and instructions for courier-style consignment notes.
 - **Address:** autocomplete from customer and previous delivery addresses; show an inline map preview and an external map link. Never hide the map behind a submit action.
 - **Mobile sidebar:** `overflow-y: auto`, `overscroll-behavior: contain`, safe-area bottom padding. The drawer must scroll at 320/390 with Advanced mode; bottom nav must remain below the drawer.
@@ -255,16 +255,16 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 ### 5.16 Driver role, sample book, catalog, guide
 
 - **Driver account:** show driver name/vehicle, only Ringkasan/Tugas/Pengiriman/Panduan in nav, no prices or master. Driver actions are Kirim and Tiba; receiver confirmation belongs to sales/manager.
-- **Transport master:** driver rows show linked user account, transport company, vehicle and plate. Transport table is separate and editable; fleet assets link to both transport and driver.
+- **Transport & courier master:** Lajur Fleet is the internal transport; Lalamove, GoSend, Bali Kargo, J&T and JNE stay as third-party delivery options. Third parties are never shown as fleet assets.
 - **Sample book:** create from multiple roll cuts, show item count/status, print/PDF. Use “Beri” with recipient and date; never show a second stock movement after giving the book.
 - **Catalog:** card grid with swatch, colour/code, width, sell price and availability; no cost/margin. Provide Cetak/PDF.
 - **Guide:** accordion sections with numbered steps and links. Keep copy practical (“Buka → isi → simpan”), not marketing.
 
-### 5.17 Fleet assets, consignment notes and production database
+### 5.17 Internal fleet, consignment notes and production database
 
-- **Fleet assets:** a dedicated table under Driver & transport with asset name/plate, ownership chip (Internal teal / Pihak ketiga copper), linked transport, linked driver, capacity, tax expiry and active status. One **Aset** action opens a compact modal; duplicate plates show a plain-language error.
+- **Armada internal:** a dedicated table with vehicle name/plate, assigned driver, capacity, tax expiry and active status. Only Lajur Fleet vehicles appear; there is no ownership chip and no third-party vehicle. One **Kendaraan** action opens a compact modal; assigning a driver moves them from their previous vehicle, and duplicate plates show a plain-language error.
 - **Consignment surat jalan:** print as a courier note, not a plain letter. Header: Lajur mark, “SURAT JALAN / CONSIGNMENT NOTE”, courier + service, document ID/date, large AWB/resi and a pseudo barcode. Two address blocks: sender (PT Lajur Tekstil Nusantara, Jakarta/Bali warehouse, PIC) and recipient (name, phone, address). A meta grid carries invoice, weight/pieces, shipping/insurance, COD, transport/armada, driver/vehicle and status. Keep goods lines price-free; finish with PIC and receiver signature lines.
-- **Transport picker:** show active transport master on the surat jalan form. Selecting a driver fills the driver's transport for internal delivery; selecting a third-party courier fills the matching transport. Store the transport as a snapshot and never rewrite existing deliveries when master data changes.
+- **Delivery mode:** internal delivery shows an internal driver picker and the vehicle assigned to that driver; choosing a vehicle also selects its driver. Third-party delivery hides the internal fleet block, shows a courier note and an optional courier driver name, and stores no `fleetAssetId`. Snapshot vehicle and transport on the delivery; never rewrite existing documents when master data changes.
 - **No price leakage:** the consignment note must never show unit prices, invoice subtotal or margin. It is a delivery document; the invoice already moved stock.
 - **Database status:** the reference server is the only place PostgreSQL is used. In the UI, the demo remains browser-local. When documenting production, state which store is active (`storage: postgres` or `json`) and never imply the static demo shares data.
 

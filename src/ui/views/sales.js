@@ -276,7 +276,7 @@ function deliveryCard(inv, delivery, role) {
         <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
         <div class="row-between"><span class="small muted">Transport / armada</span><span class="small">${esc(delivery.transportName || '—')}</span></div>
         <div class="row-between"><span class="small muted">Berat / koli</span><span class="small">${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</span></div>
-        <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>
         <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
         ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
       </div>
@@ -688,11 +688,9 @@ function mapEmbed(address) {
 
 function deliveryFields(db, delivery, customer) {
   const drivers = (db.drivers ?? []).filter((d) => d.active !== false);
-  const transports = (db.transportCompanies ?? []).filter((t) => t.active !== false);
-  const driverTransportId = drivers.find((d) => d.id === delivery?.driverId)?.transportId ?? null;
-  const courierTransportId = transports.find((t) => t.code === delivery?.courier)?.id ?? null;
-  const selectedTransportId = delivery?.transportId ?? driverTransportId ?? courierTransportId
-    ?? transports.find((t) => t.code === 'internal')?.id ?? '';
+  const fleet = (db.fleetAssets ?? []).filter((a) => a.active !== false && (a.ownership ?? 'internal') === 'internal');
+  const assignedFleet = (driverId) => fleet.find((a) => a.driverId === driverId) ?? null;
+  const selectedFleetId = delivery?.fleetAssetId ?? assignedFleet(delivery?.driverId)?.id ?? '';
   const address = delivery?.address ?? customer?.address ?? '';
   return `
     ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(delivery?.pic ?? '')}" required />`, { hint: 'Penanggung jawab pengiriman dari gudang.' })}
@@ -701,11 +699,27 @@ function deliveryFields(db, delivery, customer) {
     ${field('Telepon penerima', `<input class="input" name="recipientPhone" value="${esc(delivery?.recipientPhone ?? customer?.phone ?? '')}" />`)}
     ${field('Kurir / pihak ketiga', `<select class="select" name="courier">${Object.entries(COURIERS).map(([k, v]) => `<option value="${k}" ${delivery?.courier === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
     ${field('Layanan', `<select class="select" name="service">${['REG', 'YES', 'OKS', 'COD', 'CARGO'].map((s) => `<option value="${s}" ${delivery?.service === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
-    ${field('Driver dari master', `<select class="select" name="driver"><option value="">— Tanpa driver master —</option>${drivers.map((d) => `<option value="${d.id}" data-type="${esc(d.vehicleType)}" data-plate="${esc(d.plateNumber)}" data-phone="${esc(d.phone ?? '')}" data-transport="${esc(d.transportId ?? '')}" ${delivery?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? d.vehicleType)} · ${esc(d.plateNumber)}</option>`).join('')}</select>`, { hint: 'Nama dan kendaraan tersimpan di Master Data → Driver.' })}
-    ${field('Transport / armada', `<select class="select" name="transport"><option value="">— Tanpa transport —</option>${transports.map((t) => `<option value="${t.id}" data-code="${esc(t.code)}" ${selectedTransportId === t.id ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`, { hint: 'Terisi dari driver atau kurir; dapat diubah.' })}
-    ${field('Telepon driver', `<input class="input" name="driverPhone" value="${esc(delivery?.driverPhone ?? '')}" />`)}
-    ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
-    ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
+    <div class="span-2" data-internal-fleet>
+      <div class="form-grid">
+        ${field('Driver internal', `<select class="select" name="driver"><option value="">— Tanpa driver internal —</option>${drivers.map((d) => {
+          const assigned = assignedFleet(d.id);
+          return `<option value="${d.id}" data-fleet="${esc(assigned?.id ?? '')}" data-phone="${esc(d.phone ?? '')}" ${delivery?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${assigned ? esc(assigned.name) : 'belum ada kendaraan'}</option>`;
+        }).join('')}</select>`, { hint: 'Driver dan kendaraan dinas berasal dari Master Data → Driver & armada.' })}
+        ${field('Kendaraan internal', `<select class="select" name="fleetAsset"><option value="">— Pilih kendaraan —</option>${fleet.map((a) => {
+          const driver = byId(db.drivers, a.driverId);
+          return `<option value="${a.id}" data-type="${esc(a.type)}" data-plate="${esc(a.code)}" data-driver="${esc(a.driverId ?? '')}" ${selectedFleetId === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}${driver ? ` · ${esc(driver.name)}` : ' · belum ada driver'}</option>`;
+        }).join('')}</select>`, { hint: 'Hanya armada internal Lajur Fleet.' })}
+        ${field('Telepon driver', `<input class="input" name="driverPhone" value="${esc(delivery?.driverPhone ?? '')}" />`)}
+        ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+        ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
+      </div>
+    </div>
+    <div class="span-2" data-third-party hidden>
+      <div class="notice notice-info">${icon('alert')}<div>Pengiriman pihak ketiga memakai kurir di atas. Armada internal tidak dipakai; isi nama driver kurir bila diketahui.</div></div>
+    </div>
+    <div class="span-2" data-third-party hidden>
+      ${field('Nama driver / kurir (opsional)', `<input class="input" name="driverName" value="${esc(delivery && delivery.courier !== 'internal' ? delivery.driver : '')}" placeholder="Nama driver kurir" />`)}
+    </div>
     ${field('No. resi / AWB', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="JNE / J&T / Lalamove" />`)}
     ${field('Berat (kg)', `<input class="input" name="weightKg" inputmode="decimal" value="${delivery?.weightKg ?? 0}" />`)}
     ${field('Jumlah koli', `<input class="input" name="pieces" inputmode="numeric" value="${delivery?.pieces ?? 1}" />`)}
@@ -730,27 +744,35 @@ function deliveryFields(db, delivery, customer) {
 }
 
 function bindDeliveryFields(form, db, currentDelivery = null) {
-  const syncDriver = () => {
-    const opt = form.driver.selectedOptions[0];
+  const setHidden = (selector, hidden) => {
+    form.querySelectorAll(selector).forEach((el) => { el.hidden = hidden; });
+  };
+  const syncVehicle = () => {
+    const opt = form.fleetAsset?.selectedOptions[0];
     if (!opt?.value) return;
     form.vehicleType.value = opt.dataset.type || '';
     form.plateNumber.value = opt.dataset.plate || '';
+  };
+  const syncDriver = () => {
+    const opt = form.driver?.selectedOptions[0];
+    if (!opt?.value) return;
     form.driverPhone.value = opt.dataset.phone || '';
-    if (form.transport && opt.dataset.transport && form.courier.value === 'internal') {
-      form.transport.value = opt.dataset.transport;
+    if (form.fleetAsset) form.fleetAsset.value = opt.dataset.fleet || '';
+    if (opt.dataset.fleet) {
+      syncVehicle();
+    } else {
+      form.vehicleType.value = '';
+      form.plateNumber.value = '';
     }
   };
-  const syncCourier = () => {
-    if (!form.transport) return;
-    if (form.courier.value === 'internal' && form.driver.value) {
-      const driverTransport = form.driver.selectedOptions[0]?.dataset.transport;
-      if (driverTransport) {
-        form.transport.value = driverTransport;
-        return;
-      }
-    }
-    const match = [...form.transport.options].find((o) => o.dataset.code === form.courier.value);
-    if (match) form.transport.value = match.value;
+  const syncFleet = () => {
+    const opt = form.fleetAsset?.selectedOptions[0];
+    if (!opt?.value) return;
+    if (opt.dataset.driver) form.driver.value = opt.dataset.driver;
+    const driverOpt = form.driver?.selectedOptions[0];
+    if (driverOpt?.value) form.driverPhone.value = driverOpt.dataset.phone || form.driverPhone.value;
+    syncVehicle();
+    syncSchedule();
   };
   const syncSchedule = () => {
     const panel = form.querySelector('[data-driver-schedule]');
@@ -768,11 +790,27 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
     panel.hidden = false;
     panel.innerHTML = `${icon('calendar')}<div><strong>Jadwal driver pada ${esc(form.date.value)}</strong>${list.map((d) => `<div class="small">${esc(d.customerName)} · ${esc(d.id)} · ${esc(d.status)}</div>`).join('')}</div>`;
   };
+  const syncMode = () => {
+    const internal = form.courier.value === 'internal';
+    setHidden('[data-internal-fleet]', !internal);
+    setHidden('[data-third-party]', internal);
+    if (!internal) {
+      form.driver.value = '';
+      if (form.fleetAsset) form.fleetAsset.value = '';
+      form.driverPhone.value = '';
+      form.vehicleType.value = '';
+      form.plateNumber.value = '';
+    } else if (form.driver.value && form.fleetAsset && !form.fleetAsset.value) {
+      syncDriver();
+    }
+    syncSchedule();
+  };
   form.driver?.addEventListener('change', () => { syncDriver(); syncSchedule(); });
-  form.courier?.addEventListener('change', syncCourier);
+  form.fleetAsset?.addEventListener('change', syncFleet);
+  form.courier?.addEventListener('change', syncMode);
   form.date?.addEventListener('change', syncSchedule);
-  if (form.driver?.value) syncDriver();
-  syncSchedule();
+  if (form.driver?.value && form.courier.value === 'internal') syncDriver();
+  syncMode();
   const syncMap = () => {
     const address = form.address.value.trim();
     const frame = form.querySelector('[data-map-frame]');
@@ -796,17 +834,19 @@ function openCreateDelivery(ctx, inv) {
       bindDeliveryFields(form, ctx.db);
     },
     onSubmit(form, close) {
+      const internal = form.courier.value === 'internal';
       ctx.store.update((db) => createDelivery(db, {
         invoiceId: inv.id,
         pic: form.pic.value,
         date: form.date.value,
         courier: form.courier.value,
-        transportId: form.transport.value || null,
         service: form.service.value,
-        driverId: form.driver.value || null,
-        driverPhone: form.driverPhone.value,
-        vehicleType: form.vehicleType.value,
-        plateNumber: form.plateNumber.value,
+        driverId: internal ? form.driver.value || null : null,
+        fleetAssetId: internal ? form.fleetAsset.value || null : null,
+        driver: internal ? '' : (form.driverName?.value ?? ''),
+        driverPhone: internal ? form.driverPhone.value : '',
+        vehicleType: internal ? form.vehicleType.value : '',
+        plateNumber: internal ? form.plateNumber.value : '',
         trackingRef: form.trackingRef.value,
         recipientName: form.recipientName.value,
         recipientPhone: form.recipientPhone.value,
@@ -836,17 +876,19 @@ function openEditDelivery(ctx, delivery) {
     body: deliveryFields(ctx.db, delivery, customer),
     onMount(form) { bindDeliveryFields(form, ctx.db, delivery); },
     onSubmit(form, close) {
+      const internal = form.courier.value === 'internal';
       ctx.store.update((db) => updateDelivery(db, {
         id: delivery.id,
         pic: form.pic.value,
         date: form.date.value,
         courier: form.courier.value,
-        transportId: form.transport.value || null,
         service: form.service.value,
-        driverId: form.driver.value || null,
-        driverPhone: form.driverPhone.value,
-        vehicleType: form.vehicleType.value,
-        plateNumber: form.plateNumber.value,
+        driverId: internal ? form.driver.value || null : null,
+        fleetAssetId: internal ? form.fleetAsset.value || null : null,
+        driver: internal ? '' : (form.driverName?.value ?? ''),
+        driverPhone: internal ? form.driverPhone.value : '',
+        vehicleType: internal ? form.vehicleType.value : '',
+        plateNumber: internal ? form.plateNumber.value : '',
         trackingRef: form.trackingRef.value,
         recipientName: form.recipientName.value,
         recipientPhone: form.recipientPhone.value,

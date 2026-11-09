@@ -204,16 +204,13 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.drivers.push(
     { id: 'DRV-001', userId: 'u-drv1', transportId: 'TRP-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
     { id: 'DRV-002', userId: 'u-drv2', transportId: 'TRP-001', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
-    { id: 'DRV-003', userId: 'u-drv3', transportId: 'TRP-004', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
+    { id: 'DRV-003', userId: 'u-drv3', transportId: 'TRP-001', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
   );
 
   db.fleetAssets.push(
     { id: 'FLT-001', code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-001', capacityKg: 50, taxExpiry: '2027-03-31', active: true, notes: 'Motor operasional Jakarta.' },
     { id: 'FLT-002', code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-002', capacityKg: 800, taxExpiry: '2027-01-31', active: true, notes: 'Mobil boks kecil.' },
-    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'third_party', transportId: 'TRP-004', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk Bali Kargo.' },
-    { id: 'FLT-004', code: 'LALAMOVE-MTR', name: 'Lalamove Motor Fleet', type: 'motor', ownership: 'third_party', transportId: 'TRP-002', driverId: null, capacityKg: 30, taxExpiry: '2027-06-30', active: true, notes: 'Armada mitra Lalamove.' },
-    { id: 'FLT-005', code: 'B 7777 JT', name: 'J&T Van', type: 'mobil', ownership: 'third_party', transportId: 'TRP-005', driverId: null, capacityKg: 600, taxExpiry: '2027-05-31', active: true, notes: 'Pickup J&T.' },
-    { id: 'FLT-006', code: 'B 8888 JNE', name: 'JNE Truck', type: 'truk', ownership: 'third_party', transportId: 'TRP-006', driverId: null, capacityKg: 3000, taxExpiry: '2027-02-28', active: true, notes: 'Truk JNE.' },
+    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk engkel untuk roll panjang.' },
   );
 
   db.supplierPrices.push(

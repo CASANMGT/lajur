@@ -79,14 +79,16 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Delivery schedule** | **Done in v2.10** | Driver/date/courier/status + same-day conflict |
 | **Chinese suppliers + draft PO** | **Done in v2.10** | Ningbo, Shaoxing, Yiwu, Guangzhou; PO-0006 |
 | **Driver user accounts** | **Done in v2.11** | Asep/Rudi/Slamet login as driver; assigned deliveries/tasks only |
-| **Corporate transport master** | **Done in v2.11** | Lajur Fleet, Lalamove, GoSend, Bali Kargo |
+| **Corporate transport master** | **Done in v2.11** | Lajur Fleet, Lalamove, GoSend, Bali Kargo, J&T, JNE; third parties remain courier options |
 | **Sample book from rolls** | **Done in v2.11** | Multi-cut book, print/PDF, give to prospect |
 | **Customer catalog** | **Done in v2.11** | Colours/width/price/availability, print/PDF |
 | **In-app tutorial** | **Done in v2.11** | 14 process guides with links |
-| **Fleet asset master** | **Done in v2.12** | 6 seeded motor/mobil/truk assets with ownership, capacity, tax date, driver/transport links |
+| **Internal fleet master** | **Done in v2.15** | 3 seeded Lajur Fleet vehicles; third-party vehicles removed from assets; capacity, tax date and assigned driver |
+| **Driver ↔ vehicle assignment** | **Done in v2.15** | Assign from driver or vehicle form; one driver per vehicle; moving assignment syncs both records |
+| **Third-party delivery mode** | **Done in v2.15** | Lalamove/J&T/JNE/GoSend/Bali Kargo selectable as courier; no fleet asset, optional courier driver + AWB |
 | **J&T/JNE consignment surat jalan** | **Done in v2.12** | Recipient, service, AWB, weight, pieces, shipping/insurance/COD, consignment print with barcode + signatures |
 | **PostgreSQL production store** | **Done in v2.12** | `DATABASE_URL` selects JSONB state with ACID transactions, revision guard, audit, users/sessions/idempotency; JSON fallback |
-| **Transport snapshot on surat jalan** | **Done in v2.14** | Form selects transport master, auto-fills from driver/courier, card/list/print show transport; migration backfills old deliveries |
+| **Vehicle + transport snapshot on surat jalan** | **Done in v2.15** | Internal delivery attaches driver + assigned vehicle; third-party stays courier-only; card/list/print show vehicle and transport |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference with optional PostgreSQL; static UI still local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |

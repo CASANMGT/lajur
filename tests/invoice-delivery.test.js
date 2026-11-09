@@ -100,14 +100,19 @@ test('surat jalan snapshots driver and transport master data', () => {
   assert.equal(jnt.plateNumber, 'B 9876 EF');
   assert.equal(jnt.transportId, 'TRP-005');
   assert.equal(jnt.transportName, 'J&T Express');
+  assert.equal(jnt.fleetAssetId, null);
+  assert.equal(jnt.vehicleName, '');
 
   const inv2 = partInvoice(db, 1);
   postInvoice(db, { id: inv2.id, user: SALES });
   const internal = createDelivery(db, {
     invoiceId: inv2.id, pic: 'Henny', courier: 'internal', driverId: 'DRV-003', user: SALES,
   });
-  assert.equal(internal.transportId, 'TRP-004');
-  assert.equal(internal.transportName, 'Bali Kargo Utama');
+  assert.equal(internal.fleetAssetId, 'FLT-003');
+  assert.equal(internal.vehicleName, 'Isuzu Elf');
+  assert.equal(internal.plateNumber, 'B 5566 GH');
+  assert.equal(internal.transportId, 'TRP-001');
+  assert.equal(internal.transportName, 'Lajur Fleet');
 });
 
 test('surat jalan tracks PIC and confirmation without moving stock again', () => {

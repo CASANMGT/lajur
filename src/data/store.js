@@ -119,6 +119,29 @@ export function migrate(db) {
   db.sequences.fxRate = Math.max(Number(db.sequences.fxRate) || 0, db.fxRates.length);
   db.sequences.driver = Math.max(Number(db.sequences.driver) || 0, (db.drivers ?? []).length);
   db.sequences.sampleBook = Math.max(Number(db.sequences.sampleBook) || 0, (db.sampleBooks ?? []).length);
+  const internalTransport = (db.transportCompanies ?? []).find((t) => t.code === 'internal') ?? null;
+  db.fleetAssets = (db.fleetAssets ?? []).filter((a) => {
+    if ((a.ownership ?? 'internal') === 'internal') return true;
+    // Drop the old mock courier vehicles (Lalamove/J&T/JNE); a real vehicle
+    // mislabelled as third-party becomes part of the internal fleet.
+    return !/lalamove|j&t|jne/i.test(`${a.code} ${a.name}`);
+  });
+  for (const asset of db.fleetAssets) {
+    asset.ownership = 'internal';
+    if (!asset.transportId && internalTransport) asset.transportId = internalTransport.id;
+    const transport = (db.transportCompanies ?? []).find((t) => t.id === asset.transportId);
+    if (transport?.type === 'third_party' && internalTransport) asset.transportId = internalTransport.id;
+    if (asset.capacityKg === undefined) asset.capacityKg = 0;
+    if (asset.active === undefined) asset.active = true;
+  }
+  for (const driver of db.drivers ?? []) {
+    const asset = db.fleetAssets.find((a) => a.driverId === driver.id);
+    if (asset) {
+      driver.vehicleType = asset.type;
+      driver.plateNumber = asset.code;
+      driver.transportId = asset.transportId ?? driver.transportId;
+    }
+  }
   for (const delivery of db.deliveries) {
     if (delivery.recipientName === undefined) delivery.recipientName = delivery.customerName ?? '';
     if (delivery.recipientPhone === undefined) delivery.recipientPhone = '';
@@ -129,6 +152,20 @@ export function migrate(db) {
     if (delivery.insurance === undefined) delivery.insurance = 0;
     if (delivery.codAmount === undefined) delivery.codAmount = 0;
     if (delivery.instructions === undefined) delivery.instructions = '';
+    if (delivery.courier !== 'internal') {
+      delivery.fleetAssetId = null;
+      delivery.vehicleName = '';
+    } else {
+      const fleet = db.fleetAssets.find((a) => a.id === delivery.fleetAssetId)
+        ?? db.fleetAssets.find((a) => a.driverId === delivery.driverId)
+        ?? null;
+      delivery.fleetAssetId = fleet?.id ?? null;
+      delivery.vehicleName = fleet?.name ?? '';
+      if (fleet) {
+        delivery.vehicleType = fleet.type;
+        delivery.plateNumber = fleet.code;
+      }
+    }
     if (delivery.transportName === undefined) {
       const driver = (db.drivers ?? []).find((d) => d.id === delivery.driverId);
       const courierTransport = (db.transportCompanies ?? []).find((t) => t.code === delivery.courier) ?? null;
@@ -139,11 +176,6 @@ export function migrate(db) {
       delivery.transportId = delivery.transportId ?? transport?.id ?? null;
       delivery.transportName = transport?.name ?? '';
     }
-  }
-  for (const asset of db.fleetAssets) {
-    if (!asset.ownership) asset.ownership = 'internal';
-    if (asset.capacityKg === undefined) asset.capacityKg = 0;
-    if (asset.active === undefined) asset.active = true;
   }
   if (previousVersion > 0 && previousVersion < 13 && (db.transportCompanies ?? []).length > 0) {
     // v2.12 adds J&T/JNE and the demo fleet. Existing datasets keep their
@@ -181,24 +213,30 @@ export function migrate(db) {
       const transportOfCode = (code) => db.transportCompanies.find((t) => t.code === code) ?? null;
       const driverOfId = (id) => (db.drivers ?? []).find((d) => d.id === id) ?? null;
       const seedAssets = [
-        { code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportCode: 'internal', driverId: 'DRV-001', capacityKg: 50, taxExpiry: '2027-03-31', notes: 'Motor operasional Jakarta.' },
-        { code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportCode: 'internal', driverId: 'DRV-002', capacityKg: 800, taxExpiry: '2027-01-31', notes: 'Mobil boks kecil.' },
-        { code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'third_party', transportCode: 'bali-kargo', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', notes: 'Truk Bali Kargo.' },
-        { code: 'LALAMOVE-MTR', name: 'Lalamove Motor Fleet', type: 'motor', ownership: 'third_party', transportCode: 'lalamove', driverId: null, capacityKg: 30, taxExpiry: '2027-06-30', notes: 'Armada mitra Lalamove.' },
-        { code: 'B 7777 JT', name: 'J&T Van', type: 'mobil', ownership: 'third_party', transportCode: 'jnt', driverId: null, capacityKg: 600, taxExpiry: '2027-05-31', notes: 'Pickup J&T.' },
-        { code: 'B 8888 JNE', name: 'JNE Truck', type: 'truk', ownership: 'third_party', transportCode: 'jne', driverId: null, capacityKg: 3000, taxExpiry: '2027-02-28', notes: 'Truk JNE.' },
+        { code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', transportCode: 'internal', driverId: 'DRV-001', capacityKg: 50, taxExpiry: '2027-03-31', notes: 'Motor operasional Jakarta.' },
+        { code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', transportCode: 'internal', driverId: 'DRV-002', capacityKg: 800, taxExpiry: '2027-01-31', notes: 'Mobil boks kecil.' },
+        { code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', transportCode: 'internal', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', notes: 'Truk engkel untuk roll panjang.' },
       ];
       for (const def of seedAssets) {
         const transport = transportOfCode(def.transportCode);
         const driver = def.driverId ? driverOfId(def.driverId) : null;
         db.fleetAssets.push({
-          id: nextFleetId(), code: def.code, name: def.name, type: def.type, ownership: def.ownership,
+          id: nextFleetId(), code: def.code, name: def.name, type: def.type, ownership: 'internal',
           transportId: transport?.id ?? null, driverId: driver?.id ?? null,
           capacityKg: def.capacityKg, taxExpiry: def.taxExpiry, active: true, notes: def.notes,
           createdAt: new Date().toISOString(),
         });
       }
     }
+  }
+  for (const delivery of db.deliveries) {
+    if (delivery.courier !== 'internal' || delivery.fleetAssetId) continue;
+    const fleet = db.fleetAssets.find((a) => a.driverId === delivery.driverId) ?? null;
+    if (!fleet) continue;
+    delivery.fleetAssetId = fleet.id;
+    delivery.vehicleName = fleet.name;
+    delivery.vehicleType = fleet.type;
+    delivery.plateNumber = fleet.code;
   }
   db.sequences.transport = Math.max(Number(db.sequences.transport) || 0, (db.transportCompanies ?? []).length);
   db.sequences.fleetAsset = Math.max(Number(db.sequences.fleetAsset) || 0, (db.fleetAssets ?? []).length);

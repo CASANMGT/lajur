@@ -5,7 +5,7 @@ import { buildSeed } from '../src/domain/seed.js';
 import {
   availableMm, createRoll, partQty, quarantineRoll, receiveAdhocStock, reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
-import { saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
+import { saveDriver, saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
 import { createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
 import { createDelivery } from '../src/domain/deliveries.js';
 import { printDeliveryHtml } from '../src/ui/views/print.js';
@@ -540,7 +540,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 14);
+  assert.equal(migrated.meta.version, 15);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
   assert.deepEqual(migrated.fleetAssets, []);
@@ -552,11 +552,13 @@ test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
   db.fleetAssets = [];
   db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 14);
+  assert.equal(migrated.meta.version, 15);
   assert.equal(migrated.transportCompanies.length, 6);
-  assert.equal(migrated.fleetAssets.length, 6);
-  assert.equal(migrated.sequences.fleetAsset, 6);
-  assert.ok(migrated.fleetAssets.some((a) => a.code === 'B 7777 JT'));
+  assert.equal(migrated.fleetAssets.length, 3);
+  assert.equal(migrated.sequences.fleetAsset, 3);
+  assert.ok(migrated.fleetAssets.every((a) => a.ownership === 'internal'));
+  assert.ok(!migrated.fleetAssets.some((a) => /lalamove|j&t|jne/i.test(`${a.code} ${a.name}`)));
+  assert.equal(migrated.drivers.find((d) => d.id === 'DRV-003').transportId, 'TRP-001');
 });
 
 test('v2.13 deliveries gain a transport snapshot during migration', () => {
@@ -566,22 +568,50 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   delete delivery.transportId;
   delete delivery.transportName;
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 14);
+  assert.equal(migrated.meta.version, 15);
   assert.equal(migrated.deliveries[0].transportId, 'TRP-006');
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });
 
-test('fleet asset master links transport and driver and rejects duplicate plates', () => {
+test('v2.14 third-party vehicles leave the internal fleet during migration', () => {
+  const db = buildSeed();
+  db.meta.version = 14;
+  db.fleetAssets.find((a) => a.id === 'FLT-003').ownership = 'third_party';
+  db.fleetAssets.push(
+    { id: 'FLT-004', code: 'LALAMOVE-MTR', name: 'Lalamove Motor Fleet', type: 'motor', ownership: 'third_party', driverId: null, capacityKg: 30, active: true },
+    { id: 'FLT-005', code: 'B 7777 JT', name: 'J&T Van', type: 'mobil', ownership: 'third_party', driverId: null, capacityKg: 600, active: true },
+  );
+  const migrated = migrate(db);
+  assert.equal(migrated.fleetAssets.length, 3);
+  assert.ok(migrated.fleetAssets.every((a) => a.ownership === 'internal'));
+  assert.equal(migrated.drivers.find((d) => d.id === 'DRV-003').transportId, 'TRP-001');
+  assert.equal(migrated.drivers.find((d) => d.id === 'DRV-003').plateNumber, 'B 5566 GH');
+});
+
+test('internal fleet assignment moves the vehicle and syncs the driver', () => {
   const db = buildSeed();
   const asset = saveFleetAsset(db, {
-    code: 'B 9999 ZZ', name: 'Tes Van', type: 'mobil', ownership: 'third_party',
-    transportId: 'TRP-005', driverId: 'DRV-001', capacityKg: 700, user: MGR,
+    code: 'B 9999 ZZ', name: 'Tes Van', type: 'mobil', driverId: 'DRV-001', capacityKg: 700, user: MGR,
   });
-  assert.equal(asset.id, 'FLT-007');
-  assert.equal(asset.transportId, 'TRP-005');
+  assert.equal(asset.id, 'FLT-004');
+  assert.equal(asset.ownership, 'internal');
+  assert.equal(asset.transportId, 'TRP-001');
   assert.equal(asset.driverId, 'DRV-001');
+  assert.equal(db.fleetAssets.find((a) => a.id === 'FLT-001').driverId, null);
+  const asep = db.drivers.find((d) => d.id === 'DRV-001');
+  assert.equal(asep.plateNumber, 'B 9999 ZZ');
+  assert.equal(asep.vehicleType, 'mobil');
   expectError(() => saveFleetAsset(db, { code: 'B 9999 ZZ', name: 'Duplikat', user: MGR }), 'DUPLICATE_CODE');
   expectError(() => saveFleetAsset(db, { code: 'B 1111 AA', name: 'Tanpa transport', transportId: 'TRP-404', user: MGR }), 'TRANSPORT_NOT_FOUND');
+});
+
+test('driver assignment moves the internal vehicle between drivers', () => {
+  const db = buildSeed();
+  saveDriver(db, { id: 'DRV-001', name: 'Asep', fleetAssetId: 'FLT-003', user: MGR });
+  assert.equal(db.fleetAssets.find((a) => a.id === 'FLT-001').driverId, null);
+  assert.equal(db.fleetAssets.find((a) => a.id === 'FLT-003').driverId, 'DRV-001');
+  assert.equal(db.drivers.find((d) => d.id === 'DRV-001').plateNumber, 'B 5566 GH');
+  assert.equal(db.drivers.find((d) => d.id === 'DRV-003').plateNumber, '');
 });
 
 test('surat jalan captures J&T/JNE consignment fields', () => {

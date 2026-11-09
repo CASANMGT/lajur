@@ -180,7 +180,7 @@ export function printDeliveryHtml(db, delivery) {
       <div><span>Ongkir / asuransi</span><strong>${fmt.money(delivery.shippingCost || 0)} / ${fmt.money(delivery.insurance || 0)}</strong></div>
       <div><span>COD</span><strong>${delivery.codAmount ? fmt.money(delivery.codAmount) : '—'}</strong></div>
       <div><span>Transport / armada</span><strong>${esc(delivery.transportName || '—')}</strong></div>
-      <div><span>Driver / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>
+      <div><span>Driver / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>
       <div><span>Status</span><strong>${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</strong></div>
     </div>
     <table>
