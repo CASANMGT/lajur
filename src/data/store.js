@@ -129,6 +129,16 @@ export function migrate(db) {
     if (delivery.insurance === undefined) delivery.insurance = 0;
     if (delivery.codAmount === undefined) delivery.codAmount = 0;
     if (delivery.instructions === undefined) delivery.instructions = '';
+    if (delivery.transportName === undefined) {
+      const driver = (db.drivers ?? []).find((d) => d.id === delivery.driverId);
+      const courierTransport = (db.transportCompanies ?? []).find((t) => t.code === delivery.courier) ?? null;
+      const driverTransport = driver?.transportId
+        ? (db.transportCompanies ?? []).find((t) => t.id === driver.transportId) ?? null
+        : null;
+      const transport = (delivery.courier !== 'internal' ? courierTransport : null) ?? driverTransport ?? courierTransport ?? null;
+      delivery.transportId = delivery.transportId ?? transport?.id ?? null;
+      delivery.transportName = transport?.name ?? '';
+    }
   }
   for (const asset of db.fleetAssets) {
     if (!asset.ownership) asset.ownership = 'internal';

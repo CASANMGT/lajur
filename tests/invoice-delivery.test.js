@@ -88,6 +88,28 @@ test('NPWP is optional on customers and tax invoices, and falls back to the cust
   );
 });
 
+test('surat jalan snapshots driver and transport master data', () => {
+  const db = buildSeed();
+  const inv = partInvoice(db, 1);
+  postInvoice(db, { id: inv.id, user: SALES });
+  const jnt = createDelivery(db, {
+    invoiceId: inv.id, pic: 'Henny', courier: 'jnt', driverId: 'DRV-002', user: SALES,
+  });
+  assert.equal(jnt.driver, 'Rudi');
+  assert.equal(jnt.vehicleType, 'mobil');
+  assert.equal(jnt.plateNumber, 'B 9876 EF');
+  assert.equal(jnt.transportId, 'TRP-005');
+  assert.equal(jnt.transportName, 'J&T Express');
+
+  const inv2 = partInvoice(db, 1);
+  postInvoice(db, { id: inv2.id, user: SALES });
+  const internal = createDelivery(db, {
+    invoiceId: inv2.id, pic: 'Henny', courier: 'internal', driverId: 'DRV-003', user: SALES,
+  });
+  assert.equal(internal.transportId, 'TRP-004');
+  assert.equal(internal.transportName, 'Bali Kargo Utama');
+});
+
 test('surat jalan tracks PIC and confirmation without moving stock again', () => {
   const db = buildSeed();
   const inv = partInvoice(db, 1);

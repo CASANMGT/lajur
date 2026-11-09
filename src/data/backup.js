@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 13;
+export const BACKUP_VERSION = 14;
 
 export function exportBackup(db) {
   return {
@@ -172,6 +172,7 @@ export function validateBackup(payload) {
     need(invoiceIds, delivery.invoiceId, 'Faktur', `Surat jalan ${delivery.id}`);
     need(customers, delivery.customerId, 'Pelanggan', `Surat jalan ${delivery.id}`);
     if (delivery.driverId) need(driverIds, delivery.driverId, 'Driver', `Surat jalan ${delivery.id}`);
+    if (delivery.transportId) need(transportIds, delivery.transportId, 'Transport', `Surat jalan ${delivery.id}`);
     if (!delivery.pic) errors.push(`Surat jalan ${delivery.id}: PIC pengiriman hilang.`);
     if (delivery.status === 'confirmed' && !delivery.receivedBy) errors.push(`Surat jalan ${delivery.id}: penerima belum dikonfirmasi.`);
   }

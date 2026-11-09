@@ -86,6 +86,7 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Fleet asset master** | **Done in v2.12** | 6 seeded motor/mobil/truk assets with ownership, capacity, tax date, driver/transport links |
 | **J&T/JNE consignment surat jalan** | **Done in v2.12** | Recipient, service, AWB, weight, pieces, shipping/insurance/COD, consignment print with barcode + signatures |
 | **PostgreSQL production store** | **Done in v2.12** | `DATABASE_URL` selects JSONB state with ACID transactions, revision guard, audit, users/sessions/idempotency; JSON fallback |
+| **Transport snapshot on surat jalan** | **Done in v2.14** | Form selects transport master, auto-fills from driver/courier, card/list/print show transport; migration backfills old deliveries |
 | **Server auth/RBAC/shared state** | **Partial** | Runnable `server/` reference with optional PostgreSQL; static UI still local |
 | **Object storage** | **Partial** | Local SVG/Data URLs for images; proof metadata only |
 | **Manager monitors sales + cutting tasks** | **Done** | Dashboard sales chart + task/cutting monitor |

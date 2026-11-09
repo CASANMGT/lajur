@@ -1,9 +1,9 @@
-# PRD — Lajur v2.13
+# PRD - Lajur v2.14
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.13.0 (schema 13)
+**Version:** 2.14.0 (schema 14)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.13: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.14: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -204,7 +204,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `customer` | id, name, company, npwp (optional), contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discountType, discountValue, discount, total, taxInvoice{number,npwp,ratePercent,dpp,ppn,total,issuedAt,issuedBy}, deliveryId, credited, depositApplied, payments[] |
-| `delivery` | id, invoiceId, customer, date, pic, address, courier, service, driverId, driver, driverPhone, vehicleType, plateNumber, trackingRef/AWB, recipientName, recipientPhone, weightKg, pieces, shippingCost, insurance, codAmount, instructions, status draft/dispatched/delivered/confirmed, lines[], receivedBy, confirmationNote, history[] |
+| `delivery` | id, invoiceId, customer, date, pic, address, courier, transportId, transportName, service, driverId, driver, driverPhone, vehicleType, plateNumber, trackingRef/AWB, recipientName, recipientPhone, weightKg, pieces, shippingCost, insurance, codAmount, instructions, status draft/dispatched/delivered/confirmed, lines[], receivedBy, confirmationNote, history[] |
 | `driver` | id, userId (role driver), name, phone, vehicleType motor/mobil/truk, plateNumber, transportId, active, notes |
 | `transport company` | id, code, name, type internal/third_party, contact, phone, address, active, notes |
 | `fleet asset` | id, code/plate, name, type motor/mobil/truk, ownership internal/third_party, transportId, driverId, capacityKg, taxExpiry, active, notes |
@@ -418,6 +418,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 3. **Consignment print:** the surat jalan prints as a courier-style note with sender/recipient blocks, AWB header, service, weight/pieces, charges, pseudo barcode and PIC/receiver signature lines. Goods lines remain price-free because the invoice issued the stock.
 4. **PostgreSQL:** the reference server selects PostgreSQL when `DATABASE_URL` is set; otherwise it keeps the JSON file store. `db/schema.sql` defines state (JSONB + revision), audit, users, sessions and idempotency tables. Writes run in a transaction with `revision = previous + 1`; stale writes return `REVISION_CONFLICT`.
 5. **Fallback:** `npm run server` without `DATABASE_URL` still starts with `storage: json`, so local demos need no database.
+6. **Transport snapshot:** the surat jalan form lists active transport master. Selecting a driver fills the internal/driver transport; selecting J&T/JNE/Lalamove/GoSend/Bali Kargo fills the matching transport. The delivery stores `transportId`/`transportName`; the invoice card, Pengiriman list and consignment print show it. Existing deliveries are backfilled during migration.
 
 ---
 
@@ -496,6 +497,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-69 | A surat jalan may carry consignment fields (service, AWB, recipient, weight, pieces, shipping, insurance, COD, instructions). These fields are delivery data only and never change stock, invoice total or AR. |
 | BR-70 | The reference API writes state with an optimistic revision: a write is accepted only when `newRevision = currentRevision + 1` inside a transaction; otherwise it returns `REVISION_CONFLICT` and the caller must reload. |
 | BR-71 | `DATABASE_URL` selects PostgreSQL; without it the server uses the JSON file store. Both paths use the same domain validation and audit contract. |
+| BR-72 | A surat jalan snapshots its transport/armada. The explicit form choice wins; otherwise a non-internal courier maps to its transport master, an internal delivery follows the driver's transport, and a blank value falls back to the matching/internal transport. Later master edits never rewrite the delivery. |
 
 ---
 
@@ -503,7 +505,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.13 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.14 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -640,8 +642,9 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-77 | `db/schema.sql` defines revisioned state, audit, users/sessions and idempotency tables; PG store uses transactions and rejects stale revisions | Pass |
 | AC-78 | Server without `DATABASE_URL` starts with the JSON store and `/api/health` reports `storage: json` | Pass |
 | AC-79 | Customer and faktur pajak accept a blank NPWP; a filled NPWP validates 15/16 digits and falls back to the customer record | Pass |
+| AC-80 | Surat jalan form selects transport master, auto-fills it from driver/courier, and the generated card/list/print show the transport snapshot | Pass |
 
-Test evidence: `node --test` → 62/62 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 64/64 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -684,7 +687,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP | 62/62 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, transport snapshot on surat jalan | 64/64 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-62%2F62-brightgreen) ![Version](https://img.shields.io/badge/version-2.13.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-64%2F64-brightgreen) ![Version](https://img.shields.io/badge/version-2.14.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 62 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 64 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -239,7 +239,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **62 passed, 0 failed** (60 domain/UI + 2 auth) |
+| `node --test` | **64 passed, 0 failed** (62 domain/UI + 2 auth) |
 | Module import check | **46/46 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -268,7 +268,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Transport master | Lajur Fleet, Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers linked to a transport |
 | Fleet assets | 6 seeded assets (Honda Vario, Hilux, Isuzu Elf, Lalamove motor, J&T van, JNE truck) with ownership, capacity, tax date and driver/transport links; duplicate plate rejected |
 | Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
-| PostgreSQL store | Schema 13 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
+| Transport snapshot | Generate SJ with J&T + Rudi → J&T Express; Internal + Slamet → Bali Kargo Utama; card, list and print show the transport |
+| PostgreSQL store | Schema 14 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
 | Sample book | SB-0001 from 2 roll cuts; stock cut; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
 | Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
 | Guide | 14 in-app tutorial sections rendered |
@@ -326,7 +327,7 @@ node tools/render-check.mjs
 - **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”. Optional module.
 - **Invoice discount:** fixed rupiah or percentage, applied to the subtotal with the computed discount shown on screen and in print.
 - **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, optional NPWP (15/16 digits when filled, falls back to the customer record), printable tax invoice; no manual price entry.
-- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle from master, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
+- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle/transport from master, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
 - **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
 - **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected on surat jalan; driver details snapshot into the delivery.
 - **Fleet asset master:** internal and third-party vehicles with code/plate, type, ownership, linked transport/driver, capacity and tax expiry; duplicate plates rejected and audited.
@@ -376,7 +377,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.13.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.14.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

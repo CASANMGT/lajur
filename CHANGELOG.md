@@ -2,6 +2,36 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.14.0] — 2026-11-09
+
+**Release name: Transport di Surat Jalan.** Connects the transport/armada master to surat jalan generation, so a generated delivery note carries the driver, vehicle and transport company from the mock data.
+
+### Added
+
+- **Transport / armada field** on the surat jalan form, populated from the active transport master (Lajur Fleet, Lalamove, GoSend, Bali Kargo, J&T, JNE).
+- Selecting a driver auto-fills phone, vehicle, plate and — for internal delivery — the driver's transport.
+- Selecting a non-internal courier auto-selects the matching transport.
+- Delivery records snapshot `transportId` and `transportName`; the invoice card, Pengiriman list and consignment print show the transport.
+- Existing deliveries are backfilled with a transport snapshot during migration.
+
+### Changed
+
+- Version bumped to 2.14.0, schema 14, backup v14.
+- `createDelivery`/`updateDelivery` resolve transport explicitly, then from the courier, then from the driver.
+
+### Verification
+
+- `node --test`: **64 passed**.
+- Module imports and server-side render remain green.
+- Browser QA: J&T + Rudi → J&T Express, Internal + Slamet → Bali Kargo Utama; generated SJ-0003/SJ-0004 show the transport; print includes `TRANSPORT / ARMADA`.
+
+### Known limitations
+
+- Transport is a snapshot; changing a driver's transport in master data does not rewrite existing surat jalan.
+- Courier and transport remain separate choices because a courier brand and the operating armada can differ.
+
+---
+
 ## [2.13.0] — 2026-11-09
 
 **Release name: NPWP Opsional.** Makes the customer NPWP an explicit optional field for faktur pajak, with validation when filled and automatic fallback from the customer record.

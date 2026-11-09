@@ -57,14 +57,31 @@ export function deliverySchedule(db, { limit = 12 } = {}) {
     .slice(0, limit);
 }
 
+/**
+ * Resolve the armada/transport snapshot for a surat jalan. An explicit choice
+ * wins; otherwise a third-party courier maps to its transport master, an
+ * internal delivery follows the driver's transport, and a blank courier falls
+ * back to the internal transport record.
+ */
+export function resolveTransport(db, { transportId = null, driver = null, courier = 'internal' } = {}) {
+  const transports = db.transportCompanies ?? [];
+  const requested = transportId ? transports.find((t) => t.id === transportId) : null;
+  if (transportId) assert(requested, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
+  const courierTransport = transports.find((t) => t.code === courier) ?? null;
+  const driverTransport = driver?.transportId
+    ? transports.find((t) => t.id === driver.transportId) ?? null
+    : null;
+  return requested ?? (courier !== 'internal' ? courierTransport : null) ?? driverTransport ?? courierTransport ?? null;
+}
+
 function pushHistory(delivery, action, user, note = '') {
   delivery.history.unshift({ at: isoNow(), by: user?.name ?? 'Sistem', action, note });
 }
 
 export function createDelivery(db, {
-  invoiceId, pic, date = todayJakarta(), address = '', courier = 'internal', driverId = null,
-  driver = '', driverPhone = '', vehicleType = '', plateNumber = '', vehicle = '', trackingRef = '',
-  recipientName = '', recipientPhone = '', service = 'REG', weightKg = 0, pieces = 0,
+  invoiceId, pic, date = todayJakarta(), address = '', courier = 'internal', transportId = null,
+  driverId = null, driver = '', driverPhone = '', vehicleType = '', plateNumber = '', vehicle = '',
+  trackingRef = '', recipientName = '', recipientPhone = '', service = 'REG', weightKg = 0, pieces = 0,
   shippingCost = 0, insurance = 0, codAmount = 0, instructions = '', notes = '', user,
 }) {
   const invoice = requireInvoice(db, invoiceId);
@@ -74,6 +91,7 @@ export function createDelivery(db, {
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
   if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
+  const transport = resolveTransport(db, { transportId, driver: driverMaster, courier });
   const customer = byId(db.customers, invoice.customerId);
   const lines = invoice.lines
     .filter((line) => line.kind !== 'service')
@@ -96,6 +114,8 @@ export function createDelivery(db, {
     pic: cleanPic,
     address: String(address ?? '').trim() || customer?.address || '',
     courier: String(courier ?? 'internal').trim() || 'internal',
+    transportId: transport?.id ?? null,
+    transportName: transport?.name ?? '',
     driverId: driverMaster?.id ?? null,
     driver: driverMaster?.name ?? String(driver ?? '').trim(),
     driverPhone: driverMaster?.phone ?? String(driverPhone ?? '').trim(),
@@ -131,10 +151,10 @@ export function createDelivery(db, {
 }
 
 export function updateDelivery(db, {
-  id, pic, date, address, courier = 'internal', driverId = null, driver = '', driverPhone = '',
-  vehicleType = '', plateNumber = '', trackingRef = '', recipientName = '', recipientPhone = '',
-  service = 'REG', weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
-  instructions = '', notes, user,
+  id, pic, date, address, courier = 'internal', transportId = null, driverId = null, driver = '',
+  driverPhone = '', vehicleType = '', plateNumber = '', trackingRef = '', recipientName = '',
+  recipientPhone = '', service = 'REG', weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0,
+  codAmount = 0, instructions = '', notes, user,
 }) {
   const delivery = requireDelivery(db, id);
   assert(delivery.status === 'draft', 'INVALID_STATUS', 'Surat jalan hanya dapat diubah sebelum dikirim.');
@@ -142,11 +162,15 @@ export function updateDelivery(db, {
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
   if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
+  const nextCourier = String(courier ?? delivery.courier ?? 'internal').trim() || 'internal';
+  const transport = resolveTransport(db, { transportId, driver: driverMaster, courier: nextCourier });
   Object.assign(delivery, {
     pic: cleanPic,
     date: date || delivery.date,
     address: String(address ?? delivery.address).trim(),
-    courier: String(courier ?? delivery.courier ?? 'internal').trim() || 'internal',
+    courier: nextCourier,
+    transportId: transport?.id ?? null,
+    transportName: transport?.name ?? '',
     driverId: driverMaster?.id ?? null,
     driver: driverMaster?.name ?? String(driver ?? delivery.driver ?? '').trim(),
     driverPhone: driverMaster?.phone ?? String(driverPhone ?? delivery.driverPhone ?? '').trim(),
