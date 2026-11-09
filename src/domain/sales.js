@@ -10,7 +10,8 @@
  */
 
 import {
-  DomainError, MM_PER_M, assert, audit, byId, daysBetween, isoNow, money, nextId, todayJakarta,
+  DomainError, MM_PER_M, assert, audit, byId, daysBetween, isoNow, money, nextId, normalizeNpwp,
+  todayJakarta,
 } from './core.js';
 import {
   assertWarehouseOpen, availableMm, consumePartReservation, consumeReservation, createRoll, issueParts,
@@ -56,7 +57,7 @@ export function issueTaxInvoice(db, { id, number = '', npwp = '', ratePercent = 
   const breakdown = taxBreakdown(inv, ratePercent);
   const tax = {
     number: String(number ?? '').trim() || `FP-${inv.id.replace('INV-', '')}/${inv.date.slice(0, 4)}`,
-    npwp: String(npwp ?? '').trim() || customer?.npwp || '',
+    npwp: String(npwp ?? '').trim() ? normalizeNpwp(npwp) : String(customer?.npwp ?? '').trim(),
     customerName: inv.customerName,
     invoiceId: inv.id,
     date: inv.date,

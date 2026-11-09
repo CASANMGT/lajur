@@ -2,6 +2,35 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.13.0] — 2026-11-09
+
+**Release name: NPWP Opsional.** Makes the customer NPWP an explicit optional field for faktur pajak, with validation when filled and automatic fallback from the customer record.
+
+### Added
+
+- **Optional NPWP:** customer create/edit and the faktur pajak issue form label NPWP as optional and explain that it can be left blank.
+- **Validation:** when filled, NPWP accepts the dotted 15-digit format or the newer 16-digit NIK/NPWP form; letters and implausible lengths are rejected with `INVALID_NPWP`.
+- **Tax invoice fallback:** issuing a faktur pajak uses the entered NPWP, otherwise the customer's NPWP, otherwise leaves it blank and prints `-`.
+- Regression test covers blank NPWP, customer fallback and invalid input.
+
+### Changed
+
+- Version bumped to 2.13.0, schema 13, backup v13.
+- Guide and tax-invoice copy now state that NPWP is optional.
+
+### Verification
+
+- `node --test`: **62 passed**.
+- Module imports and server-side render remain green.
+- Customer form, tax-invoice form and tax-invoice print retain the existing layout and keyboard flow.
+
+### Known limitations
+
+- NPWP is stored and printed as text; this demo does not validate against DJP/Coretax or generate an official e-faktur.
+- NPWP is not required for posting an invoice or issuing a faktur pajak.
+
+---
+
 ## [2.12.0] — 2026-11-09
 
 **Release name: Armada, Resi & PostgreSQL.** Adds a fleet-asset master, J&T/JNE-style consignment surat jalan and an optional PostgreSQL production store for the reference API.

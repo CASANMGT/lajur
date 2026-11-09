@@ -217,7 +217,7 @@ function openEdit(ctx, c) {
     body: `<div class="form-grid">
       ${field('Nama', `<input class="input" name="name" value="${esc(c.name)}" required />`)}
       ${field('Perusahaan', `<input class="input" name="company" value="${esc(c.company)}" />`)}
-      ${field('NPWP', `<input class="input" name="npwp" value="${esc(c.npwp ?? '')}" placeholder="00.000.000.0-000.000" />`)}
+      ${field('NPWP (opsional)', `<input class="input" name="npwp" value="${esc(c.npwp ?? '')}" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Dipakai untuk faktur pajak. Boleh dikosongkan.' })}
       ${field('Telepon', `<input class="input" name="phone" value="${esc(c.phone)}" />`)}
       ${field('Email', `<input class="input" name="email" value="${esc(c.email)}" />`)}
       ${field('Alamat', `<input class="input" name="address" value="${esc(c.address)}" />`, { full: true })}
@@ -389,7 +389,7 @@ export function openCreate(ctx) {
     body: `<div class="form-grid">
       ${field('Nama', `<input class="input" name="name" required />`)}
       ${field('Perusahaan', `<input class="input" name="company" />`)}
-      ${field('NPWP', `<input class="input" name="npwp" placeholder="00.000.000.0-000.000" />`)}
+      ${field('NPWP (opsional)', `<input class="input" name="npwp" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Dipakai untuk faktur pajak. Boleh dikosongkan.' })}
       ${field('Telepon', `<input class="input" name="phone" />`)}
       ${field('Email', `<input class="input" name="email" />`)}
       ${field('Kota', `<input class="input" name="city" />`)}

@@ -1,9 +1,9 @@
-# PRD — Lajur v2.12
+# PRD — Lajur v2.13
 
 **Product:** Lajur — curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.12.0 (schema 13)
+**Version:** 2.13.0 (schema 13)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.12: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.13: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -126,7 +126,7 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Settings | Account/PIN, staff users (add/edit role/activate/deactivate/reset PIN), operational preferences, audit, backup/restore |
 | Sales orders | Draft/confirmed order, customer + available roll/part, **reserves stock**, creator and full contents, **editable draft with re-reservation**, line prices, printable sales order, convert to invoice once; stock only moves at invoice. Optional module |
 | Invoice discount | Fixed rupiah or percentage of subtotal, snapshot on the invoice, shown in detail and print |
-| Faktur pajak | After posting: DPP/PPN 11% calculated from the invoice total, NPWP, number, printable tax invoice; no manual price input; invoice total unchanged |
+| Faktur pajak | After posting: DPP/PPN 11% calculated from the invoice total, optional NPWP (customer fallback, 15/16 digits when filled), number, printable tax invoice; no manual price input; invoice total unchanged |
 | Surat jalan | After posting: PIC pengiriman, recipient/phone, courier (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, weight, pieces, shipping/insurance/COD, driver/vehicle master, address autocomplete + map, draft → dispatched → delivered → receiver confirmation; consignment-note print/PDF; stock never moves again |
 | Print + PDF | Every printable document opens a preview with Cetak and Unduh PDF; PDF generated from the same layout |
 | Driver master | Driver name, phone, vehicle type (motor/mobil/truk) and plate stored in Master Data; surat jalan snapshots the selected driver |
@@ -201,7 +201,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `supplier invoice` | id, supplier, PO, receipt, currency, fxRate, amountForeign, amount IDR, paid, paidForeign, payments[] |
 | `shipment` | id, PO, supplier, mode, BL/AWB ref, container, ETD, ETA, status, history[], costs{freight,insurance,duty,other}, landedCostIdr, attachments |
 | `task` | id, type, title, warehouse, assignee, priority, status, dueDate, project, roll, qtyMm, notes, printCount, printedAt, printedBy, history[], attachments |
-| `customer` | id, name, company, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
+| `customer` | id, name, company, npwp (optional), contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discountType, discountValue, discount, total, taxInvoice{number,npwp,ratePercent,dpp,ppn,total,issuedAt,issuedBy}, deliveryId, credited, depositApplied, payments[] |
 | `delivery` | id, invoiceId, customer, date, pic, address, courier, service, driverId, driver, driverPhone, vehicleType, plateNumber, trackingRef/AWB, recipientName, recipientPhone, weightKg, pieces, shippingCost, insurance, codAmount, instructions, status draft/dispatched/delivered/confirmed, lines[], receivedBy, confirmationNote, history[] |
@@ -377,7 +377,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 ### 6.12 Invoice discounts, faktur pajak and surat jalan
 
 1. **Discount:** the invoice form accepts either a fixed rupiah amount or a percentage of subtotal. The resolved amount is shown before posting, snapshotted on the invoice and printed; line unit prices do not change.
-2. **Faktur pajak:** after posting, the invoice detail shows the computed DPP and PPN 11% based on the invoice total. Issuing stores a tax number, NPWP, DPP, PPN and issuer; the invoice total and receivables do not change. Printing shows the same line prices and the tax breakdown.
+2. **Faktur pajak:** after posting, the invoice detail shows the computed DPP and PPN 11% based on the invoice total. Issuing stores a tax number, optional NPWP, DPP, PPN and issuer; the invoice total and receivables do not change. NPWP is prefilled from the customer when available and may be left blank; when filled it must be 15 or 16 digits. Printing shows the same line prices, the tax breakdown and `-` for a blank NPWP.
 3. **Surat jalan:** a posted invoice can create one delivery note with PIC pengiriman, driver, vehicle and address. Status moves draft → dispatched → delivered → confirmed; confirmation stores the receiver’s name and note. Printing excludes prices and states that stock already left at invoice posting.
 4. **No second stock event:** delivery creation and every delivery status change are logistics events only; roll and part balances must remain unchanged.
 
@@ -479,7 +479,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-52 | Product and part thumbnails open a full-size preview for every role; closing returns focus to the thumbnail. |
 | BR-53 | WIP Production and Pesanan are optional modules, off by default. When off, their navigation entries, dashboard links, report tabs and direct routes are unavailable; enabling the setting restores all of them. |
 | BR-54 | Invoice discount may be fixed rupiah or a percentage of subtotal (0–100). The resolved discount is snapshotted and never exceeds subtotal; line prices are unchanged. |
-| BR-55 | Faktur pajak is issued only for a posted invoice, once. DPP and PPN are derived from the invoice total (PPN 11%), not entered manually, and the invoice total and AR stay unchanged. |
+| BR-55 | Faktur pajak is issued only for a posted invoice, once. DPP and PPN are derived from the invoice total (PPN 11%), not entered manually, and the invoice total and AR stay unchanged. NPWP is optional: it falls back to the customer record, accepts 15 or 16 digits when filled, and may print as `-` when blank. |
 | BR-56 | A surat jalan belongs to one posted invoice and captures PIC pengiriman. Dispatch, arrival and receiver confirmation are status events only; stock was already issued by the invoice and must not move again. |
 | BR-57 | Simple mode exposes only the daily flow; Advanced mode additionally exposes reports, simulation, tax invoice, surat jalan, import tabs and optional WIP/Pesanan. Master-data updates are available in Simple for the manager. Advanced routes are blocked in Simple mode and the mode switch is manager-only. |
 | BR-58 | Every printable item opens a preview with Cetak and Unduh PDF. The PDF uses the same document layout and never alters the underlying record. |
@@ -503,7 +503,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.12 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.13 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -639,8 +639,9 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-76 | Surat jalan captures J&T/JNE consignment fields and prints an AWB/barcode/signature consignment note without prices | Pass |
 | AC-77 | `db/schema.sql` defines revisioned state, audit, users/sessions and idempotency tables; PG store uses transactions and rejects stale revisions | Pass |
 | AC-78 | Server without `DATABASE_URL` starts with the JSON store and `/api/health` reports `storage: json` | Pass |
+| AC-79 | Customer and faktur pajak accept a blank NPWP; a filled NPWP validates 15/16 digits and falls back to the customer record | Pass |
 
-Test evidence: `node --test` → 61/61 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 62/62 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -683,7 +684,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store | 61/61 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP | 62/62 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

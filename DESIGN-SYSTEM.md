@@ -222,7 +222,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 - **Invoice form:** line prices must be prefilled from master data when a roll/part is selected; a blank price field is a defect. Discount has two explicit modes — fixed Rp and percent — and the computed total updates immediately. Never hide the discount label in print.
 - **Invoice detail:** show the discount mode in the totals block (`Diskon (10%)` or `Diskon`). Use a real `<dl>` for the totals so screen readers understand `dt`/`dd`.
-- **Faktur pajak card:** show DPP, PPN 11% and total including PPN as read-only values. Issuing is a single action with number/NPWP; no price inputs. After issuing show number, NPWP, issue time and a print action. Use “bukan e-faktur resmi” in the demo note.
+- **Faktur pajak card:** show DPP, PPN 11% and total including PPN as read-only values. Issuing is a single action with number and optional NPWP; no price inputs. Label NPWP “(opsional)” and explain that the customer NPWP is used automatically when present. After issuing show number, NPWP, issue time and a print action; print `-` when NPWP is blank. Use “bukan e-faktur resmi” in the demo note.
 - **Surat jalan card:** show status, PIC pengiriman, driver/vehicle, address, receiver and a short history. Primary actions follow the state: Buat → Edit PIC/Kirim → Tandai tiba → Konfirmasi terima. Printing must not imply another stock movement.
 - **Status labels:** `Dibuat`, `Dikirim`, `Tiba`, `Diterima & dikonfirmasi`. Do not use “selesai” until the receiver is confirmed.
 - **No hidden stock event:** never show a second “keluarkan stok” action on the surat jalan. The invoice already issued the stock.
@@ -240,6 +240,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 - **Print preview:** every printable item opens the same window with a top toolbar: **Cetak** and **Unduh PDF**. Do not auto-print, because it prevents using the PDF option. Hide the toolbar in print and when rasterising the PDF.
 - **PDF:** generated from the document layout; show a progress label and a fallback instruction (“Cetak → Simpan sebagai PDF”) if the PDF library cannot load.
+- **Customer NPWP:** label it optional in both create and edit forms; hint that it feeds faktur pajak. When filled, accept dotted 15-digit or 16-digit NIK/NPWP; keep the field blank-friendly and never block customer creation for a missing NPWP.
 - **Driver master:** Master Data → Driver & transport. Show driver, phone, vehicle type and plate. Vehicle types are Motor, Mobil, Truk. Inactive drivers do not appear in new surat jalan forms.
 - **Surat jalan:** select driver from master; autofill phone, vehicle type and plate. Courier select: Internal, J&T, JNE, Lalamove, GoSend, SiCepat, AnterAja, Bali Kargo. Capture service, AWB/resi, recipient/phone, weight, pieces, shipping, insurance, COD and instructions for courier-style consignment notes.
 - **Address:** autocomplete from customer and previous delivery addresses; show an inline map preview and an external map link. Never hide the map behind a submit action.

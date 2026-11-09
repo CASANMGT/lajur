@@ -239,3 +239,17 @@ export function audit(db, user, action, entity, entityId, detail = '') {
 export function assert(condition, code, message, detail) {
   if (!condition) throw new DomainError(code, message, detail);
 }
+
+/**
+ * NPWP is optional on a customer and on a faktur pajak. When present, accept
+ * the usual dotted format and the newer 16-digit NIK/NPWP form; reject letters
+ * or implausible lengths so a blank field stays clear of garbage.
+ */
+export function normalizeNpwp(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  assert(/^[\d.\-\s]+$/.test(raw), 'INVALID_NPWP', 'NPWP hanya boleh berisi angka, titik, dan strip.');
+  const digits = raw.replace(/\D/g, '');
+  assert(digits.length === 15 || digits.length === 16, 'INVALID_NPWP', 'NPWP harus 15 atau 16 digit.');
+  return raw;
+}

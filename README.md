@@ -8,7 +8,7 @@
 
 Lajur is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-61%2F61-brightgreen) ![Version](https://img.shields.io/badge/version-2.12.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-62%2F62-brightgreen) ![Version](https://img.shields.io/badge/version-2.13.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 61 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 62 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -239,7 +239,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **61 passed, 0 failed** (59 domain/UI + 2 auth) |
+| `node --test` | **62 passed, 0 failed** (60 domain/UI + 2 auth) |
 | Module import check | **46/46 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -260,6 +260,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Simple / Advanced | Simple default: 22 routes incl. Master Data, Pengiriman, Katalog, Panduan; no reports/simulation/tax/delivery/import tabs; Advanced: 28 routes with WIP + Pesanan enabled; direct advanced URLs redirect in Simple |
 | Invoice discount | Part price auto-filled 85.000; 4 × 85.000 with 10% discount → total Rp 306.000 |
 | Faktur pajak | INV-0005: DPP 275.676 + PPN 30.324 = 306.000; second issue blocked; print shows DPP/PPN |
+| NPWP opsional | Customer and tax-invoice forms accept a blank NPWP; filled NPWP validates 15/16 digits; tax invoice falls back to customer NPWP; blank prints `-` |
 | Surat jalan | Seed SJ-0001 (PIC Henny) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; stock unchanged |
 | Print + PDF | Print preview has Cetak + Unduh PDF; test PDF generated 60.370 bytes (`Tes-PDF-Lajur.pdf`) |
 | Driver master | 3 drivers seeded (motor/mobil/truk); form autofills vehicle + plate; delivery snapshots driver/vehicle |
@@ -324,7 +325,7 @@ node tools/render-check.mjs
 - **Roll hierarchy:** collection → colour/SKU → root roll → child rolls, with parent/root links and conserved metres.
 - **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”. Optional module.
 - **Invoice discount:** fixed rupiah or percentage, applied to the subtotal with the computed discount shown on screen and in print.
-- **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, NPWP, printable tax invoice; no manual price entry.
+- **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, optional NPWP (15/16 digits when filled, falls back to the customer record), printable tax invoice; no manual price entry.
 - **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle from master, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
 - **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
 - **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected on surat jalan; driver details snapshot into the delivery.
@@ -369,13 +370,13 @@ node tools/render-check.mjs
 - Internal requests with approval, partial dispatch, partial receipt, print documents, no financial postings.
 - Supplier PO, partial receiving per roll/lot, duplicate and over-receipt protection, payable payments, supplier returns.
 - Projects: allocate, reserve, invoice/stock issue, handover, shortage, material cost, instructions.
-- Customers, CRM stages, activities, samples with conversion, sample deposits, indent deposits, refund guards.
+- Customers, CRM stages, activities, optional NPWP for faktur pajak, samples with conversion, sample deposits, indent deposits, refund guards.
 - Customer returns with credit and quarantine.
 - Blind stock opname with freeze, variance, recount, posting, permanent history.
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.12.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.13.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

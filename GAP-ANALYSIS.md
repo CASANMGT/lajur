@@ -64,6 +64,7 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **WIP + Pesanan optional** | **Done in v2.6** | Off by default; Settings toggles; menu/routes/report tabs gated |
 | **Invoice discount fixed/percent** | **Done in v2.7** | Snapshot on invoice; shown in detail and print |
 | **Faktur pajak** | **Done in v2.7** | DPP/PPN 11% from total; NPWP, number, print; no manual price |
+| **Optional customer NPWP** | **Done in v2.13** | Optional on customer and faktur pajak; 15/16-digit validation, customer fallback, blank prints `-` |
 | **Surat jalan / PIC / confirmation** | **Done in v2.7** | Draft → dispatched → delivered → confirmed; no second stock move |
 | **Simple / Advanced mode** | **Done in v2.8** | Simple default; manager switch in topbar/settings; advanced routes redirect |
 | **Demo names** | **Done in v2.8** | Henry Martin (manager), Henny (operator), Belinda (sales) |

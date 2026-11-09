@@ -69,7 +69,7 @@ const steps = [
     body: `
       <ol>
         <li>Setelah faktur terbit, buka detail faktur.</li>
-        <li><strong>Faktur pajak</strong>: DPP/PPN 11% dihitung otomatis; isi nomor/NPWP lalu terbitkan. Dapat dicetak/PDF.</li>
+        <li><strong>Faktur pajak</strong>: DPP/PPN 11% dihitung otomatis; isi nomor dan NPWP pelanggan (opsional) lalu terbitkan. Dapat dicetak/PDF.</li>
         <li><strong>Surat jalan</strong>: pilih PIC, kurir (Internal/Lalamove/GoSend/GrabExpress), driver dari master, kendaraan, alamat dengan autocomplete dan peta.</li>
         <li>Alur: Buat → Kirim → Tiba → Konfirmasi terima oleh PIC pelanggan. Stok tidak berubah lagi.</li>
         <li>Driver melihat tugasnya di menu <a href="#/pengiriman">Pengiriman</a>.</li>

@@ -9,6 +9,7 @@ import {
   confirmDelivery, createDelivery, deliveryForInvoice, dispatchDelivery, markDelivered, updateDelivery,
 } from '../src/domain/deliveries.js';
 import { partStockRow } from '../src/domain/inventory.js';
+import { createCustomer } from '../src/domain/crm.js';
 
 const SALES = { id: 'u-sales', name: 'Dimas', role: 'sales' };
 const OP = { id: 'u-op', name: 'Rani', role: 'operator' };
@@ -66,6 +67,25 @@ test('tax invoice is computed from the posted invoice total and can only be issu
   assert.equal(inv.total, total);
   assert.throws(() => issueTaxInvoice(db, { id: inv.id, user: SALES }),
     (err) => err.code === 'TAX_INVOICE_EXISTS');
+});
+
+test('NPWP is optional on customers and tax invoices, and falls back to the customer', () => {
+  const db = buildSeed();
+  const inv = partInvoice(db, 1);
+  postInvoice(db, { id: inv.id, user: SALES });
+  const taxBlank = issueTaxInvoice(db, { id: inv.id, user: SALES });
+  assert.equal(taxBlank.npwp, '');
+
+  const graha = db.invoices.find((i) => i.id === 'INV-0002');
+  const taxGraha = issueTaxInvoice(db, { id: graha.id, user: SALES });
+  assert.equal(taxGraha.npwp, '02.345.678.9-012.000');
+
+  const customer = createCustomer(db, { name: 'Tanpa NPWP' }, SALES);
+  assert.equal(customer.npwp, '');
+  assert.throws(
+    () => createCustomer(db, { name: 'NPWP salah', npwp: '12.34' }, SALES),
+    (err) => err.code === 'INVALID_NPWP',
+  );
 });
 
 test('surat jalan tracks PIC and confirmation without moving stock again', () => {

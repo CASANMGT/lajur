@@ -6,7 +6,7 @@
  */
 
 import {
-  DomainError, MM_PER_M, assert, audit, byId, isoNow, money, nextId, todayJakarta,
+  DomainError, MM_PER_M, assert, audit, byId, isoNow, money, nextId, normalizeNpwp, todayJakarta,
 } from './core.js';
 import { availableMm, requireRoll, splitRoll } from './inventory.js';
 import { createInvoice, invoiceOutstanding, postInvoice, requireInvoice } from './sales.js';
@@ -35,7 +35,7 @@ export function createCustomer(db, input, user) {
     id: nextId(db, 'customer', 'CUS', 4),
     name: input.name.trim(),
     company: input.company ?? '',
-    npwp: input.npwp ?? '',
+    npwp: normalizeNpwp(input.npwp),
     phone: input.phone ?? '',
     email: input.email ?? '',
     address: input.address ?? '',
@@ -55,8 +55,9 @@ export function createCustomer(db, input, user) {
 
 export function updateCustomer(db, { id, patch, user }) {
   const c = requireCustomer(db, id);
-  Object.assign(c, patch, { updatedAt: isoNow() });
-  audit(db, user, 'ubah_pelanggan', 'customer', c.id, Object.keys(patch).join(','));
+  const clean = patch.npwp === undefined ? patch : { ...patch, npwp: normalizeNpwp(patch.npwp) };
+  Object.assign(c, clean, { updatedAt: isoNow() });
+  audit(db, user, 'ubah_pelanggan', 'customer', c.id, Object.keys(clean).join(','));
   return c;
 }
 

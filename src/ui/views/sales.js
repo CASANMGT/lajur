@@ -654,7 +654,7 @@ function openIssueTax(ctx, inv) {
         </tbody>
       </table></div>
       ${field('Nomor faktur pajak', `<input class="input" name="number" placeholder="FP-${esc(inv.id.replace('INV-', ''))}/${esc(inv.date.slice(0, 4))}" />`, { hint: 'Kosongkan untuk nomor otomatis.' })}
-      ${field('NPWP pelanggan', `<input class="input" name="npwp" value="${esc(customer?.npwp ?? '')}" placeholder="00.000.000.0-000.000" />`)}
+      ${field('NPWP pelanggan (opsional)', `<input class="input" name="npwp" value="${esc(customer?.npwp ?? '')}" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Boleh dikosongkan; NPWP pelanggan dipakai otomatis jika ada.' })}
       <div class="notice notice-info">${icon('alert')}<div>Demo — bukan e-faktur pajak resmi. PPN memakai tarif 11% dan tidak mengubah total tagihan faktur.</div></div>
     `,
     onSubmit(form, close) {
