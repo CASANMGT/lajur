@@ -2,6 +2,22 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.17.1] — 2026-11-18
+
+**Release name: Sample, Barcode & Harga polish.** Fixes migration of existing collections so their cloth type is derived from the category instead of defaulting to “Kain”.
+
+### Fixed
+
+- Legacy Luna/Aria/Nova collections now migrate to Blackout/Sheer/Dimout using their category, with 60 m × 300 cm defaults.
+- Existing local data gains sample stock, roll barcodes and sell-price history on load.
+
+### Verification
+
+- `node --test`: **73 passed**; module and render checks green.
+- Live migration checked on an existing v2.16 browser dataset.
+
+---
+
 ## [2.17.0] — 2026-11-18
 
 **Release name: Sample, Barcode & Harga.** Adds sample stock and distribution history, roll barcode tags, customer WhatsApp stock sharing, sell-price history with 90-day review, collection cloth types/default roll size, and shipping-capitalised warehouse transfers.

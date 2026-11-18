@@ -123,7 +123,10 @@ export function migrate(db) {
   db.sequences.sellPriceHistory = Math.max(Number(db.sequences.sellPriceHistory) || 0, (db.sellPriceHistory ?? []).length);
 
   for (const collection of db.collections ?? []) {
-    if (!collection.clothType) collection.clothType = 'Kain';
+    if (!collection.clothType || collection.clothType === 'Kain') {
+      const category = (db.categories ?? []).find((c) => c.id === collection.categoryId);
+      collection.clothType = category?.name ?? 'Kain';
+    }
     if (!collection.defaultRollLengthM) collection.defaultRollLengthM = 60;
     if (!collection.defaultWidthCm) collection.defaultWidthCm = 300;
   }

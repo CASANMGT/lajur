@@ -669,6 +669,22 @@ test('customer WhatsApp and posted invoices without surat jalan are traceable', 
   assert.ok(missing.some((i) => i.id === inv.id));
 });
 
+test('older collections gain cloth type from their category during migration', () => {
+  const db = buildSeed();
+  db.meta.version = 15;
+  for (const collection of db.collections) {
+    delete collection.clothType;
+    delete collection.defaultRollLengthM;
+    delete collection.defaultWidthCm;
+  }
+  const migrated = migrate(db);
+  assert.equal(migrated.collections.find((c) => c.id === 'col-luna').clothType, 'Blackout');
+  assert.equal(migrated.collections.find((c) => c.id === 'col-aria').clothType, 'Sheer');
+  assert.equal(migrated.collections.find((c) => c.id === 'col-nova').clothType, 'Dimout');
+  assert.equal(migrated.collections[0].defaultRollLengthM, 60);
+  assert.equal(migrated.collections[0].defaultWidthCm, 300);
+});
+
 test('v2.14 third-party vehicles leave the internal fleet during migration', () => {
   const db = buildSeed();
   db.meta.version = 14;

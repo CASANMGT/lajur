@@ -673,7 +673,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-87 | Transfer ongkir increases destination roll HPP by ongkir ÷ requested metres | Pass |
 | AC-88 | Pengiriman lists posted invoices without a surat jalan | Pass |
 
-Test evidence: `node --test` → 72/72 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 73/73 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -716,7 +716,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, sample stock, barcode tags, WA stock share, sell-price review, transfer ongkir | 72/72 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, sample stock, barcode tags, WA stock share, sell-price review, transfer ongkir | 73/73 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |
