@@ -26,10 +26,10 @@ export function render({ users = [] } = {}) {
 
   return `
     <div class="auth-screen">
-      <section class="auth-brand" aria-label="Tentang Lajur">
+      <section class="auth-brand" aria-label="Tentang Lavishome">
         <div class="auth-brand-top">
-          <img src="/assets/lajur-mark.svg" alt="" width="44" height="44" />
-          <div class="brand-word"><strong>lajur</strong><span>Gudang tekstil</span></div>
+          <img src="/assets/lavishome-mark.svg" alt="" width="44" height="44" />
+          <div class="brand-word"><strong>lavishome</strong><span>Gudang tekstil</span></div>
         </div>
         <div class="auth-brand-copy">
           <div class="eyebrow">Sistem gudang gorden</div>

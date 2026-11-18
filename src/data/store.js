@@ -269,6 +269,29 @@ export function migrate(db) {
     if (bill.paidForeign === undefined) bill.paidForeign = bill.paid ?? 0;
   }
   db.settings = { ...DEFAULT_SETTINGS, ...(db.settings ?? {}) };
+  // Brand rename: keep existing local datasets consistent without touching
+  // storage keys or transaction IDs.
+  const oldCompany = 'PT Lajur Tekstil Nusantara';
+  const newCompany = 'PT Lavishome Tekstil Nusantara';
+  if (db.meta.company === oldCompany) db.meta.company = newCompany;
+  if (db.settings.company === oldCompany) db.settings.company = newCompany;
+  for (const transport of db.transportCompanies ?? []) {
+    if (transport.name === 'Lajur Fleet') transport.name = 'Lavishome Fleet';
+  }
+  for (const part of db.parts ?? []) {
+    if (part.brand === 'Lajur') part.brand = 'Lavishome';
+  }
+  for (const supplier of db.suppliers ?? []) {
+    supplier.name = String(supplier.name ?? '')
+      .replace('Ningbo Lajur Textiles', 'Ningbo Lavishome Textiles')
+      .replace('Shaoxing Lajur Fabrics', 'Shaoxing Lavishome Fabrics');
+    supplier.email = String(supplier.email ?? '')
+      .replace('ningbolajur.cn', 'ningbolavishome.cn')
+      .replace('shaoxinglajur.cn', 'shaoxinglavishome.cn');
+  }
+  for (const delivery of db.deliveries ?? []) {
+    if (delivery.transportName === 'Lajur Fleet') delivery.transportName = 'Lavishome Fleet';
+  }
   if (previousVersion > 0 && previousVersion < 8) {
     // v2.6 ships with Pesanan and WIP hidden; managers can re-enable them in Settings.
     db.settings.salesOrderEnabled = false;

@@ -1,4 +1,4 @@
-# Lajur
+# Lavishome
 
 **Inventory and business management for curtain fabric — traced to the last metre.**
 *Setiap roll, tercatat.*
@@ -6,9 +6,9 @@
 **Live demo:** https://lajur-lake.vercel.app
 **Source:** https://github.com/CASANMGT/lajur
 
-Lajur is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
+Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-66%2F66-brightgreen) ![Version](https://img.shields.io/badge/version-2.15.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-67%2F67-brightgreen) ![Version](https://img.shields.io/badge/version-2.16.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 66 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 67 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -184,7 +184,7 @@ Lajur/
 16. **Panduan** — open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, sample book and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
 17. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 18. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
-19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & armada** stores internal drivers and assigns each to one Lajur Fleet vehicle; the **Armada internal** table holds only internal motor/mobil/truk with capacity and tax expiry. **Transport & kurir** keeps third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T, JNE) separate from assets.
+19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & armada** stores internal drivers and assigns each to one Lavishome Fleet vehicle; the **Armada internal** table holds only internal motor/mobil/truk with capacity and tax expiry. **Transport & kurir** keeps third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T, JNE) separate from assets.
 20. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
 21. **Laporan → Produksi & payroll** (when WIP is enabled) — WIP metres, open payroll, QC rejects, capacity and order progress.
 22. **Laporan → Penjualan** — invoice performance; the optional sales-order table appears only when Pesanan is enabled.
@@ -239,7 +239,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **66 passed, 0 failed** (64 domain/UI + 2 auth) |
+| `node --test` | **67 passed, 0 failed** (65 domain/UI + 2 auth) |
 | Module import check | **46/46 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -265,11 +265,11 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Print + PDF | Print preview has Cetak + Unduh PDF; test PDF generated 60.370 bytes (`Tes-PDF-Lajur.pdf`) |
 | Driver master | 3 drivers seeded (motor/mobil/truk); form autofills vehicle + plate; delivery snapshots driver/vehicle |
 | Driver accounts | Asep/Rudi/Slamet login with driver role; nav only Ringkasan/Tugas/Pengiriman/Panduan; invoice redirect |
-| Transport master | Lajur Fleet, Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers linked to a transport |
+| Transport master | Lavishome Fleet, Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers linked to a transport |
 | Fleet assets | 3 seeded internal vehicles (Honda Vario, Hilux, Isuzu Elf), each assigned to Asep/Rudi/Slamet; third-party courier vehicles are not assets; duplicate plate rejected |
 | Driver assignment | Moving Asep from the Vario to the Hilux unassigns Rudi, updates both drivers’ plate/type and both vehicle rows |
 | Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
-| Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lajur Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
+| Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lavishome Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
 | PostgreSQL store | Schema 14 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
 | Sample book | SB-0001 from 2 roll cuts; stock cut; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
 | Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
@@ -331,7 +331,7 @@ node tools/render-check.mjs
 - **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle/transport from master, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
 - **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
 - **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected on surat jalan; driver details snapshot into the delivery.
-- **Internal fleet & driver assignment:** only Lajur Fleet vehicles; each driver is attached to one vehicle, assignment moves cleanly between drivers, duplicate plates rejected and audited.
+- **Internal fleet & driver assignment:** only Lavishome Fleet vehicles; each driver is attached to one vehicle, assignment moves cleanly between drivers, duplicate plates rejected and audited.
 - **Third-party delivery:** Lalamove/J&T/JNE/GoSend/Bali Kargo remain courier options, not fleet assets; their surat jalan uses courier/AWB and an optional courier driver name.
 - **Mobile drawer scroll:** sidebar navigation scrolls independently on small phones, including Advanced mode with many menu items.
 - **Supplier price book:** every product/part lists its suppliers, latest price, MOQ and validity; new quotes update the master buy price.
@@ -351,7 +351,7 @@ node tools/render-check.mjs
 - Editable warehouses (create, rename, recoordinate, deactivate with usage guard) and editable collections.
 - Direct stock intake without PO (opening balance/correction) with unique document, lot, per-roll lengths, cost, reason and audit.
 - **Driver role & portal:** Asep/Rudi/Slamet have user accounts (PIN 1212/2323/3434), see only their deliveries/tasks, and can Kirim/Tiba; receiver confirmation stays with sales/manager.
-- **Transport master:** internal Lajur Fleet + Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers link to a transport company.
+- **Transport master:** internal Lavishome Fleet + Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers link to a transport company.
 - **Fleet assets:** internal motor/mobil/truk with plate, capacity, tax expiry and assigned driver.
 - **Sample books:** build a giveaway book from multiple roll cuts, print/PDF, and mark who received it.
 - **Catalog:** colour/width/price/availability listing with Cetak/PDF for potential customers.
@@ -379,7 +379,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.15.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.16.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

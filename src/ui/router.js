@@ -108,7 +108,7 @@ export function renderApp() {
           else window.location.hash = home;
         },
       });
-      document.title = 'Masuk — Lajur';
+      document.title = 'Masuk - Lavishome';
     } catch (err) {
       console.error(err);
       app.innerHTML = `<div class="content">${errorPanel(err)}</div>`;
@@ -164,7 +164,7 @@ export function renderApp() {
     app.innerHTML = renderShell(ctx, content);
     mountShell(ctx);
     if (!content.startsWith('<div class="error-box"')) view.mount?.(ctx);
-    document.title = `${ROUTE_META[route.name]?.title ?? 'Lajur'} — Lajur`;
+    document.title = `${ROUTE_META[route.name]?.title ?? 'Lavishome'} - Lavishome`;
   } catch (err) {
     console.error(err);
     app.innerHTML = `<div class="content">${errorPanel(err)}</div>`;
@@ -221,7 +221,7 @@ export async function start() {
     toast('Penyimpanan lokal penuh atau diblokir. Perubahan hanya bertahan selama tab terbuka.', { tone: 'error', title: 'Penyimpanan' });
   }
   if (!store.state.db.audit?.length && user) {
-    toast('Dataset contoh dimuat. Gunakan Simulasi Data untuk mencoba siklus 60 → 10 → 50.', { title: 'Selamat datang di Lajur' });
+    toast('Dataset contoh dimuat. Gunakan Simulasi Data untuk mencoba siklus 60 → 10 → 50.', { title: 'Selamat datang di Lavishome' });
   }
 }
 

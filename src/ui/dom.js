@@ -409,7 +409,7 @@ export function printDocument(title, innerHtml) {
       <button type="button" id="pdf-download">Unduh PDF</button>
     </div>
     <div class="doc-head">
-      <div><div class="brand">lajur</div><small>PT Lajur Tekstil Nusantara · Gudang Tekstil</small></div>
+      <div><div class="brand">lavishome</div><small>PT Lavishome Tekstil Nusantara · Gudang Tekstil</small></div>
       <div style="text-align:right"><small>${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}</small></div>
     </div>
     ${innerHtml}
@@ -445,7 +445,7 @@ export function printDocument(title, innerHtml) {
             if (y > 0) pdf.addPage();
             pdf.addImage(slice.toDataURL('image/jpeg', 0.94), 'JPEG', 0, 0, pageWidth, height * pageWidth / canvas.width);
           }
-          const filename = String(title).replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') || 'lajur-dokumen';
+          const filename = String(title).replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '') || 'lavishome-dokumen';
           pdf.save(filename + '.pdf');
           toolbar.style.display = '';
           document.body.style.paddingTop = '';

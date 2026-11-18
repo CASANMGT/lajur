@@ -1,14 +1,14 @@
-# Design System — Lajur v2.11
+# Design System - Lavishome v2.16
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
-**Brand reference:** *Lajur — Brand Platform v1.0, 07 Nov 2026*
+**Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
 **Line:** *Setiap roll, tercatat.*
 
 ---
 
 ## 1. Brand direction
 
-Lajur is a **warm, corporate, structured** system for textile warehouse work — not a playful consumer app. It should feel like well-organised shelving: calm surfaces, precise numbers, clear labels, and a visible sense of physical material.
+Lavishome is a **warm, corporate, structured** system for textile warehouse work - not a playful consumer app. It should feel like well-organised shelving: calm surfaces, precise numbers, clear labels, and a visible sense of physical material.
 
 | Attribute | Expression |
 |-----------|------------|
@@ -20,7 +20,7 @@ Lajur is a **warm, corporate, structured** system for textile warehouse work —
 
 ### Logo
 
-Lowercase wordmark **lajur** with a folded-ribbon "L" mark. Clear space at least the height of the `l`; minimum 24 px mark / 96 px wordmark digital. Never stretch, rotate or add effects. Master vector still to be finalised by the brand owner; the demo uses a simplified SVG.
+Lowercase wordmark **lavishome** with a folded-ribbon "L" mark. Clear space at least the height of the `l`; minimum 24 px mark / 96 px wordmark digital. Never stretch, rotate or add effects. Master vector still to be finalised by the brand owner; the demo uses a simplified SVG.
 
 ### Photography & pattern
 
@@ -255,15 +255,15 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 ### 5.16 Driver role, sample book, catalog, guide
 
 - **Driver account:** show driver name/vehicle, only Ringkasan/Tugas/Pengiriman/Panduan in nav, no prices or master. Driver actions are Kirim and Tiba; receiver confirmation belongs to sales/manager.
-- **Transport & courier master:** Lajur Fleet is the internal transport; Lalamove, GoSend, Bali Kargo, J&T and JNE stay as third-party delivery options. Third parties are never shown as fleet assets.
+- **Transport & courier master:** Lavishome Fleet is the internal transport; Lalamove, GoSend, Bali Kargo, J&T and JNE stay as third-party delivery options. Third parties are never shown as fleet assets.
 - **Sample book:** create from multiple roll cuts, show item count/status, print/PDF. Use “Beri” with recipient and date; never show a second stock movement after giving the book.
 - **Catalog:** card grid with swatch, colour/code, width, sell price and availability; no cost/margin. Provide Cetak/PDF.
 - **Guide:** accordion sections with numbered steps and links. Keep copy practical (“Buka → isi → simpan”), not marketing.
 
 ### 5.17 Internal fleet, consignment notes and production database
 
-- **Armada internal:** a dedicated table with vehicle name/plate, assigned driver, capacity, tax expiry and active status. Only Lajur Fleet vehicles appear; there is no ownership chip and no third-party vehicle. One **Kendaraan** action opens a compact modal; assigning a driver moves them from their previous vehicle, and duplicate plates show a plain-language error.
-- **Consignment surat jalan:** print as a courier note, not a plain letter. Header: Lajur mark, “SURAT JALAN / CONSIGNMENT NOTE”, courier + service, document ID/date, large AWB/resi and a pseudo barcode. Two address blocks: sender (PT Lajur Tekstil Nusantara, Jakarta/Bali warehouse, PIC) and recipient (name, phone, address). A meta grid carries invoice, weight/pieces, shipping/insurance, COD, transport/armada, driver/vehicle and status. Keep goods lines price-free; finish with PIC and receiver signature lines.
+- **Armada internal:** a dedicated table with vehicle name/plate, assigned driver, capacity, tax expiry and active status. Only Lavishome Fleet vehicles appear; there is no ownership chip and no third-party vehicle. One **Kendaraan** action opens a compact modal; assigning a driver moves them from their previous vehicle, and duplicate plates show a plain-language error.
+- **Consignment surat jalan:** print as a courier note, not a plain letter. Header: Lavishome mark, "SURAT JALAN / CONSIGNMENT NOTE", courier + service, document ID/date, large AWB/resi and a pseudo barcode. Two address blocks: sender (PT Lavishome Tekstil Nusantara, Jakarta/Bali warehouse, PIC) and recipient (name, phone, address). A meta grid carries invoice, weight/pieces, shipping/insurance, COD, transport/armada, driver/vehicle and status. Keep goods lines price-free; finish with PIC and receiver signature lines.
 - **Delivery mode:** internal delivery shows an internal driver picker and the vehicle assigned to that driver; choosing a vehicle also selects its driver. Third-party delivery hides the internal fleet block, shows a courier note and an optional courier driver name, and stores no `fleetAssetId`. Snapshot vehicle and transport on the delivery; never rewrite existing documents when master data changes.
 - **No price leakage:** the consignment note must never show unit prices, invoice subtotal or margin. It is a delivery document; the invoice already moved stock.
 - **Database status:** the reference server is the only place PostgreSQL is used. In the UI, the demo remains browser-local. When documenting production, state which store is active (`storage: postgres` or `json`) and never imply the static demo shares data.

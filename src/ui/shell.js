@@ -136,8 +136,8 @@ export function renderShell(ctx, contentHtml) {
     <div class="layout">
       <aside class="sidebar" id="sidebar" aria-label="Navigasi utama">
         <a class="brand" href="#/ringkasan">
-          <img src="/assets/lajur-mark.svg" alt="" width="38" height="38" />
-          <span class="brand-word"><strong>lajur</strong><span>Gudang tekstil</span></span>
+          <img src="/assets/lavishome-mark.svg" alt="" width="38" height="38" />
+          <span class="brand-word"><strong>lavishome</strong><span>Gudang tekstil</span></span>
         </a>
         ${navHtml}
         <div class="sidebar-foot">
@@ -155,7 +155,7 @@ export function renderShell(ctx, contentHtml) {
             ${icon('menu')}
           </button>
           <div class="topbar-title">
-            <strong>${esc(ROUTE_META[ctx.route.name]?.title ?? 'Lajur')}</strong>
+            <strong>${esc(ROUTE_META[ctx.route.name]?.title ?? 'Lavishome')}</strong>
             <span>${esc(ROUTE_META[ctx.route.name]?.sub ?? '')}</span>
           </div>
           <div class="topbar-actions">

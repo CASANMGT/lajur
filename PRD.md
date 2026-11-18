@@ -1,15 +1,15 @@
-# PRD - Lajur v2.15
+# PRD - Lavishome v2.16
 
-**Product:** Lajur — curtain & textile inventory management
+**Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.15.0 (schema 15)
+**Version:** 2.16.0 (schema 15)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
 
 > **Brand line:** *Setiap roll, tercatat.*
-> Lajur is an internal working name from the brand guide; it can be replaced without changing the product model.
+> Lavishome (formerly Lajur) is the product name; internal storage keys and transaction IDs keep the legacy prefix for data compatibility.
 
 ---
 
@@ -17,7 +17,7 @@
 
 Curtain businesses sell fabric by the metre, but they buy and store fabric as **individual physical rolls with different lengths, dye lots and costs**. A "stock: 324 m" number is not actionable on the warehouse floor: the operator must know *which roll* is 61.2 m, which lot it belongs to, where it sits, and whether part of it is already promised to a project.
 
-Lajur exists to keep one traceable chain:
+Lavishome exists to keep one traceable chain:
 
 **collection → colour variant/SKU → lot → physical roll → warehouse / bin**
 
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.15: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.16: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -143,8 +143,8 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Simple / Advanced mode | Simple is the default daily operation: stock, tasks, transfers, purchasing, invoices, projects, customers, samples, opname and master-data updates. Advanced adds reports, simulation, tax invoice, surat jalan, import tabs, and unlocks optional WIP/Pesanan. Direct advanced routes redirect in Simple |
 | Task tickets + online assignment | Task detail and filtered queue print tickets/PDF; printing is counted; online assignment can be disabled so tickets are printed and workers update status manually |
 | Driver accounts | Asep/Rudi/Slamet are users with role driver and linked driver records; driver sees assigned deliveries/tasks, can Kirim/Tiba, but not confirm receiver |
-| Transport & courier master | Lajur Fleet internal plus third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express); third parties are not fleet assets |
-| Internal fleet | Motor/mobil/truk owned by Lajur Fleet with plate, assigned driver, capacity and tax expiry; one driver per vehicle, duplicate plates rejected |
+| Transport & courier master | Lavishome Fleet internal plus third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express); third parties are not fleet assets |
+| Internal fleet | Motor/mobil/truk owned by Lavishome Fleet with plate, assigned driver, capacity and tax expiry; one driver per vehicle, duplicate plates rejected |
 | Sample book | Build a giveaway book from several roll cuts; each cut consumes stock; print/PDF and mark who received it |
 | Catalog | Customer-facing colour/width/price/availability listing; print/PDF |
 | In-app guide | 14 tutorial sections covering every business-process input |
@@ -207,7 +207,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `delivery` | id, invoiceId, customer, date, pic, address, courier, transportId, transportName, service, driverId, driver, driverPhone, vehicleType, plateNumber, trackingRef/AWB, recipientName, recipientPhone, weightKg, pieces, shippingCost, insurance, codAmount, instructions, status draft/dispatched/delivered/confirmed, lines[], receivedBy, confirmationNote, history[] |
 | `driver` | id, userId (role driver), name, phone, vehicleType motor/mobil/truk, plateNumber, transportId, active, notes |
 | `transport company` | id, code, name, type internal/third_party, contact, phone, address, active, notes |
-| `fleet asset` | id, code/plate, name, type motor/mobil/truk, transportId (Lajur Fleet), driverId (assigned driver), capacityKg, taxExpiry, active, notes |
+| `fleet asset` | id, code/plate, name, type motor/mobil/truk, transportId (Lavishome Fleet), driverId (assigned driver), capacityKg, taxExpiry, active, notes |
 | `sales order` | id, customer, project, date, status draft/confirmed/converted/cancelled, createdBy/userId, lines[] with qty + unit price + amount, total, invoiceId, history[] |
 | `supplier price` | id, supplierId, skuId/partId, price, currency, unit, moqMm/moqPcs, validFrom, validTo, priceIdr, createdAt, createdBy |
 | `fx rate` | id, currency, rate, asOf, source, poId, createdBy |
@@ -406,14 +406,14 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 ### 6.15 Driver accounts, sample books, catalog and guide
 
 1. **Driver users:** Asep/Rudi/Slamet exist as users with role `driver`, each linked to a driver record. Driver can log in, see assigned surat jalan/tasks, Kirim/Tiba; sales/manager confirms the receiver.
-2. **Transport & courier:** Lajur Fleet internal plus third-party Lalamove/GoSend/Bali Kargo/J&T/JNE as delivery options. Third parties are not fleet assets; internal drivers are attached to a Lajur Fleet vehicle.
+2. **Transport & courier:** Lavishome Fleet internal plus third-party Lalamove/GoSend/Bali Kargo/J&T/JNE as delivery options. Third parties are not fleet assets; internal drivers are attached to a Lavishome Fleet vehicle.
 3. **Sample book:** choose a customer/prospect, add several roll cuts and sizes, create the book. Each cut reduces stock and produces a sample record. Print/PDF the book and mark who received it.
 4. **Catalog:** customer-facing colors, width, sell price and availability; print/PDF; no cost/margin.
 5. **Guide:** in-app Panduan with 14 sections covering every input flow and links to the relevant screen.
 
 ### 6.16 Internal fleet, consignment notes and production database
 
-1. **Internal fleet:** Master Data → Driver & armada includes an **Armada internal** table. Each vehicle stores code/plate, name, type (motor/mobil/truk), Lajur Fleet transport, assigned driver, capacity in kg, tax expiry and active flag. Seeded fleet is Honda Vario (Asep), Toyota Hilux (Rudi) and Isuzu Elf (Slamet). Lalamove/J&T/JNE vehicles are not assets.
+1. **Internal fleet:** Master Data → Driver & armada includes an **Armada internal** table. Each vehicle stores code/plate, name, type (motor/mobil/truk), Lavishome Fleet transport, assigned driver, capacity in kg, tax expiry and active flag. Seeded fleet is Honda Vario (Asep), Toyota Hilux (Rudi) and Isuzu Elf (Slamet). Lalamove/J&T/JNE vehicles are not assets.
 2. **Consignment surat jalan:** the delivery form captures recipient name/phone, courier, service (REG/YES/OKS/COD/CARGO), AWB/resi, weight, pieces, shipping cost, insurance, COD and delivery instructions. Master driver/vehicle still snapshots into the document.
 3. **Consignment print:** the surat jalan prints as a courier-style note with sender/recipient blocks, AWB header, service, weight/pieces, charges, pseudo barcode and PIC/receiver signature lines. Goods lines remain price-free because the invoice issued the stock.
 4. **PostgreSQL:** the reference server selects PostgreSQL when `DATABASE_URL` is set; otherwise it keeps the JSON file store. `db/schema.sql` defines state (JSONB + revision), audit, users, sessions and idempotency tables. Writes run in a transaction with `revision = previous + 1`; stale writes return `REVISION_CONFLICT`.
@@ -498,7 +498,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-69 | A surat jalan may carry consignment fields (service, AWB, recipient, weight, pieces, shipping, insurance, COD, instructions). These fields are delivery data only and never change stock, invoice total or AR. |
 | BR-70 | The reference API writes state with an optimistic revision: a write is accepted only when `newRevision = currentRevision + 1` inside a transaction; otherwise it returns `REVISION_CONFLICT` and the caller must reload. |
 | BR-71 | `DATABASE_URL` selects PostgreSQL; without it the server uses the JSON file store. Both paths use the same domain validation and audit contract. |
-| BR-72 | A surat jalan snapshots its transport/armada. An internal delivery uses the selected internal vehicle and its Lajur Fleet transport; a third-party courier maps to its transport and carries no internal fleet asset. Later master edits never rewrite the delivery. |
+| BR-72 | A surat jalan snapshots its transport/armada. An internal delivery uses the selected internal vehicle and its Lavishome Fleet transport; a third-party courier maps to its transport and carries no internal fleet asset. Later master edits never rewrite the delivery. |
 | BR-73 | Third-party couriers are options, not assets. They may store courier/AWB and an optional courier driver name but never an internal `fleetAssetId`. |
 
 ---
@@ -507,7 +507,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.15 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.16 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -644,10 +644,10 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-77 | `db/schema.sql` defines revisioned state, audit, users/sessions and idempotency tables; PG store uses transactions and rejects stale revisions | Pass |
 | AC-78 | Server without `DATABASE_URL` starts with the JSON store and `/api/health` reports `storage: json` | Pass |
 | AC-79 | Customer and faktur pajak accept a blank NPWP; a filled NPWP validates 15/16 digits and falls back to the customer record | Pass |
-| AC-80 | Surat jalan form selects the internal vehicle assigned to the driver; generated card/list/print show the vehicle and Lajur Fleet transport | Pass |
+| AC-80 | Surat jalan form selects the internal vehicle assigned to the driver; generated card/list/print show the vehicle and Lavishome Fleet transport | Pass |
 | AC-81 | Moving a driver/vehicle assignment updates both records; third-party delivery has no fleet asset and keeps courier/AWB only | Pass |
 
-Test evidence: `node --test` → 66/66 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 67/67 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -690,7 +690,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode | 66/66 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand | 67/67 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

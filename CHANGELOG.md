@@ -2,6 +2,28 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.16.0] — 2026-11-18
+
+**Release name: Lavishome.** Rebrands the visible wordmark, document headers, company and fleet names from Lajur to Lavishome.
+
+### Changed
+
+- Sidebar, login screen, browser titles, loading screen and print documents now use **lavishome**.
+- Company name becomes **PT Lavishome Tekstil Nusantara**; internal fleet becomes **Lavishome Fleet**.
+- Product-part brand and import supplier display names use Lavishome.
+- Logo mark renamed to `/assets/lavishome-mark.svg`; favicon label updated.
+- Existing local datasets are migrated from the old brand strings without changing storage keys or transaction IDs.
+- Version bumped to 2.16.0; schema and backup stay at 15.
+
+### Verification
+
+- `node --test`: **67 passed**, including brand migration.
+- Module imports and server-side render remain green.
+- Browser QA: login, sidebar, ringkasan, master, invoice and consignment print show **lavishome** / **PT Lavishome Tekstil Nusantara** / **Lavishome Fleet**.
+- Existing v2.15 local data is rebranded on load.
+
+---
+
 ## [2.15.0] — 2026-11-09
 
 **Release name: Armada Internal & Assignment.** Drivers are now attached to an internal vehicle, the fleet asset list contains only Lajur Fleet vehicles, and third-party delivery stays available as a courier option.

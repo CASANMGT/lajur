@@ -573,6 +573,24 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });
 
+test('legacy Lajur branding migrates to Lavishome', () => {
+  const db = buildSeed();
+  db.meta.version = 15;
+  db.meta.company = 'PT Lajur Tekstil Nusantara';
+  db.settings.company = 'PT Lajur Tekstil Nusantara';
+  db.transportCompanies.find((t) => t.code === 'internal').name = 'Lajur Fleet';
+  db.parts[0].brand = 'Lajur';
+  db.deliveries[0].transportName = 'Lajur Fleet';
+  db.suppliers.find((s) => s.id === 'SUP-004').name = 'Ningbo Lajur Textiles Co.';
+  const migrated = migrate(db);
+  assert.equal(migrated.meta.company, 'PT Lavishome Tekstil Nusantara');
+  assert.equal(migrated.settings.company, 'PT Lavishome Tekstil Nusantara');
+  assert.equal(migrated.transportCompanies.find((t) => t.code === 'internal').name, 'Lavishome Fleet');
+  assert.equal(migrated.parts[0].brand, 'Lavishome');
+  assert.equal(migrated.deliveries[0].transportName, 'Lavishome Fleet');
+  assert.equal(migrated.suppliers.find((s) => s.id === 'SUP-004').name, 'Ningbo Lavishome Textiles Co.');
+});
+
 test('v2.14 third-party vehicles leave the internal fleet during migration', () => {
   const db = buildSeed();
   db.meta.version = 14;

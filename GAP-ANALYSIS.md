@@ -1,4 +1,4 @@
-# Gap analysis — Lajur v2.11 vs. earlier PRD and design system v2
+# Gap analysis - Lavishome v2.16 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -79,11 +79,11 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Delivery schedule** | **Done in v2.10** | Driver/date/courier/status + same-day conflict |
 | **Chinese suppliers + draft PO** | **Done in v2.10** | Ningbo, Shaoxing, Yiwu, Guangzhou; PO-0006 |
 | **Driver user accounts** | **Done in v2.11** | Asep/Rudi/Slamet login as driver; assigned deliveries/tasks only |
-| **Corporate transport master** | **Done in v2.11** | Lajur Fleet, Lalamove, GoSend, Bali Kargo, J&T, JNE; third parties remain courier options |
+| **Corporate transport master** | **Done in v2.11** | Lavishome Fleet, Lalamove, GoSend, Bali Kargo, J&T, JNE; third parties remain courier options |
 | **Sample book from rolls** | **Done in v2.11** | Multi-cut book, print/PDF, give to prospect |
 | **Customer catalog** | **Done in v2.11** | Colours/width/price/availability, print/PDF |
 | **In-app tutorial** | **Done in v2.11** | 14 process guides with links |
-| **Internal fleet master** | **Done in v2.15** | 3 seeded Lajur Fleet vehicles; third-party vehicles removed from assets; capacity, tax date and assigned driver |
+| **Internal fleet master** | **Done in v2.15** | 3 seeded Lavishome Fleet vehicles; third-party vehicles removed from assets; capacity, tax date and assigned driver |
 | **Driver ↔ vehicle assignment** | **Done in v2.15** | Assign from driver or vehicle form; one driver per vehicle; moving assignment syncs both records |
 | **Third-party delivery mode** | **Done in v2.15** | Lalamove/J&T/JNE/GoSend/Bali Kargo selectable as courier; no fleet asset, optional courier driver + AWB |
 | **J&T/JNE consignment surat jalan** | **Done in v2.12** | Recipient, service, AWB, weight, pieces, shipping/insurance/COD, consignment print with barcode + signatures |

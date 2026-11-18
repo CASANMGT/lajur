@@ -112,7 +112,7 @@ test('surat jalan snapshots driver and transport master data', () => {
   assert.equal(internal.vehicleName, 'Isuzu Elf');
   assert.equal(internal.plateNumber, 'B 5566 GH');
   assert.equal(internal.transportId, 'TRP-001');
-  assert.equal(internal.transportName, 'Lajur Fleet');
+  assert.equal(internal.transportName, 'Lavishome Fleet');
 });
 
 test('surat jalan tracks PIC and confirmation without moving stock again', () => {

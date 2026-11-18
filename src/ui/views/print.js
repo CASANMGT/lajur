@@ -14,7 +14,7 @@ export function printLabelHtml(roll, sku, wh) {
   return `
     <div style="border:2px solid #172b3a;border-radius:8px;padding:16px;max-width:420px">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <span class="brand">lajur</span><span style="font-size:9px;letter-spacing:.14em;color:#62727c">LABEL ROLL</span>
+        <span class="brand">lavishome</span><span style="font-size:9px;letter-spacing:.14em;color:#62727c">LABEL ROLL</span>
       </div>
       <div style="font-family:ui-monospace,monospace;font-size:26px;font-weight:700;letter-spacing:.02em;margin:10px 0 2px">${esc(roll.id)}</div>
       <div style="font-size:14px;font-weight:600">${esc(sku?.collectionName)} — ${esc(sku?.colourName || sku?.colourCode)}</div>
@@ -149,7 +149,7 @@ export function printDeliveryHtml(db, delivery) {
   return `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #172b3a;padding-bottom:10px">
       <div>
-        <div class="brand" style="font-size:24px">lajur</div>
+        <div class="brand" style="font-size:24px">lavishome</div>
         <div style="font-size:10px;letter-spacing:.14em;color:#62727c">SURAT JALAN / CONSIGNMENT NOTE</div>
         <div style="margin-top:8px;font-size:16px;font-weight:800">${esc(courier)} · ${esc(delivery.service || 'REG')}</div>
       </div>
@@ -163,7 +163,7 @@ export function printDeliveryHtml(db, delivery) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
       <div style="border:1px solid #cfc6b6;border-radius:6px;padding:10px">
         <div style="font-size:9px;letter-spacing:.1em;color:#62727c">PENGIRIM</div>
-        <div style="font-weight:700;margin-top:4px">PT Lajur Tekstil Nusantara</div>
+        <div style="font-weight:700;margin-top:4px">PT Lavishome Tekstil Nusantara</div>
         <div style="font-size:11px">Gudang Jakarta / Bali</div>
         <div style="font-size:10px;color:#62727c;margin-top:4px">PIC: ${esc(delivery.pic)}</div>
       </div>
@@ -275,7 +275,7 @@ export function printTaskTicketsHtml(db, tasks) {
     const project = task.projectId ? db.projects.find((p) => p.id === task.projectId) : null;
     return `<div class="task-ticket" style="border:2px solid #172b3a;border-radius:8px;padding:16px;max-width:640px;${index < tasks.length - 1 ? 'page-break-after:always;margin-bottom:18px' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px">
-        <div><div class="brand">lajur</div><small style="color:#62727c">TIKET TUGAS OPERASI</small></div>
+        <div><div class="brand">lavishome</div><small style="color:#62727c">TIKET TUGAS OPERASI</small></div>
         <div style="text-align:right"><strong style="font-family:ui-monospace,monospace;font-size:18px">${esc(task.id)}</strong><div style="font-size:10px;color:#62727c">${esc(TASK_STATUS[task.status]?.label ?? task.status)}</div></div>
       </div>
       <h1 style="margin:10px 0 2px">${esc(task.title)}</h1>
@@ -354,7 +354,7 @@ export function printCatalogHtml(db, items) {
   const groups = (db.collections ?? []).filter((c) => items.some((s) => s.collectionId === c.id));
   return `
     <h1>KATALOG KOLEKSI</h1>
-    <p class="pill">Lajur · ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}</p>
+    <p class="pill">Lavishome · ${new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}</p>
     <p class="note" style="margin-top:10px">Harga per meter. Ketersediaan warna dan lot dapat berubah; konfirmasi stok sebelum order.</p>
     ${groups.map((collection) => `
       <h2>${esc(collection.name)}</h2>
@@ -373,7 +373,7 @@ export function printCatalogHtml(db, items) {
           </tr>`;
         }).join('')}</tbody>
       </table>`).join('')}
-    <p class="note">Katalog demo — harga dan stok dapat berubah. Hubungi sales Lajur untuk sample fisik dan penawaran.</p>`;
+    <p class="note">Katalog demo - harga dan stok dapat berubah. Hubungi sales Lavishome untuk sample fisik dan penawaran.</p>`;
 }
 
 export function printInstructionsHtml(db, project) {
