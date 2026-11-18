@@ -280,7 +280,7 @@ export function mount(ctx) {
 
   document.querySelector('[data-act="export-json"]')?.addEventListener('click', () => {
     const backup = ctx.store.exportCurrent();
-    downloadFile(`lajur-backup-${backup.dataset}-${todayJakarta()}.json`, JSON.stringify(backup, null, 2));
+    downloadFile(`lavishome-backup-${backup.dataset}-${todayJakarta()}.json`, JSON.stringify(backup, null, 2));
   });
   document.querySelector('[data-import]')?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];

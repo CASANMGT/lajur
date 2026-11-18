@@ -2,6 +2,22 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.16.1] — 2026-11-18
+
+**Release name: Lavishome polish.** Completes the brand sweep in secondary labels and download filenames.
+
+### Fixed
+
+- Master Data copy, driver hint, catalog print title and fleet labels now say **Lavishome Fleet**.
+- Backup, stock and report downloads use `lavishome-*` filenames.
+
+### Verification
+
+- `node --test`: **67 passed**; module and render checks green.
+- Live login, sidebar, company name and Master Data checked after deployment.
+
+---
+
 ## [2.16.0] — 2026-11-18
 
 **Release name: Lavishome.** Rebrands the visible wordmark, document headers, company and fleet names from Lajur to Lavishome.

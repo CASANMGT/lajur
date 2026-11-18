@@ -131,7 +131,7 @@ function renderDrivers(ctx) {
       </table></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Transport & kurir</h2><p>Lajur Fleet internal dan opsi pihak ketiga: Lalamove, GoSend, kargo Bali, J&T, JNE.</p></div><span class="badge no-dot">${transports.length}</span></div>
+      <div class="card-head"><div><h2>Transport & kurir</h2><p>Lavishome Fleet internal dan opsi pihak ketiga: Lalamove, GoSend, kargo Bali, J&T, JNE.</p></div><span class="badge no-dot">${transports.length}</span></div>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Transport</th><th>Jenis</th><th>Kontak</th><th>Telepon</th><th>Alamat</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${transports.map((t) => `<tr>
@@ -147,7 +147,7 @@ function renderDrivers(ctx) {
       <div class="card-pad"><p class="xs muted">Pihak ketiga hanya menjadi opsi kurir pada surat jalan dan tidak dihitung sebagai aset armada internal.</p></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Armada internal</h2><p>Motor, mobil, dan truk milik Lajur Fleet beserta driver yang ditugaskan dan masa pajak.</p></div><span class="badge no-dot">${fleet.length}</span></div>
+      <div class="card-head"><div><h2>Armada internal</h2><p>Motor, mobil, dan truk milik Lavishome Fleet beserta driver yang ditugaskan dan masa pajak.</p></div><span class="badge no-dot">${fleet.length}</span></div>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Kendaraan</th><th>Driver ditugaskan</th><th class="num">Kapasitas</th><th>Pajak</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${fleet.map((a) => {
@@ -507,7 +507,7 @@ function openDriver(ctx, driver = null) {
     body: `<div class="form-grid">
       ${field('Nama driver', `<input class="input" name="name" value="${esc(driver?.name ?? '')}" required />`)}
       ${field('Telepon', `<input class="input" name="phone" value="${esc(driver?.phone ?? '')}" />`)}
-      ${field('Kendaraan dinas', `<select class="select" name="fleetAsset"><option value="">— Belum ada kendaraan —</option>${fleet.map((a) => `<option value="${a.id}" ${assigned?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}</option>`).join('')}</select>`, { hint: 'Armada internal Lajur Fleet. Kendaraan juga dapat ditugaskan dari tabel Armada internal.' })}
+      ${field('Kendaraan dinas', `<select class="select" name="fleetAsset"><option value="">— Belum ada kendaraan —</option>${fleet.map((a) => `<option value="${a.id}" ${assigned?.id === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}</option>`).join('')}</select>`, { hint: 'Armada internal Lavishome Fleet. Kendaraan juga dapat ditugaskan dari tabel Armada internal.' })}
       ${editing ? `<label class="checkline span-2"><input type="checkbox" name="active" ${driver.active !== false ? 'checked' : ''} /> Driver aktif dan dapat dipilih</label>` : ''}
       ${field('Catatan', `<input class="input" name="notes" value="${esc(driver?.notes ?? '')}" placeholder="Area, kapasitas, atau catatan" />`, { full: true })}
     </div>`,
@@ -567,7 +567,7 @@ function openFleet(ctx, asset = null) {
   const drivers = (ctx.db.drivers ?? []).filter((d) => d.active !== false);
   openModal({
     title: editing ? `Edit ${asset.name}` : 'Kendaraan internal baru',
-    description: 'Motor/mobil/truk Lajur Fleet, driver yang ditugaskan, kapasitas dan masa pajak.',
+    description: 'Motor/mobil/truk Lavishome Fleet, driver yang ditugaskan, kapasitas dan masa pajak.',
     submitLabel: editing ? 'Simpan kendaraan' : 'Buat kendaraan',
     body: `<div class="form-grid">
       ${field('Kode / plat', `<input class="input" name="code" value="${esc(asset?.code ?? '')}" placeholder="B 1234 CD" required />`)}
@@ -746,7 +746,7 @@ export function mount(ctx) {
 
   document.querySelector('[data-act="export-json"]')?.addEventListener('click', () => {
     const backup = ctx.store.exportCurrent();
-    downloadFile(`lajur-backup-${backup.dataset}-${todayJakarta()}.json`, JSON.stringify(backup, null, 2));
+    downloadFile(`lavishome-backup-${backup.dataset}-${todayJakarta()}.json`, JSON.stringify(backup, null, 2));
   });
   document.querySelector('[data-import]')?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];

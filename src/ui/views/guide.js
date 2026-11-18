@@ -1,4 +1,4 @@
-/** Panduan langkah demi langkah untuk semua proses input di Lajur. */
+/** Panduan langkah demi langkah untuk semua proses input di Lavishome. */
 
 import { esc, icon } from '../dom.js';
 import { pageHead } from './common.js';

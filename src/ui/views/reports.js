@@ -375,6 +375,6 @@ export function mount(ctx) {
         (Math.max(0, r.currentMm - (r.reservedMm || 0)) / 1000).toString().replace('.', ','), r.transit ? 'transit' : r.status,
       ]);
     }
-    downloadFile(`lajur-laporan-stok-${todayJakarta()}.csv`, toCsv(rows), 'text/csv');
+    downloadFile(`lavishome-laporan-stok-${todayJakarta()}.csv`, toCsv(rows), 'text/csv');
   });
 }

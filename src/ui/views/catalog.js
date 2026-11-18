@@ -74,7 +74,7 @@ export function mount(ctx) {
     const skus = ctx.db.skus
       .filter((s) => s.active !== false && !s.dormant)
       .filter((s) => !collection || s.collectionId === collection);
-    printDocument('Katalog Lajur', printCatalogHtml(ctx.db, skus));
+    printDocument('Katalog Lavishome', printCatalogHtml(ctx.db, skus));
     toast('Katalog dibuka: Cetak atau Unduh PDF.', { tone: 'success' });
   });
 }

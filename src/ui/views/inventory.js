@@ -597,6 +597,6 @@ export function mount(ctx) {
           r.transit ? 'transit' : r.status, r.costPerM];
       }),
     ];
-    downloadFile(`lajur-stok-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows), 'text/csv');
+    downloadFile(`lavishome-stok-${new Date().toISOString().slice(0, 10)}.csv`, toCsv(rows), 'text/csv');
   });
 }

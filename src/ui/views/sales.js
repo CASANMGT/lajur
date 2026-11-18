@@ -708,7 +708,7 @@ function deliveryFields(db, delivery, customer) {
         ${field('Kendaraan internal', `<select class="select" name="fleetAsset"><option value="">— Pilih kendaraan —</option>${fleet.map((a) => {
           const driver = byId(db.drivers, a.driverId);
           return `<option value="${a.id}" data-type="${esc(a.type)}" data-plate="${esc(a.code)}" data-driver="${esc(a.driverId ?? '')}" ${selectedFleetId === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}${driver ? ` · ${esc(driver.name)}` : ' · belum ada driver'}</option>`;
-        }).join('')}</select>`, { hint: 'Hanya armada internal Lajur Fleet.' })}
+        }).join('')}</select>`, { hint: 'Hanya armada internal Lavishome Fleet.' })}
         ${field('Telepon driver', `<input class="input" name="driverPhone" value="${esc(delivery?.driverPhone ?? '')}" />`)}
         ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
         ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
