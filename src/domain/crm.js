@@ -37,6 +37,7 @@ export function createCustomer(db, input, user) {
     company: input.company ?? '',
     npwp: normalizeNpwp(input.npwp),
     phone: input.phone ?? '',
+    whatsapp: String(input.whatsapp ?? input.phone ?? '').trim(),
     email: input.email ?? '',
     address: input.address ?? '',
     city: input.city ?? '',
@@ -105,41 +106,170 @@ export function getSample(db, id) {
   return db.samples.find((s) => s.id === id) ?? null;
 }
 
+export function getSampleStock(db, id) {
+  return (db.sampleStocks ?? []).find((s) => s.id === id) ?? null;
+}
+
+export function sampleStocksOf(db, collectionId = null) {
+  return (db.sampleStocks ?? []).filter((s) => !collectionId || s.collectionId === collectionId);
+}
+
+/**
+ * Cut a physical sample piece from a roll and put it into showroom sample
+ * stock. The piece leaves normal sellable stock, so qty is tracked in pieces.
+ */
+export function addSampleStock(db, {
+  skuId, rollId, qtyMm = 500, location = 'Showroom Jakarta', user,
+}) {
+  const sku = byId(db.skus, skuId);
+  assert(sku, 'SKU_NOT_FOUND', 'Produk tidak ditemukan.');
+  const roll = requireRoll(db, rollId);
+  assert(roll.skuId === skuId, 'SKU_MISMATCH', 'Roll bukan SKU yang dipilih.');
+  const qty = Math.round(Number(qtyMm));
+  assert(qty > 0, 'INVALID_LENGTH', 'Panjang potongan sample harus lebih dari 0 m.');
+  assert(qty <= availableMm(roll), 'INSUFFICIENT_AVAILABLE', `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
+  const id = nextId(db, 'sampleStock', 'SS', 4);
+  const { piece } = splitRoll(db, {
+    rollId,
+    qtyMm: qty,
+    user,
+    ref: id,
+    reason: `Stok sample ${sku.code}`,
+    pieceStatus: 'consumed',
+    note: 'Potongan stok sample',
+  });
+  db.sampleStocks = db.sampleStocks ?? [];
+  let stock = db.sampleStocks.find((s) => s.skuId === skuId);
+  if (!stock) {
+    stock = {
+      id,
+      collectionId: sku.collectionId,
+      skuId,
+      qty: 0,
+      minQty: 1,
+      sampleLengthMm: qty,
+      location,
+      sourceRollId: roll.id,
+      updatedAt: isoNow(),
+      history: [],
+    };
+    db.sampleStocks.push(stock);
+  }
+  stock.qty += 1;
+  stock.sampleLengthMm = qty;
+  stock.location = String(location ?? stock.location ?? '').trim() || stock.location;
+  stock.sourceRollId = roll.id;
+  stock.updatedAt = isoNow();
+  stock.history.unshift({ at: isoNow(), action: 'Tambah stok sample', qty: 1, rollId: roll.id, pieceRollId: piece.id, by: user?.name ?? 'Sistem' });
+  audit(db, user, 'tambah_stok_sample', 'sampleStock', stock.id, `${sku.code} · 1 potong`);
+  return stock;
+}
+
+/** Customer-level sample and purchase history. */
+export function sampleCustomerStats(db, customerId = null) {
+  const customers = customerId
+    ? db.customers.filter((c) => c.id === customerId)
+    : db.customers;
+  return customers.map((customer) => {
+    const samples = db.samples.filter((s) => s.customerId === customer.id);
+    const invoices = db.invoices.filter((i) => i.customerId === customer.id && i.status === 'posted');
+    const linkedIds = new Set(samples.map((s) => s.linkedInvoiceId).filter(Boolean));
+    const linkedPurchases = invoices.filter((i) => linkedIds.has(i.id)).reduce((a, i) => a + i.total, 0);
+    return {
+      customer,
+      total: samples.length,
+      active: samples.filter((s) => s.status === 'active' && !s.linkedInvoiceId).length,
+      converted: samples.filter((s) => s.linkedInvoiceId).length,
+      qtyMm: samples.reduce((a, s) => a + (Number(s.qtyMm) || 0), 0),
+      lastDate: samples.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]?.date ?? '',
+      invoices: invoices.length,
+      purchases: invoices.reduce((a, i) => a + i.total, 0),
+      linkedPurchases,
+    };
+  });
+}
+
+export function sampleCollectionStats(db) {
+  return db.collections.filter((c) => db.skus.some((s) => s.collectionId === c.id)).map((collection) => {
+    const skus = db.skus.filter((s) => s.collectionId === collection.id);
+    const skuIds = new Set(skus.map((s) => s.id));
+    const samples = db.samples.filter((s) => skuIds.has(s.skuId));
+    const stocks = (db.sampleStocks ?? []).filter((s) => s.collectionId === collection.id);
+    return {
+      collection,
+      clothType: collection.clothType ?? '',
+      stockQty: stocks.reduce((a, s) => a + (Number(s.qty) || 0), 0),
+      given: samples.length,
+      converted: samples.filter((s) => s.linkedInvoiceId).length,
+      customers: new Set(samples.map((s) => s.customerId)).size,
+      colours: skus.length,
+    };
+  });
+}
+
 /**
  * A sample is cut from a specific roll, so the physical metres leave stock.
  * `free` costs nothing; `paid` raises a service invoice; `deposit` records a
  * refundable liability (never revenue).
  */
-export function createSample(db, { customerId, skuId, rollId, qtyMm, mode = 'free', amount = 0, date = todayJakarta(), notes = '', user }) {
+export function createSample(db, {
+  customerId, skuId, rollId = null, qtyMm = null, mode = 'free', amount = 0,
+  date = todayJakarta(), notes = '', fromStockId = null, user,
+}) {
   const customer = requireCustomer(db, customerId);
-  const roll = requireRoll(db, rollId);
-  assert(roll.skuId === skuId, 'SKU_MISMATCH', 'Roll bukan SKU yang dipilih.');
-  assert(roll.warehouseId, 'ROLL_IN_TRANSIT', 'Roll dalam perjalanan tidak dapat dipotong untuk sample.');
-  const qty = Math.round(Number(qtyMm));
+  let stock = null;
+  let roll = null;
+  let piece = null;
+  let resolvedSkuId = skuId;
+  let qty = Math.round(Number(qtyMm) || 0);
+  if (fromStockId) {
+    stock = getSampleStock(db, fromStockId);
+    assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok sample tidak ditemukan.');
+    assert(stock.qty > 0, 'SAMPLE_STOCK_EMPTY', 'Stok sample sudah habis.');
+    resolvedSkuId = stock.skuId;
+    if (skuId) assert(skuId === stock.skuId, 'SKU_MISMATCH', 'Stok sample bukan SKU yang dipilih.');
+    qty = qty || stock.sampleLengthMm || 500;
+    roll = stock.sourceRollId ? db.rolls.find((r) => r.id === stock.sourceRollId) ?? null : null;
+  } else {
+    roll = requireRoll(db, rollId);
+    assert(roll.skuId === skuId, 'SKU_MISMATCH', 'Roll bukan SKU yang dipilih.');
+    assert(roll.warehouseId, 'ROLL_IN_TRANSIT', 'Roll dalam perjalanan tidak dapat dipotong untuk sample.');
+    assert(qty > 0, 'INVALID_LENGTH', 'Panjang sample harus lebih dari 0 m.');
+    assert(qty <= availableMm(roll), 'INSUFFICIENT_AVAILABLE',
+      `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
+  }
   assert(qty > 0, 'INVALID_LENGTH', 'Panjang sample harus lebih dari 0 m.');
-  assert(qty <= availableMm(roll), 'INSUFFICIENT_AVAILABLE',
-    `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
   assert(['free', 'paid', 'deposit'].includes(mode), 'INVALID_MODE', 'Jenis sample tidak dikenal.');
   assert(!db.settings?.sampleDepositRequired || mode !== 'free', 'SAMPLE_DEPOSIT_REQUIRED',
     'Sample gratis dinonaktifkan oleh Pengaturan. Gunakan sample berbayar atau deposit.');
 
   const sampleId = nextId(db, 'sample', 'SMP', 4);
-  const { piece } = splitRoll(db, {
-    rollId,
-    qtyMm: qty,
-    user,
-    ref: sampleId,
-    reason: `Sample untuk ${customer.name}`,
-    pieceStatus: 'consumed',
-    note: `Sample ${mode}`,
-  });
+  if (stock) {
+    stock.qty -= 1;
+    stock.updatedAt = isoNow();
+    stock.history.unshift({
+      at: isoNow(), action: 'Sample diberikan', qty: -1, customerId,
+      rollId: stock.sourceRollId, by: user?.name ?? 'Sistem',
+    });
+  } else {
+    ({ piece } = splitRoll(db, {
+      rollId,
+      qtyMm: qty,
+      user,
+      ref: sampleId,
+      reason: `Sample untuk ${customer.name}`,
+      pieceStatus: 'consumed',
+      note: `Sample ${mode}`,
+    }));
+  }
 
   const sample = {
     id: sampleId,
     customerId,
-    skuId,
-    rollId,
-    pieceRollId: piece.id,
+    skuId: resolvedSkuId,
+    rollId: roll?.id ?? null,
+    pieceRollId: piece?.id ?? null,
+    stockId: stock?.id ?? null,
     qtyMm: qty,
     mode,
     date,
@@ -161,7 +291,7 @@ export function createSample(db, { customerId, skuId, rollId, qtyMm, mode = 'fre
       lines: [
         {
           kind: 'service',
-          description: `Sample ${byId(db.skus, skuId)?.code ?? skuId} (${qty / MM_PER_M} m)`,
+          description: `Sample ${byId(db.skus, resolvedSkuId)?.code ?? resolvedSkuId} (${qty / MM_PER_M} m)`,
           unitPrice: value,
         },
       ],
@@ -192,7 +322,7 @@ export function createSample(db, { customerId, skuId, rollId, qtyMm, mode = 'fre
   logActivity(db, {
     customerId,
     type: 'sample',
-    note: `Sample ${sample.id} ${qty / MM_PER_M} m (${SAMPLE_MODE[mode].label}) dari ${rollId}`,
+    note: `Sample ${sample.id} ${qty / MM_PER_M} m (${SAMPLE_MODE[mode].label}) dari ${stock ? `stok sample ${stock.id}` : roll?.id ?? rollId}`,
     user,
     date,
   });

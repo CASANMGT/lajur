@@ -2,6 +2,41 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.17.0] — 2026-11-18
+
+**Release name: Sample, Barcode & Harga.** Adds sample stock and distribution history, roll barcode tags, customer WhatsApp stock sharing, sell-price history with 90-day review, collection cloth types/default roll size, and shipping-capitalised warehouse transfers.
+
+### Added
+
+- **Sample stock per collection:** fabric sample pieces are cut from rolls into showroom stock. Give one to a customer without another stock cut; stock decrements and a history entry is written.
+- **Sample distribution history:** customer summary shows samples taken, metres, un-converted count, conversion count, purchase total and last sample date.
+- **Roll barcode tags:** every roll gets a stable Code 39 barcode (roll ID), printable on a stock tag with collection, cloth type, colour, width, lot, length and warehouse/bin.
+- **Customer WhatsApp:** customer master stores a WA number; customer detail and Stock have an **Info stok WA** action that builds a copy-paste stock availability message and opens `wa.me`.
+- **Sell-price history:** every price change is recorded with old/new price, date, user and note. Prices untouched for ≥90 days require explicit confirmation before a change.
+- **Collection metadata:** cloth type is defined before colour; collections default to a 60 m × 300 cm roll.
+- **Internal transfer shipping:** warehouse-to-warehouse transfers accept an ongkir; it is capitalised into destination roll HPP when received.
+- **Surat jalan warning:** Pengiriman lists posted invoices that still need a surat jalan.
+
+### Changed
+
+- Version bumped to 2.17.0, schema 16, backup v16.
+- Order/collection master copy now shows cloth type and default roll size.
+- Transfer copy now describes internal warehouse sales rather than a purely free movement.
+
+### Verification
+
+- `node --test`: **72 passed**.
+- Module imports 46/46; server-side render all views.
+- Browser QA: collection defaults, sample stock give, customer WA message, price review 90-day confirmation, barcode tag preview and posted-invoice surat-jalan warning.
+
+### Known limitations
+
+- Barcode is Code 39 on a printable tag; there is no hardware scanner integration yet.
+- Sample stock counts pieces, not metres; the source roll still tracks metres.
+- Transfer shipping is apportioned evenly across requested metres.
+
+---
+
 ## [2.16.1] — 2026-11-18
 
 **Release name: Lavishome polish.** Completes the brand sweep in secondary labels and download filenames.

@@ -9,7 +9,8 @@ import {
   saveFleetAsset, savePart, saveSku, saveTransport, saveWarehouse, TRANSPORT_TYPES,
 } from '../../domain/master.js';
 import {
-  latestSupplierPrice, saveSupplierPrice, supplierPriceHistory, suppliersOfItem,
+  changeSellPrice, latestSupplierPrice, saveSupplierPrice, sellPriceAgeDays, sellPriceHistory,
+  supplierPriceHistory, suppliersOfItem,
 } from '../../domain/pricing.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';
 import { pageHead, statCard, can } from './common.js';
@@ -61,14 +62,14 @@ function renderProducts(ctx) {
       <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="hide-sm">Pemasok</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.skus.map((s) => `<tr>
         <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="Foto ${esc(s.code)}" class="thumb zoomable" data-zoom="${esc(s.image)}" data-zoom-title="Foto ${esc(s.code)}" role="button" tabindex="0" aria-label="Perbesar foto ${esc(s.code)}" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
-        <td>${esc(s.collectionName)}</td>
+        <td>${esc(s.collectionName)}<div class="xs muted">${esc(s.clothType || '—')}</div></td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span><div class="xs mono">${s.swatch ? esc(s.swatch) : 'hex belum diset'}</div></span></div></td>
         <td class="hide-sm">${supplierNames(db, { skuId: s.id })}</td>
         <td class="num">${s.widthCm ? `${s.widthCm} cm` : '—'}</td>
         <td class="num">${fmt.money(s.buyPrice)}${latestPriceNote(db, { skuId: s.id })}</td>
-        <td class="num">${fmt.money(s.sellPrice)}</td>
+        <td class="num">${fmt.money(s.sellPrice)}<div class="xs muted">${esc(s.sellPriceUpdatedAt ?? '—')}</div>${sellPriceAgeDays(db, { itemType: 'sku', itemId: s.id }) >= 90 ? badge(`Cek ${sellPriceAgeDays(db, { itemType: 'sku', itemId: s.id })} hari`, 'warn') : ''}</td>
         <td>${s.active === false ? badge('Nonaktif / dormant', 'danger') : badge('Aktif', 'ok')}</td>
-        <td class="right"><div class="row" style="justify-content:flex-end">${role === 'manager' ? `<button class="btn btn-sm btn-ghost" data-price-sku="${s.id}">Harga</button><button class="btn btn-sm" data-edit-sku="${s.id}">Edit</button>` : ''}</div></td>
+        <td class="right"><div class="row" style="justify-content:flex-end">${role === 'manager' ? `<button class="btn btn-sm btn-ghost" data-price-sku="${s.id}">Harga beli</button><button class="btn btn-sm btn-ghost" data-sell-sku="${s.id}">Harga jual</button><button class="btn btn-sm" data-edit-sku="${s.id}">Edit</button>` : ''}</div></td>
       </tr>`).join('')}</tbody>
     </table></div>
     <div class="card-pad"><p class="xs muted">Harga beli master mengikuti harga pemasok terbaru. Swatch tidak pernah diturunkan dari kode warna; bila belum diset, operator mencocokkan kode + lot secara fisik.</p></div>
@@ -92,10 +93,10 @@ function renderParts(ctx) {
           <td class="hide-sm">${supplierNames(db, { partId: p.id })}</td>
           <td>${esc(byId(db.categories, p.categoryId)?.name ?? '—')}</td>
           <td class="num">${fmt.money(p.buyPrice)}${latestPriceNote(db, { partId: p.id })}</td>
-          <td class="num">${fmt.money(p.sellPrice)}</td>
+          <td class="num">${fmt.money(p.sellPrice)}<div class="xs muted">${esc(p.sellPriceUpdatedAt ?? '—')}</div>${sellPriceAgeDays(db, { itemType: 'part', itemId: p.id }) >= 90 ? badge(`Cek ${sellPriceAgeDays(db, { itemType: 'part', itemId: p.id })} hari`, 'warn') : ''}</td>
           <td class="num">${fmt.pcs(qty)} pcs</td>
           <td>${p.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
-          <td class="right"><div class="row" style="justify-content:flex-end">${role === 'manager' ? `<button class="btn btn-sm btn-ghost" data-price-part="${p.id}">Harga</button><button class="btn btn-sm" data-edit-part="${p.id}">Edit</button>` : ''}</div></td>
+          <td class="right"><div class="row" style="justify-content:flex-end">${role === 'manager' ? `<button class="btn btn-sm btn-ghost" data-price-part="${p.id}">Harga beli</button><button class="btn btn-sm btn-ghost" data-sell-part="${p.id}">Harga jual</button><button class="btn btn-sm" data-edit-part="${p.id}">Edit</button>` : ''}</div></td>
         </tr>`;
       }).join('')}</tbody>
     </table></div>
@@ -181,13 +182,15 @@ function renderCategories(ctx) {
       </table></div>
     </section>
     <section class="card">
-      <div class="card-head"><div><h2>Koleksi</h2><p>Grup warna dalam satu seri kain. Nama dapat diubah; ID dan riwayat tetap.</p></div>${role === 'manager' ? `<button class="btn btn-sm" data-act="new-collection">Tambah</button>` : ''}</div>
+      <div class="card-head"><div><h2>Koleksi</h2><p>Tipe kain ditentukan sebelum warna. Default roll 60 m × 300 cm; nama dan ID tetap.</p></div>${role === 'manager' ? `<button class="btn btn-sm" data-act="new-collection">Tambah</button>` : ''}</div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Koleksi</th><th>Kategori</th><th class="num">Warna</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Koleksi</th><th>Tipe kain</th><th>Kategori</th><th class="num">Warna</th><th>Default roll</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${db.collections.map((c) => `<tr>
           <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.description)}</div></td>
+          <td>${badge(c.clothType || '—', 'teal')}</td>
           <td>${esc(byId(db.categories, c.categoryId)?.name ?? '—')}</td>
           <td class="num">${db.skus.filter((s) => s.collectionId === c.id).length}</td>
+          <td class="small">${esc(c.defaultRollLengthM ?? 60)} m × ${esc(c.defaultWidthCm ?? 300)} cm</td>
           <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-collection="${c.id}">Ubah</button>` : ''}</td>
         </tr>`).join('')}</tbody>
       </table></div>
@@ -292,6 +295,8 @@ function openSku(ctx, sku = null) {
   const { db } = ctx;
   const isNew = !sku;
   const collections = db.collections.filter((c) => c.id !== 'col-rel' && c.id !== 'col-motor');
+  const defaultCollection = collections.find((c) => c.id === sku?.collectionId) ?? collections[0];
+  const defaultWidth = sku?.widthCm ?? defaultCollection?.defaultWidthCm ?? 300;
   const setSwatch = Boolean(sku?.swatch);
   const trail = sku ? auditTrail(db, 'sku', sku.id, 6) : [];
   openModal({
@@ -304,9 +309,11 @@ function openSku(ctx, sku = null) {
       ${field('Kode tampilan', `<input class="input" name="code" value="${esc(sku?.code ?? '')}" placeholder="Luna-03" required />`)}
       ${field('Kode warna', `<input class="input" name="colourCode" value="${esc(sku?.colourCode ?? '')}" placeholder="03" required />`)}
       ${field('Nama warna (opsional)', `<input class="input" name="colourName" value="${esc(sku?.colourName ?? '')}" placeholder="Dibiarkan kosong bila belum pasti" />`)}
-      ${field('Lebar kain (cm)', `<input class="input" type="number" name="widthCm" value="${sku?.widthCm ?? 280}" min="0" />`)}
+      ${field('Lebar kain (cm)', `<input class="input" type="number" name="widthCm" value="${defaultWidth}" min="0" />`, { hint: `Default koleksi ${defaultCollection?.defaultWidthCm ?? 300} cm.` })}
       ${field('Harga beli / m', `<input class="input" name="buyPrice" inputmode="numeric" value="${sku?.buyPrice ?? ''}" />`)}
-      ${field('Harga jual / m', `<input class="input" name="sellPrice" inputmode="numeric" value="${sku?.sellPrice ?? ''}" />`)}
+      ${isNew
+        ? field('Harga jual / m', `<input class="input" name="sellPrice" inputmode="numeric" value="${sku?.sellPrice ?? ''}" />`)
+        : `<input type="hidden" name="sellPrice" value="${sku.sellPrice}" />${field('Harga jual / m', `<div class="small strong">${fmt.money(sku.sellPrice)}</div><div class="xs muted">Update ${esc(sku.sellPriceUpdatedAt ?? '—')}</div>`, { hint: 'Ubah lewat tombol Harga jual agar riwayat dan konfirmasi 90 hari tercatat.' })}`}
       ${field('Status', `<select class="select" name="active"><option value="1" ${sku?.active !== false ? 'selected' : ''}>Aktif</option><option value="0" ${sku?.active === false ? 'selected' : ''}>Nonaktif / dormant</option></select>`)}
       <div class="span-2">
         <label class="checkline"><input type="checkbox" name="useSwatch" ${setSwatch ? 'checked' : ''} /> Set swatch visual</label>
@@ -381,7 +388,9 @@ function openPart(ctx, part = null) {
       ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${part?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
       ${field('Part induk (opsional)', `<select class="select" name="parent"><option value="">— Tanpa induk —</option>${ctx.db.parts.filter((p) => p.id !== part?.id).map((p) => `<option value="${p.id}" ${part?.parentPartId === p.id ? 'selected' : ''}>${esc(p.sku)} · ${esc(p.name)} — ${esc(byId(ctx.db.categories, p.categoryId)?.name ?? '')}</option>`).join('')}</select>`, { hint: 'Child harus satu kategori dengan induk.' })}
       ${field('Harga beli / pcs', `<input class="input" name="buyPrice" inputmode="numeric" value="${part?.buyPrice ?? ''}" />`)}
-      ${field('Harga jual / pcs', `<input class="input" name="sellPrice" inputmode="numeric" value="${part?.sellPrice ?? ''}" />`)}
+      ${isNew
+        ? field('Harga jual / pcs', `<input class="input" name="sellPrice" inputmode="numeric" value="${part?.sellPrice ?? ''}" />`)
+        : `<input type="hidden" name="sellPrice" value="${part.sellPrice}" />${field('Harga jual / pcs', `<div class="small strong">${fmt.money(part.sellPrice)}</div><div class="xs muted">Update ${esc(part.sellPriceUpdatedAt ?? '—')}</div>`, { hint: 'Ubah lewat tombol Harga jual agar riwayat dan konfirmasi 90 hari tercatat.' })}`}
       ${field('Status', `<select class="select" name="active"><option value="1" ${part?.active !== false ? 'selected' : ''}>Aktif</option><option value="0" ${part?.active === false ? 'selected' : ''}>Nonaktif</option></select>`)}
       <div class="span-2">
         <div class="row-between"><span class="field-label">Foto part (opsional)</span><img data-image-preview src="${esc(part?.image ?? '')}" alt="" class="thumb-lg" ${part?.image ? '' : 'hidden'} /></div>
@@ -492,6 +501,57 @@ function openPriceModal(ctx, { kind, item }) {
       }));
       close();
       toast(`Harga ${label} diperbarui: ${saved.record.currency} ${Number(saved.record.price).toLocaleString('id-ID')} → ${fmt.money(saved.priceIdr)}.`, { tone: 'success' });
+    },
+  });
+}
+
+function openSellPriceModal(ctx, { kind, item }) {
+  const db = ctx.db;
+  const itemType = kind;
+  const label = kind === 'sku' ? item.code : item.sku;
+  const age = sellPriceAgeDays(db, { itemType, itemId: item.id });
+  const stale = age >= 90;
+  const history = sellPriceHistory(db, { itemType, itemId: item.id });
+  const unit = kind === 'sku' ? '/ m' : '/ pcs';
+  openModal({
+    title: `Harga jual — ${label}`,
+    description: 'Harga jual dikunci pada update terakhir. Riwayat tersimpan; harga yang tidak berubah ≥90 hari perlu dikonfirmasi.',
+    submitLabel: 'Simpan harga jual',
+    wide: true,
+    body: `<div class="form-grid">
+      <div class="span-2 notice ${stale ? 'notice-warn' : 'notice-info'}">${icon('wallet')}<div><strong>Harga jual saat ini ${fmt.money(item.sellPrice)} ${unit}.</strong><div class="small">Update terakhir ${esc(item.sellPriceUpdatedAt ?? '—')} · ${age} hari lalu.</div>${stale ? '<div class="small strong">Harga belum berubah ≥90 hari. Konfirmasi bahwa harga lama masih berlaku, atau simpan harga baru di bawah.</div>' : ''}</div></div>
+      ${field(`Harga jual baru (Rp ${unit})`, `<input class="input" name="price" inputmode="numeric" value="${item.sellPrice}" required />`)}
+      ${field('Catatan perubahan', `<input class="input" name="note" placeholder="Alasan kenaikan, promo, atau konfirmasi harga" />`)}
+      ${stale ? `<label class="checkline span-2"><input type="checkbox" name="confirmStale" /> Saya konfirmasi harga lama masih dapat dipertahankan / perubahan ini disetujui</label>` : ''}
+      <div class="span-2">
+        <div class="section-title" style="margin:4px 0 6px"><h3>Riwayat harga jual</h3><span class="xs muted">Update terakhir dan perubahan sebelumnya</span></div>
+        <div class="table-wrap"><table class="data">
+          <thead><tr><th>Tanggal</th><th class="num">Harga lama</th><th class="num">Harga baru</th><th>Oleh</th><th>Catatan</th></tr></thead>
+          <tbody>${history.slice(0, 8).map((h) => `<tr>
+            <td class="small">${esc(String(h.changedAt ?? '').slice(0, 10))}${h.staleDays >= 90 ? `<div class="xs muted">review ${h.staleDays} hari</div>` : ''}</td>
+            <td class="num">${fmt.money(h.oldPrice)}</td>
+            <td class="num strong">${fmt.money(h.newPrice)}</td>
+            <td class="small">${esc(h.changedBy ?? '—')}</td>
+            <td class="small">${esc(h.note || '—')}</td>
+          </tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada riwayat harga.</td></tr>'}</tbody>
+        </table></div>
+      </div>
+    </div>`,
+    onSubmit(form, close) {
+      const price = Number(String(form.price.value).replace(/\D/g, ''));
+      if (!price) throw new Error('Harga jual harus lebih dari 0.');
+      const saved = ctx.store.update((db2) => changeSellPrice(db2, {
+        itemType,
+        itemId: item.id,
+        price,
+        confirmStale: Boolean(form.confirmStale?.checked),
+        note: form.note.value,
+        user: ctx.user,
+      }));
+      close();
+      toast(saved.unchanged
+        ? 'Harga jual tidak berubah.'
+        : `Harga jual ${label} diperbarui menjadi ${fmt.money(saved.item.sellPrice)} ${unit}.`, { tone: 'success' });
     },
   });
 }
@@ -673,15 +733,27 @@ function openCollection(ctx, collection = null) {
     submitLabel: editing ? 'Simpan' : 'Buat koleksi',
     body: `<div class="form-grid">
       ${field('Nama koleksi', `<input class="input" name="name" value="${esc(collection?.name ?? '')}" required />`)}
+      ${field('Tipe kain', `<input class="input" name="clothType" value="${esc(collection?.clothType ?? '')}" placeholder="Blackout / Sheer / Dimout" required />`, { hint: 'Tipe kain ditentukan sebelum warna.' })}
       ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${collection?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
+      ${field('Panjang roll default (m)', `<input class="input" type="number" min="1" step="0.5" name="defaultRollLengthM" value="${esc(collection?.defaultRollLengthM ?? 60)}" />`)}
+      ${field('Lebar kain default (cm)', `<input class="input" type="number" min="1" name="defaultWidthCm" value="${esc(collection?.defaultWidthCm ?? 300)}" />`)}
       ${field('Deskripsi', `<input class="input" name="description" value="${esc(collection?.description ?? '')}" />`, { full: true })}
     </div>`,
     onSubmit(form, close) {
       ctx.store.update((db) => {
+        const payload = {
+          name: form.name.value,
+          categoryId: form.category.value,
+          description: form.description.value,
+          clothType: form.clothType.value,
+          defaultRollLengthM: Number(form.defaultRollLengthM.value || 60),
+          defaultWidthCm: Number(form.defaultWidthCm.value || 300),
+          user: ctx.user,
+        };
         if (editing) {
-          renameCollection(db, { id: collection.id, name: form.name.value, description: form.description.value, user: ctx.user });
+          renameCollection(db, { id: collection.id, ...payload });
         } else {
-          createCollection(db, { name: form.name.value, categoryId: form.category.value, description: form.description.value, user: ctx.user });
+          createCollection(db, payload);
         }
       });
       close();
@@ -709,9 +781,17 @@ export function mount(ctx) {
     const sku = ctx.db.skus.find((s) => s.id === btn.dataset.priceSku);
     if (sku) openPriceModal(ctx, { kind: 'sku', item: sku });
   }));
+  document.querySelectorAll('[data-sell-sku]').forEach((btn) => btn.addEventListener('click', () => {
+    const sku = ctx.db.skus.find((s) => s.id === btn.dataset.sellSku);
+    if (sku) openSellPriceModal(ctx, { kind: 'sku', item: sku });
+  }));
   document.querySelectorAll('[data-price-part]').forEach((btn) => btn.addEventListener('click', () => {
     const part = ctx.db.parts.find((p) => p.id === btn.dataset.pricePart);
     if (part) openPriceModal(ctx, { kind: 'part', item: part });
+  }));
+  document.querySelectorAll('[data-sell-part]').forEach((btn) => btn.addEventListener('click', () => {
+    const part = ctx.db.parts.find((p) => p.id === btn.dataset.sellPart);
+    if (part) openSellPriceModal(ctx, { kind: 'part', item: part });
   }));
   document.querySelector('[data-act="new-category"]')?.addEventListener('click', () => openCategory(ctx));
   document.querySelector('[data-act="new-driver"]')?.addEventListener('click', () => openDriver(ctx));

@@ -10,6 +10,7 @@ import {
 } from '../../domain/crm.js';
 import { invoiceOutstanding, invoiceStatusLabel } from '../../domain/sales.js';
 import { availableMm, sellableRolls } from '../../domain/inventory.js';
+import { openStockShare } from './inventory.js';
 import { PROJECT_STATUS } from '../../domain/projects.js';
 import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, can } from './common.js';
@@ -47,7 +48,7 @@ export function render(ctx) {
         <table class="data">
           <thead><tr><th>Pelanggan</th><th>Stage</th><th class="hide-sm">Aksi berikutnya</th><th class="num">Piutang</th><th class="num">Deposit</th></tr></thead>
           <tbody>${rows.map(({ c, projects, samples, receivable, deposit }) => `<tr data-href="#/pelanggan/${c.id}" tabindex="0" role="link">
-            <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.company || c.city || '')} · ${projects.length} proyek · ${samples.length} sample</div></td>
+            <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.company || c.city || '')} · ${projects.length} proyek · ${samples.length} sample</div><div class="xs muted">WA ${esc(c.whatsapp || c.phone || '—')}</div></td>
             <td>${badge(CRM_STAGE[c.stage]?.label ?? c.stage, CRM_STAGE[c.stage]?.tone ?? 'muted')}</td>
             <td class="hide-sm">${esc(c.nextAction || '—')}<div class="xs muted">${esc(c.followUpDate || '')}</div></td>
             <td class="num ${receivable ? 'strong' : 'muted'}">${receivable ? fmt.money(receivable) : '—'}</td>
@@ -78,12 +79,16 @@ function renderDetail(ctx) {
   const invoices = db.invoices.filter((i) => i.customerId === c.id);
   const samples = db.samples.filter((s) => s.customerId === c.id);
   const deposits = db.deposits.filter((d) => d.customerId === c.id);
+  const sampleQtyMm = samples.reduce((a, s) => a + (Number(s.qtyMm) || 0), 0);
+  const sampleConverted = samples.filter((s) => s.linkedInvoiceId).length;
+  const purchaseTotal = invoices.filter((i) => i.status === 'posted').reduce((a, i) => a + i.total, 0);
   const receivable = customerReceivable(db, c.id);
   const openDeposit = deposits.reduce((a, d) => a + depositBalance(d), 0);
 
   const actions = [];
   if (can(role, 'customer.edit')) actions.push(`<button class="btn" data-act="edit">${icon('settings')} Edit</button>`);
   if (can(role, 'sample.create')) actions.push(`<button class="btn" data-act="new-sample">${icon('spark')} Kirim sample</button>`);
+  if (can(role, 'stock.view')) actions.push(`<button class="btn" data-act="share-stock">${icon('phone')} Info stok WA</button>`);
   if (can(role, 'deposit.create')) actions.push(`<button class="btn btn-primary" data-act="new-deposit">${icon('wallet')} Terima deposit</button>`);
   if (can(role, 'customer.edit')) actions.push(`<button class="btn" data-act="log">${icon('plus')} Catat aktivitas</button>`);
 
@@ -124,7 +129,7 @@ function renderDetail(ctx) {
         </section>
 
         <section class="card">
-          <div class="card-head"><div><h2>Sample</h2><p>Dari roll mana, untuk siapa, dan apakah berujung pembelian.</p></div><span class="badge no-dot">${samples.length}</span></div>
+          <div class="card-head"><div><h2>Sample</h2><p>${samples.length} sample · ${fmt.m(sampleQtyMm)} · ${sampleConverted} berujung pembelian · total pembelian ${fmt.money(purchaseTotal)}.</p></div><span class="badge no-dot">${samples.length}</span></div>
           ${samples.length ? `<div class="table-wrap"><table class="data">
             <thead><tr><th>Sample</th><th>Roll / lot</th><th class="num">Qty</th><th>Jenis</th><th>Hasil</th><th><span class="sr-only">Aksi</span></th></tr></thead>
             <tbody>${samples.map((s) => {
@@ -184,6 +189,7 @@ function renderDetail(ctx) {
           <div class="stack-sm">
             <div class="row-between"><span class="small muted">NPWP</span><span class="small mono">${esc(c.npwp || '-')}</span></div>
           <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(c.phone || '-')}</span></div>
+            <div class="row-between"><span class="small muted">WhatsApp</span><span class="small">${esc(c.whatsapp || c.phone || '—')}</span></div>
             <div class="row-between"><span class="small muted">Email</span><span class="small">${esc(c.email || '—')}</span></div>
             <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(c.address || '—')}</span></div>
             <div class="row-between"><span class="small muted">Kota</span><span class="small">${esc(c.city || '—')}</span></div>
@@ -219,6 +225,7 @@ function openEdit(ctx, c) {
       ${field('Perusahaan', `<input class="input" name="company" value="${esc(c.company)}" />`)}
       ${field('NPWP (opsional)', `<input class="input" name="npwp" value="${esc(c.npwp ?? '')}" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Dipakai untuk faktur pajak. Boleh dikosongkan.' })}
       ${field('Telepon', `<input class="input" name="phone" value="${esc(c.phone)}" />`)}
+      ${field('Nomor WhatsApp', `<input class="input" name="whatsapp" value="${esc(c.whatsapp ?? c.phone ?? '')}" placeholder="08xx-xxxx-xxxx" />`)}
       ${field('Email', `<input class="input" name="email" value="${esc(c.email)}" />`)}
       ${field('Alamat', `<input class="input" name="address" value="${esc(c.address)}" />`, { full: true })}
       ${field('Kota', `<input class="input" name="city" value="${esc(c.city)}" />`)}
@@ -236,6 +243,7 @@ function openEdit(ctx, c) {
           company: form.company.value,
           npwp: form.npwp.value,
           phone: form.phone.value,
+          whatsapp: form.whatsapp.value,
           email: form.email.value,
           address: form.address.value,
           city: form.city.value,
@@ -391,6 +399,7 @@ export function openCreate(ctx) {
       ${field('Perusahaan', `<input class="input" name="company" />`)}
       ${field('NPWP (opsional)', `<input class="input" name="npwp" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Dipakai untuk faktur pajak. Boleh dikosongkan.' })}
       ${field('Telepon', `<input class="input" name="phone" />`)}
+      ${field('Nomor WhatsApp', `<input class="input" name="whatsapp" placeholder="08xx-xxxx-xxxx" />`)}
       ${field('Email', `<input class="input" name="email" />`)}
       ${field('Kota', `<input class="input" name="city" />`)}
       ${field('Stage', `<select class="select" name="stage">${Object.entries(CRM_STAGE).map(([k, v]) => `<option value="${k}" ${k === 'prospek' ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
@@ -404,6 +413,7 @@ export function openCreate(ctx) {
         company: form.company.value,
         npwp: form.npwp.value,
         phone: form.phone.value,
+        whatsapp: form.whatsapp.value || form.phone.value,
         email: form.email.value,
         address: form.address.value,
         city: form.city.value,
@@ -427,6 +437,7 @@ export function mount(ctx) {
     if (!c) return;
     document.querySelector('[data-act="edit"]')?.addEventListener('click', () => openEdit(ctx, c));
     document.querySelector('[data-act="new-sample"]')?.addEventListener('click', () => openSample(ctx, c));
+  document.querySelector('[data-act="share-stock"]')?.addEventListener('click', () => openStockShare(ctx, { customerId: c.id }));
     document.querySelector('[data-act="new-deposit"]')?.addEventListener('click', () => openDeposit(ctx, c));
     document.querySelector('[data-act="log"]')?.addEventListener('click', () => openActivity(ctx, c));
     document.querySelectorAll('[data-act="refund"]').forEach((btn) => btn.addEventListener('click', () => {

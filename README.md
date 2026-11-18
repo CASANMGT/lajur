@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-67%2F67-brightgreen) ![Version](https://img.shields.io/badge/version-2.16.1-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-72%2F72-brightgreen) ![Version](https://img.shields.io/badge/version-2.17.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 67 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 72 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -239,7 +239,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **67 passed, 0 failed** (65 domain/UI + 2 auth) |
+| `node --test` | **72 passed, 0 failed** (70 domain/UI + 2 auth) |
 | Module import check | **46/46 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -270,7 +270,14 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Driver assignment | Moving Asep from the Vario to the Hilux unassigns Rudi, updates both drivers’ plate/type and both vehicle rows |
 | Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
 | Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lavishome Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
-| PostgreSQL store | Schema 14 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
+| Collection metadata | Luna/Aria/Nova define Blackout/Sheer/Dimout and default 60 m × 300 cm; new SKUs inherit the cloth type |
+| Sample stock | 10 sample pieces seeded across 5 colours; giving SS-0001 to Sari reduced stock from 2 to 1 and created SMP-0005 with history |
+| Barcode tag | RL-0001 prints a Code 39 tag with `RL-0001`, collection, Blackout, 280 cm, lot, length and JKT/A-01-01 |
+| WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
+| Price review | Luna-01 last changed 170 days ago; save was blocked until the 90-day confirmation was checked, then Rp 125.000 → Rp 130.000 |
+| Transfer ongkir | Transfer with Rp 300.000 over 10 m adds Rp 30.000/m to destination roll HPP |
+| Surat jalan missing | Pengiriman lists INV-0004, INV-0003 and INV-0001 as posted invoices without a surat jalan |
+| PostgreSQL store | Schema 16 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
 | Sample book | SB-0001 from 2 roll cuts; stock cut; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
 | Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
 | Guide | 14 in-app tutorial sections rendered |
@@ -373,13 +380,18 @@ node tools/render-check.mjs
 - Internal requests with approval, partial dispatch, partial receipt, print documents, no financial postings.
 - Supplier PO, partial receiving per roll/lot, duplicate and over-receipt protection, payable payments, supplier returns.
 - Projects: allocate, reserve, invoice/stock issue, handover, shortage, material cost, instructions.
-- Customers, CRM stages, activities, optional NPWP for faktur pajak, samples with conversion, sample deposits, indent deposits, refund guards.
+- Customers, CRM stages, activities, optional NPWP for faktur pajak, WhatsApp number, samples with conversion, sample deposits, indent deposits, refund guards.
+- **Sample stock & distribution:** sample pieces per collection/colour, cut from a roll into showroom stock, give to a customer, and see per-customer sample/purchase history.
+- **Stock tags:** every roll carries a Code 39 barcode tag with collection, cloth type, colour, width, location and length.
+- **Price control:** selling-price history with last update, old/new price and a 90-day review confirmation.
+- **WA stock share:** customer detail and Stock build a copy-paste availability message and open WhatsApp.
+- **Internal warehouse sale:** transfer ongkir is capitalised into destination roll HPP.
 - Customer returns with credit and quarantine.
 - Blind stock opname with freeze, variance, recount, posting, permanent history.
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.16.1`), changelog and GitHub Actions CI.
+- Versioned release (`v2.17.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

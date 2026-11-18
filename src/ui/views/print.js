@@ -10,25 +10,53 @@ import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
 
+const CODE39 = {
+  '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw', '3': 'wnwwnnnnn', '4': 'nnnwwnnnw',
+  '5': 'wnnwwnnnn', '6': 'nnwwwnnnn', '7': 'nnnwnnwnw', '8': 'wnnwnnwnn', '9': 'nnwwnnwnn',
+  A: 'wnnnnwnnw', B: 'nnwnnwnnw', C: 'wnwnnwnnn', D: 'nnnnwwnnw', E: 'wnnnwwnnn',
+  F: 'nnwnwwnnn', G: 'nnnnnwwnw', H: 'wnnnnwwnn', I: 'nnwnnwwnn', J: 'nnnnwwwnn',
+  K: 'wnnnnnnww', L: 'nnwnnnnww', M: 'wnwnnnnwn', N: 'nnnnwnnww', O: 'wnnnwnnwn',
+  P: 'nnwnwnnwn', Q: 'nnnnnnwww', R: 'wnnnnnwwn', S: 'nnwnnnwwn', T: 'nnnnwnwwn',
+  U: 'wwnnnnnnw', V: 'nwwnnnnnw', W: 'wwwnnnnnn', X: 'nwnnwnnnw', Y: 'wwnnwnnnn',
+  Z: 'nwwnwnnnn', '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn',
+  '$': 'nwnwnwnnn', '/': 'nwnwnnnwn', '+': 'nwnnnwnwn', '%': 'nnnwnwnwn', '*': 'nwnnwnwnn',
+};
+
+function code39Svg(value, { height = 42 } = {}) {
+  const text = `*${String(value ?? '').toUpperCase()}*`;
+  const bars = [];
+  let x = 0;
+  for (const char of text) {
+    const pattern = CODE39[char] ?? CODE39['-'];
+    for (let i = 0; i < pattern.length; i += 1) {
+      const width = pattern[i] === 'w' ? 3 : 1;
+      if (i % 2 === 0) bars.push(`<rect x="${x}" y="0" width="${width}" height="${height}" fill="#172b3a"></rect>`);
+      x += width;
+    }
+    x += 1;
+  }
+  return `<svg viewBox="0 0 ${x} ${height}" preserveAspectRatio="none" role="img" aria-label="Barcode ${esc(value)}" style="display:block;width:100%;height:${height}px">${bars.join('')}</svg>`;
+}
+
 export function printLabelHtml(roll, sku, wh) {
+  const barcode = roll.barcode || roll.id;
   return `
     <div style="border:2px solid #172b3a;border-radius:8px;padding:16px;max-width:420px">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
-        <span class="brand">lavishome</span><span style="font-size:9px;letter-spacing:.14em;color:#62727c">LABEL ROLL</span>
+        <span class="brand">lavishome</span><span style="font-size:9px;letter-spacing:.14em;color:#62727c">TAG STOK / ROLL</span>
       </div>
       <div style="font-family:ui-monospace,monospace;font-size:26px;font-weight:700;letter-spacing:.02em;margin:10px 0 2px">${esc(roll.id)}</div>
       <div style="font-size:14px;font-weight:600">${esc(sku?.collectionName)} — ${esc(sku?.colourName || sku?.colourCode)}</div>
-      <div style="font-size:11px;color:#62727c;margin-bottom:10px">${esc(sku?.code)} · Kode warna ${esc(sku?.colourCode)} · ${esc(sku?.widthCm)} cm</div>
+      <div style="font-size:11px;color:#62727c;margin-bottom:10px">${esc(sku?.clothType ?? '')} · ${esc(sku?.code)} · Kode warna ${esc(sku?.colourCode)} · ${esc(sku?.widthCm)} cm</div>
       <table style="margin:0">
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">LOT</td><td style="border:0;padding:2px 0;font-size:12px;font-weight:700">${esc(roll.lot)}</td></tr>
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">PANJANG</td><td style="border:0;padding:2px 0;font-size:16px;font-weight:700">${fmt.m(roll.currentMm)}</td></tr>
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">LOKASI</td><td style="border:0;padding:2px 0;font-size:12px;font-weight:700">${esc(wh?.code ?? '—')} / ${esc(roll.bin || '—')}</td></tr>
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">DITERIMA</td><td style="border:0;padding:2px 0;font-size:11px">${esc(roll.receivedAt)} · ${esc(roll.receiptRef || '—')}</td></tr>
       </table>
-      <div style="margin-top:10px;display:flex;gap:2px" aria-hidden="true">
-        ${Array.from({ length: 42 }, (_, i) => `<i style="display:inline-block;width:${i % 3 === 0 ? 3 : 1.5}px;height:32px;background:#172b3a"></i>`).join('')}
-      </div>
-      <div style="font-size:8px;color:#62727c;margin-top:4px">Demo barcode — produksi harus memakai barcode/QR dari ID stabil dan diuji dengan scanner nyata.</div>
+      <div style="margin-top:12px">${code39Svg(barcode)}</div>
+      <div style="font-family:ui-monospace,monospace;font-size:13px;font-weight:700;letter-spacing:.18em;text-align:center;margin-top:5px">${esc(barcode)}</div>
+      <div style="font-size:8px;color:#62727c;margin-top:4px">Code 39 · scan untuk membuka roll dan lokasi ${esc(wh?.code ?? '')}/${esc(roll.bin || '—')}.</div>
     </div>`;
 }
 

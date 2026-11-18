@@ -8,7 +8,7 @@
  */
 
 import {
-  assert, audit, byId, isoNow, money, nextId, todayJakarta,
+  DomainError, assert, audit, byId, daysBetween, isoNow, money, nextId, todayJakarta,
 } from './core.js';
 
 const recordsFor = (db, { skuId = null, partId = null } = {}) => (db.supplierPrices ?? [])
@@ -89,6 +89,83 @@ export function rateOfRecord(db, record) {
  * Save a new supplier price. Also refreshes the master buy price when this is
  * the newest quote, so master data always reflects the latest increase.
  */
+/* -------------------------------------------------------------------------- */
+/* Selling price history and 90-day review                                    */
+/* -------------------------------------------------------------------------- */
+
+export function sellPriceHistory(db, { itemType, itemId }) {
+  return (db.sellPriceHistory ?? [])
+    .filter((r) => r.itemType === itemType && r.itemId === itemId)
+    .slice()
+    .sort((a, b) => String(b.changedAt).localeCompare(String(a.changedAt)));
+}
+
+export function sellPriceAgeDays(db, { itemType, itemId }) {
+  const item = byId(itemType === 'sku' ? db.skus : db.parts, itemId);
+  if (!item) return 0;
+  const last = item.sellPriceUpdatedAt
+    ?? sellPriceHistory(db, { itemType, itemId })[0]?.changedAt
+    ?? item.createdAt
+    ?? todayJakarta();
+  return Math.max(0, daysBetween(String(last).slice(0, 10), todayJakarta()));
+}
+
+export function recordSellPriceChange(db, {
+  itemType, itemId, oldPrice, newPrice, user, note = '', staleDays = 0,
+}) {
+  db.sellPriceHistory = db.sellPriceHistory ?? [];
+  const record = {
+    id: nextId(db, 'sellPriceHistory', 'SPH', 4),
+    itemType,
+    itemId,
+    oldPrice: Math.round(Number(oldPrice) || 0),
+    newPrice: Math.round(Number(newPrice) || 0),
+    changedAt: isoNow(),
+    changedDate: todayJakarta(),
+    changedBy: user?.name ?? 'Sistem',
+    note: String(note ?? '').trim(),
+    staleDays,
+  };
+  db.sellPriceHistory.unshift(record);
+  return record;
+}
+
+/**
+ * Change a selling price from the dedicated price editor. If the last change is
+ * 90 days old or more, the caller must explicitly confirm that the old price is
+ * still acceptable before the new price is saved.
+ */
+export function changeSellPrice(db, {
+  itemType, itemId, price, confirmStale = false, note = '', user,
+}) {
+  const item = byId(itemType === 'sku' ? db.skus : db.parts, itemId);
+  assert(item, 'ITEM_NOT_FOUND', 'Produk atau spare part tidak ditemukan.');
+  assert(['sku', 'part'].includes(itemType), 'INVALID_ITEM', 'Jenis item harga tidak dikenal.');
+  const value = money(price);
+  assert(value > 0, 'INVALID_PRICE', 'Harga jual harus lebih dari 0.');
+  const oldPrice = Number(item.sellPrice) || 0;
+  const staleDays = sellPriceAgeDays(db, { itemType, itemId });
+  if (oldPrice > 0 && staleDays >= 90 && !confirmStale) {
+    throw new DomainError(
+      'PRICE_STALE_CONFIRM',
+      `Harga terakhir diubah ${staleDays} hari lalu. Konfirmasi bahwa harga lama masih berlaku atau simpan harga baru.`,
+      { staleDays, oldPrice },
+    );
+  }
+  if (value === oldPrice) return { item, record: null, staleDays, unchanged: true };
+  const record = recordSellPriceChange(db, {
+    itemType, itemId, oldPrice, newPrice: value, user, note, staleDays,
+  });
+  Object.assign(item, {
+    sellPrice: value,
+    sellPriceUpdatedAt: todayJakarta(),
+    updatedAt: isoNow(),
+  });
+  audit(db, user, 'ubah_harga_jual', itemType === 'sku' ? 'sku' : 'part', item.id,
+    `${oldPrice} → ${value}${staleDays >= 90 ? ` · review ${staleDays} hari` : ''}`);
+  return { item, record, staleDays, unchanged: false };
+}
+
 export function saveSupplierPrice(db, {
   supplierId, skuId = null, partId = null, price, currency = null,
   moqMm = null, moqPcs = null, validFrom = todayJakarta(), validTo = null, notes = '', user,

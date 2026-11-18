@@ -13,7 +13,12 @@ import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTrans
 import { createPO, receivePO } from '../src/domain/purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
-import { createSample, createSampleBook, giveSampleBook, refundDeposit, applyDepositToInvoice } from '../src/domain/crm.js';
+import {
+  addSampleStock, applyDepositToInvoice, createSample, createSampleBook, createCustomer,
+  giveSampleBook, refundDeposit, sampleCollectionStats, sampleCustomerStats,
+} from '../src/domain/crm.js';
+import { changeSellPrice, sellPriceHistory } from '../src/domain/pricing.js';
+import { invoicesWithoutDelivery } from '../src/domain/deliveries.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
 import { migrate } from '../src/data/store.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
@@ -540,7 +545,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 15);
+  assert.equal(migrated.meta.version, 16);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
   assert.deepEqual(migrated.fleetAssets, []);
@@ -552,7 +557,7 @@ test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
   db.fleetAssets = [];
   db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 15);
+  assert.equal(migrated.meta.version, 16);
   assert.equal(migrated.transportCompanies.length, 6);
   assert.equal(migrated.fleetAssets.length, 3);
   assert.equal(migrated.sequences.fleetAsset, 3);
@@ -568,7 +573,7 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   delete delivery.transportId;
   delete delivery.transportName;
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 15);
+  assert.equal(migrated.meta.version, 16);
   assert.equal(migrated.deliveries[0].transportId, 'TRP-006');
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });
@@ -589,6 +594,79 @@ test('legacy Lajur branding migrates to Lavishome', () => {
   assert.equal(migrated.parts[0].brand, 'Lavishome');
   assert.equal(migrated.deliveries[0].transportName, 'Lavishome Fleet');
   assert.equal(migrated.suppliers.find((s) => s.id === 'SUP-004').name, 'Ningbo Lavishome Textiles Co.');
+});
+
+test('collections define cloth type and 60m x 300cm defaults; rolls carry barcodes', () => {
+  const db = buildSeed();
+  const luna = db.collections.find((c) => c.id === 'col-luna');
+  assert.equal(luna.clothType, 'Blackout');
+  assert.equal(luna.defaultRollLengthM, 60);
+  assert.equal(luna.defaultWidthCm, 300);
+  assert.equal(db.skus.find((s) => s.id === 'sku-luna-01').clothType, 'Blackout');
+  assert.ok(db.rolls.every((r) => r.barcode));
+  assert.equal(db.rolls[0].barcode, db.rolls[0].id);
+});
+
+test('sample stock is cut from a roll, distributed, and tracked per customer/collection', () => {
+  const db = buildSeed();
+  const stock = db.sampleStocks.find((s) => s.skuId === 'sku-luna-01');
+  const before = stock.qty;
+  const roll = db.rolls.find((r) => r.skuId === 'sku-luna-01' && availableMm(r) >= 1000);
+  const added = addSampleStock(db, { skuId: 'sku-luna-01', rollId: roll.id, qtyMm: 500, user: OP });
+  assert.equal(added.qty, before + 1);
+  const sample = createSample(db, {
+    customerId: 'CUS-0002', fromStockId: added.id, mode: 'free', date: '2026-11-18', user: SALES,
+  });
+  assert.equal(sample.stockId, added.id);
+  assert.equal(added.qty, before);
+  const stats = sampleCustomerStats(db, 'CUS-0002')[0];
+  assert.ok(stats.total >= 1);
+  assert.ok(stats.qtyMm >= 500);
+  const collection = sampleCollectionStats(db).find((c) => c.collection.id === 'col-luna');
+  assert.ok(collection.given >= 1);
+});
+
+test('selling price review requires confirmation after 90 days and records history', () => {
+  const db = buildSeed();
+  expectError(
+    () => changeSellPrice(db, { itemType: 'sku', itemId: 'sku-luna-01', price: 130000, user: MGR }),
+    'PRICE_STALE_CONFIRM',
+  );
+  const result = changeSellPrice(db, {
+    itemType: 'sku', itemId: 'sku-luna-01', price: 130000, confirmStale: true, note: 'Review harga', user: MGR,
+  });
+  assert.equal(result.item.sellPrice, 130000);
+  const history = sellPriceHistory(db, { itemType: 'sku', itemId: 'sku-luna-01' });
+  assert.equal(history[0].newPrice, 130000);
+  assert.equal(history[0].oldPrice, 125000);
+});
+
+test('internal transfer shipping cost is capitalised into destination HPP', () => {
+  const db = buildSeed();
+  const t = createTransfer(db, {
+    fromWarehouseId: 'wh-jkt', toWarehouseId: 'wh-bali', neededBy: '2026-12-01', reason: 'Uji ongkir',
+    shippingCost: 300000, lines: [{ skuId: 'sku-luna-01', requestedMm: 10000 }], user: OP,
+  });
+  submitTransfer(db, { id: t.id, user: OP });
+  approveTransfer(db, { id: t.id, user: MGR });
+  const source = db.rolls.find((r) => r.skuId === 'sku-luna-01' && availableMm(r) >= 10000 && !r.reservedMm);
+  const base = source.costPerM;
+  dispatchLine(db, { transferId: t.id, lineId: t.lines[0].id, allocations: [{ rollId: source.id, qtyMm: 10000 }], user: OP });
+  const transit = db.rolls.filter((r) => r.transit?.transferId === t.id).at(-1);
+  receiveLine(db, { transferId: t.id, lineId: t.lines[0].id, qtyMm: 10000, user: OP });
+  assert.equal(transit.warehouseId, 'wh-bali');
+  assert.equal(transit.costPerM, base + 30000);
+  assert.equal(t.shippingCost, 300000);
+});
+
+test('customer WhatsApp and posted invoices without surat jalan are traceable', () => {
+  const db = buildSeed();
+  const customer = createCustomer(db, { name: 'WA Test', phone: '0812', whatsapp: '0812-9999' }, SALES);
+  assert.equal(customer.whatsapp, '0812-9999');
+  const missing = invoicesWithoutDelivery(db);
+  assert.ok(missing.every((i) => i.status === 'posted'));
+  const inv = db.invoices.find((i) => i.status === 'posted' && !i.deliveryId);
+  assert.ok(missing.some((i) => i.id === inv.id));
 });
 
 test('v2.14 third-party vehicles leave the internal fleet during migration', () => {

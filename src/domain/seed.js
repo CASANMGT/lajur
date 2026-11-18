@@ -10,6 +10,7 @@
  */
 
 import { MM_PER_M, todayJakarta } from './core.js';
+import { SCHEMA_VERSION } from '../version.js';
 import { createRoll, recordMovement } from './inventory.js';
 import { applyDepositToInvoice, createCustomer, createDeposit, createSample, linkSampleToInvoice, refundDeposit } from './crm.js';
 import { createInvoice, createCustomerReturn, postCustomerReturn, postInvoice, recordPayment } from './sales.js';
@@ -45,19 +46,19 @@ export const MASTER = {
     { id: 'cat-motor', name: 'Motor & Otomasi' },
   ],
   collections: [
-    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', description: 'Blackout tebal, jatuh vertikal rapi.' },
-    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', description: 'Sheer ringan untuk lapis kedua.' },
-    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', description: 'Dimout ekonomis untuk unit hunian.' },
-    { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', description: 'Rel aluminium dan aksesori.' },
-    { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', description: 'Motor, remote, dan kontrol.' },
+    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Blackout tebal, jatuh vertikal rapi.' },
+    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Sheer ringan untuk lapis kedua.' },
+    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Dimout ekonomis untuk unit hunian.' },
+    { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', clothType: 'Aksesori', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Rel aluminium dan aksesori.' },
+    { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', clothType: 'Otomasi', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Motor, remote, dan kontrol.' },
   ],
   skus: [
-    { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 69500, active: true, dormant: false },
-    { id: 'sku-luna-02', collectionId: 'col-luna', collectionName: 'Luna', code: 'Luna-02', colourCode: '02', colourName: 'Sand', swatch: '#C9B79C', unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 70000, active: true, dormant: false },
-    { id: 'sku-aria-01', collectionId: 'col-aria', collectionName: 'Aria', code: 'Aria-01', colourCode: '01', colourName: 'Putih', swatch: '#F1EEE4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, active: true, dormant: false },
-    { id: 'sku-aria-02', collectionId: 'col-aria', collectionName: 'Aria', code: 'Aria-02', colourCode: '02', colourName: 'Greige', swatch: '#C9C2B4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, active: true, dormant: false },
-    { id: 'sku-nova-01', collectionId: 'col-nova', collectionName: 'Nova', code: 'Nova-01', colourCode: '01', colourName: 'Charcoal', swatch: '#3D444B', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, active: true, dormant: false },
-    { id: 'sku-nova-02', collectionId: 'col-nova', collectionName: 'Nova', code: 'Nova-02', colourCode: '02', colourName: 'Terracotta', swatch: '#A85F45', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, active: false, dormant: true, dormantSince: '2026-01-15' },
+    { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 69500, sellPriceUpdatedAt: '2026-06-01', active: true, dormant: false },
+    { id: 'sku-luna-02', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', code: 'Luna-02', colourCode: '02', colourName: 'Sand', swatch: '#C9B79C', unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 70000, sellPriceUpdatedAt: '2026-10-01', active: true, dormant: false },
+    { id: 'sku-aria-01', collectionId: 'col-aria', collectionName: 'Aria', clothType: 'Sheer', code: 'Aria-01', colourCode: '01', colourName: 'Putih', swatch: '#F1EEE4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, sellPriceUpdatedAt: '2026-05-15', active: true, dormant: false },
+    { id: 'sku-aria-02', collectionId: 'col-aria', collectionName: 'Aria', clothType: 'Sheer', code: 'Aria-02', colourCode: '02', colourName: 'Greige', swatch: '#C9C2B4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, sellPriceUpdatedAt: '2026-09-20', active: true, dormant: false },
+    { id: 'sku-nova-01', collectionId: 'col-nova', collectionName: 'Nova', clothType: 'Dimout', code: 'Nova-01', colourCode: '01', colourName: 'Charcoal', swatch: '#3D444B', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, sellPriceUpdatedAt: '2026-07-01', active: true, dormant: false },
+    { id: 'sku-nova-02', collectionId: 'col-nova', collectionName: 'Nova', clothType: 'Dimout', code: 'Nova-02', colourCode: '02', colourName: 'Terracotta', swatch: '#A85F45', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, sellPriceUpdatedAt: '2026-07-01', active: false, dormant: true, dormantSince: '2026-01-15' },
   ],
   parts: [
     { id: 'part-rel-3', sku: 'REL-300', name: 'Rel gorden 3 m', categoryId: 'cat-part', brand: 'Alumindo', unit: 'pcs', sellPrice: 85000, buyPrice: 52000, image: '/assets/parts/rail.svg', active: true },
@@ -76,7 +77,7 @@ export const MASTER = {
 function skeleton(dataset) {
   return {
     meta: {
-      version: 12,
+      version: SCHEMA_VERSION,
       dataset,
       label: dataset === 'sim' ? 'Simulasi' : 'Data utama',
       seededAt: new Date().toISOString(),
@@ -99,11 +100,13 @@ function skeleton(dataset) {
     transportCompanies: [],
     fleetAssets: [],
     supplierPrices: [],
+    sellPriceHistory: [],
     fxRates: [],
     projects: [],
     invoices: [],
     payments: [],
     samples: [],
+    sampleStocks: [],
     sampleBooks: [],
     deposits: [],
     transfers: [],
@@ -253,12 +256,49 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.transport = db.transportCompanies.length;
   db.sequences.fleetAsset = db.fleetAssets.length;
 
+  const sampleSeeds = [
+    ['col-luna', 'sku-luna-01'],
+    ['col-luna', 'sku-luna-02'],
+    ['col-aria', 'sku-aria-01'],
+    ['col-aria', 'sku-aria-02'],
+    ['col-nova', 'sku-nova-01'],
+  ];
+  sampleSeeds.forEach(([collectionId, skuId], index) => {
+    db.sampleStocks.push({
+      id: `SS-${String(index + 1).padStart(4, '0')}`,
+      collectionId,
+      skuId,
+      qty: 2,
+      minQty: 1,
+      sampleLengthMm: 500,
+      location: 'Showroom Jakarta',
+      sourceRollId: null,
+      updatedAt: '2026-11-01T09:00:00+07:00',
+      history: [],
+    });
+  });
+  db.sequences.sampleStock = db.sampleStocks.length;
+
+  [...db.skus, ...db.parts].forEach((item, index) => {
+    db.sellPriceHistory.push({
+      id: `SPH-${String(index + 1).padStart(4, '0')}`,
+      itemType: item.collectionId ? 'sku' : 'part',
+      itemId: item.id,
+      oldPrice: 0,
+      newPrice: item.sellPrice,
+      changedAt: `${item.sellPriceUpdatedAt ?? '2026-09-01'}T09:00:00+07:00`,
+      changedBy: 'Sistem',
+      note: 'Harga awal demo.',
+    });
+  });
+  db.sequences.sellPriceHistory = db.sellPriceHistory.length;
+
   /* ------------------------------------------------------------- customers */
-  const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', npwp: '01.234.567.8-901.000', phone: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);
-  const c2 = createCustomer(db, { name: 'Sari Wijaya', company: 'Rumah pribadi', phone: '0813-2000-3002', email: 'sari.wijaya@mail.id', address: 'Jl. Kemang Selatan 8', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Jadwalkan survei ukur', followUpDate: '2026-11-08', notes: 'Preferensi warna netral.' }, sales);
-  const c3 = createCustomer(db, { name: 'Graha Nusantara', company: 'PT Graha Nusantara', npwp: '02.345.678.9-012.000', phone: '021-3000-4003', email: 'facility@grahanusantara.co.id', address: 'Jl. Gatot Subroto 55', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Kirim sample Aria-02', followUpDate: '2026-11-12' }, sales);
-  const c4 = createCustomer(db, { name: 'Klinik Sehat Bersama', company: 'Yayasan Sehat Bersama', phone: '0821-4000-5004', email: 'admin@sehatbersama.id', address: 'Jl. Raya Bogor 77', city: 'Depok', stage: 'sample', nextAction: 'Tunggu keputusan sample Nova', followUpDate: '2026-11-14' }, sales);
-  const c5 = createCustomer(db, { name: 'Butik Melati', company: 'Butik Melati', phone: '0857-5000-6005', email: 'hello@butikmelati.id', address: 'Jl. Braga 20', city: 'Bandung', stage: 'dormant', nextAction: 'Reaktivasi Q1 2027', followUpDate: '2027-01-15', notes: 'Terakhir beli Februari 2026.' }, sales);
+  const c1 = createCustomer(db, { name: 'Hotel Arunika', company: 'PT Arunika Hospitality', npwp: '01.234.567.8-901.000', phone: '0812-1000-2001', whatsapp: '0812-1000-2001', email: 'procurement@arunika.co.id', address: 'Jl. Sudirman 210', city: 'Jakarta', stage: 'negosiasi', nextAction: 'Konfirmasi warna final 24 kamar', followUpDate: '2026-11-10', notes: 'Proyek renovasi sayap timur.' }, sales);
+  const c2 = createCustomer(db, { name: 'Sari Wijaya', company: 'Rumah pribadi', phone: '0813-2000-3002', whatsapp: '0813-2000-3002', email: 'sari.wijaya@mail.id', address: 'Jl. Kemang Selatan 8', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Jadwalkan survei ukur', followUpDate: '2026-11-08', notes: 'Preferensi warna netral.' }, sales);
+  const c3 = createCustomer(db, { name: 'Graha Nusantara', company: 'PT Graha Nusantara', npwp: '02.345.678.9-012.000', phone: '021-3000-4003', whatsapp: '0812-9000-4003', email: 'facility@grahanusantara.co.id', address: 'Jl. Gatot Subroto 55', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Kirim sample Aria-02', followUpDate: '2026-11-12' }, sales);
+  const c4 = createCustomer(db, { name: 'Klinik Sehat Bersama', company: 'Yayasan Sehat Bersama', phone: '0821-4000-5004', whatsapp: '0821-4000-5004', email: 'admin@sehatbersama.id', address: 'Jl. Raya Bogor 77', city: 'Depok', stage: 'sample', nextAction: 'Tunggu keputusan sample Nova', followUpDate: '2026-11-14' }, sales);
+  const c5 = createCustomer(db, { name: 'Butik Melati', company: 'Butik Melati', phone: '0857-5000-6005', whatsapp: '0857-5000-6005', email: 'hello@butikmelati.id', address: 'Jl. Braga 20', city: 'Bandung', stage: 'dormant', nextAction: 'Reaktivasi Q1 2027', followUpDate: '2027-01-15', notes: 'Terakhir beli Februari 2026.' }, sales);
 
   /* ----------------------------------------------------------- parts stock */
   addParts(db, 'part-rel-3', 'wh-jkt', 40);
@@ -465,6 +505,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
     toWarehouseId: 'wh-bali',
     neededBy: '2026-11-09',
     reason: 'Permintaan customer Bali — Luna-01 untuk 6 jendela.',
+    shippingCost: 300000,
     lines: [{ skuId: 'sku-luna-01', requestedMm: 15000 }],
     user: op,
   });

@@ -266,7 +266,9 @@ function deliveryCard(inv, delivery, role) {
       ${delivery ? badge(DELIVERY_STATUS[delivery.status].label, DELIVERY_STATUS[delivery.status].tone) : ''}
     </div>
     ${!delivery ? `
-      <p class="small muted" style="margin-top:8px">${inv.status === 'posted' ? 'Belum ada surat jalan untuk faktur ini.' : 'Surat jalan dibuat setelah faktur terbit.'}</p>
+      ${inv.status === 'posted'
+        ? `<div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div><strong>Surat jalan wajib dibuat.</strong> Faktur sudah terbit tetapi belum memiliki surat jalan pengiriman.</div></div>`
+        : `<p class="small muted" style="margin-top:8px">Surat jalan dibuat setelah faktur terbit.</p>`}
       ${inv.status === 'posted' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary btn-block" style="margin-top:10px" data-act="new-delivery">${icon('truck')} Buat surat jalan</button>` : ''}
     ` : `
       <div class="stack-sm" style="margin-top:10px">

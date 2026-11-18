@@ -202,6 +202,9 @@ function renderDetail(ctx) {
             <div class="row-between"><span class="small muted">Dibuat</span><span class="small">${esc(t.createdDate)}</span></div>
             <div class="row-between"><span class="small muted">Disetujui</span><span class="small">${esc(t.approvedBy || '—')}</span></div>
             <div class="row-between"><span class="small muted">Proyek</span><span class="small">${project ? `<a href="#/proyek/${project.id}">${esc(project.name)}</a>` : '—'}</span></div>
+            <div class="row-between"><span class="small muted">Jenis</span><span class="small">Penjualan internal antar gudang</span></div>
+            <div class="row-between"><span class="small muted">Ongkir</span><span class="small">${fmt.money(t.shippingCost || 0)}</span></div>
+            <div class="row-between"><span class="small muted">Ongkir / m</span><span class="small">${fmt.money(t.shippingCostPerM || 0)}</span></div>
           </div>
           <hr class="divider" />
           <div class="xs muted">Alasan</div>
@@ -355,7 +358,7 @@ export function openCreate(ctx) {
 
   openModal({
     title: 'Buat permintaan gudang',
-    description: 'PO internal tanpa pemasok. Gudang penerima mengajukan; manajer menyetujui.',
+    description: 'Penjualan internal antar gudang. Ongkir dikapitalisasi ke HPP roll di gudang tujuan.',
     wide: true,
     submitLabel: 'Buat & ajukan',
     body: `
@@ -364,12 +367,13 @@ export function openCreate(ctx) {
         ${field('Gudang tujuan', `<select class="select" name="to" required>${warehouseOptions(db, defaultTo)}</select>`)}
         ${field('Dibutuhkan tanggal', `<input class="input" type="date" name="neededBy" value="${new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)}" />`)}
         ${field('Proyek (opsional)', `<select class="select" name="projectId"><option value="">— Tanpa proyek —</option>${projectOptions}</select>`)}
+        ${field('Ongkir antar gudang (Rp)', `<input class="input" name="shippingCost" inputmode="numeric" placeholder="0" />`, { hint: 'Masuk ke HPP roll di gudang tujuan.' })}
         ${field('Alasan / referensi', `<input class="input" name="reason" placeholder="Contoh: permintaan customer Bandung" />`, { full: true })}
       </div>
       <div class="section-title" style="margin:20px 0 8px"><h3>Material</h3><span class="xs muted">Satuan meter</span></div>
       <div id="line-rows">${lineRow()}</div>
       <button class="btn btn-sm" type="button" data-add-row>${icon('plus')} Tambah baris</button>
-      <div class="notice notice-info" style="margin-top:14px">${icon('alert')}<div>Permintaan tidak memesan stok. Saat menyetujui, manajer hanya menyetujui kebutuhan; ketersediaan dicek ulang saat pengiriman.</div></div>
+      <div class="notice notice-info" style="margin-top:14px">${icon('alert')}<div>Permintaan tidak memesan stok. Saat menyetujui, manajer hanya menyetujui kebutuhan; ketersediaan dicek ulang saat pengiriman. Ongkir menambah nilai roll yang diterima di gudang tujuan.</div></div>
     `,
     onMount(form) {
       const rows = form.querySelector('#line-rows');
@@ -400,6 +404,7 @@ export function openCreate(ctx) {
           neededBy: form.neededBy.value,
           reason: form.reason.value,
           projectId: form.projectId.value || null,
+          shippingCost: Number(String(form.shippingCost.value).replace(/\D/g, '')) || 0,
           lines,
           user: ctx.user,
         });

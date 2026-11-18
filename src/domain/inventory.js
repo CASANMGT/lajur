@@ -135,6 +135,45 @@ export function rollsAt(db, warehouseId, { skuId = null, includeReserved = true 
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 
+/**
+ * Available stock grouped by collection/colour/width, including roll tags.
+ * Used by the WhatsApp stock-share message.
+ */
+export function stockOfferLines(db, { warehouseId = null } = {}) {
+  const groups = new Map();
+  for (const roll of db.rolls) {
+    if (warehouseId && roll.warehouseId !== warehouseId) continue;
+    const available = availableMm(roll);
+    if (available <= 0) continue;
+    const sku = byId(db.skus, roll.skuId);
+    if (!sku || sku.dormant) continue;
+    const key = sku.id;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        skuId: sku.id,
+        code: sku.code,
+        collectionName: sku.collectionName,
+        clothType: sku.clothType ?? '',
+        colourName: sku.colourName || sku.colourCode || '',
+        widthCm: sku.widthCm,
+        sellPrice: sku.sellPrice,
+        availableMm: 0,
+        rolls: [],
+      });
+    }
+    const row = groups.get(key);
+    row.availableMm += available;
+    row.rolls.push({ id: roll.id, barcode: roll.barcode ?? roll.id, bin: roll.bin, warehouseId: roll.warehouseId, availableMm: available });
+  }
+  return [...groups.values()].sort((a, b) => a.collectionName.localeCompare(b.collectionName));
+}
+
+export function rollByBarcode(db, barcode) {
+  const code = String(barcode ?? '').trim();
+  if (!code) return null;
+  return db.rolls.find((r) => r.barcode === code || r.id === code) ?? null;
+}
+
 export function sellableRolls(db, skuId, warehouseId) {
   return db.rolls
     .filter((r) => r.skuId === skuId && r.warehouseId === warehouseId && availableMm(r) > 0)
@@ -366,6 +405,7 @@ export function createRoll(db, input) {
   const id = input.id ?? nextId(db, 'roll', 'RL');
   const roll = {
     id,
+    barcode: input.barcode ?? id,
     skuId: input.skuId,
     lot: input.lot || 'TANPA-LOT',
     receivedAt: input.receivedAt ?? todayJakarta(),

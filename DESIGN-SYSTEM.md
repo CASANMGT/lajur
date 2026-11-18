@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.16
+# Design System - Lavishome v2.17
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -268,7 +268,16 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **No price leakage:** the consignment note must never show unit prices, invoice subtotal or margin. It is a delivery document; the invoice already moved stock.
 - **Database status:** the reference server is the only place PostgreSQL is used. In the UI, the demo remains browser-local. When documenting production, state which store is active (`storage: postgres` or `json`) and never imply the static demo shares data.
 
-### 5.18 Empty, loading, error
+### 5.18 Sample stock, roll tags, WA share and price review
+
+- **Sample stock:** show pieces per collection/colour with a minimum and location. “Tambah stok sample” cuts a roll; “Beri sample” decrements one piece and creates the customer history record. The customer summary shows samples, un-converted samples, conversion count, purchase total and last date.
+- **Roll tag:** print a real Code 39 barcode from the stable roll ID. Keep the tag monochrome, with collection, cloth type, colour, width, lot, length and warehouse/bin. Do not imply scanner integration beyond the printed tag.
+- **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
+- **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.
+- **Internal warehouse sale:** label transfers as internal sales and show ongkir plus ongkir per metre. Destination HPP includes the shipping allocation.
+- **Surat jalan missing:** a posted invoice without a delivery note is an amber operational warning, not a hidden error.
+
+### 5.19 Empty, loading, error
 
 - Empty: icon, short title, one sentence, one action.
 - Loading: skeleton blocks only for data-bound regions; no spinner on instant local renders.

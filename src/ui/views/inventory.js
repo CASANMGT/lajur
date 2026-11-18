@@ -5,7 +5,7 @@ import { MM_PER_M, byId, formatDateLong, parseM, todayJakarta } from '../../doma
 import {
   ROLL_STATUS, availableMm, isSellable, partAvailable, quarantineRoll, receiveAdhocStock,
   rollAncestors, rollDescendants, rollHierarchy, rollTrail, skuStockByWarehouse,
-  stockSummary, summarizeRolls,
+  stockOfferLines, stockSummary, summarizeRolls,
 } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, movementRow, warehouseOptions } from './common.js';
 import { settingsOf } from '../../domain/settings.js';
@@ -35,8 +35,8 @@ function matches(db, roll, { whId }) {
   const sku = byId(db.skus, roll.skuId);
   const wh = byId(db.warehouses, roll.warehouseId) ?? byId(db.warehouses, roll.transit?.toWarehouseId);
   return [
-    roll.id, roll.lot, roll.bin, roll.receiptRef, sku?.code, sku?.colourCode, sku?.colourName,
-    sku?.collectionName, wh?.code, wh?.name,
+    roll.id, roll.barcode, roll.lot, roll.bin, roll.receiptRef, sku?.code, sku?.colourCode, sku?.colourName,
+    sku?.collectionName, sku?.clothType, wh?.code, wh?.name,
   ].some((v) => String(v ?? '').toLowerCase().includes(q));
 }
 
@@ -55,13 +55,13 @@ function rowsHtml(ctx) {
     const wh = roll.transit ? byId(db.warehouses, roll.transit.toWarehouseId) : byId(db.warehouses, roll.warehouseId);
     const avail = availableMm(roll);
     return `<tr data-href="#/stok/${roll.id}" tabindex="0" role="link">
-      <td><span class="mono strong">${esc(roll.id)}</span><div class="xs muted">${esc(roll.lot)}</div></td>
+      <td><span class="mono strong">${esc(roll.id)}</span><div class="xs muted">${esc(roll.lot)}</div><div class="xs mono muted">${esc(roll.barcode || roll.id)}</div></td>
       <td>
         <div class="cell-main">
           ${swatch(sku)}
           <div class="txt">
             <strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')}</strong>
-            <span>${esc(sku?.code)}${sku?.widthCm ? ` · ${sku.widthCm} cm` : ''}</span>
+            <span>${esc(sku?.clothType || '')}${sku?.clothType ? ' · ' : ''}${esc(sku?.code)}${sku?.widthCm ? ` · ${sku.widthCm} cm` : ''}</span>
           </div>
         </div>
       </td>
@@ -82,7 +82,7 @@ function treeRows(nodes, db) {
     return `<div class="tree-node">
       <a class="tree-row" href="#/stok/${esc(roll.id)}">
         <span class="tree-id mono strong">${esc(roll.id)}</span>
-        <span class="tree-lot xs muted">Lot ${esc(roll.lot)} · ${esc(wh?.code ?? '—')}/${esc(roll.bin || '—')}</span>
+        <span class="tree-lot xs muted">Lot ${esc(roll.lot)} · ${esc(roll.barcode || roll.id)} · ${esc(wh?.code ?? '-')}/${esc(roll.bin || '-')}</span>
         <span class="num">${fmt.m(roll.currentMm)}</span>
         <span class="num ${node.reservedMm ? 'strong' : 'muted'}">${node.reservedMm ? fmt.m(node.reservedMm) : '—'}</span>
         <span class="num">${isSellable(roll) ? fmt.m(node.availableMm) : '—'}</span>
@@ -192,13 +192,13 @@ export function render(ctx) {
       sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
       actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok manual</button>` : ''}
         <a class="btn" href="#/pembelian">${icon('truck')} Terima PO</a>
-        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
+        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
     })}
     ${summaryStrip(ctx)}
     <div class="filterbar">
       <div class="search">
         ${icon('search')}
-        <input class="input" id="roll-search" type="search" placeholder="Cari roll, lot, warna, rak…" value="${esc(filters.q)}" aria-label="Cari roll" />
+        <input class="input" id="roll-search" type="search" placeholder="Cari roll, barcode, lot, warna, rak…" value="${esc(filters.q)}" aria-label="Cari roll atau barcode" />
       </div>
       <div class="field"><label for="f-collection">Koleksi</label>
         <select class="select" id="f-collection">
@@ -324,10 +324,10 @@ function renderDetail(ctx) {
           ${badge(status.label, status.tone)}
           ${roll.condition !== 'good' ? badge(roll.condition === 'damaged' ? 'Rusak' : 'Cacat ringan', 'warn') : ''}
         </div>
-        <p class="sub">${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')} · ${esc(sku?.code)} · Lot ${esc(roll.lot)}</p>
+        <p class="sub">${esc(sku?.collectionName)} · ${esc(sku?.clothType || '')} · ${esc(sku?.colourName || sku?.colourCode || '')} · Lot ${esc(roll.lot)} · Barcode <span class="mono">${esc(roll.barcode || roll.id)}</span></p>
       </div>
       <div class="page-actions">
-        <button class="btn" type="button" data-action="print-label">${icon('printer')} Cetak label</button>
+        <button class="btn" type="button" data-action="print-label">${icon('printer')} Tag stok / barcode</button>
         ${isSellable(roll) && can(role, 'invoice.create') ? `<a class="btn btn-primary" href="#/penjualan?new=1&roll=${roll.id}">${icon('cut')} Jual / potong</a>` : ''}
         ${can(role, 'stock.quarantine') && !roll.transit && ['available'].includes(roll.status) ? `<button class="btn btn-danger" type="button" data-action="quarantine">${icon('alert')} Karantina</button>` : ''}
       </div>
@@ -440,7 +440,7 @@ function openAddStock(ctx) {
         <div class="form-grid">
           ${field('SKU / warna', `<select class="select" name="sku">${skuOptions}</select>`)}
           ${field('Lot / dye lot', `<input class="input" name="lot" placeholder="LOT-2611-A" />`)}
-          ${field('Panjang roll (m, pisah koma)', `<input class="input" name="lengths" inputmode="decimal" placeholder="Contoh: 60, 61,2" />`, { full: true, hint: 'Jangan memasukkan rata-rata. Satu angka = satu roll fisik.' })}
+          ${field('Panjang roll (m, pisah koma)', `<input class="input" name="lengths" inputmode="decimal" placeholder="60, 61,2" />`, { full: true, hint: 'Default koleksi 60 m × 300 cm. Jangan memasukkan rata-rata. Satu angka = satu roll fisik.' })}
           ${field('Harga pokok / m', `<input class="input" name="fabricCost" inputmode="numeric" placeholder="0" />`)}
         </div>
       </div>
@@ -510,13 +510,87 @@ function openAddStock(ctx) {
   });
 }
 
+export function openStockShare(ctx, { customerId = null } = {}) {
+  const { db } = ctx;
+  const customers = (db.customers ?? []).filter((c) => c.stage !== 'dormant');
+  if (!customers.length) {
+    toast('Belum ada pelanggan dengan nomor WhatsApp.', { tone: 'error' });
+    return;
+  }
+  const warehouseId = ctx.ui.warehouseId && ctx.ui.warehouseId !== 'all' ? ctx.ui.warehouseId : null;
+  const buildMessage = (customer) => {
+    const lines = stockOfferLines(db, { warehouseId });
+    const available = lines.filter((l) => l.availableMm > 0);
+    if (!available.length) return `Halo ${customer?.name ?? 'Bapak/Ibu'}, stok Lavishome sedang tidak tersedia. Kami akan menghubungi kembali setelah restock.`;
+    return [
+      `Halo ${customer?.name ?? 'Bapak/Ibu'}, berikut stok Lavishome yang tersedia${warehouseId ? ` di ${warehouseOf(db, warehouseId)?.name ?? warehouseId}` : ''}:`,
+      '',
+      ...available.map((l) => `• ${l.collectionName} (${l.clothType}) — ${l.colourName} ${l.widthCm} cm: ${(l.availableMm / MM_PER_M).toLocaleString('id-ID')} m (${l.rolls.length} roll) · ${fmt.money(l.sellPrice)}/m`),
+      '',
+      'Harga dapat berubah; balas WA ini untuk sample, penawaran, atau cek warna fisik. — Lavishome',
+    ].join('\n');
+  };
+  const initial = customers.find((c) => c.id === customerId) ?? customers[0];
+  const users = customers.map((c) => `<option value="${c.id}" data-wa="${esc(c.whatsapp || c.phone || '')}" ${c.id === initial.id ? 'selected' : ''}>${esc(c.name)}${c.company ? ` - ${esc(c.company)}` : ''} · WA ${esc(c.whatsapp || c.phone || '—')}</option>`).join('');
+  openModal({
+    title: 'Info stok via WhatsApp',
+    description: 'Pilih pelanggan, salin pesan, atau buka WhatsApp dengan pesan yang sudah terisi.',
+    submitLabel: 'Selesai',
+    wide: true,
+    body: `<div class="form-grid">
+      ${field('Pelanggan', `<select class="select" name="customer">${users}</select>`, { full: true })}
+      ${field('Pesan stok', `<textarea class="textarea" name="message" rows="12">${esc(buildMessage(initial))}</textarea>`, { full: true, hint: 'Bisa diedit sebelum dikirim.' })}
+      <div class="span-2 row" style="margin-top:10px">
+        <button class="btn" type="button" data-copy-wa>Salin pesan</button>
+        <a class="btn btn-primary" data-open-wa href="#" target="_blank" rel="noopener">Buka WhatsApp</a>
+      </div>
+    </div>`,
+    onMount(form) {
+      const customer = () => customers.find((c) => c.id === form.customer.value) ?? initial;
+      const phone = (c) => String(c.whatsapp || c.phone || '').replace(/\D/g, '').replace(/^0/, '62');
+      const update = () => {
+        const c = customer();
+        form.message.value = buildMessage(c);
+        form.querySelector('[data-open-wa]').href = phone(c)
+          ? `https://wa.me/${phone(c)}?text=${encodeURIComponent(form.message.value)}`
+          : '#';
+      };
+      form.customer.addEventListener('change', update);
+      form.message.addEventListener('input', () => {
+        const c = customer();
+        const p = phone(c);
+        form.querySelector('[data-open-wa]').href = p ? `https://wa.me/${p}?text=${encodeURIComponent(form.message.value)}` : '#';
+      });
+      form.querySelector('[data-copy-wa]').addEventListener('click', async () => {
+        const text = form.message.value;
+        try {
+          await navigator.clipboard.writeText(text);
+          toast('Pesan stok disalin. Tempel di WhatsApp.', { tone: 'success' });
+        } catch {
+          form.message.select();
+          document.execCommand('copy');
+          toast('Pesan stok disalin.', { tone: 'success' });
+        }
+      });
+      form.querySelector('[data-open-wa]').addEventListener('click', (e) => {
+        if (!phone(customer())) {
+          e.preventDefault();
+          toast('Pelanggan belum punya nomor WhatsApp.', { tone: 'error' });
+        }
+      });
+      update();
+    },
+    onSubmit(form, close) { close(); },
+  });
+}
+
 export function mount(ctx) {
   if (ctx.route.id) {
     document.querySelector('[data-action="print-label"]')?.addEventListener('click', () => {
       const roll = ctx.db.rolls.find((r) => r.id === ctx.route.id);
       const sku = byId(ctx.db.skus, roll.skuId);
       const wh = warehouseOf(ctx.db, roll.transit?.toWarehouseId ?? roll.warehouseId);
-      printDocument(`Label ${roll.id}`, printLabelHtml(roll, sku, wh));
+      printDocument(`Tag stok ${roll.id}`, printLabelHtml(roll, sku, wh));
     });
     document.querySelector('[data-action="quarantine"]')?.addEventListener('click', async () => {
       const reason = await promptText({
@@ -581,6 +655,7 @@ export function mount(ctx) {
     // Force a full view re-render via store emit.
     ctx.store.emit();
   });
+  document.querySelector('[data-act="share-stock"]')?.addEventListener('click', () => openStockShare(ctx));
   document.querySelector('[data-act="add-stock"]')?.addEventListener('click', () => openAddStock(ctx));
   if (ctx.route.query?.add && can(ctx.role, 'stock.add')) {
     history.replaceState(null, '', '#/stok');

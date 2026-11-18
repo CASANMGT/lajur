@@ -23,8 +23,9 @@ const steps = [
         <li>Buka <a href="#/stok">Stok & Roll</a>. Pilih gudang Jakarta atau Bali.</li>
         <li>Setiap roll adalah panjang fisik dengan lot dan rak sendiri. Gunakan pencarian atau filter koleksi/status.</li>
         <li><strong>Tambah stok manual</strong> untuk saldo awal/koreksi tanpa PO: pilih kain atau part, gudang, lot, panjang roll, biaya, dan alasan.</li>
-        <li>Buka detail roll untuk melihat mutasi, induk/turunan, dan mencetak label.</li>
-        <li>Gunakan <strong>Hierarki koleksi</strong> untuk melihat collection → warna → roll induk → turunan.</li>
+        <li>Buka detail roll untuk melihat mutasi, induk/turunan, dan mencetak <strong>tag stok / barcode</strong>. Barcode memakai ID roll dan memuat lokasi gudang/rak.</li>
+        <li>Gunakan <strong>Info stok WA</strong> untuk membuat pesan stok tersedia dan membuka WhatsApp pelanggan.</li>
+        <li>Gunakan <strong>Hierarki koleksi</strong> untuk melihat collection → tipe kain → warna → roll induk → turunan.</li>
       </ol>`,
   },
   {
@@ -33,10 +34,10 @@ const steps = [
     body: `
       <ol>
         <li>Buka <a href="#/transfer">Permintaan Gudang</a> → Buat permintaan.</li>
-        <li>Pilih gudang asal/tujuan, produk, warna, jumlah meter, tanggal butuh, dan alasan.</li>
+        <li>Pilih gudang asal/tujuan, produk, warna, jumlah meter, tanggal butuh, alasan, dan <strong>ongkir antar gudang</strong>.</li>
         <li>Operator submit; manajer approve. Persetujuan tidak mereservasi stok.</li>
         <li>Saat dispatch, pilih roll fisik. Barang transit bukan stok gudang asal maupun tujuan.</li>
-        <li>Terima sebagian atau penuh; cetak permintaan atau surat jalan internal.</li>
+        <li>Terima sebagian atau penuh; ongkir menambah HPP roll di gudang tujuan. Cetak permintaan atau surat jalan internal.</li>
       </ol>`,
   },
   {
@@ -70,7 +71,8 @@ const steps = [
       <ol>
         <li>Setelah faktur terbit, buka detail faktur.</li>
         <li><strong>Faktur pajak</strong>: DPP/PPN 11% dihitung otomatis; isi nomor dan NPWP pelanggan (opsional) lalu terbitkan. Dapat dicetak/PDF.</li>
-        <li><strong>Surat jalan</strong>: pilih PIC, kurir (Internal/Lalamove/GoSend/GrabExpress), driver dari master, kendaraan, alamat dengan autocomplete dan peta.</li>
+        <li><strong>Surat jalan wajib</strong> untuk setiap faktur terbit. Pengiriman menampilkan faktur yang belum memiliki surat jalan.</li>
+        <li><strong>Surat jalan</strong>: pilih PIC, kurir internal/pihak ketiga, driver dan kendaraan internal yang ditugaskan, alamat dengan autocomplete dan peta.</li>
         <li>Alur: Buat → Kirim → Tiba → Konfirmasi terima oleh PIC pelanggan. Stok tidak berubah lagi.</li>
         <li>Driver melihat tugasnya di menu <a href="#/pengiriman">Pengiriman</a>.</li>
       </ol>`,
@@ -102,7 +104,9 @@ const steps = [
     title: 'Sample, buku sample, dan katalog',
     body: `
       <ol>
-        <li>Buka <a href="#/sampel">Sample & Deposit</a> → Sample baru. Potongan diambil dari roll; stok berkurang.</li>
+        <li>Buka <a href="#/sampel">Sample & Deposit</a> → <strong>Stok sample</strong> untuk memotong sample dari roll dan menyimpannya per koleksi/warna.</li>
+        <li><strong>Beri sample</strong> mencatat pelanggan, tanggal, jenis, dan hasil. Ringkasan pelanggan menunjukkan jumlah sample dan total pembelian.</li>
+        <li><strong>Sample baru</strong> tetap tersedia untuk potong langsung dari roll tanpa stok showroom.</li>
         <li><strong>Buku sample</strong>: beri nama, pilih pelanggan/prospek, tambah beberapa potongan roll dan ukuran, lalu buat. Setiap potongan menjadi sample fisik.</li>
         <li>Buku dapat dicetak/PDF dan ditandai “Beri” kepada calon pelanggan.</li>
         <li>Buka <a href="#/katalog">Katalog</a> untuk daftar warna, lebar, harga jual, dan stok; cetak/PDF untuk pelanggan.</li>
@@ -149,8 +153,10 @@ const steps = [
     body: `
       <ol>
         <li>Buka <a href="#/master">Master Data</a>. Tersedia di mode Sederhana untuk manajer.</li>
-        <li>Produk kain: kode, warna, swatch hex, lebar, harga, gambar, supplier dan harga pemasok.</li>
-        <li>Spare part: SKU, brand, induk/child, harga, gambar.</li>
+        <li>Koleksi: tipe kain sebelum warna, default roll 60 m × 300 cm; warna dan lebar ada di produk.</li>
+        <li>Produk kain: kode, warna, swatch hex, lebar, harga beli, gambar, supplier dan harga pemasok.</li>
+        <li><strong>Harga jual</strong>: gunakan tombol Harga jual untuk melihat riwayat dan mengubah harga. Harga yang tidak berubah ≥90 hari meminta konfirmasi.</li>
+        <li>Spare part: SKU, brand, induk/child, harga beli/jual, gambar.</li>
         <li><strong>Driver & transport</strong>: driver punya akun pengguna, telepon, kendaraan (motor/mobil/truk), plat, dan transport internal/pihak ketiga (Lalamove, GoSend, Bali Kargo).</li>
         <li>Pengguna & peran: tambah staf, ubah peran, reset PIN. Driver dapat login untuk melihat pengiriman.</li>
       </ol>`,

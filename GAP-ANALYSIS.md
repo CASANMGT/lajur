@@ -1,4 +1,4 @@
-# Gap analysis - Lavishome v2.16 vs. earlier PRD and design system v2
+# Gap analysis - Lavishome v2.17 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -86,6 +86,13 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Internal fleet master** | **Done in v2.15** | 3 seeded Lavishome Fleet vehicles; third-party vehicles removed from assets; capacity, tax date and assigned driver |
 | **Driver ↔ vehicle assignment** | **Done in v2.15** | Assign from driver or vehicle form; one driver per vehicle; moving assignment syncs both records |
 | **Third-party delivery mode** | **Done in v2.15** | Lalamove/J&T/JNE/GoSend/Bali Kargo selectable as courier; no fleet asset, optional courier driver + AWB |
+| **Collection cloth type/default roll** | **Done in v2.17** | Cloth type before colour; 60 m × 300 cm collection default |
+| **Sample stock + distribution history** | **Done in v2.17** | Pieces per collection/colour; give to customer; sample/purchase summary per customer |
+| **Roll barcode stock tag** | **Done in v2.17** | Stable Code 39 tag with collection, type, colour, width, lot, location |
+| **Customer WhatsApp stock share** | **Done in v2.17** | WA number on customer; copy-paste stock message and wa.me |
+| **Sell-price history + 90-day review** | **Done in v2.17** | Old/new price, user, note; stale price requires confirmation |
+| **Transfer ongkir capitalization** | **Done in v2.17** | Internal warehouse sale; destination HPP includes shipping |
+| **Surat jalan missing warning** | **Done in v2.17** | Posted invoices without delivery listed on Pengiriman |
 | **J&T/JNE consignment surat jalan** | **Done in v2.12** | Recipient, service, AWB, weight, pieces, shipping/insurance/COD, consignment print with barcode + signatures |
 | **PostgreSQL production store** | **Done in v2.12** | `DATABASE_URL` selects JSONB state with ACID transactions, revision guard, audit, users/sessions/idempotency; JSON fallback |
 | **Vehicle + transport snapshot on surat jalan** | **Done in v2.15** | Internal delivery attaches driver + assigned vehicle; third-party stays courier-only; card/list/print show vehicle and transport |

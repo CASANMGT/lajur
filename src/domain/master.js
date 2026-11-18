@@ -3,7 +3,8 @@
  * Display codes may change; internal IDs never do.
  */
 
-import { DomainError, assert, audit, byId, isoNow, nextId, uid } from './core.js';
+import { DomainError, assert, audit, byId, isoNow, nextId, todayJakarta, uid } from './core.js';
+import { recordSellPriceChange } from './pricing.js';
 
 export const WAREHOUSE_IN_USE = [
   'available', 'quarantine',
@@ -95,7 +96,20 @@ export function activeWarehouses(db) {
   return db.warehouses.filter((w) => w.active !== false);
 }
 
-export function renameCollection(db, { id, name, description = '', user }) {
+const collectionDefaults = (value) => {
+  const length = Number(value.defaultRollLengthM ?? 60);
+  const width = Number(value.defaultWidthCm ?? 300);
+  assert(length > 0, 'INVALID_LENGTH', 'Panjang roll default harus lebih dari 0 m.');
+  assert(width > 0, 'INVALID_WIDTH', 'Lebar kain default harus lebih dari 0 cm.');
+  const clothType = String(value.clothType ?? '').trim();
+  assert(clothType.length >= 2, 'INVALID_CLOTH_TYPE', 'Tipe kain minimal 2 karakter.');
+  return { clothType, defaultRollLengthM: length, defaultWidthCm: width };
+};
+
+export function renameCollection(db, {
+  id, name, categoryId = null, description = '', clothType = null,
+  defaultRollLengthM = null, defaultWidthCm = null, user,
+}) {
   const collection = byId(db.collections, id);
   assert(collection, 'COLLECTION_NOT_FOUND', 'Koleksi tidak ditemukan.');
   const clean = String(name ?? '').trim();
@@ -105,29 +119,43 @@ export function renameCollection(db, { id, name, description = '', user }) {
     'DUPLICATE_NAME',
     'Nama koleksi sudah dipakai.',
   );
+  if (categoryId) assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
+  const defaults = collectionDefaults({
+    clothType: clothType ?? collection.clothType,
+    defaultRollLengthM: defaultRollLengthM ?? collection.defaultRollLengthM,
+    defaultWidthCm: defaultWidthCm ?? collection.defaultWidthCm,
+  });
   collection.name = clean;
+  collection.categoryId = categoryId ?? collection.categoryId;
   collection.description = description;
+  Object.assign(collection, defaults);
   // Keep the denormalised label on SKUs in sync; IDs and history remain stable.
   db.skus.filter((s) => s.collectionId === id).forEach((s) => {
     s.collectionName = clean;
+    s.clothType = defaults.clothType;
   });
-  audit(db, user, 'ubah_koleksi', 'collection', id, clean);
+  audit(db, user, 'ubah_koleksi', 'collection', id, `${clean} · ${defaults.clothType}`);
   return collection;
 }
 
-export function createCollection(db, { name, categoryId, description = '', user }) {
+export function createCollection(db, {
+  name, categoryId, description = '', clothType = 'Kain', defaultRollLengthM = 60,
+  defaultWidthCm = 300, user,
+}) {
   const clean = String(name ?? '').trim();
   assert(clean.length >= 2, 'INVALID_NAME', 'Nama koleksi minimal 2 karakter.');
   assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
   assert(!db.collections.some((c) => c.name.toLowerCase() === clean.toLowerCase()), 'DUPLICATE_NAME', 'Nama koleksi sudah dipakai.');
+  const defaults = collectionDefaults({ clothType, defaultRollLengthM, defaultWidthCm });
   const collection = {
     id: `col-${uid('').slice(1, 9)}`,
     name: clean,
     categoryId,
     description,
+    ...defaults,
   };
   db.collections.push(collection);
-  audit(db, user, 'buat_koleksi', 'collection', collection.id, clean);
+  audit(db, user, 'buat_koleksi', 'collection', collection.id, `${clean} · ${defaults.clothType}`);
   return collection;
 }
 
@@ -188,6 +216,7 @@ export function saveSku(db, {
   const patch = {
     collectionId,
     collectionName: collection.name,
+    clothType: collection.clothType ?? '',
     code: cleanCode,
     colourCode: cleanColour,
     colourName: String(colourName ?? '').trim() || null,
@@ -205,12 +234,27 @@ export function saveSku(db, {
   if (id) {
     const sku = byId(db.skus, id);
     assert(sku, 'SKU_NOT_FOUND', 'Produk tidak ditemukan.');
+    const oldPrice = Number(sku.sellPrice) || 0;
     Object.assign(sku, patch);
+    if (patch.sellPrice !== oldPrice) {
+      sku.sellPriceUpdatedAt = todayJakarta();
+      recordSellPriceChange(db, {
+        itemType: 'sku', itemId: sku.id, oldPrice, newPrice: patch.sellPrice, user, note: 'Perubahan dari master produk',
+      });
+    }
     audit(db, user, 'ubah_produk', 'sku', id, `${cleanCode} · ${collection.name}`);
     return sku;
   }
-  const sku = { id: `sku-${uid('').slice(1, 9)}`, unit: 'm', createdAt: isoNow(), ...patch };
+  const sku = {
+    id: `sku-${uid('').slice(1, 9)}`, unit: 'm', createdAt: isoNow(),
+    sellPriceUpdatedAt: todayJakarta(), ...patch,
+  };
   db.skus.push(sku);
+  if (sku.sellPrice) {
+    recordSellPriceChange(db, {
+      itemType: 'sku', itemId: sku.id, oldPrice: 0, newPrice: sku.sellPrice, user, note: 'Harga awal',
+    });
+  }
   audit(db, user, 'buat_produk', 'sku', sku.id, `${cleanCode} · ${collection.name}`);
   return sku;
 }
@@ -259,12 +303,27 @@ export function savePart(db, {
   if (id) {
     const part = byId(db.parts, id);
     assert(part, 'PART_NOT_FOUND', 'Spare part tidak ditemukan.');
+    const oldPrice = Number(part.sellPrice) || 0;
     Object.assign(part, patch);
+    if (patch.sellPrice !== oldPrice) {
+      part.sellPriceUpdatedAt = todayJakarta();
+      recordSellPriceChange(db, {
+        itemType: 'part', itemId: part.id, oldPrice, newPrice: patch.sellPrice, user, note: 'Perubahan dari master spare part',
+      });
+    }
     audit(db, user, 'ubah_part', 'part', id, `${cleanSku} · ${cleanName}`);
     return part;
   }
-  const part = { id: `part-${uid('').slice(1, 9)}`, createdAt: isoNow(), ...patch };
+  const part = {
+    id: `part-${uid('').slice(1, 9)}`, createdAt: isoNow(),
+    sellPriceUpdatedAt: todayJakarta(), ...patch,
+  };
   db.parts.push(part);
+  if (part.sellPrice) {
+    recordSellPriceChange(db, {
+      itemType: 'part', itemId: part.id, oldPrice: 0, newPrice: part.sellPrice, user, note: 'Harga awal',
+    });
+  }
   audit(db, user, 'buat_part', 'part', part.id, `${cleanSku} · ${cleanName}`);
   return part;
 }

@@ -3,7 +3,7 @@
 import { esc, icon, fmt, badge, toast, confirmAction, openModal, field, printDocument } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
-  COURIERS, DELIVERY_STATUS, confirmDelivery, dispatchDelivery, markDelivered,
+  COURIERS, DELIVERY_STATUS, confirmDelivery, dispatchDelivery, invoicesWithoutDelivery, markDelivered,
 } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { pageHead, statCard, can } from './common.js';
@@ -34,6 +34,7 @@ export function render(ctx) {
   const active = all.filter((d) => d.status !== 'confirmed' && d.status !== 'cancelled').length;
   const confirmed = all.filter((d) => d.status === 'confirmed').length;
   const todayCount = all.filter((d) => d.date === today).length;
+  const missing = role === 'driver' ? [] : invoicesWithoutDelivery(db);
 
   return `
     ${pageHead({
@@ -51,6 +52,19 @@ export function render(ctx) {
       ${statCard({ label: 'Driver', value: esc(driver?.name ?? (role === 'driver' ? 'Belum tertaut' : 'Semua')), meta: driver ? `${VEHICLE_TYPES[driver.vehicleType]?.label ?? ''} · ${driver.plateNumber}` : 'Master driver' })}
     </div>
     ${role === 'driver' && !driver ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('alert')}<div><strong>Akun driver belum tertaut.</strong> Minta manajer menautkan akun Anda ke driver di Master Data → Driver & transport.</div></div>` : ''}
+    ${missing.length ? `<section class="card card-pad" style="margin-bottom:16px">
+      <div class="row-between"><div><h2>Faktur belum ada surat jalan</h2><p class="xs muted">Surat jalan wajib dibuat untuk setiap faktur yang sudah terbit.</p></div><span class="badge no-dot">${missing.length}</span></div>
+      <div class="table-wrap" style="margin-top:10px"><table class="data">
+        <thead><tr><th>Faktur</th><th>Pelanggan</th><th>Tanggal</th><th class="num">Total</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${missing.map((inv) => `<tr>
+          <td class="mono strong">${esc(inv.id)}</td>
+          <td>${esc(inv.customerName)}</td>
+          <td>${esc(inv.date)}</td>
+          <td class="num">${fmt.money(inv.total)}</td>
+          <td class="right"><a class="btn btn-sm btn-primary" href="#/penjualan/${inv.id}">Buat surat jalan</a></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </section>` : ''}
 
     <div class="row" style="margin-bottom:12px">
       ${[['active', 'Aktif'], ['today', 'Hari ini'], ['done', 'Selesai'], ['all', 'Semua']].map(([k, label]) => `<button class="chip" type="button" data-delivery-filter="${k}" aria-pressed="${filter === k}">${label}</button>`).join('')}

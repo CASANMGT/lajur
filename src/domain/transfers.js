@@ -71,7 +71,10 @@ export function requireTransfer(db, id) {
 /* Create / approve                                                           */
 /* -------------------------------------------------------------------------- */
 
-export function createTransfer(db, { fromWarehouseId, toWarehouseId, neededBy, reason, projectId = null, lines, user }) {
+export function createTransfer(db, {
+  fromWarehouseId, toWarehouseId, neededBy, reason, projectId = null, lines,
+  shippingCost = 0, user,
+}) {
   assert(fromWarehouseId && toWarehouseId, 'MISSING_WAREHOUSE', 'Gudang sumber dan tujuan wajib dipilih.');
   assert(fromWarehouseId !== toWarehouseId, 'SAME_WAREHOUSE', 'Gudang sumber dan tujuan tidak boleh sama.');
   byId(db.warehouses, fromWarehouseId);
@@ -88,6 +91,9 @@ export function createTransfer(db, { fromWarehouseId, toWarehouseId, neededBy, r
       note: l.note ?? '',
     }));
   assert(clean.length > 0, 'EMPTY_LINES', 'Tidak ada baris dengan jumlah valid.');
+  const cleanShipping = Math.max(0, Math.round(Number(shippingCost) || 0));
+  const totalRequestedMm = clean.reduce((a, l) => a + l.requestedMm, 0);
+  const shippingCostPerM = totalRequestedMm > 0 ? cleanShipping / (totalRequestedMm / MM_PER_M) : 0;
 
   const transfer = {
     id: nextId(db, 'transfer', 'TRF', 4),
@@ -98,6 +104,9 @@ export function createTransfer(db, { fromWarehouseId, toWarehouseId, neededBy, r
     projectId,
     status: 'draft',
     lines: clean,
+    shippingCost: cleanShipping,
+    shippingCostPerM: Math.round(shippingCostPerM),
+    transferKind: 'internal_sale',
     requestedById: user?.id ?? 'system',
     requestedByName: user?.name ?? 'Sistem',
     createdAt: isoNow(),
@@ -309,11 +318,13 @@ export function receiveLine(db, { transferId, lineId, qtyMm, user, date = todayJ
     if (!roll.transit || roll.transit.transferId !== t.id) continue;
     const take = Math.min(outstanding, remaining, roll.currentMm);
 
+    const landedCostPerM = roll.costPerM + (t.shippingCostPerM || 0);
     if (take === roll.currentMm) {
       // Whole transit piece lands at the destination.
       roll.transit = null;
       roll.warehouseId = t.toWarehouseId;
       roll.bin = bin || defaultBin(db, t.toWarehouseId, roll.skuId);
+      roll.costPerM = landedCostPerM;
       recordMovement(db, {
         type: 'transfer_in',
         ref: t.id,
@@ -323,10 +334,10 @@ export function receiveLine(db, { transferId, lineId, qtyMm, user, date = todayJ
         qtyMm: take,
         beforeMm: 0,
         afterMm: take,
-        unitCost: roll.costPerM,
-        value: Math.round((take / MM_PER_M) * roll.costPerM),
+        unitCost: landedCostPerM,
+        value: Math.round((take / MM_PER_M) * landedCostPerM),
         user,
-        note: note || `Diterima dari ${t.fromWarehouseId}`,
+        note: note || `Diterima dari ${t.fromWarehouseId}${t.shippingCost ? ` · ongkir ${t.shippingCost}` : ''}`,
       });
     } else {
       // Partial receipt: split the transit piece; remainder stays in transit.
@@ -343,7 +354,7 @@ export function receiveLine(db, { transferId, lineId, qtyMm, user, date = todayJ
         bin: bin || defaultBin(db, t.toWarehouseId, roll.skuId),
         status: 'available',
         condition: roll.condition,
-        costPerM: roll.costPerM,
+        costPerM: landedCostPerM,
         parentRollId: roll.id,
         rootRollId: roll.rootRollId || roll.id,
         user,
@@ -358,10 +369,10 @@ export function receiveLine(db, { transferId, lineId, qtyMm, user, date = todayJ
         qtyMm: take,
         beforeMm: before,
         afterMm: roll.currentMm,
-        unitCost: roll.costPerM,
-        value: Math.round((take / MM_PER_M) * roll.costPerM),
+        unitCost: landedCostPerM,
+        value: Math.round((take / MM_PER_M) * landedCostPerM),
         user,
-        note: note || `Diterima sebagian dari ${t.fromWarehouseId}; sisa ${(before - take) / MM_PER_M} m masih transit`,
+        note: note || `Diterima sebagian dari ${t.fromWarehouseId}; sisa ${(before - take) / MM_PER_M} m masih transit${t.shippingCost ? ` · ongkir ${t.shippingCost}` : ''}`,
       });
     }
 

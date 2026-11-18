@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.16
+# PRD - Lavishome v2.17
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.16.0 (schema 15)
+**Version:** 2.17.0 (schema 16)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.16: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.17: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -188,12 +188,12 @@ Authentication and server authorization; transactional posting with idempotency;
 | Entity | Key fields |
 |--------|-----------|
 | `warehouse` | id, code, name, bin prefix, address, phone, **active** |
-| `collection` | id, name, category, description |
-| `sku` (colour variant) | id, collectionId, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, brand/notes/image optional, active/dormant |
+| `collection` | id, name, category, clothType, defaultRollLengthM (60), defaultWidthCm (300), description |
+| `sku` (colour variant) | id, collectionId, collectionName, clothType, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, sellPriceUpdatedAt, brand/notes/image optional, active/dormant |
 | `part` | id, SKU, name, category, brand, unit `pcs`, buy/sell price, image/notes optional, parentPartId optional (same category), active |
-| `roll` | id, skuId, lot, receivedAt, receiptRef, originalMm, currentMm, reservedMm, warehouseId, bin, status, condition, costPerM, parentRollId, rootRollId, transit, reservations[] |
+| `roll` | id, barcode (stable Code 39 value), skuId, lot, receivedAt, receiptRef, originalMm, currentMm, reservedMm, warehouseId, bin, status, condition, costPerM, parentRollId, rootRollId, transit, reservations[] |
 | `movement` | id, at, type, ref, warehouse from/to, sku/part/roll, qty, before/after, unit cost, value, user, role, note |
-| `transfer` | id, from/to warehouse, neededBy, reason, projectId, status, lines[] |
+| `transfer` | id, from/to warehouse, neededBy, reason, projectId, transferKind internal_sale, shippingCost, shippingCostPerM, status, lines[] |
 | `transfer line` | skuId, requestedMm, dispatchedMm, receivedMm, allocations[{rollId, dispatchedMm, receivedMm}] |
 | `supplier` | id, name, contact, country, origin local/import, currency, fxRate, incoterm, port, terms, leadTime, notes |
 | `purchase order` | id, supplier, currency, fxRate, dates, terms, status, lines[] with foreign price + IDR cost, totalForeign, total IDR |
@@ -201,7 +201,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `supplier invoice` | id, supplier, PO, receipt, currency, fxRate, amountForeign, amount IDR, paid, paidForeign, payments[] |
 | `shipment` | id, PO, supplier, mode, BL/AWB ref, container, ETD, ETA, status, history[], costs{freight,insurance,duty,other}, landedCostIdr, attachments |
 | `task` | id, type, title, warehouse, assignee, priority, status, dueDate, project, roll, qtyMm, notes, printCount, printedAt, printedBy, history[], attachments |
-| `customer` | id, name, company, npwp (optional), contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
+| `customer` | id, name, company, npwp (optional), phone, whatsapp, contact, address, stage, nextAction, followUpDate, salesperson, activities[] |
 | `project` | id, customer, name, location, targetDate, status, requirements[], allocations, invoiceId, attachments, history[] |
 | `invoice` | id, customer, project, date, dueDate, status, lines[] (snapshot), subtotal, discountType, discountValue, discount, total, taxInvoice{number,npwp,ratePercent,dpp,ppn,total,issuedAt,issuedBy}, deliveryId, credited, depositApplied, payments[] |
 | `delivery` | id, invoiceId, customer, date, pic, address, courier, transportId, transportName, service, driverId, driver, driverPhone, vehicleType, plateNumber, trackingRef/AWB, recipientName, recipientPhone, weightKg, pieces, shippingCost, insurance, codAmount, instructions, status draft/dispatched/delivered/confirmed, lines[], receivedBy, confirmationNote, history[] |
@@ -216,7 +216,9 @@ Authentication and server authorization; transactional posting with idempotency;
 | `payroll entry` | id, orderId, pieceId, stage, worker, rate, amount, date, paid |
 | `work centre` | stage, name, capacityPerDay, ratePerPiece |
 | `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, uiMode simple/advanced (default simple), onlineAssignmentEnabled (default on), salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
-| `sample` | id, customer, sku, source roll, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
+| `sample` | id, customer, sku, source roll/stockId, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
+| `sample stock` | id, collectionId, skuId, qty pieces, minQty, sampleLengthMm, location, sourceRollId, history[] |
+| `sell price history` | id, itemType sku/part, itemId, oldPrice, newPrice, changedAt, changedBy, note, staleDays |
 | `sample book` | id, name, customer/prospect, date, status ready/given, items[] (sampleId, skuId, rollId, qtyMm), givenTo, givenAt, history[] |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
 | `return` | id, type customer/supplier, source invoice/receipt, lines, credit, status |
@@ -421,6 +423,16 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 6. **Driver ↔ vehicle assignment:** a driver selects one internal vehicle; the vehicle row also assigns a driver. Moving a driver or vehicle updates both records, and one driver cannot hold two vehicles. A driver without a vehicle is shown as **Belum ditugaskan**.
 7. **Delivery modes:** internal delivery shows driver + assigned vehicle and snapshots `fleetAssetId`, `vehicleName`, `vehicleType` and plate. Third-party delivery hides internal fleet fields, keeps courier/service/AWB and stores an optional courier driver name with no fleet asset. The delivery stores `transportId`/`transportName`; card, list and print show the vehicle and transport.
 
+### 6.17 Sample stock, roll tags, WA stock and price review
+
+1. **Collection first, colour second:** collection defines cloth type and default roll size; SKU defines colour and actual width. The default is 60 m × 300 cm.
+2. **Sample stock:** samples are physical pieces per collection/colour. Add stock by cutting a roll; give stock to a customer with one click. The Samples page shows stock, minimum, location, customer sample/purchase summary and full distribution history.
+3. **Roll tags:** each roll has a stable barcode and prints a stock tag with collection, cloth type, colour, width, lot, length and warehouse/bin. Searching `RL-0001` or its barcode finds the roll.
+4. **WA stock:** customer master stores a WhatsApp number. Customer detail and Stock generate a message of available metres/prices, copy it, or open `wa.me`.
+5. **Price review:** sell-price changes are separate from master edits. The price editor shows current price, last update, history and a 90-day confirmation gate.
+6. **Warehouse sale:** transfer ongkir is recorded per transfer and divided across requested metres; received rolls carry the higher landed HPP.
+7. **Surat jalan:** Pengiriman lists posted invoices without a delivery note and links back to the invoice.
+
 ---
 
 ## 7. Business rules (normative)
@@ -500,6 +512,13 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-71 | `DATABASE_URL` selects PostgreSQL; without it the server uses the JSON file store. Both paths use the same domain validation and audit contract. |
 | BR-72 | A surat jalan snapshots its transport/armada. An internal delivery uses the selected internal vehicle and its Lavishome Fleet transport; a third-party courier maps to its transport and carries no internal fleet asset. Later master edits never rewrite the delivery. |
 | BR-73 | Third-party couriers are options, not assets. They may store courier/AWB and an optional courier driver name but never an internal `fleetAssetId`. |
+| BR-74 | Every collection defines a cloth type and default roll size (default 60 m × 300 cm); colour remains on the SKU. |
+| BR-75 | Sample stock is counted in pieces per collection/SKU. Cutting from a roll increases stock; giving a sample decrements one piece and writes customer, date, mode, source and conversion history. |
+| BR-76 | Every roll has a stable barcode; the printable tag includes barcode, collection, cloth type, colour, width, lot, length and warehouse/bin. |
+| BR-77 | Selling prices keep a change history. A price unchanged for 90 days or more cannot be changed without explicit confirmation; the old/new price, user and note are retained. |
+| BR-78 | WhatsApp is optional on a customer. The stock message lists only available stock and never cost or supplier data. |
+| BR-79 | Warehouse-to-warehouse transfer is an internal sale: ongkir is recorded and added to destination roll HPP when received. |
+| BR-80 | A posted invoice without a surat jalan is surfaced as an operational warning; printing remains delivery-only. |
 
 ---
 
@@ -507,7 +526,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.16 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.17 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -646,8 +665,15 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-79 | Customer and faktur pajak accept a blank NPWP; a filled NPWP validates 15/16 digits and falls back to the customer record | Pass |
 | AC-80 | Surat jalan form selects the internal vehicle assigned to the driver; generated card/list/print show the vehicle and Lavishome Fleet transport | Pass |
 | AC-81 | Moving a driver/vehicle assignment updates both records; third-party delivery has no fleet asset and keeps courier/AWB only | Pass |
+| AC-82 | Collections render cloth type and 60 m × 300 cm default; new SKUs inherit the cloth type | Pass |
+| AC-83 | Sample stock is cut from a roll, decremented when given, and customer/collection history shows samples and purchases | Pass |
+| AC-84 | Every roll prints a Code 39 tag with stable barcode and location | Pass |
+| AC-85 | Customer WhatsApp is stored and the stock share action produces a copy-paste message and wa.me link | Pass |
+| AC-86 | A price unchanged ≥90 days blocks saving until confirmation and records old/new price history | Pass |
+| AC-87 | Transfer ongkir increases destination roll HPP by ongkir ÷ requested metres | Pass |
+| AC-88 | Pengiriman lists posted invoices without a surat jalan | Pass |
 
-Test evidence: `node --test` → 67/67 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 72/72 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -690,7 +716,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand | 67/67 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, sample stock, barcode tags, WA stock share, sell-price review, transfer ongkir | 72/72 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

@@ -94,7 +94,7 @@ export function migrate(db) {
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
   }
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'fxRates']) {
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleStocks', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'sellPriceHistory', 'fxRates']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }
   if (!db.fxRates.length) {
@@ -119,6 +119,63 @@ export function migrate(db) {
   db.sequences.fxRate = Math.max(Number(db.sequences.fxRate) || 0, db.fxRates.length);
   db.sequences.driver = Math.max(Number(db.sequences.driver) || 0, (db.drivers ?? []).length);
   db.sequences.sampleBook = Math.max(Number(db.sequences.sampleBook) || 0, (db.sampleBooks ?? []).length);
+  db.sequences.sampleStock = Math.max(Number(db.sequences.sampleStock) || 0, (db.sampleStocks ?? []).length);
+  db.sequences.sellPriceHistory = Math.max(Number(db.sequences.sellPriceHistory) || 0, (db.sellPriceHistory ?? []).length);
+
+  for (const collection of db.collections ?? []) {
+    if (!collection.clothType) collection.clothType = 'Kain';
+    if (!collection.defaultRollLengthM) collection.defaultRollLengthM = 60;
+    if (!collection.defaultWidthCm) collection.defaultWidthCm = 300;
+  }
+  for (const sku of db.skus ?? []) {
+    const collection = (db.collections ?? []).find((c) => c.id === sku.collectionId);
+    if (!sku.clothType) sku.clothType = collection?.clothType ?? '';
+    if (!sku.sellPriceUpdatedAt) sku.sellPriceUpdatedAt = '2026-06-01';
+  }
+  for (const part of db.parts ?? []) {
+    if (!part.sellPriceUpdatedAt) part.sellPriceUpdatedAt = '2026-06-01';
+  }
+  for (const roll of db.rolls ?? []) {
+    if (!roll.barcode) roll.barcode = roll.id;
+  }
+  if (!(db.sampleStocks ?? []).length) {
+    const fabricSkus = (db.skus ?? []).filter((s) => s.active !== false && s.dormant !== true);
+    let index = Number(db.sequences.sampleStock) || 0;
+    for (const sku of fabricSkus) {
+      index += 1;
+      db.sampleStocks.push({
+        id: `SS-${String(index).padStart(4, '0')}`,
+        collectionId: sku.collectionId,
+        skuId: sku.id,
+        qty: 1,
+        minQty: 1,
+        sampleLengthMm: 500,
+        location: 'Showroom Jakarta',
+        sourceRollId: null,
+        updatedAt: new Date().toISOString(),
+        history: [],
+      });
+    }
+    db.sequences.sampleStock = index;
+  }
+  if (!(db.sellPriceHistory ?? []).length) {
+    let index = Number(db.sequences.sellPriceHistory) || 0;
+    for (const item of [...(db.skus ?? []), ...(db.parts ?? [])]) {
+      if (!item.sellPrice) continue;
+      index += 1;
+      db.sellPriceHistory.push({
+        id: `SPH-${String(index).padStart(4, '0')}`,
+        itemType: item.collectionId ? 'sku' : 'part',
+        itemId: item.id,
+        oldPrice: 0,
+        newPrice: item.sellPrice,
+        changedAt: `${item.sellPriceUpdatedAt ?? '2026-06-01'}T09:00:00+07:00`,
+        changedBy: 'Sistem',
+        note: 'Migrasi harga awal.',
+      });
+    }
+    db.sequences.sellPriceHistory = index;
+  }
   const internalTransport = (db.transportCompanies ?? []).find((t) => t.code === 'internal') ?? null;
   db.fleetAssets = (db.fleetAssets ?? []).filter((a) => {
     if ((a.ownership ?? 'internal') === 'internal') return true;

@@ -44,6 +44,11 @@ export function deliveryForInvoice(db, invoiceId) {
   return (db.deliveries ?? []).find((d) => d.invoiceId === invoiceId) ?? null;
 }
 
+/** Posted invoices that still need a surat jalan. */
+export function invoicesWithoutDelivery(db) {
+  return db.invoices.filter((i) => i.status === 'posted' && !deliveryForInvoice(db, i.id));
+}
+
 export function driverDeliveriesOn(db, { driverId, date, excludeId = null } = {}) {
   if (!driverId) return [];
   return (db.deliveries ?? [])

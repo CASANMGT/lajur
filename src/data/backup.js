@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 15;
+export const BACKUP_VERSION = 16;
 
 export function exportBackup(db) {
   return {
@@ -25,7 +25,7 @@ export function exportBackup(db) {
 const COLLECTIONS = [
   'users', 'warehouses', 'categories', 'collections', 'skus', 'parts', 'partStock', 'rolls',
   'movements', 'customers', 'suppliers', 'supplierPrices', 'drivers', 'transportCompanies', 'fleetAssets', 'projects', 'invoices', 'payments',
-  'samples', 'sampleBooks', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
+  'samples', 'sampleStocks', 'sampleBooks', 'sellPriceHistory', 'deposits', 'transfers', 'purchaseOrders', 'goodsReceipts', 'supplierInvoices',
   'shipments', 'tasks', 'orders', 'deliveries', 'productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'returns', 'opnameSessions', 'audit', 'sequences', 'fxRates',
 ];
 
@@ -42,7 +42,7 @@ export function validateBackup(payload) {
   for (const key of COLLECTIONS) {
     if (!Array.isArray(db[key]) && key !== 'sequences') {
       if (key === 'tasks' || key === 'shipments' || key === 'orders') continue;
-      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleBooks'].includes(key)) continue;
+      if (['productionOrders', 'productionPieces', 'payrollEntries', 'workCenters', 'fxRates', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleStocks', 'sampleBooks', 'sellPriceHistory'].includes(key)) continue;
       errors.push(`Koleksi ${key} hilang atau bukan array.`);
     }
   }
@@ -50,6 +50,7 @@ export function validateBackup(payload) {
 
   const ids = (list, idKey = 'id') => new Set(list.map((x) => x[idKey]));
   const warehouses = ids(db.warehouses);
+  const collections = ids(db.collections);
   const skus = ids(db.skus);
   const parts = ids(db.parts);
   const customers = ids(db.customers);
@@ -108,9 +109,18 @@ export function validateBackup(payload) {
     need(suppliers, bill.supplierId, 'Pemasok', `Tagihan ${bill.id}`);
     if (bill.receiptId) need(receiptIds, bill.receiptId, 'Penerimaan', `Tagihan ${bill.id}`);
   }
+  for (const stock of db.sampleStocks ?? []) {
+    need(skus, stock.skuId, 'SKU', `Stok sample ${stock.id}`);
+    need(collections, stock.collectionId, 'Koleksi', `Stok sample ${stock.id}`);
+    if (stock.sourceRollId) need(rollIds, stock.sourceRollId, 'Roll', `Stok sample ${stock.id}`);
+  }
+  for (const history of db.sellPriceHistory ?? []) {
+    const set = history.itemType === 'sku' ? skus : parts;
+    need(set, history.itemId, history.itemType === 'sku' ? 'SKU' : 'Part', `Riwayat harga ${history.id}`);
+  }
   for (const s of db.samples) {
     need(customers, s.customerId, 'Pelanggan', `Sample ${s.id}`);
-    need(rollIds, s.rollId, 'Roll', `Sample ${s.id}`);
+    if (s.rollId) need(rollIds, s.rollId, 'Roll', `Sample ${s.id}`);
     if (s.depositId) {
       const found = db.deposits.some((d) => d.id === s.depositId);
       if (!found) errors.push(`Sample ${s.id}: deposit ${s.depositId} hilang.`);
