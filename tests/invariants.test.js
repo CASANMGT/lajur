@@ -626,19 +626,24 @@ test('factory sample stock is procured per collection, distributed and tracked',
   const before = stock.qty;
   assert.equal(stock.warehouseId, 'wh-jkt');
   const edited = updateSampleStock(db, {
-    id: stock.id, qty: before + 1, samplePrice: 26000, sampleDeposit: 52000, minQty: 2, warehouseId: 'wh-bali', user: MGR,
+    id: stock.id, qty: before + 1, samplePrice: 26000, sampleDeposit: 52000, minQty: 2, warehouseId: 'wh-bali',
+    photo: 'data:image/png;base64,AAA', user: MGR,
   });
   assert.equal(edited.qty, before + 1);
   assert.equal(edited.samplePrice, 26000);
   assert.equal(edited.warehouseId, 'wh-bali');
+  assert.equal(edited.photo, 'data:image/png;base64,AAA');
   assert.equal(db.collections.find((c) => c.id === 'col-luna').samplePrice, 26000);
-  updateSampleStock(db, { id: stock.id, qty: before, samplePrice: 25000, sampleDeposit: 50000, minQty: 2, warehouseId: 'wh-jkt', user: MGR });
+  updateSampleStock(db, { id: stock.id, qty: before, samplePrice: 25000, sampleDeposit: 50000, minQty: 2, warehouseId: 'wh-jkt', removePhoto: true, user: MGR });
+  assert.equal(stock.photo, '');
   const rollBefore = db.rolls.find((r) => r.id === 'RL-0001').currentMm;
   const received = procureSampleStock(db, {
-    collectionId: 'col-luna', qty: 2, unitCost: 15000, supplierId: 'SUP-001', user: OP,
+    collectionId: 'col-luna', qty: 2, unitCost: 15000, supplierId: 'SUP-001', photo: 'data:image/png;base64,BBB', user: OP,
   });
   assert.equal(received.stock.qty, before + 2);
   assert.equal(received.stock.procurements[0].qty, 2);
+  assert.equal(received.stock.photo, 'data:image/png;base64,BBB');
+  assert.equal(received.procurement.photo, 'data:image/png;base64,BBB');
   assert.equal(db.rolls.find((r) => r.id === 'RL-0001').currentMm, rollBefore);
   const sample = createSample(db, {
     customerId: 'CUS-0002', fromStockId: stock.id, mode: 'free', date: '2026-11-18', user: SALES,

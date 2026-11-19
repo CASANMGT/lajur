@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.23.0
+# PRD - Lavishome v2.24.0
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.23.0 (schema 20)
+**Version:** 2.24.0 (schema 20)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.23.0: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.24.0: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -221,7 +221,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `work centre` | stage, name, capacityPerDay, ratePerPiece |
 | `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, uiMode simple/advanced (default simple), onlineAssignmentEnabled (default on), salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll/stockId, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
-| `sample stock` | id, collectionId, qty pieces, minQty, samplePrice, sampleDeposit, unitCost, warehouseId, location, procurements[], history[] |
+| `sample stock` | id, collectionId, qty pieces, minQty, samplePrice, sampleDeposit, unitCost, warehouseId, location, photo (data URL), procurements[] (with photo), history[] |
 | `sell price history` | id, itemType sku/part, itemId, oldPrice, newPrice, changedAt, changedBy, note, staleDays |
 | `sample book` | id, name, customer/prospect, date, status ready/given, items[] (sampleId, skuId, rollId, qtyMm), givenTo, givenAt, history[] |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
@@ -430,7 +430,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 ### 6.17 Buku sample stock, roll QR, WA stock and price review
 
 1. **Collection first, colour second:** collection defines cloth type and default roll size; SKU defines colour and actual width. The default is 60 m × 300 cm.
-2. **Buku sample stock:** factory-procured books per collection. Add stock from the collection form or the Buku sample pabrik action with qty, cost, supplier, date and warehouse (Jakarta/Bali). The Buku Sample page filters stock by Tersedia/Habis and distribution by Terkonversi/Belum konversi. Managers can edit qty, price, refundable deposit, minimum and warehouse. Giving a book never cuts a roll.
+2. **Buku sample stock:** factory-procured books per collection. Add stock from the collection form or the Buku sample pabrik action with qty, cost, supplier, date, warehouse (Jakarta/Bali) and an optional photo. The Buku Sample page filters stock by Tersedia/Habis and distribution by Terkonversi/Belum konversi. Managers can edit qty, price, refundable deposit, minimum, warehouse and photo. Giving a book never cuts a roll.
 3. **Roll tags:** each roll has a stable QR code and prints a stock tag with collection, motif, colour, width, lot, length and warehouse/bin. Scanning `#/scan/:id` opens a public stock-status page even when logged out; it shows current stock, total cut, remaining metres and cut history, with a login prompt for full actions. Searching `RL-0001` or the barcode value finds the roll.
 4. **WA stock:** customer master stores a WhatsApp number. Customer detail and Stock generate a message of available metres/prices, copy it, or open `wa.me`.
 5. **Price review:** sell-price changes are separate from master edits. The price editor shows current price, last update, history and a 90-day confirmation gate.
@@ -526,7 +526,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-79 | Warehouse-to-warehouse transfer is an internal sale: ongkir is recorded and added to destination roll HPP when received. |
 | BR-80 | A posted invoice without a surat jalan is surfaced as an operational warning; printing remains delivery-only. |
 | BR-81 | QR scan needs no login to show a read-only stock status page; actions require login and the scanned roll URL is retained. |
-| BR-82 | Buku sample stock supports Tersedia/Habis and Terkonversi/Belum konversi filters; managers may edit qty, price, deposit, minimum and Jakarta/Bali warehouse. |
+| BR-82 | Buku sample stock supports Tersedia/Habis and Terkonversi/Belum konversi filters; managers may edit qty, price, deposit, minimum, Jakarta/Bali warehouse and an optional photo. Photos are local data URLs and can be removed. |
 | BR-83 | Each collection defines a motif and base motif price; each colour/SKU keeps an independent sell price. |
 | BR-84 | A draft, dispatched or delivered surat jalan may be edited; a confirmed one is locked. Edits never move stock. |
 | BR-85 | Surat jalan print has two layouts: A4 laser with exactly three copies (ORIGINAL customer, POD, logistic archive) separated by cut lines, or a 9.5 × 11 in monochrome dot-matrix form. Neither layout shows prices. |
@@ -537,7 +537,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.23.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.24.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -694,6 +694,12 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-99 | AWB OCR reduces merged text to the leading 8–20 digit resi and prefers long numeric groups | Pass |
 | AC-100 | Surat jalan prints either 3 A4 copies (ORIGINAL, POD, ARSIP) with cut lines, or a 9.5 × 11 in monochrome dot-matrix form | Pass |
 | AC-101 | Courier marks are visible for every courier without relying on external logo files | Pass |
+| AC-102 | Internal surat jalan hides resi/link, shows the internal SJ number and accepts a manual driver name | Pass |
+| AC-103 | Online couriers show the app share link; logistics couriers show AWB upload/scan, never both | Pass |
+| AC-104 | Editing an active surat jalan can remove the AWB photo without losing the typed resi | Pass |
+| AC-105 | Surat jalan print shows weekday (Hari) and a driver signature block | Pass |
+| AC-106 | Buku sample stock/procurement stores a photo and shows a clickable thumbnail | Pass |
+| AC-107 | Opening Tag A4 from a roll detail puts that roll first in the picker and in the print order | Pass |
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 
@@ -740,7 +746,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir, A4 QR tag sheets, editable surat jalan with ETA/AWB photo/courier services, many-to-many driver–vehicle links, availability-sorted stock hierarchy, multi-roll A4 picker, PIC role dropdown, AWB photo decoding, courier tracking links and arrival notifications, JNE Code128 scan hardening, courier brand marks, active surat jalan editing, number-focused AWB extraction, A4 3-copy and dot-matrix surat jalan print | 81/81 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir, A4 QR tag sheets, editable surat jalan with ETA/AWB photo/courier services, many-to-many driver–vehicle links, availability-sorted stock hierarchy, multi-roll A4 picker, PIC role dropdown, AWB photo decoding, courier tracking links and arrival notifications, JNE Code128 scan hardening, courier brand marks, active surat jalan editing, number-focused AWB extraction, A4 3-copy and dot-matrix surat jalan print, internal courier mode with manual driver, courier-specific AWB/link fields, AWB photo removal, weekday display, sample-book photos, tag-print priority | 81/81 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

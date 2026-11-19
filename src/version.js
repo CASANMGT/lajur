@@ -1,6 +1,6 @@
 /** Single source of truth for release and schema versions. */
 
-export const APP_VERSION = '2.23.0';
+export const APP_VERSION = '2.24.0';
 export const SCHEMA_VERSION = 20;
 export const RELEASE_DATE = '2026-11-20';
-export const RELEASE_NAME = 'Surat Jalan 3 Salinan';
+export const RELEASE_NAME = 'Surat Jalan Internal & Foto Sample';

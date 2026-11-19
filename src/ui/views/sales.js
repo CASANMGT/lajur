@@ -4,7 +4,7 @@ import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, amountCell, confirmAction,
   copyText, imageToDataUrl,
 } from '../dom.js';
-import { MM_PER_M, byId, daysBetween, parseM, todayJakarta } from '../../domain/core.js';
+import { MM_PER_M, byId, daysBetween, parseM, todayJakarta, weekdayName } from '../../domain/core.js';
 import {
   INVOICE_STATUS, createCustomerReturn, createInvoice, invoiceMargin, invoiceOutstanding,
   invoiceStatusLabel, issueTaxInvoice, postCustomerReturn, postInvoice, recordPayment, returnedQty,
@@ -28,6 +28,9 @@ import { printInvoiceHtml, printTaxInvoiceHtml } from './print.js';
 import { openDeliveryPrint } from './delivery-print.js';
 
 let statusFilter = 'all';
+
+const APP_COURIERS = new Set(['lalamove', 'gosend', 'grabexpress']);
+const LOGISTICS_COURIERS = new Set(['jne', 'jnt', 'sicepat', 'anteraja', 'bali-kargo']);
 
 export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
@@ -279,8 +282,11 @@ function deliveryCard(inv, delivery, role) {
         <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
         <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}${delivery.picRole ? ` · ${esc({ manager: 'Manajer', sales: 'Sales', operator: 'Operator gudang', driver: 'Driver' }[delivery.picRole] ?? delivery.picRole)}` : ''}</span></div>
         <div class="row-between"><span class="small muted">Penerima</span><span class="small">${esc(delivery.recipientName || '—')}<div class="xs muted">${esc(delivery.recipientPhone || '')}</div></span></div>
-        <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${courierMark(delivery.courier, { small: true })} ${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
-        ${deliveryTrackingUrl(delivery) ? `<div class="row-between"><span class="small muted">Lacak paket</span><span class="row" style="gap:6px;justify-content:flex-end"><a class="small strong" href="${esc(deliveryTrackingUrl(delivery))}" target="_blank" rel="noopener">${esc(trackingLabel(delivery) || 'Buka link lacak')} →</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${delivery.id}">${icon('copy')} Salin</button></span></div>` : ''}
+        <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${courierMark(delivery.courier, { small: true })} ${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef
+          ? `<div class="row" style="gap:4px;justify-content:flex-end"><span class="xs muted mono">${esc(delivery.trackingRef)}</span><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${delivery.id}" title="Salin link lacak">${icon('copy')}</button></div>`
+          : delivery.courier === 'internal' ? `<div class="xs muted mono">No. SJ ${esc(delivery.id)}</div>` : ''}</span></div>
+        ${deliveryTrackingUrl(delivery) ? `<div class="row-between"><span class="small muted">Lacak paket</span><span class="row" style="gap:6px;justify-content:flex-end"><a class="small strong" href="${esc(deliveryTrackingUrl(delivery))}" target="_blank" rel="noopener">${esc(trackingLabel(delivery) || 'Buka link lacak')} →</a>${!delivery.trackingRef ? `<button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${delivery.id}">${icon('copy')} Salin</button>` : ''}</span></div>` : ''}
+        <div class="row-between"><span class="small muted">Hari kirim</span><span class="small">${esc(weekdayName(delivery.date))}</span></div>
         <div class="row-between"><span class="small muted">Estimasi tiba</span><span class="small">${esc(delivery.eta || '—')}</span></div>
         ${delivery.awbImage ? `<div class="reward"><img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e4ded2" /></div>` : ''}
         <div class="row-between"><span class="small muted">Transport / armada</span><span class="small">${esc(delivery.transportName || '—')}</span></div>
@@ -744,15 +750,24 @@ function deliveryFields(db, delivery, customer, user = null) {
     <div class="span-2" data-third-party hidden>
       <div class="notice notice-info">${icon('alert')}<div>Pengiriman pihak ketiga memakai kurir di atas. Armada internal tidak dipakai; isi nama driver kurir bila diketahui.</div></div>
     </div>
-    <div class="span-2" data-third-party hidden>
-      ${field('Nama driver / kurir (opsional)', `<input class="input" name="driverName" value="${esc(delivery && delivery.courier !== 'internal' ? delivery.driver : '')}" placeholder="Nama driver kurir" />`)}
+    <div class="span-2" data-manual-driver>
+      ${field('Nama driver (manual)', `<input class="input" name="driverName" value="${esc(delivery?.driverId ? '' : (delivery?.driver ?? ''))}" placeholder="Nama driver jika tidak ada di master" />`, { hint: 'Internal: isi jika driver tidak ada di master. Kurir: nama driver kurir.' })}
     </div>
-    ${field('No. resi / AWB', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="JNE / J&T / Lalamove" />`, { hint: 'Bisa diketik atau diisi otomatis dari foto resi di bawah.' })}
-    ${field('Link lacak dari aplikasi', `<input class="input" type="url" name="trackingUrl" value="${esc(delivery?.trackingUrl ?? '')}" placeholder="Tempel link share Grab / GoSend / Lalamove" />`, { hint: 'Opsional. Untuk JNE/J&T/SiCepat/AnterAja, halaman lacak resmi dipakai otomatis.' })}
-    ${field('Foto / scan resi (opsional)', `<input class="input" type="file" name="awbFile" accept="image/*" />`, { hint: 'Foto label resi. Nomor resi dibaca otomatis dari barcode/OCR di browser.' })}
-    <div class="span-2" data-awb-status hidden></div>
-    <div class="span-2" data-awb-preview ${delivery?.awbImage ? '' : 'hidden'}>
-      ${delivery?.awbImage ? `<img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff" />` : ''}
+    <div class="span-2" data-internal-resi hidden>
+      ${field('No. surat jalan internal', `<input class="input" value="${esc(delivery?.id ?? 'Otomatis saat disimpan (SJ-xxxx)')}" disabled />`, { hint: 'Pengiriman internal memakai nomor surat jalan, bukan resi kurir.' })}
+    </div>
+    <div class="span-2" data-link-block hidden>
+      ${field('Link lacak dari aplikasi', `<input class="input" type="url" name="trackingUrl" value="${esc(delivery?.trackingUrl ?? '')}" placeholder="Tempel link share Grab / GoSend / Lalamove" />`, { hint: 'Khusus kurir online. Tempel link share dari aplikasi kurir.' })}
+    </div>
+    <div class="span-2" data-awb-block hidden>
+      ${field('No. resi / AWB', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="JNE / J&T / SiCepat" />`, { hint: 'Bisa diketik atau diisi otomatis dari foto resi.' })}
+      ${field('Foto / scan resi', `<input class="input" type="file" name="awbFile" accept="image/*" />`, { hint: 'Foto label resi. Nomor resi dibaca otomatis dari barcode/OCR di browser.' })}
+      <input type="hidden" name="awbRemove" value="0" />
+      <div data-awb-status hidden></div>
+      <div data-awb-preview ${delivery?.awbImage ? '' : 'hidden'}>
+        ${delivery?.awbImage ? `<img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff" />` : ''}
+        ${delivery?.awbImage ? `<button class="btn btn-sm btn-danger" type="button" data-awb-remove style="margin-top:8px">Hapus foto resi</button>` : ''}
+      </div>
     </div>
     ${field('Berat (kg)', `<input class="input" name="weightKg" inputmode="decimal" value="${delivery?.weightKg ?? 0}" />`)}
     ${field('Jumlah koli', `<input class="input" name="pieces" inputmode="numeric" value="${delivery?.pieces ?? 1}" />`)}
@@ -831,12 +846,18 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
     form.service.value = options.includes(current) ? current : options[0];
   };
   const syncMode = () => {
-    const internal = form.courier.value === 'internal';
+    const courier = form.courier.value;
+    const internal = courier === 'internal';
+    const appCourier = APP_COURIERS.has(courier);
+    const logistics = LOGISTICS_COURIERS.has(courier);
     syncService();
     const preview = form.querySelector('[data-courier-preview]');
-    if (preview) preview.innerHTML = courierMark(form.courier.value);
+    if (preview) preview.innerHTML = courierMark(courier);
     setHidden('[data-internal-fleet]', !internal);
     setHidden('[data-third-party]', internal);
+    setHidden('[data-link-block]', !appCourier);
+    setHidden('[data-awb-block]', !logistics);
+    setHidden('[data-internal-resi]', !internal);
     if (!internal) {
       form.driver.value = '';
       if (form.fleetAsset) form.fleetAsset.value = '';
@@ -897,11 +918,12 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
       showAwbStatus('Pilih foto label resi terlebih dahulu.', 'warn');
       return;
     }
+    if (form.awbRemove) form.awbRemove.value = '0';
     if (awbPreview) {
       if (awbPreviewUrl) URL.revokeObjectURL(awbPreviewUrl);
       awbPreviewUrl = URL.createObjectURL(file);
       awbPreview.hidden = false;
-      awbPreview.innerHTML = `<img src="${awbPreviewUrl}" alt="Pratinjau foto resi" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff" />`;
+      awbPreview.innerHTML = `<img src="${awbPreviewUrl}" alt="Pratinjau foto resi" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--line);background:#fff" /><button class="btn btn-sm btn-danger" type="button" data-awb-remove style="margin-top:8px">Hapus foto resi</button>`;
     }
     showAwbStatus('Membaca barcode/teks nomor resi di browser…', 'info');
     try {
@@ -919,6 +941,15 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
   form.awbFile?.addEventListener('change', scanSelectedAwb);
   form.addEventListener('click', (event) => {
     if (event.target.closest('[data-awb-rescan]')) scanSelectedAwb();
+    if (event.target.closest('[data-awb-remove]')) {
+      if (form.awbRemove) form.awbRemove.value = '1';
+      if (form.awbFile) form.awbFile.value = '';
+      if (awbPreview) {
+        awbPreview.hidden = true;
+        awbPreview.innerHTML = '';
+      }
+      showAwbStatus('Foto resi dihapus. Nomor resi tetap bisa diketik manual.', 'warn');
+    }
   });
 }
 
@@ -942,24 +973,30 @@ function openCreateDelivery(ctx, inv) {
       bindDeliveryFields(form, ctx.db);
     },
     async onSubmit(form, close) {
-      const internal = form.courier.value === 'internal';
+      const courier = form.courier.value;
+      const internal = courier === 'internal';
+      const appCourier = APP_COURIERS.has(courier);
+      const logistics = LOGISTICS_COURIERS.has(courier);
       const awbFile = form.awbFile?.files?.[0];
-      const awbImage = awbFile ? await imageToDataUrl(awbFile, { maxBytes: 800_000 }) : '';
+      const awbImage = logistics && awbFile
+        ? await imageToDataUrl(awbFile, { maxBytes: 800_000 })
+        : '';
+      const manualDriver = String(form.driverName?.value ?? '').trim();
       ctx.store.update((db) => createDelivery(db, {
         invoiceId: inv.id,
         pic: form.pic.value,
         picUserId: form.picUserId?.value || null,
         date: form.date.value,
-        courier: form.courier.value,
+        courier,
         service: form.service.value,
         driverId: internal ? form.driver.value || null : null,
         fleetAssetId: internal ? form.fleetAsset.value || null : null,
-        driver: internal ? '' : (form.driverName?.value ?? ''),
+        driver: internal ? (form.driver.value ? '' : manualDriver) : manualDriver,
         driverPhone: internal ? form.driverPhone.value : '',
         vehicleType: internal ? form.vehicleType.value : '',
         plateNumber: internal ? form.plateNumber.value : '',
-        trackingRef: form.trackingRef.value,
-        trackingUrl: form.trackingUrl?.value ?? '',
+        trackingRef: logistics ? form.trackingRef.value : '',
+        trackingUrl: appCourier ? (form.trackingUrl?.value ?? '') : '',
         awbImage,
         recipientCustomerId: form.recipientCustomerId?.value ?? null,
         eta: form.eta?.value ?? '',
@@ -991,26 +1028,31 @@ export function openEditDelivery(ctx, delivery) {
     body: deliveryFields(ctx.db, delivery, customer, ctx.user),
     onMount(form) { bindDeliveryFields(form, ctx.db, delivery); },
     async onSubmit(form, close) {
-      const internal = form.courier.value === 'internal';
+      const courier = form.courier.value;
+      const internal = courier === 'internal';
+      const appCourier = APP_COURIERS.has(courier);
+      const logistics = LOGISTICS_COURIERS.has(courier);
       const awbFile = form.awbFile?.files?.[0];
-      const awbImage = awbFile
-        ? await imageToDataUrl(awbFile, { maxBytes: 800_000 })
-        : (delivery.awbImage ?? '');
+      const removePhoto = form.awbRemove?.value === '1';
+      const awbImage = logistics
+        ? (removePhoto ? '' : (awbFile ? await imageToDataUrl(awbFile, { maxBytes: 800_000 }) : (delivery.awbImage ?? '')))
+        : '';
+      const manualDriver = String(form.driverName?.value ?? '').trim();
       ctx.store.update((db) => updateDelivery(db, {
         id: delivery.id,
         pic: form.pic.value,
         picUserId: form.picUserId?.value || null,
         date: form.date.value,
-        courier: form.courier.value,
+        courier,
         service: form.service.value,
         driverId: internal ? form.driver.value || null : null,
         fleetAssetId: internal ? form.fleetAsset.value || null : null,
-        driver: internal ? '' : (form.driverName?.value ?? ''),
+        driver: internal ? (form.driver.value ? '' : manualDriver) : manualDriver,
         driverPhone: internal ? form.driverPhone.value : '',
         vehicleType: internal ? form.vehicleType.value : '',
         plateNumber: internal ? form.plateNumber.value : '',
-        trackingRef: form.trackingRef.value,
-        trackingUrl: form.trackingUrl?.value ?? '',
+        trackingRef: logistics ? form.trackingRef.value : '',
+        trackingUrl: appCourier ? (form.trackingUrl?.value ?? '') : '',
         awbImage,
         recipientCustomerId: form.recipientCustomerId?.value ?? null,
         eta: form.eta?.value ?? '',

@@ -10,6 +10,7 @@ import {
 } from '../src/domain/deliveries.js';
 import { partStockRow } from '../src/domain/inventory.js';
 import { createCustomer } from '../src/domain/crm.js';
+import { weekdayName } from '../src/domain/core.js';
 import { printDeliveryCopiesHtml, printDeliveryDotMatrixHtml } from '../src/ui/views/print.js';
 
 const SALES = { id: 'u-sales', name: 'Dimas', role: 'sales' };
@@ -204,9 +205,12 @@ test('surat jalan prints an A4 3-copy sheet and a dot-matrix form', () => {
   assert.match(a4, /ARSIP LOGISTIK/);
   assert.match(a4, /POTONG DI SINI/);
   assert.match(a4, /541680005420019/);
+  assert.match(a4, /Driver/);
   const dot = printDeliveryDotMatrixHtml(db, delivery);
   assert.match(dot, /Courier New/);
   assert.match(dot, /SURAT JALAN/);
   assert.match(dot, /541680005420019/);
   assert.match(dot, /Lacak: https:\/\/www\.jne\.co\.id/);
+  assert.match(dot, /Driver/);
+  assert.equal(weekdayName('2026-11-20'), 'Jumat');
 });

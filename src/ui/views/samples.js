@@ -1,7 +1,7 @@
 /** Sample & Deposit — dedicated customer-sample and deposit workspace. */
 
 import {
-  esc, icon, fmt, badge, toast, openModal, field,
+  esc, icon, fmt, badge, toast, openModal, field, imageToDataUrl,
 } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
@@ -63,7 +63,12 @@ export function render(ctx) {
           const collection = byId(db.collections, s.collectionId);
           const warehouse = warehouseOf(db, s.warehouseId);
           return `<tr>
-            <td><strong class="small">${esc(collection?.name ?? '—')}</strong><div class="xs muted">${esc(collection?.motive || collection?.clothType || '—')} · ${esc(collection?.defaultRollLengthM ?? 60)} m × ${esc(collection?.defaultWidthCm ?? 300)} cm</div></td>
+            <td><div class="cell-main">
+              ${s.photo
+                ? `<img src="${esc(s.photo)}" alt="Foto buku sample ${esc(collection?.name ?? '')}" class="thumb zoomable" data-zoom="${esc(s.photo)}" data-zoom-title="Buku sample ${esc(collection?.name ?? '')}" role="button" tabindex="0" aria-label="Perbesar foto buku sample ${esc(collection?.name ?? '')}" />`
+                : `<span class="thumb thumb-empty">${icon('package')}</span>`}
+              <div class="txt"><strong class="small">${esc(collection?.name ?? '—')}</strong><div class="xs muted">${esc(collection?.motive || collection?.clothType || '—')} · ${esc(collection?.defaultRollLengthM ?? 60)} m × ${esc(collection?.defaultWidthCm ?? 300)} cm</div></div>
+            </div></td>
             <td class="num">${fmt.money(s.samplePrice ?? collection?.samplePrice ?? 0)}</td>
             <td class="num">${fmt.money(s.sampleDeposit ?? collection?.sampleDeposit ?? 0)}<div class="xs muted">refundable</div></td>
             <td class="num strong">${s.qty}</td>
@@ -226,10 +231,13 @@ function openProcureSample(ctx) {
       ${field('Gudang lokasi', `<select class="select" name="warehouse">${warehouseOptions(ctx.db, ctx.db.warehouses.find((w) => w.active !== false)?.id)}</select>`)}
       ${field('Detail lokasi / showroom', `<input class="input" name="location" placeholder="Showroom Jakarta" />`)}
       ${field('Catatan', `<input class="input" name="notes" placeholder="Nomor pengiriman, warna, batch pabrik" />`, { full: true })}
+      ${field('Foto buku sample', `<input class="input" type="file" name="photo" accept="image/*" />`, { full: true, hint: 'Foto sampul/buku sample agar mudah dikenali. Maksimal 800 KB.' })}
     </div>`,
-    onSubmit(form, close) {
+    async onSubmit(form, close) {
       const qty = Number(form.qty.value || 0);
       if (!(qty > 0)) throw new Error('Jumlah buku sample harus lebih dari 0 pcs.');
+      const file = form.photo?.files?.[0];
+      const photo = file ? await imageToDataUrl(file, { maxBytes: 800_000 }) : '';
       ctx.store.update((db) => procureSampleStock(db, {
         collectionId: form.collection.value,
         qty,
@@ -239,6 +247,7 @@ function openProcureSample(ctx) {
         notes: form.notes.value,
         warehouseId: form.warehouse.value,
         location: form.location.value,
+        photo,
         user: ctx.user,
       }));
       close();
@@ -284,10 +293,14 @@ function openEditStock(ctx, stock) {
       ${field('Minimum stok', `<input class="input" name="sampleMin" inputmode="numeric" value="${stock.minQty ?? collection?.sampleMin ?? 1}" />`)}
       ${field('Gudang lokasi', `<select class="select" name="warehouse">${warehouseOptions(ctx.db, stock.warehouseId || warehouses[0]?.id)}</select>`)}
       ${field('Detail lokasi / showroom', `<input class="input" name="location" value="${esc(stock.location ?? '')}" placeholder="Showroom Jakarta" />`)}
+      ${field('Foto buku sample (ganti)', `<input class="input" type="file" name="photo" accept="image/*" />`, { full: true, hint: 'Maksimal 800 KB. Foto saat ini tetap dipakai jika tidak memilih file baru.' })}
+      ${stock.photo ? `<div class="span-2 row" style="align-items:center;gap:10px"><img src="${esc(stock.photo)}" alt="Foto buku sample" class="thumb" data-zoom="${esc(stock.photo)}" data-zoom-title="Foto buku sample" role="button" tabindex="0" /><label class="checkline"><input type="checkbox" name="removePhoto" /> Hapus foto buku sample</label></div>` : ''}
     </div>`,
-    onSubmit(form, close) {
+    async onSubmit(form, close) {
       const qty = Number(form.qty.value || 0);
       if (qty < 0) throw new Error('Stok tidak boleh negatif.');
+      const file = form.photo?.files?.[0];
+      const photo = file ? await imageToDataUrl(file, { maxBytes: 800_000 }) : '';
       ctx.store.update((db) => updateSampleStock(db, {
         id: stock.id,
         qty,
@@ -296,6 +309,8 @@ function openEditStock(ctx, stock) {
         minQty: Number(String(form.sampleMin.value).replace(/\D/g, '')) || 0,
         warehouseId: form.warehouse.value,
         location: form.location.value,
+        photo,
+        removePhoto: Boolean(form.removePhoto?.checked),
         user: ctx.user,
       }));
       close();

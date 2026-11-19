@@ -1,7 +1,7 @@
 /** Pengiriman: surat jalan yang ditugaskan ke driver, status, dan konfirmasi. */
 
 import { esc, icon, fmt, badge, toast, confirmAction, openModal, field, copyText } from '../dom.js';
-import { byId, todayJakarta } from '../../domain/core.js';
+import { byId, todayJakarta, weekdayName } from '../../domain/core.js';
 import {
   COURIERS, DELIVERY_STATUS, confirmDelivery, deliveryTrackingUrl, dispatchDelivery,
   invoicesWithoutDelivery, markDelivered, trackingLabel, trackingShareText,
@@ -77,17 +77,17 @@ export function render(ctx) {
 
     <section class="card">
       <div class="table-wrap desktop-table"><table class="data">
-        <thead><tr><th>Surat jalan</th><th>Pelanggan</th><th>Tanggal</th><th>Driver / kendaraan</th><th>Kurir</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Surat jalan</th><th>Pelanggan</th><th>Hari</th><th>Driver / kendaraan</th><th>Kurir</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${all.map((d) => `<tr>
           <td class="mono strong">${esc(d.id)}<div class="xs muted">${esc(d.invoiceId)}</div></td>
           <td><strong class="small">${esc(d.customerName)}</strong><div class="xs muted">PIC ${esc(d.pic)} · ${esc(d.recipientName || '—')}</div></td>
-          <td>${esc(d.date)}${d.eta ? `<div class="xs muted">ETA ${esc(d.eta)}</div>` : ''}</td>
+          <td>${esc(weekdayName(d.date))}${d.eta ? `<div class="xs muted">ETA ${esc(d.eta)}</div>` : ''}</td>
           <td><strong class="small">${esc(d.driver || '—')}</strong><div class="xs muted">${esc(d.vehicleName || VEHICLE_TYPES[d.vehicleType]?.label || d.vehicleType || '—')}${d.plateNumber ? ` · ${esc(d.plateNumber)}` : ''}</div><div class="xs muted">${esc(d.transportName || '—')}</div></td>
-          <td class="small">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.service || 'REG')}${d.trackingRef ? `<div class="xs muted mono">${esc(d.trackingRef)}</div>` : ''}<div class="xs muted">${d.weightKg ? `${d.weightKg} kg` : '—'} · ${d.pieces || '—'} koli</div></td>
+          <td class="small">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.service || 'REG')}${d.trackingRef ? `<div class="row" style="gap:4px"><span class="xs muted mono">${esc(d.trackingRef)}</span><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}" title="Salin link lacak">${icon('copy')}</button></div>` : d.courier === 'internal' ? `<div class="xs muted mono">No. SJ ${esc(d.id)}</div>` : ''}<div class="xs muted">${d.weightKg ? `${d.weightKg} kg` : '—'} · ${d.pieces || '—'} koli</div></td>
           <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}${d.receivedBy ? `<div class="xs muted">oleh ${esc(d.receivedBy)}</div>` : ''}</td>
           <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">${icon('printer')} Surat jalan</button>
-            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}" title="Salin link lacak">${icon('copy')} Salin</button>` : ''}
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a>` : ''}
             ${d.status !== 'confirmed' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -99,11 +99,11 @@ export function render(ctx) {
         ${all.map((d) => `<div class="roll-card">
           <div class="top"><span class="id mono">${esc(d.id)}</span>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}</div>
           <div class="small strong">${esc(d.customerName)}</div>
-          <div class="xs muted">${esc(d.date)} · ${esc(d.driver || '—')} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? '')} ${esc(d.plateNumber || '')}</div>
-          <div class="xs muted">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}</div>
+          <div class="xs muted">Hari ${esc(weekdayName(d.date))} · ${esc(d.driver || '—')} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? '')} ${esc(d.plateNumber || '')}</div>
+          <div class="xs muted">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}${d.trackingRef ? ` · <span class="mono">${esc(d.trackingRef)}</span> <button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}">${icon('copy')}</button>` : ''}</div>
           <div class="row" style="margin-top:4px;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">Cetak</button>
-            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}">${icon('copy')} Salin</button>` : ''}
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a>${!d.trackingRef ? `<button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}">${icon('copy')} Salin</button>` : ''}` : ''}
             ${d.status !== 'confirmed' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}

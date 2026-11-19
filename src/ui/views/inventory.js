@@ -583,13 +583,18 @@ function openAddStock(ctx) {
 function openPrintTags(ctx, roll = null) {
   const db = ctx.db;
   const collections = db.collections.filter((c) => (db.skus ?? []).some((s) => s.collectionId === c.id));
-  const allRolls = [...(db.rolls ?? [])].sort((a, b) => {
+  const orderRolls = (list) => [...list].sort((a, b) => {
+    if (roll) {
+      if (a.id === roll.id) return -1;
+      if (b.id === roll.id) return 1;
+    }
     const skuA = byId(db.skus, a.skuId);
     const skuB = byId(db.skus, b.skuId);
     return String(skuA?.collectionName ?? '').localeCompare(String(skuB?.collectionName ?? ''))
       || String(skuA?.colourName || skuA?.colourCode || '').localeCompare(String(skuB?.colourName || skuB?.colourCode || ''))
       || a.id.localeCompare(b.id);
   });
+  const allRolls = orderRolls(db.rolls ?? []);
   const preselected = new Set(roll ? [roll.id] : []);
   const choices = allRolls.map((item) => {
     const sku = byId(db.skus, item.skuId);
@@ -691,14 +696,15 @@ function openPrintTags(ctx, roll = null) {
       const scope = form.scope.value;
       let rolls = [];
       if (scope === 'selected') {
-        const ids = new Set(Array.from(form.querySelectorAll('input[name="rollIds"]:checked')).map((input) => input.value));
-        rolls = (db.rolls ?? []).filter((item) => ids.has(item.id));
+        const ids = Array.from(form.querySelectorAll('input[name="rollIds"]:checked')).map((input) => input.value);
+        const byIdMap = new Map((db.rolls ?? []).map((item) => [item.id, item]));
+        rolls = orderRolls(ids.map((id) => byIdMap.get(id)).filter(Boolean));
       } else if (scope === 'collection') {
         const skuIds = new Set((db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
-        rolls = (db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
-          && (form.includeSold.checked || availableMm(item) > 0));
+        rolls = orderRolls((db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
+          && (form.includeSold.checked || availableMm(item) > 0)));
       } else {
-        rolls = (db.rolls ?? []).filter((item) => availableMm(item) > 0);
+        rolls = orderRolls((db.rolls ?? []).filter((item) => availableMm(item) > 0));
       }
       if (!rolls.length) throw new Error('Pilih minimal satu roll untuk dicetak.');
       const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));

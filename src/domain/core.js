@@ -118,6 +118,19 @@ export function formatDate(value) {
   return dateFmt.format(d);
 }
 
+const dayFmt = new Intl.DateTimeFormat('id-ID', { weekday: 'long', timeZone: 'Asia/Jakarta' });
+
+/** Indonesian weekday for a business date, e.g. "Kamis". */
+export function weekdayName(value) {
+  if (!value) return '—';
+  const source = value instanceof Date
+    ? value
+    : (/^\d{4}-\d{2}-\d{2}$/.test(String(value)) ? `${value}T00:00:00+07:00` : value);
+  const d = new Date(source);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return dayFmt.format(d);
+}
+
 export function formatDateLong(value) {
   if (!value) return '—';
   const d = value instanceof Date ? value : new Date(value);

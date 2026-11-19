@@ -2,7 +2,7 @@
 
 import { esc, fmt } from '../dom.js';
 import qrcode from '../../vendor/qrcode.js';
-import { byId } from '../../domain/core.js';
+import { byId, weekdayName } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
 import { COURIERS, DELIVERY_STATUS, courierBrand, deliveryTrackingUrl } from '../../domain/deliveries.js';
@@ -224,9 +224,9 @@ export function printDeliveryHtml(db, delivery) {
       </div>
       <div style="text-align:right">
         <div style="font-family:ui-monospace,monospace;font-size:13px;font-weight:700">${esc(delivery.id)}</div>
-        <div style="font-size:10px;color:#62727c">${esc(delivery.date)}</div>
-        <div style="margin-top:6px;font-family:ui-monospace,monospace;font-size:18px;font-weight:800;letter-spacing:.08em">${esc(delivery.trackingRef || 'NO-AWB')}</div>
-        <div style="font-size:9px;color:#62727c">NO. RESI / AWB</div>
+        <div style="font-size:10px;color:#62727c">Hari ${esc(weekdayName(delivery.date))}</div>
+        <div style="margin-top:6px;font-family:ui-monospace,monospace;font-size:18px;font-weight:800;letter-spacing:.08em">${esc(delivery.trackingRef || (delivery.courier === 'internal' ? delivery.id : 'NO-AWB'))}</div>
+        <div style="font-size:9px;color:#62727c">${delivery.courier === 'internal' ? 'NO. SURAT JALAN' : 'NO. RESI / AWB'}</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
@@ -286,6 +286,8 @@ function deliveryPrintData(db, delivery) {
     courierLabel: COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal',
     brand: courierBrand(delivery.courier),
     trackUrl: deliveryTrackingUrl(delivery),
+    resiLabel: delivery.courier === 'internal' ? 'NO. SURAT JALAN' : 'NO. RESI / AWB',
+    resiValue: delivery.trackingRef || (delivery.courier === 'internal' ? delivery.id : '—'),
   };
 }
 
@@ -308,9 +310,9 @@ export function printDeliveryCopiesHtml(db, delivery) {
         <div><div class="sj-title">SURAT JALAN</div><div class="sj-sub">${esc(d.courierLabel)} · ${esc(delivery.service || 'REG')}</div></div>
       </div>
       <div class="sj-copy-tag ${copy.original ? 'original' : ''}">${copy.title}<span>${copy.sub}</span></div>
-      <div class="sj-doc"><div class="sj-id">${esc(delivery.id)}</div><div>${esc(delivery.date)}</div></div>
+      <div class="sj-doc"><div class="sj-id">${esc(delivery.id)}</div><div>Hari ${esc(weekdayName(delivery.date))}</div></div>
     </div>
-    <div class="sj-awb-row"><span>NO. RESI / AWB</span><strong>${esc(delivery.trackingRef || '—')}</strong><span>${delivery.eta ? `ETA ${esc(delivery.eta)}` : ''}</span></div>
+    <div class="sj-awb-row"><span>${esc(d.resiLabel)}</span><strong>${esc(d.resiValue)}</strong><span>${delivery.eta ? `ETA ${esc(delivery.eta)}` : ''}</span></div>
     <div class="sj-grid">
       <div class="sj-box"><span class="sj-k">PENGIRIM</span><strong>PT Lavishome Tekstil Nusantara</strong><div>Gudang Jakarta / Bali</div><div>PIC: ${esc(delivery.pic)}</div></div>
       <div class="sj-box"><span class="sj-k">PENERIMA</span><strong>${esc(d.recipient)}</strong><div>${esc(d.recipientPhone)}</div><div>${esc(d.address)}</div></div>
@@ -319,6 +321,7 @@ export function printDeliveryCopiesHtml(db, delivery) {
     <div class="sj-meta">Faktur ${esc(delivery.invoiceId)} · ${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli · ${esc(delivery.driver || '—')}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
     <div class="sj-foot">
       <div class="sj-sign">PIC pengiriman<strong>${esc(delivery.pic)}</strong></div>
+      <div class="sj-sign">Driver${delivery.courier === 'internal' ? ' (internal)' : ''}<strong>${esc(delivery.driver || '&nbsp;')}</strong></div>
       <div class="sj-sign">Penerima<strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div>
       <div class="sj-note">Bukan faktur · stok keluar saat faktur terbit${d.trackUrl ? `<br>Lacak: ${esc(d.trackUrl)}` : ''}</div>
     </div>
@@ -386,10 +389,10 @@ export function printDeliveryDotMatrixHtml(db, delivery) {
     <div class="dm-head">
       <div><strong>LAVISHOME</strong><br>PT Lavishome Tekstil Nusantara</div>
       <div class="dm-brand">${esc(d.brand.short)}</div>
-      <div class="dm-doc">SURAT JALAN<br><strong>${esc(delivery.id)}</strong><br>${esc(delivery.date)}</div>
+      <div class="dm-doc">SURAT JALAN<br><strong>${esc(delivery.id)}</strong><br>Hari ${esc(weekdayName(delivery.date))}</div>
     </div>
     <div class="dm-rule"></div>
-    <div class="dm-row"><span>NO. RESI / AWB</span><strong>${esc(delivery.trackingRef || '-')}</strong></div>
+    <div class="dm-row"><span>${esc(d.resiLabel)}</span><strong>${esc(d.resiValue)}</strong></div>
     <div class="dm-grid">
       <div class="dm-box"><span>Pengirim</span>PT Lavishome Tekstil Nusantara<br>Gudang Jakarta / Bali<br>PIC: ${esc(delivery.pic)}</div>
       <div class="dm-box"><span>Penerima</span>${esc(d.recipient)}<br>${esc(d.recipientPhone)}<br>${esc(d.address)}</div>
@@ -402,7 +405,7 @@ export function printDeliveryDotMatrixHtml(db, delivery) {
       <div>Driver: ${esc(delivery.driver || '-')}</div><div>Kendaraan: ${esc(delivery.plateNumber || '-')}</div>
     </div>
     ${delivery.instructions || delivery.notes ? `<div class="dm-note">${esc([delivery.instructions, delivery.notes].filter(Boolean).join(' · '))}</div>` : ''}
-    <div class="dm-sign"><div>PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div><div>Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div></div>
+    <div class="dm-sign"><div>PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div><div>Driver${delivery.courier === 'internal' ? ' (internal)' : ''}<br><strong>${esc(delivery.driver || '&nbsp;')}</strong></div><div>Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div></div>
     ${d.trackUrl ? `<div class="dm-track">Lacak: ${esc(d.trackUrl)}</div>` : ''}
     <div class="dm-track">Bukan faktur · stok keluar saat faktur ${esc(delivery.invoiceId)} terbit.</div>
   </div>`;

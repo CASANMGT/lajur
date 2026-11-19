@@ -125,7 +125,7 @@ export function sampleStockForCollection(db, collectionId) {
  */
 export function procureSampleStock(db, {
   collectionId, qty, unitCost = 0, supplierId = null, date = todayJakarta(),
-  notes = '', location = '', warehouseId = 'wh-jkt', user,
+  notes = '', location = '', warehouseId = 'wh-jkt', photo = '', user,
 }) {
   const collection = byId(db.collections, collectionId);
   assert(collection, 'COLLECTION_NOT_FOUND', 'Koleksi tidak ditemukan.');
@@ -167,6 +167,7 @@ export function procureSampleStock(db, {
   stock.location = String(location ?? '').trim()
     || byId(db.warehouses, stock.warehouseId)?.name
     || stock.location;
+  if (photo) stock.photo = String(photo);
   stock.updatedAt = isoNow();
   stock.procurements = stock.procurements ?? [];
   const procurement = {
@@ -177,6 +178,7 @@ export function procureSampleStock(db, {
     supplierId,
     date,
     notes: String(notes ?? '').trim(),
+    photo: String(photo ?? ''),
     createdAt: isoNow(),
     createdBy: user?.name ?? 'Sistem',
   };
@@ -188,7 +190,7 @@ export function procureSampleStock(db, {
 
 /** Edit buku sample stock, price, deposit, minimum and warehouse location. */
 export function updateSampleStock(db, {
-  id, qty, samplePrice, sampleDeposit, minQty, warehouseId, location, user,
+  id, qty, samplePrice, sampleDeposit, minQty, warehouseId, location, photo = null, removePhoto = false, user,
 }) {
   const stock = getSampleStock(db, id);
   assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok buku sample tidak ditemukan.');
@@ -203,6 +205,7 @@ export function updateSampleStock(db, {
     samplePrice: nextPrice,
     sampleDeposit: nextDeposit,
     minQty: nextMin,
+    photo: removePhoto ? '' : (photo ? String(photo) : (stock.photo ?? '')),
     warehouseId: warehouseId || stock.warehouseId || 'wh-jkt',
     location: String(location ?? '').trim() || byId(db.warehouses, warehouseId || stock.warehouseId)?.name || stock.location,
     updatedAt: isoNow(),

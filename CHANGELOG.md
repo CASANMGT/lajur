@@ -2,6 +2,29 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.24.0] — 2026-11-20
+
+**Release name: Surat Jalan Internal & Foto Sample.** Makes the surat jalan form follow the delivery type, adds driver signatures, shows the weekday, and adds sample-book photos.
+
+### Added
+
+- **Driver signature:** every A4 copy and dot-matrix form now has a Driver signature block; internal deliveries label it **Driver (internal)**.
+- **Internal delivery mode:** internal couriers hide resi/AWB/link fields, show the internal surat jalan number, and use a manual **Nama driver** when the driver is not in the master.
+- **Courier-specific fields:** online couriers (Grab/GoSend/Lalamove) show only the app share link; logistics couriers (JNE/J&T/SiCepat/AnterAja/Bali Kargo) show only the resi/AWB upload + scan. Service options continue to follow the courier.
+- **Delete AWB photo:** editing a surat jalan can remove the uploaded resi image; the number can still be typed.
+- **Day display:** surat jalan cards, list and print show **Hari** (e.g. Jumat) instead of the raw date.
+- **Sample-book photo:** buku sample stock and procurement accept a photo (max 800 KB); the stock table shows a thumbnail that opens full-size. Photos can be replaced or removed.
+- **Tag print priority:** opening Tag A4 from a roll detail puts that roll first in the picker, preselects it, and prints it first.
+- **Salin near resi:** the copy-link action sits next to the resi text (or next to the app link when there is no resi).
+
+### Verification
+
+- `node --test`: **81 passed**.
+- Browser QA: internal form hides resi/link; JNE shows AWB only; GoSend shows link only; delivered surat jalan opens edit; AWB photo removal works; internal print shows `NO. SURAT JALAN`, `SJ-0003`, `Hari Jumat`, `Driver (internal)`; RL-0007 is first and checked in Tag A4; sample photo thumbnail renders.
+- Version bumped to 2.24.0; schema 20 and backup v20 unchanged.
+
+---
+
 ## [2.23.0] — 2026-11-20
 
 **Release name: Surat Jalan 3 Salinan.** Adds courier brand marks, active surat jalan editing, number-focused AWB extraction, and two print layouts.
