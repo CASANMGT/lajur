@@ -548,7 +548,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 19);
+  assert.equal(migrated.meta.version, 20);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
   assert.deepEqual(migrated.fleetAssets, []);
@@ -560,7 +560,7 @@ test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
   db.fleetAssets = [];
   db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 19);
+  assert.equal(migrated.meta.version, 20);
   assert.equal(migrated.transportCompanies.length, 6);
   assert.equal(migrated.fleetAssets.length, 3);
   assert.equal(migrated.sequences.fleetAsset, 3);
@@ -576,7 +576,7 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   delete delivery.transportId;
   delete delivery.transportName;
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 19);
+  assert.equal(migrated.meta.version, 20);
   assert.equal(migrated.deliveries[0].transportId, 'TRP-006');
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });

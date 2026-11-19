@@ -47,6 +47,48 @@ export function servicesForCourier(courier) {
   return SERVICES_BY_COURIER[courier] ?? ['REG'];
 }
 
+/**
+ * Official tracking pages. App-only couriers (Grab/GoSend/Lalamove) have no
+ * public tracking page here; their share link is pasted from the courier app
+ * and stored on the delivery.
+ */
+export const TRACKING_PAGES = {
+  internal: null,
+  jne: { label: 'Lacak JNE', url: 'https://www.jne.co.id/id/tracking/trace' },
+  jnt: { label: 'Lacak J&T', url: 'https://www.jet.co.id/track' },
+  sicepat: { label: 'Lacak SiCepat', url: 'https://www.sicepat.com/checkAwb' },
+  anteraja: { label: 'Lacak AnterAja', url: 'https://anteraja.id/tracking' },
+  'bali-kargo': { label: 'Lacak Bali Kargo', url: 'https://balikargo.co.id/' },
+  lalamove: null,
+  gosend: null,
+  grabexpress: null,
+};
+
+export function normalizeTrackingUrl(value) {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '';
+  let url;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new DomainError('INVALID_TRACKING_URL', 'Link lacak harus berupa URL http/https yang valid.');
+  }
+  assert(['http:', 'https:'].includes(url.protocol), 'INVALID_TRACKING_URL', 'Link lacak harus http atau https.');
+  return url.href;
+}
+
+/** Tracking link: pasted app share link wins, else the courier's public page. */
+export function deliveryTrackingUrl(delivery) {
+  const custom = String(delivery?.trackingUrl ?? '').trim();
+  if (custom) return custom;
+  return TRACKING_PAGES[delivery?.courier]?.url ?? '';
+}
+
+export function trackingLabel(delivery) {
+  if (delivery?.trackingUrl) return 'Buka link dari aplikasi';
+  return TRACKING_PAGES[delivery?.courier]?.label ?? '';
+}
+
 export function getDelivery(db, id) {
   return db.deliveries?.find((d) => d.id === id) ?? null;
 }
@@ -106,9 +148,9 @@ function pushHistory(delivery, action, user, note = '') {
 }
 
 export function createDelivery(db, {
-  invoiceId, pic, date = todayJakarta(), address = '', courier = 'internal', transportId = null,
+  invoiceId, pic, picUserId = null, date = todayJakarta(), address = '', courier = 'internal', transportId = null,
   fleetAssetId = null, driverId = null, driver = '', driverPhone = '', vehicleType = '',
-  plateNumber = '', vehicle = '', trackingRef = '', awbImage = '', recipientCustomerId = null,
+  plateNumber = '', vehicle = '', trackingRef = '', trackingUrl = '', awbImage = '', recipientCustomerId = null,
   eta = '', recipientName = '', recipientPhone = '',
   service = null, weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
   instructions = '', notes = '', user,
@@ -116,7 +158,10 @@ export function createDelivery(db, {
   const invoice = requireInvoice(db, invoiceId);
   assert(invoice.status === 'posted', 'INVOICE_NOT_POSTED', 'Surat jalan dibuat setelah faktur diterbitkan.');
   assert(!deliveryForInvoice(db, invoiceId), 'DELIVERY_EXISTS', 'Faktur ini sudah memiliki surat jalan.');
-  const cleanPic = String(pic ?? '').trim();
+  const requestedPicUserId = String(picUserId ?? '').trim();
+  const picUser = requestedPicUserId ? byId(db.users ?? [], requestedPicUserId) : null;
+  if (requestedPicUserId) assert(picUser, 'USER_NOT_FOUND', 'Akun PIC tidak ditemukan.');
+  const cleanPic = String(picUser?.name ?? pic ?? '').trim();
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
   if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
@@ -156,6 +201,8 @@ export function createDelivery(db, {
     customerName: invoice.customerName,
     date,
     pic: cleanPic,
+    picUserId: picUser?.id ?? null,
+    picRole: picUser?.role ?? '',
     address: String(address ?? '').trim() || customer?.address || '',
     courier: nextCourier,
     transportId: transport?.id ?? null,
@@ -168,6 +215,7 @@ export function createDelivery(db, {
     vehicleType: fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? '').trim(),
     plateNumber: fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber || vehicle || '').trim(),
     trackingRef: String(trackingRef ?? '').trim(),
+    trackingUrl: normalizeTrackingUrl(trackingUrl),
     awbImage: String(awbImage ?? ''),
     recipientCustomerId: recipientId,
     eta: String(eta ?? '').trim(),
@@ -200,18 +248,21 @@ export function createDelivery(db, {
 }
 
 export function updateDelivery(db, {
-  id, pic, date, address, courier = 'internal', transportId = null, fleetAssetId = null,
+  id, pic, picUserId = null, date, address, courier = 'internal', transportId = null, fleetAssetId = null,
   driverId = null, driver = '', driverPhone = '', vehicleType = '', plateNumber = '', trackingRef = '',
-  awbImage = '', recipientCustomerId = null, eta = '', recipientName = '', recipientPhone = '',
+  trackingUrl = null, awbImage = '', recipientCustomerId = null, eta = '', recipientName = '', recipientPhone = '',
   service = null, weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
   instructions = '', notes, user,
 }) {
   const delivery = requireDelivery(db, id);
   assert(delivery.status === 'draft', 'INVALID_STATUS', 'Surat jalan hanya dapat diubah sebelum dikirim.');
-  const cleanPic = String(pic ?? delivery.pic).trim();
+  const requestedPicUserId = String(picUserId ?? delivery.picUserId ?? '').trim();
+  const picUser = requestedPicUserId ? byId(db.users ?? [], requestedPicUserId) : null;
+  if (requestedPicUserId) assert(picUser, 'USER_NOT_FOUND', 'Akun PIC tidak ditemukan.');
+  const cleanPic = String(picUser?.name ?? pic ?? delivery.pic ?? '').trim();
+  assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const recipientId = String(recipientCustomerId ?? delivery.recipientCustomerId ?? delivery.customerId ?? '').trim();
   if (recipientId) assert(byId(db.customers, recipientId), 'CUSTOMER_NOT_FOUND', 'Pelanggan penerima tidak ditemukan.');
-  assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
   if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const nextCourier = String(courier ?? delivery.courier ?? 'internal').trim() || 'internal';
@@ -230,6 +281,8 @@ export function updateDelivery(db, {
   });
   Object.assign(delivery, {
     pic: cleanPic,
+    picUserId: picUser?.id ?? null,
+    picRole: picUser?.role ?? '',
     date: date || delivery.date,
     address: String(address ?? delivery.address).trim(),
     courier: nextCourier,
@@ -243,6 +296,7 @@ export function updateDelivery(db, {
     vehicleType: fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? delivery.vehicleType ?? '').trim(),
     plateNumber: fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber ?? delivery.plateNumber ?? '').trim(),
     trackingRef: String(trackingRef ?? delivery.trackingRef ?? '').trim(),
+    trackingUrl: normalizeTrackingUrl(trackingUrl ?? delivery.trackingUrl ?? ''),
     awbImage: String(awbImage ?? delivery.awbImage ?? ''),
     recipientCustomerId: recipientId,
     eta: String(eta ?? delivery.eta ?? '').trim(),

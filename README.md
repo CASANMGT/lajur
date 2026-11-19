@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-76%2F76-brightgreen) ![Version](https://img.shields.io/badge/version-2.21.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-79%2F79-brightgreen) ![Version](https://img.shields.io/badge/version-2.22.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 76 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 79 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -239,8 +239,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **76 passed, 0 failed** (74 domain/UI + 2 auth) |
-| Module import check | **47/47 modules** |
+| `node --test` | **79 passed, 0 failed** (77 domain/UI + 2 auth) |
+| Module import check | **49/49 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -272,9 +272,12 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lavishome Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
 | Collection metadata | Luna/Aria/Nova define Blackout/Sheer/Dimout and default 60 m × 300 cm; new SKUs inherit the cloth type |
 | Buku sample stock | 10 factory books across Luna/Aria/Nova; Luna price Rp 25.000 and refundable deposit Rp 50.000; giving SS-0001 reduced stock 4 → 3; manager can edit qty/price/warehouse |
-| QR stock tag A4 | **Tag A4** prints 8 tags per A4 sheet (2 × 4), one or repeated copies, or every roll in a motif/collection; QR opens the roll URL when scanned |
+| QR stock tag A4 | **Tag A4** lists every roll with search and checkboxes; select any rolls, set copies, and print 8 tags per A4 sheet (2 × 4) |
 | Stock hierarchy | Default **Hierarki koleksi**: motif → colour, most available first; available rolls above a separate **Terjual / habis** group; list view shows the same split |
-| Surat jalan edit | Exactly one **Buat surat jalan** action; **Edit surat jalan** supports customer/recipient, PIC, ETA, courier service and AWB photo |
+| Surat jalan edit | Exactly one **Buat surat jalan** action; **Edit surat jalan** supports customer/recipient, PIC from user roles (including driver), ETA, courier service, AWB photo and tracking link |
+| AWB photo scan | Uploaded label photo is read by barcode/ZXing/OCR; `JT123456789012` filled the resi field in browser QA |
+| Package tracking | GoSend/Grab/Lalamove share links are stored per delivery; JNE/J&T/SiCepat/AnterAja/Bali Kargo open official tracking pages |
+| Arrival notification | Marking **Tiba** adds a Pengiriman badge and in-app notice; browser notifications can be enabled from the page |
 | QR scan landing | Public `#/scan/RL-0001` shows stock status while logged out; login/detail link preserves roll; RL-0007 shows 1 cut 70 m → 69.5 m |
 | WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
 | Price review | Luna-01 last changed 170 days ago; save was blocked until the 90-day confirmation was checked, then Rp 125.000 → Rp 130.000 |
@@ -338,7 +341,7 @@ node tools/render-check.mjs
 - **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”. Optional module.
 - **Invoice discount:** fixed rupiah or percentage, applied to the subtotal with the computed discount shown on screen and in print.
 - **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, optional NPWP (15/16 digits when filled, falls back to the customer record), printable tax invoice; no manual price entry.
-- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), courier-specific service list (JNE = REG/YES/OKS, others rejected server-side), AWB typed or uploaded as a photo/scan, customer/recipient + PIC + estimated arrival, weight, pieces, shipping/insurance/COD, any internal driver + any internal vehicle, address autocomplete and map preview, dispatch → arrived → receiver confirmation; editable before dispatch; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
+- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), courier-specific service list (JNE = REG/YES/OKS, others rejected server-side), AWB typed or read from a photo (barcode/ZXing/OCR), customer/recipient + PIC from user roles + estimated arrival, stored app share link or official courier tracking page, weight, pieces, shipping/insurance/COD, any internal driver + any internal vehicle, address autocomplete and map preview, dispatch → arrived → receiver confirmation; editable before dispatch; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
 - **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
 - **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected independently on surat jalan; driver details snapshot into the delivery.
 - **Internal fleet & many-to-many assignment:** only Lavishome Fleet vehicles; a driver can be linked to several vehicles and a vehicle to several drivers. The first/default vehicle is only a prefill, never a restriction, and every change is audited.
@@ -387,7 +390,7 @@ node tools/render-check.mjs
 - **Buku sample stock:** factory books per collection with price, refundable deposit, stock, procurement history, warehouse location, filters and manager editing; give to a customer and see per-customer purchase history.
 - **Collection motif & pricing:** each collection has a motif and base motif price; each colour/SKU has its own sell price.
 - **Public QR stock page:** scan status works before login and shows stock/leftover plus cut history; full actions prompt login.
-- **QR stock tags on A4:** every roll carries a QR tag with collection, motif, colour, width, location and length; print a single roll, repeated copies, or all rolls in a motif/collection, 8 per A4 sheet; scanning opens the roll detail.
+- **QR stock tags on A4:** every roll carries a QR tag with collection, motif, colour, width, location and length; select any rolls in the tag dialog, repeat copies, and print 8 per A4 sheet; scanning opens the roll detail.
 - **Price control:** selling-price history with last update, old/new price and a 90-day review confirmation.
 - **WA stock share:** customer detail and Stock build a copy-paste availability message and open WhatsApp.
 - **Internal warehouse sale:** transfer ongkir is capitalised into destination roll HPP.
@@ -396,7 +399,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.21.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.22.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
@@ -408,6 +411,8 @@ node tools/render-check.mjs
 - Paid sample uses a service invoice; no separate sample price list.
 - As-of inventory balances are not reconstructed; movement history is.
 - QR tags are scannable by a phone camera; there is no handheld scanner or label-printer integration.
+- AWB reading is on-device and best-effort: barcode/ZXing is tried first, OCR second. If the label is blurry, the resi field stays editable.
+- Courier tracking is link-based. Live status polling, webhooks and push notifications across different users need each courier’s API credentials and a shared backend; the static demo notifies on **Tiba** in the browser where it was marked and shows an in-app badge/notice.
 - Permissions are UI-level only in the static demo; a reference API exists but the UI is not wired to it.
 - Quotes are not a separate document; sales orders are.
 - Return credit above the remaining invoice balance is not carried as a customer credit balance.

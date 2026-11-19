@@ -302,6 +302,12 @@ export function migrate(db) {
     if (delivery.recipientCustomerId === undefined) delivery.recipientCustomerId = delivery.customerId ?? '';
     if (delivery.eta === undefined) delivery.eta = '';
     if (delivery.awbImage === undefined) delivery.awbImage = '';
+    if (delivery.trackingUrl === undefined) delivery.trackingUrl = '';
+    if (delivery.picUserId === undefined) {
+      const picUser = (db.users ?? []).find((u) => u.name === delivery.pic) ?? null;
+      delivery.picUserId = picUser?.id ?? null;
+      delivery.picRole = picUser?.role ?? '';
+    }
     if (!delivery.service) delivery.service = 'REG';
     if (delivery.weightKg === undefined) delivery.weightKg = 0;
     if (delivery.pieces === undefined) delivery.pieces = 0;

@@ -2,6 +2,31 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.22.0] — 2026-11-19
+
+**Release name: Pilih Roll & Lacak Resi.** Pick exact rolls for A4 tags, use a real user PIC dropdown, read AWB numbers from photos, and follow deliveries with courier tracking links and arrival notifications.
+
+### Added
+
+- **Multi-roll A4 picker:** the tag dialog lists every roll with a search box, checkboxes, “Pilih terlihat”, and a live count of tags/pages. Select any rolls (not only a whole collection), set copies, and print 8 tags per A4 sheet.
+- **PIC user dropdown:** surat jalan PIC now comes from active users grouped by role — manager, sales, operator, and **driver** — while the printed name stays snapshotted.
+- **AWB photo reader:** uploading a resi photo tries the platform `BarcodeDetector`, then ZXing (Code128/Code39/QR), then in-browser Tesseract OCR. The detected number fills **No. resi** automatically; every step has a clear fallback to manual entry.
+- **Tracking links:** store a share link from Grab/GoSend/Lalamove (or any courier app); JNE, J&T, SiCepat, AnterAja and Bali Kargo get their official tracking page automatically. “Lacak” buttons appear on the invoice card and Pengiriman table.
+- **Arrival notifications:** enable browser notifications from Pengiriman or the invoice card. Marking a delivery “Tiba” fires a notification, shows an in-app notice, and adds a Pengiriman badge for packages awaiting confirmation.
+
+### Changed
+
+- Delivery data adds `picUserId`, `picRole`, `trackingUrl`; watchers/backups validate the new user and URL references.
+- Version bumped to 2.22.0, schema 20, backup v20.
+
+### Verification
+
+- `node --test`: **79 passed**.
+- Module imports **49 modules**; render checks green.
+- Browser QA: selected 3 rolls × 2 copies = 6 tags; QR barcode photo read as `JT123456789012` (ZXing); PIC dropdown grouped by role including drivers; GoSend share link opened from the delivery card; delivered package produced a nav badge, in-app notice and confirmation prompt.
+
+---
+
 ## [2.21.0] — 2026-11-19
 
 **Release name: Tag A4 & Armada Fleksibel.** A4 QR tag sheets, a reliable editable surat jalan with courier-specific services and AWB photos, stock hierarchy split by availability, and many-to-many driver/vehicle links.

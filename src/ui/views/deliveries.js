@@ -3,12 +3,14 @@
 import { esc, icon, fmt, badge, toast, confirmAction, openModal, field, printDocument } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
-  COURIERS, DELIVERY_STATUS, confirmDelivery, dispatchDelivery, invoicesWithoutDelivery, markDelivered,
+  COURIERS, DELIVERY_STATUS, confirmDelivery, deliveryTrackingUrl, dispatchDelivery,
+  invoicesWithoutDelivery, markDelivered, trackingLabel,
 } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { pageHead, statCard, can } from './common.js';
 import { printDeliveryHtml } from './print.js';
 import { openEditDelivery } from './sales.js';
+import { enableArrivalNotifications, notifyArrival } from '../notify.js';
 
 let filter = 'active';
 
@@ -35,6 +37,7 @@ export function render(ctx) {
   const active = all.filter((d) => d.status !== 'confirmed' && d.status !== 'cancelled').length;
   const confirmed = all.filter((d) => d.status === 'confirmed').length;
   const todayCount = all.filter((d) => d.date === today).length;
+  const arrived = all.filter((d) => d.status === 'delivered');
   const missing = role === 'driver' ? [] : invoicesWithoutDelivery(db);
 
   return `
@@ -44,7 +47,7 @@ export function render(ctx) {
       sub: role === 'driver'
         ? 'Tugas pengiriman yang ditugaskan kepada Anda. Perbarui Kirim dan Tiba; penerima dikonfirmasi sales/manajer.'
         : 'Semua surat jalan, driver, tanggal, kurir, dan status penerimaan.',
-      actions: `${can(role, 'invoice.create') ? `<a class="btn" href="#/penjualan">${icon('receipt')} Faktur</a>` : ''}`,
+      actions: `${can(role, 'invoice.create') ? `<a class="btn" href="#/penjualan">${icon('receipt')} Faktur</a>` : ''}<button class="btn" type="button" data-act="enable-arrival-notify">${icon('bell')} Notifikasi tiba</button>`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
       ${statCard({ label: 'Hari ini', value: String(todayCount), meta: today, tone: 'accent', iconName: 'truck' })}
@@ -53,6 +56,7 @@ export function render(ctx) {
       ${statCard({ label: 'Driver', value: esc(driver?.name ?? (role === 'driver' ? 'Belum tertaut' : 'Semua')), meta: driver ? `${VEHICLE_TYPES[driver.vehicleType]?.label ?? ''} · ${driver.plateNumber}` : 'Master driver' })}
     </div>
     ${role === 'driver' && !driver ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('alert')}<div><strong>Akun driver belum tertaut.</strong> Minta manajer menautkan akun Anda ke driver di Master Data → Driver & transport.</div></div>` : ''}
+    ${arrived.length ? `<div class="notice notice-info" style="margin-bottom:14px">${icon('bell')}<div><strong>${arrived.length} paket tiba.</strong> Menunggu konfirmasi penerimaan dari PIC pelanggan. Aktifkan notifikasi browser agar tidak terlewat.</div></div>` : ''}
     ${missing.length ? `<section class="card card-pad" style="margin-bottom:16px">
       <div class="row-between"><div><h2>Faktur belum ada surat jalan</h2><p class="xs muted">Surat jalan wajib dibuat untuk setiap faktur yang sudah terbit.</p></div><span class="badge no-dot">${missing.length}</span></div>
       <div class="table-wrap" style="margin-top:10px"><table class="data">
@@ -83,6 +87,7 @@ export function render(ctx) {
           <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}${d.receivedBy ? `<div class="xs muted">oleh ${esc(d.receivedBy)}</div>` : ''}</td>
           <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">${icon('printer')} Surat jalan</button>
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a>` : ''}
             ${d.status === 'draft' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -98,6 +103,7 @@ export function render(ctx) {
           <div class="xs muted">${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}</div>
           <div class="row" style="margin-top:4px;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">Cetak</button>
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a>` : ''}
             ${d.status === 'draft' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -147,9 +153,18 @@ export function mount(ctx) {
   document.querySelectorAll('[data-arrive]').forEach((btn) => btn.addEventListener('click', async () => {
     const ok = await confirmAction({ title: 'Tandai tiba?', message: 'Barang sudah sampai di pelanggan.', confirmLabel: 'Tandai tiba' });
     if (!ok) return;
-    ctx.store.update((db) => markDelivered(db, { id: btn.dataset.arrive, user: ctx.user }));
+    const updated = ctx.store.update((db) => markDelivered(db, { id: btn.dataset.arrive, user: ctx.user }));
+    notifyArrival(updated);
     toast('Barang ditandai tiba.', { tone: 'success' });
   }));
+  document.querySelector('[data-act="enable-arrival-notify"]')?.addEventListener('click', async () => {
+    try {
+      await enableArrivalNotifications();
+      toast('Notifikasi tiba aktif di browser ini.', { tone: 'success' });
+    } catch (err) {
+      toast(err.message, { tone: 'error' });
+    }
+  });
   document.querySelectorAll('[data-confirm]').forEach((btn) => btn.addEventListener('click', () => {
     const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.confirm);
     if (delivery) openConfirm(ctx, delivery);

@@ -6,7 +6,7 @@ const modules = [
   '../src/domain/seed.js', '../src/domain/master.js', '../src/domain/pricing.js', '../src/domain/features.js', '../src/version.js',
   '../src/domain/tasks.js', '../src/domain/shipments.js', '../src/domain/attachments.js', '../src/domain/deliveries.js',
   '../src/data/store.js', '../src/data/backup.js', '../src/data/auth.js',
-  '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js',
+  '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js', '../src/ui/awb.js', '../src/ui/notify.js',
   '../src/ui/views/common.js', '../src/ui/views/print.js', '../src/ui/views/dashboard.js',
   '../src/ui/views/inventory.js', '../src/ui/views/transfers.js', '../src/ui/views/purchasing.js',
   '../src/ui/views/sales.js', '../src/ui/views/projects.js', '../src/ui/views/customers.js',

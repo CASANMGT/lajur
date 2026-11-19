@@ -942,6 +942,7 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   display: grid;
   place-items: center;
   padding: 16px;
+  background: rgb(23 43 58 / 42%);
 }
 .modal {
   position: relative;
@@ -1774,6 +1775,48 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   .card { box-shadow: none; border-color: #bbb; }
   .print-page { padding: 24px; }
 }
+
+/* -------------------------------------------------------------- tag picker */
+.roll-picker-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.roll-picker-tools .input { flex: 1 1 180px; }
+.roll-picker {
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 5px;
+  background: var(--paper);
+}
+.roll-picker[hidden], .roll-picker-tools[hidden], .roll-pick[hidden] { display: none !important; }
+.roll-pick {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.roll-pick:hover { background: var(--ivory-50); }
+.roll-pick input { margin-top: 3px; flex: none; }
+.roll-pick-main { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.roll-pick-main > span { font-size: 12px; }
+.roll-pick-main .mono { color: var(--navy-900); }
+.roll-pick-meta {
+  flex: none;
+  text-align: right;
+  font-size: 11px;
+  color: var(--muted);
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+}
+.roll-pick-meta strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 
 /* ------------------------------------------------------- stock availability */
 .group-title {

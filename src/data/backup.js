@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 19;
+export const BACKUP_VERSION = 20;
 
 export function exportBackup(db) {
   return {
@@ -190,6 +190,7 @@ export function validateBackup(payload) {
     need(invoiceIds, delivery.invoiceId, 'Faktur', `Surat jalan ${delivery.id}`);
     need(customers, delivery.customerId, 'Pelanggan', `Surat jalan ${delivery.id}`);
     if (delivery.recipientCustomerId) need(customers, delivery.recipientCustomerId, 'Pelanggan penerima', `Surat jalan ${delivery.id}`);
+    if (delivery.picUserId) need(new Set(db.users.map((u) => u.id)), delivery.picUserId, 'Akun PIC', `Surat jalan ${delivery.id}`);
     if (delivery.driverId) need(driverIds, delivery.driverId, 'Driver', `Surat jalan ${delivery.id}`);
     if (delivery.fleetAssetId) need(fleetIds, delivery.fleetAssetId, 'Kendaraan', `Surat jalan ${delivery.id}`);
     if (delivery.transportId) need(transportIds, delivery.transportId, 'Transport', `Surat jalan ${delivery.id}`);

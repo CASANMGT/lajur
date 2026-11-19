@@ -581,45 +581,130 @@ function openAddStock(ctx) {
 }
 
 function openPrintTags(ctx, roll = null) {
-  const collections = ctx.db.collections.filter((c) => (ctx.db.skus ?? []).some((s) => s.collectionId === c.id));
-  const scopeOptions = [
-    ...(roll ? [`<option value="single">Roll ini — ${esc(roll.id)}</option>`] : []),
-    '<option value="collection">Semua roll dalam motif/koleksi</option>',
-    '<option value="available">Semua roll dengan stok tersedia</option>',
-  ].join('');
+  const db = ctx.db;
+  const collections = db.collections.filter((c) => (db.skus ?? []).some((s) => s.collectionId === c.id));
+  const allRolls = [...(db.rolls ?? [])].sort((a, b) => {
+    const skuA = byId(db.skus, a.skuId);
+    const skuB = byId(db.skus, b.skuId);
+    return String(skuA?.collectionName ?? '').localeCompare(String(skuB?.collectionName ?? ''))
+      || String(skuA?.colourName || skuA?.colourCode || '').localeCompare(String(skuB?.colourName || skuB?.colourCode || ''))
+      || a.id.localeCompare(b.id);
+  });
+  const preselected = new Set(roll ? [roll.id] : []);
+  const choices = allRolls.map((item) => {
+    const sku = byId(db.skus, item.skuId);
+    const status = rollStatus(item);
+    const search = [
+      item.id, item.barcode, item.lot, sku?.collectionName, sku?.motive, sku?.colourName, sku?.colourCode, sku?.code,
+    ].map((value) => String(value ?? '').toLowerCase()).join(' ');
+    return `<label class="roll-pick" data-search="${esc(search)}">
+      <input type="checkbox" name="rollIds" value="${esc(item.id)}" ${preselected.has(item.id) ? 'checked' : ''} />
+      <span class="roll-pick-main">
+        <strong class="mono">${esc(item.id)}</strong>
+        <span>${esc(sku?.collectionName ?? '—')} ${esc(sku?.colourName || sku?.colourCode || '')} · ${esc(sku?.code ?? '')}</span>
+        <span class="xs muted">Lot ${esc(item.lot)} · ${esc(item.barcode || item.id)}</span>
+      </span>
+      <span class="roll-pick-meta"><strong>${fmt.m(availableMm(item))}</strong> tersedia<span>${esc(status.label)}</span></span>
+    </label>`;
+  }).join('');
   openModal({
     title: 'Cetak tag stok A4',
-    description: 'Pilih satu roll, ulangi beberapa kali, atau cetak banyak roll dari motif/koleksi yang sama.',
-    submitLabel: 'Buka cetak A4',
+    description: 'Pilih satu atau beberapa roll, lalu cetak. Setiap lembar A4 memuat 8 tag (2 kolom × 4 baris).',
+    submitLabel: 'Cetak A4',
+    wide: true,
     body: `<div class="form-grid">
-      ${field('Cakupan', `<select class="select" name="scope">${scopeOptions}</select>`)}
-      ${field('Koleksi / motif', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`)}
+      ${field('Cakupan', `<select class="select" name="scope">
+        <option value="selected">Roll terpilih</option>
+        <option value="collection">Semua roll dalam koleksi</option>
+        <option value="available">Semua roll tersedia</option>
+      </select>`)}
+      ${field('Koleksi / motif', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan “semua roll dalam koleksi”.' })}
       ${field('Ulangi tiap tag', `<input class="input" type="number" name="copies" min="1" max="40" value="1" />`, { hint: 'Jumlah salinan per roll. A4 menampung 8 tag.' })}
       ${field('Roll terjual/habis', `<label class="checkline"><input type="checkbox" name="includeSold" /> Sertakan roll yang sudah habis/terjual</label>`, { full: true })}
+      <div class="span-2">
+        <div class="field">
+          <label for="tag-roll-search">Pilih roll</label>
+          <div class="roll-picker-tools">
+            <input class="input" id="tag-roll-search" name="rollSearch" type="search" placeholder="Cari roll, warna, lot, barcode…" />
+            <button class="btn btn-sm" type="button" data-pick-visible>Pilih terlihat</button>
+            <button class="btn btn-sm btn-ghost" type="button" data-pick-clear>Kosongkan</button>
+          </div>
+          <div class="roll-picker" data-roll-picker>${choices || '<p class="xs muted" style="padding:8px">Belum ada roll.</p>'}</div>
+          <p class="xs muted" data-roll-summary></p>
+        </div>
+      </div>
     </div>`,
     onMount(form) {
-      const sync = () => {
-        form.collection.closest('.field').style.opacity = form.scope.value === 'collection' ? '1' : '.45';
-        form.collection.disabled = form.scope.value !== 'collection';
+      const picker = form.querySelector('[data-roll-picker]');
+      const tools = form.querySelector('.roll-picker-tools');
+      const summary = form.querySelector('[data-roll-summary]');
+      const rows = Array.from(picker.querySelectorAll('.roll-pick'));
+      const collectionField = form.collection.closest('.field');
+      const soldField = form.includeSold.closest('.field');
+      const checked = () => Array.from(picker.querySelectorAll('input[name="rollIds"]:checked'));
+      const collectionRolls = () => {
+        const skuIds = new Set((db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
+        return (db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
+          && (form.includeSold.checked || availableMm(item) > 0));
       };
-      form.scope.addEventListener('change', sync);
-      sync();
+      const refresh = () => {
+        const scope = form.scope.value;
+        const manual = scope === 'selected';
+        picker.hidden = !manual;
+        tools.hidden = !manual;
+        collectionField.style.display = scope === 'collection' ? '' : 'none';
+        soldField.style.display = manual ? 'none' : '';
+        const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));
+        if (manual) {
+          const count = checked().length;
+          summary.textContent = count
+            ? `${count} roll dipilih × ${copies} salinan = ${count * copies} tag · ${Math.ceil((count * copies) / 8)} halaman A4.`
+            : 'Belum ada roll dipilih. Centang roll di daftar atau pakai “Pilih terlihat”.';
+        } else {
+          const count = scope === 'collection' ? collectionRolls().length : (db.rolls ?? []).filter((item) => availableMm(item) > 0).length;
+          summary.textContent = `${count} roll akan dicetak × ${copies} salinan = ${count * copies} tag · ${Math.ceil((count * copies) / 8)} halaman A4.`;
+        }
+      };
+      const filterRows = () => {
+        const query = form.rollSearch.value.trim().toLowerCase();
+        for (const row of rows) row.hidden = Boolean(query) && !row.dataset.search.includes(query);
+      };
+      form.scope.addEventListener('change', refresh);
+      form.collection.addEventListener('change', refresh);
+      form.copies.addEventListener('input', refresh);
+      form.includeSold.addEventListener('change', refresh);
+      form.rollSearch.addEventListener('input', filterRows);
+      picker.addEventListener('change', refresh);
+      form.querySelector('[data-pick-visible]').addEventListener('click', () => {
+        for (const row of rows) {
+          if (!row.hidden) row.querySelector('input').checked = true;
+        }
+        refresh();
+      });
+      form.querySelector('[data-pick-clear]').addEventListener('click', () => {
+        for (const row of rows) row.querySelector('input').checked = false;
+        refresh();
+      });
+      refresh();
     },
     onSubmit(form, close) {
       const scope = form.scope.value;
       let rolls = [];
-      if (scope === 'single' && roll) rolls = [roll];
-      if (scope === 'collection') {
-        const skuIds = new Set((ctx.db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
-        rolls = (ctx.db.rolls ?? []).filter((r) => skuIds.has(r.skuId)
-          && (form.includeSold.checked || availableMm(r) > 0));
+      if (scope === 'selected') {
+        const ids = new Set(Array.from(form.querySelectorAll('input[name="rollIds"]:checked')).map((input) => input.value));
+        rolls = (db.rolls ?? []).filter((item) => ids.has(item.id));
+      } else if (scope === 'collection') {
+        const skuIds = new Set((db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
+        rolls = (db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
+          && (form.includeSold.checked || availableMm(item) > 0));
+      } else {
+        rolls = (db.rolls ?? []).filter((item) => availableMm(item) > 0);
       }
-      if (scope === 'available') rolls = (ctx.db.rolls ?? []).filter((r) => availableMm(r) > 0);
-      if (!rolls.length) throw new Error('Tidak ada roll untuk dicetak pada cakupan ini.');
+      if (!rolls.length) throw new Error('Pilih minimal satu roll untuk dicetak.');
       const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));
-      printDocument('Tag stok A4', printStockTagsHtml(ctx.db, rolls, { copies }), { plain: true });
+      printDocument('Tag stok A4', printStockTagsHtml(db, rolls, { copies }), { plain: true });
       close();
-      toast(`${rolls.length} roll × ${copies} salinan disiapkan untuk A4.`, { tone: 'success' });
+      toast(`${rolls.length} roll × ${copies} salinan disiapkan · ${Math.ceil((rolls.length * copies) / 8)} halaman A4.`, { tone: 'success' });
     },
   });
 }

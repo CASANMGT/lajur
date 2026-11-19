@@ -88,18 +88,21 @@ const ROLE_LABEL = {
   driver: 'Driver / Transport',
 };
 
-export function countsFor(db) {
+export function countsFor(db, { role = null, userId = null } = {}) {
+  const driverId = role === 'driver' ? ((db.drivers ?? []).find((d) => d.userId === userId)?.id ?? null) : null;
   return {
     transfer: pendingApprovals(db).length + lateTransfers(db).length,
     opname: activeSessions(db).length,
+    pengiriman: (db.deliveries ?? []).filter((d) => d.status === 'delivered'
+      && (role !== 'driver' || d.driverId === driverId)).length,
   };
 }
 
 export function renderShell(ctx, contentHtml) {
-  const { db, ui, role, dataset, simulation } = ctx;
+  const { db, ui, role, user, dataset, simulation } = ctx;
   const prefs = settingsOf(db);
   const advanced = isAdvancedMode(db);
-  const counts = countsFor(db);
+  const counts = countsFor(db, { role, userId: user?.id });
   const activeWh = ui.warehouseId === 'all' ? null : byId(db.warehouses, ui.warehouseId);
   const navHtml = NAV.map((group) => {
     const items = group.items
@@ -112,7 +115,9 @@ export function renderShell(ctx, contentHtml) {
       <span class="nav-label">${esc(group.group)}</span>
       ${items.map((item) => {
         const active = ctx.route.name === item.id;
-        const count = item.id === 'transfer' ? counts.transfer : item.id === 'opname' ? counts.opname : 0;
+        const count = item.id === 'transfer' ? counts.transfer
+          : item.id === 'opname' ? counts.opname
+            : item.id === 'pengiriman' ? counts.pengiriman : 0;
         return `<a class="nav-link" href="#/${item.id}" ${active ? 'aria-current="page"' : ''}>
           ${icon(item.icon)}
           <span>${esc(item.label)}</span>
