@@ -2,6 +2,35 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.25.0] — 2026-11-20
+
+**Release name: Sinkron Stok 13 Nov 2026.** Imports the actual 13 November 2026 Excel stock list through a manager-only, preview-and-confirm action.
+
+### Added
+
+- **Stock sync plan:** bundled `src/data/stock-13nov2026.json` with **257 normal SKUs**, **2,175 rolls**, **144,590.62 m**, **40 sample pieces / 3,076 m**, and **47 collections**.
+- **Manager sync action:** Stok → **Sinkron stok 13 Nov** opens a preview with SKU/roll/metre/sample counts, warehouse, lot `STOK-13NOV2026`, exclusions and the old-roll archive warning. A mandatory confirmation checkbox prevents accidental sync.
+- **Safe archive:** the previous 24 available demo rolls are marked **void** with a movement note; invoices, projects and audit history remain readable. Old fabric SKUs are made inactive.
+- **Sample import:** 40 Excel sample rows become Buku Sample stock per collection; they are never sold as normal rolls.
+- **Stock plan provenance:** `meta.stockSync` records source, date, warehouse, counts, archived rolls, user and timestamp.
+
+### Data decisions applied
+
+- Warehouse: **Jakarta (JKT)**.
+- Excluded `BIAYA MATERI TAMBAHAN` and `FOLDER LUNALITE`.
+- `PROFLEX BEIGE` uses the per-roll total **200 m** (not the 400 m summary cell).
+- Prices default to **Rp 0**; widths are parsed from the name with 280 cm fallback.
+
+### Verification
+
+- `node --test`: **83 passed**.
+- Browser sync result: **2,175 imported rolls**, **144,590.62 m**, **40 sample pieces**, **24 old rolls archived**, 257 active imported SKUs.
+- Referential checks: **0** missing SKU/collection/roll references in rolls, movements and invoice lines.
+- Old invoice `INV-0003` still renders with its historical RL-0006 line.
+- Version bumped to 2.25.0; schema 20 and backup v20 unchanged.
+
+---
+
 ## [2.24.0] — 2026-11-20
 
 **Release name: Surat Jalan Internal & Foto Sample.** Makes the surat jalan form follow the delivery type, adds driver signatures, shows the weekday, and adds sample-book photos.

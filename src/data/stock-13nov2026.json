@@ -1,0 +1,8992 @@
+{
+  "key": "excel-2026-11-13",
+  "source": "13 NOVEMBER 2026 STOK BARANG .xlsx",
+  "date": "2026-11-13",
+  "warehouseId": "wh-jkt",
+  "categoryName": "Kain",
+  "collections": [
+    {
+      "key": "AMOUR",
+      "name": "AMOUR",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "BLEND",
+      "name": "BLEND",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "BRIA",
+      "name": "BRIA",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "CALICO",
+      "name": "CALICO",
+      "widthCm": 300,
+      "sampleOnly": false
+    },
+    {
+      "key": "CANVA",
+      "name": "CANVA",
+      "widthCm": 300,
+      "sampleOnly": false
+    },
+    {
+      "key": "DION",
+      "name": "DION",
+      "widthCm": 320,
+      "sampleOnly": false
+    },
+    {
+      "key": "DREAM",
+      "name": "DREAM",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "ELLIE",
+      "name": "ELLIE",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "ESPRIT",
+      "name": "ESPRIT",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "FLOWY",
+      "name": "FLOWY",
+      "widthCm": 360,
+      "sampleOnly": false
+    },
+    {
+      "key": "FLEXA",
+      "name": "FLEXA",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "KYA",
+      "name": "KYA",
+      "widthCm": 330,
+      "sampleOnly": false
+    },
+    {
+      "key": "MOWA",
+      "name": "MOWA",
+      "widthCm": 320,
+      "sampleOnly": false
+    },
+    {
+      "key": "LAYLA",
+      "name": "LAYLA",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "LOELA",
+      "name": "LOELA",
+      "widthCm": 320,
+      "sampleOnly": false
+    },
+    {
+      "key": "LUNA",
+      "name": "Luna",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "LYON",
+      "name": "LYON",
+      "widthCm": 150,
+      "sampleOnly": false
+    },
+    {
+      "key": "MAIA",
+      "name": "MAIA",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "MAUDY",
+      "name": "MAUDY",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "MEDICAL",
+      "name": "MEDICAL",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "MIRAGE",
+      "name": "MIRAGE",
+      "widthCm": 140,
+      "sampleOnly": false
+    },
+    {
+      "key": "NATURA",
+      "name": "NATURA",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "NUFLEX",
+      "name": "NUFLEX",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "ORGANICS",
+      "name": "ORGANICS",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "PANDORA",
+      "name": "PANDORA",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "PORTA",
+      "name": "PORTA",
+      "widthCm": 320,
+      "sampleOnly": false
+    },
+    {
+      "key": "PREMIUM",
+      "name": "PREMIUM",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "PROFLEX",
+      "name": "PROFLEX",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "QUIN",
+      "name": "QUIN",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "RAINE",
+      "name": "RAINE",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "REJUVE",
+      "name": "REJUVE",
+      "widthCm": 330,
+      "sampleOnly": false
+    },
+    {
+      "key": "STELLAR",
+      "name": "STELLAR",
+      "widthCm": 320,
+      "sampleOnly": false
+    },
+    {
+      "key": "TERRA",
+      "name": "TERRA",
+      "widthCm": 300,
+      "sampleOnly": false
+    },
+    {
+      "key": "JARING",
+      "name": "JARING",
+      "widthCm": 155,
+      "sampleOnly": false
+    },
+    {
+      "key": "VITRASE",
+      "name": "VITRASE",
+      "widthCm": 280,
+      "sampleOnly": false
+    },
+    {
+      "key": "ALHAMBRA",
+      "name": "ALHAMBRA",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "TUSCANY",
+      "name": "TUSCANY",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "ALURA",
+      "name": "ALURA",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "AOKI",
+      "name": "AOKI",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "BINDER",
+      "name": "BINDER",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "ECLIPSE",
+      "name": "ECLIPSE",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "GAIA",
+      "name": "GAIA",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "HAVA",
+      "name": "HAVA",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "LUNALITE",
+      "name": "LUNALITE",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "OSIANA",
+      "name": "OSIANA",
+      "widthCm": 280,
+      "sampleOnly": true
+    },
+    {
+      "key": "RASTIK",
+      "name": "RASTIK",
+      "widthCm": 150,
+      "sampleOnly": true
+    },
+    {
+      "key": "VERSAILLES",
+      "name": "VERSAILLES",
+      "widthCm": 280,
+      "sampleOnly": true
+    }
+  ],
+  "skus": [
+    {
+      "id": "sku-imp-amour-g",
+      "row": 34,
+      "collectionKey": "AMOUR",
+      "code": "AMOUR-G",
+      "colourCode": "G",
+      "colourName": "G",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 107
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-blend-d1",
+      "row": 74,
+      "collectionKey": "BLEND",
+      "code": "BLEND-D1",
+      "colourCode": "D1",
+      "colourName": "D1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 13.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a3",
+      "row": 83,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A3",
+      "colourCode": "A3",
+      "colourName": "A3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a5",
+      "row": 86,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A5",
+      "colourCode": "A5",
+      "colourName": "A5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 65
+        },
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 67
+        },
+        {
+          "count": 3,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a6",
+      "row": 87,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A6",
+      "colourCode": "A6",
+      "colourName": "A6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 46
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 51
+        },
+        {
+          "count": 1,
+          "lengthM": 52
+        },
+        {
+          "count": 1,
+          "lengthM": 55.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a8",
+      "row": 89,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A8",
+      "colourCode": "A8",
+      "colourName": "A8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 56.5
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 60.5
+        },
+        {
+          "count": 1,
+          "lengthM": 65
+        },
+        {
+          "count": 5,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a9",
+      "row": 90,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A9",
+      "colourCode": "A9",
+      "colourName": "A9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 144
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a10",
+      "row": 91,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A10",
+      "colourCode": "A10",
+      "colourName": "A10",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 54
+        },
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 68.5
+        },
+        {
+          "count": 3,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-bria-a11",
+      "row": 92,
+      "collectionKey": "BRIA",
+      "code": "BRIA-A11",
+      "colourCode": "A11",
+      "colourName": "A11",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 35
+        },
+        {
+          "count": 5,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 2,
+          "lengthM": 110
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-calico-1",
+      "row": 97,
+      "collectionKey": "CALICO",
+      "code": "CALICO-1",
+      "colourCode": "1",
+      "colourName": "1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 42.5
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-calico-8",
+      "row": 103,
+      "collectionKey": "CALICO",
+      "code": "CALICO-8",
+      "colourCode": "8",
+      "colourName": "8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-calico-11",
+      "row": 105,
+      "collectionKey": "CALICO",
+      "code": "CALICO-11",
+      "colourCode": "11",
+      "colourName": "11",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 51
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-1-natural",
+      "row": 110,
+      "collectionKey": "CANVA",
+      "code": "CANVA-1-NATURAL",
+      "colourCode": "1 NATURAL",
+      "colourName": "1 NATURAL",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 55.7
+        },
+        {
+          "count": 1,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 56.9
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-2-coklat",
+      "row": 111,
+      "collectionKey": "CANVA",
+      "code": "CANVA-2-COKLAT",
+      "colourCode": "2 COKLAT",
+      "colourName": "2 COKLAT",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 69.9
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-3-abu",
+      "row": 112,
+      "collectionKey": "CANVA",
+      "code": "CANVA-3-ABU",
+      "colourCode": "3 ABU",
+      "colourName": "3 ABU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 53.4
+        },
+        {
+          "count": 1,
+          "lengthM": 55.2
+        },
+        {
+          "count": 1,
+          "lengthM": 62.2
+        },
+        {
+          "count": 1,
+          "lengthM": 68.7
+        },
+        {
+          "count": 2,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 73.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-4-off-white",
+      "row": 113,
+      "collectionKey": "CANVA",
+      "code": "CANVA-4-OFF-WHITE",
+      "colourCode": "4 OFF WHITE",
+      "colourName": "4 OFF WHITE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 49.5
+        },
+        {
+          "count": 1,
+          "lengthM": 51.6
+        },
+        {
+          "count": 1,
+          "lengthM": 58.8
+        },
+        {
+          "count": 1,
+          "lengthM": 59.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-5-cream-muda",
+      "row": 114,
+      "collectionKey": "CANVA",
+      "code": "CANVA-5-CREAM-MUDA",
+      "colourCode": "5 CREAM MUDA",
+      "colourName": "5 CREAM MUDA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69.7
+        },
+        {
+          "count": 1,
+          "lengthM": 69.8
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 70.5
+        },
+        {
+          "count": 1,
+          "lengthM": 71.3
+        },
+        {
+          "count": 1,
+          "lengthM": 71.8
+        },
+        {
+          "count": 1,
+          "lengthM": 71.9
+        },
+        {
+          "count": 1,
+          "lengthM": 75.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-7-abu-silver",
+      "row": 116,
+      "collectionKey": "CANVA",
+      "code": "CANVA-7-ABU-SILVER",
+      "colourCode": "7 ABU SILVER",
+      "colourName": "7 ABU SILVER",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 49.1
+        },
+        {
+          "count": 1,
+          "lengthM": 54.7
+        },
+        {
+          "count": 1,
+          "lengthM": 54.9
+        },
+        {
+          "count": 1,
+          "lengthM": 57.2
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-canva-8-abu-tua",
+      "row": 117,
+      "collectionKey": "CANVA",
+      "code": "CANVA-8-ABU-TUA",
+      "colourCode": "8 ABU TUA",
+      "colourName": "8 ABU TUA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60.5
+        },
+        {
+          "count": 1,
+          "lengthM": 66.9
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 70.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-b3-abu-abu",
+      "row": 161,
+      "collectionKey": "DION",
+      "code": "DION-B3-ABU-ABU",
+      "colourCode": "B3 ABU-ABU",
+      "colourName": "B3 ABU-ABU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-b4-biru",
+      "row": 162,
+      "collectionKey": "DION",
+      "code": "DION-B4-BIRU",
+      "colourCode": "B4 BIRU",
+      "colourName": "B4 BIRU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 39.6
+        },
+        {
+          "count": 1,
+          "lengthM": 69.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-b9-biru-navy",
+      "row": 167,
+      "collectionKey": "DION",
+      "code": "DION-B9-BIRU-NAVY",
+      "colourCode": "B9 BIRU NAVY",
+      "colourName": "B9 BIRU NAVY",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 24.2
+        },
+        {
+          "count": 1,
+          "lengthM": 67.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-b10-abu-tua",
+      "row": 168,
+      "collectionKey": "DION",
+      "code": "DION-B10-ABU-TUA",
+      "colourCode": "B10 ABU TUA",
+      "colourName": "B10 ABU TUA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 32.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-b12-ungu",
+      "row": 170,
+      "collectionKey": "DION",
+      "code": "DION-B12-UNGU",
+      "colourCode": "B12 UNGU",
+      "colourName": "B12 UNGU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 66.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-c4-biru",
+      "row": 175,
+      "collectionKey": "DION",
+      "code": "DION-C4-BIRU",
+      "colourCode": "C4 BIRU",
+      "colourName": "C4 BIRU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 68.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-c9-biru-navy",
+      "row": 180,
+      "collectionKey": "DION",
+      "code": "DION-C9-BIRU-NAVY",
+      "colourCode": "C9 BIRU NAVY",
+      "colourName": "C9 BIRU NAVY",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 64.7
+        },
+        {
+          "count": 1,
+          "lengthM": 72.2
+        },
+        {
+          "count": 1,
+          "lengthM": 72.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dion-c12-ungu",
+      "row": 183,
+      "collectionKey": "DION",
+      "code": "DION-C12-UNGU",
+      "colourCode": "C12 UNGU",
+      "colourName": "C12 UNGU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 68.7
+        },
+        {
+          "count": 1,
+          "lengthM": 69.3
+        },
+        {
+          "count": 1,
+          "lengthM": 69.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-2",
+      "row": 189,
+      "collectionKey": "DREAM",
+      "code": "DREAM-2",
+      "colourCode": "2",
+      "colourName": "2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 105.2
+        },
+        {
+          "count": 1,
+          "lengthM": 106
+        },
+        {
+          "count": 1,
+          "lengthM": 109.5
+        },
+        {
+          "count": 1,
+          "lengthM": 112.3
+        },
+        {
+          "count": 1,
+          "lengthM": 112.8
+        },
+        {
+          "count": 1,
+          "lengthM": 113.1
+        },
+        {
+          "count": 1,
+          "lengthM": 113.5
+        },
+        {
+          "count": 1,
+          "lengthM": 115.7
+        },
+        {
+          "count": 1,
+          "lengthM": 116.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-3",
+      "row": 190,
+      "collectionKey": "DREAM",
+      "code": "DREAM-3",
+      "colourCode": "3",
+      "colourName": "3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 99
+        },
+        {
+          "count": 1,
+          "lengthM": 100.8
+        },
+        {
+          "count": 1,
+          "lengthM": 104
+        },
+        {
+          "count": 1,
+          "lengthM": 109.1
+        },
+        {
+          "count": 1,
+          "lengthM": 109.6
+        },
+        {
+          "count": 1,
+          "lengthM": 111
+        },
+        {
+          "count": 1,
+          "lengthM": 117
+        },
+        {
+          "count": 1,
+          "lengthM": 117.5
+        },
+        {
+          "count": 1,
+          "lengthM": 121.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-5",
+      "row": 192,
+      "collectionKey": "DREAM",
+      "code": "DREAM-5",
+      "colourCode": "5",
+      "colourName": "5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 111
+        },
+        {
+          "count": 1,
+          "lengthM": 111.2
+        },
+        {
+          "count": 1,
+          "lengthM": 111.7
+        },
+        {
+          "count": 1,
+          "lengthM": 112
+        },
+        {
+          "count": 1,
+          "lengthM": 114.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-8",
+      "row": 195,
+      "collectionKey": "DREAM",
+      "code": "DREAM-8",
+      "colourCode": "8",
+      "colourName": "8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 89.3
+        },
+        {
+          "count": 1,
+          "lengthM": 94
+        },
+        {
+          "count": 1,
+          "lengthM": 102.6
+        },
+        {
+          "count": 1,
+          "lengthM": 103.3
+        },
+        {
+          "count": 1,
+          "lengthM": 103.4
+        },
+        {
+          "count": 1,
+          "lengthM": 103.8
+        },
+        {
+          "count": 1,
+          "lengthM": 104.3
+        },
+        {
+          "count": 1,
+          "lengthM": 104.9
+        },
+        {
+          "count": 1,
+          "lengthM": 105
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-9",
+      "row": 196,
+      "collectionKey": "DREAM",
+      "code": "DREAM-9",
+      "colourCode": "9",
+      "colourName": "9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60.6
+        },
+        {
+          "count": 1,
+          "lengthM": 61.2
+        },
+        {
+          "count": 1,
+          "lengthM": 61.5
+        },
+        {
+          "count": 1,
+          "lengthM": 62.4
+        },
+        {
+          "count": 2,
+          "lengthM": 62.6
+        },
+        {
+          "count": 2,
+          "lengthM": 62.7
+        },
+        {
+          "count": 1,
+          "lengthM": 62.9
+        },
+        {
+          "count": 1,
+          "lengthM": 117.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-10",
+      "row": 197,
+      "collectionKey": "DREAM",
+      "code": "DREAM-10",
+      "colourCode": "10",
+      "colourName": "10",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 123
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-13",
+      "row": 202,
+      "collectionKey": "DREAM",
+      "code": "DREAM-13",
+      "colourCode": "13",
+      "colourName": "13",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 105.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-14",
+      "row": 203,
+      "collectionKey": "DREAM",
+      "code": "DREAM-14",
+      "colourCode": "14",
+      "colourName": "14",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 111.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-15",
+      "row": 204,
+      "collectionKey": "DREAM",
+      "code": "DREAM-15",
+      "colourCode": "15",
+      "colourName": "15",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 104
+        },
+        {
+          "count": 1,
+          "lengthM": 105.6
+        },
+        {
+          "count": 1,
+          "lengthM": 112.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-dream-16",
+      "row": 205,
+      "collectionKey": "DREAM",
+      "code": "DREAM-16",
+      "colourCode": "16",
+      "colourName": "16",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-ellie-vitrace-lb-280-cm",
+      "row": 285,
+      "collectionKey": "ELLIE",
+      "code": "ELLIE-VITRACE-LB-280-CM",
+      "colourCode": "VITRACE LB 280 CM",
+      "colourName": "VITRACE LB 280 CM",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 44
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-1-1",
+      "row": 291,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-1-1",
+      "colourCode": "1-1",
+      "colourName": "1-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 110.1
+        },
+        {
+          "count": 1,
+          "lengthM": 110.2
+        },
+        {
+          "count": 2,
+          "lengthM": 110.5
+        },
+        {
+          "count": 1,
+          "lengthM": 111
+        },
+        {
+          "count": 1,
+          "lengthM": 111.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-1-2",
+      "row": 292,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-1-2",
+      "colourCode": "1-2",
+      "colourName": "1-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 77.5
+        },
+        {
+          "count": 1,
+          "lengthM": 81.4
+        },
+        {
+          "count": 1,
+          "lengthM": 83.6
+        },
+        {
+          "count": 1,
+          "lengthM": 85.4
+        },
+        {
+          "count": 1,
+          "lengthM": 86.5
+        },
+        {
+          "count": 2,
+          "lengthM": 88.8
+        },
+        {
+          "count": 1,
+          "lengthM": 89
+        },
+        {
+          "count": 1,
+          "lengthM": 89.3
+        },
+        {
+          "count": 1,
+          "lengthM": 90
+        },
+        {
+          "count": 2,
+          "lengthM": 91.1
+        },
+        {
+          "count": 1,
+          "lengthM": 91.2
+        },
+        {
+          "count": 1,
+          "lengthM": 91.3
+        },
+        {
+          "count": 1,
+          "lengthM": 91.4
+        },
+        {
+          "count": 1,
+          "lengthM": 91.5
+        },
+        {
+          "count": 1,
+          "lengthM": 91.6
+        },
+        {
+          "count": 2,
+          "lengthM": 92
+        },
+        {
+          "count": 1,
+          "lengthM": 92.5
+        },
+        {
+          "count": 1,
+          "lengthM": 93
+        },
+        {
+          "count": 1,
+          "lengthM": 93.9
+        },
+        {
+          "count": 1,
+          "lengthM": 95.1
+        },
+        {
+          "count": 1,
+          "lengthM": 95.2
+        },
+        {
+          "count": 1,
+          "lengthM": 95.3
+        },
+        {
+          "count": 1,
+          "lengthM": 95.5
+        },
+        {
+          "count": 2,
+          "lengthM": 96
+        },
+        {
+          "count": 1,
+          "lengthM": 97
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-3-1",
+      "row": 295,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-3-1",
+      "colourCode": "3-1",
+      "colourName": "3-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 101.8
+        },
+        {
+          "count": 1,
+          "lengthM": 103.4
+        },
+        {
+          "count": 1,
+          "lengthM": 104.6
+        },
+        {
+          "count": 1,
+          "lengthM": 106
+        },
+        {
+          "count": 1,
+          "lengthM": 117
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-3-2",
+      "row": 296,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-3-2",
+      "colourCode": "3-2",
+      "colourName": "3-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 1.75
+        },
+        {
+          "count": 1,
+          "lengthM": 101
+        },
+        {
+          "count": 1,
+          "lengthM": 103
+        },
+        {
+          "count": 1,
+          "lengthM": 105
+        },
+        {
+          "count": 1,
+          "lengthM": 112.4
+        },
+        {
+          "count": 1,
+          "lengthM": 114
+        },
+        {
+          "count": 1,
+          "lengthM": 118
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-4-1",
+      "row": 297,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-4-1",
+      "colourCode": "4-1",
+      "colourName": "4-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 126
+        },
+        {
+          "count": 1,
+          "lengthM": 131.8
+        },
+        {
+          "count": 1,
+          "lengthM": 132
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-4-2",
+      "row": 298,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-4-2",
+      "colourCode": "4-2",
+      "colourName": "4-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 136.5
+        },
+        {
+          "count": 1,
+          "lengthM": 136.6
+        },
+        {
+          "count": 1,
+          "lengthM": 140.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-5-1",
+      "row": 299,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-5-1",
+      "colourCode": "5-1",
+      "colourName": "5-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 56.3
+        },
+        {
+          "count": 1,
+          "lengthM": 97.3
+        },
+        {
+          "count": 1,
+          "lengthM": 107.7
+        },
+        {
+          "count": 1,
+          "lengthM": 110
+        },
+        {
+          "count": 1,
+          "lengthM": 110.1
+        },
+        {
+          "count": 1,
+          "lengthM": 112.4
+        },
+        {
+          "count": 1,
+          "lengthM": 113.4
+        },
+        {
+          "count": 1,
+          "lengthM": 119.6
+        },
+        {
+          "count": 1,
+          "lengthM": 122.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-5-2",
+      "row": 300,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-5-2",
+      "colourCode": "5-2",
+      "colourName": "5-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 91
+        },
+        {
+          "count": 1,
+          "lengthM": 104
+        },
+        {
+          "count": 1,
+          "lengthM": 104.7
+        },
+        {
+          "count": 1,
+          "lengthM": 106.5
+        },
+        {
+          "count": 1,
+          "lengthM": 106.6
+        },
+        {
+          "count": 1,
+          "lengthM": 115.2
+        },
+        {
+          "count": 1,
+          "lengthM": 115.9
+        },
+        {
+          "count": 1,
+          "lengthM": 117.3
+        },
+        {
+          "count": 1,
+          "lengthM": 118.1
+        },
+        {
+          "count": 1,
+          "lengthM": 118.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-6-1",
+      "row": 301,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-6-1",
+      "colourCode": "6-1",
+      "colourName": "6-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 126.3
+        },
+        {
+          "count": 1,
+          "lengthM": 129.9
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-6-2",
+      "row": 302,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-6-2",
+      "colourCode": "6-2",
+      "colourName": "6-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 119.1
+        },
+        {
+          "count": 1,
+          "lengthM": 121.5
+        },
+        {
+          "count": 1,
+          "lengthM": 124.8
+        },
+        {
+          "count": 1,
+          "lengthM": 125
+        },
+        {
+          "count": 1,
+          "lengthM": 126.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-7-1",
+      "row": 303,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-7-1",
+      "colourCode": "7-1",
+      "colourName": "7-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 134.5
+        },
+        {
+          "count": 1,
+          "lengthM": 134.6
+        },
+        {
+          "count": 1,
+          "lengthM": 138.8
+        },
+        {
+          "count": 1,
+          "lengthM": 141.8
+        },
+        {
+          "count": 1,
+          "lengthM": 142.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-7-2",
+      "row": 304,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-7-2",
+      "colourCode": "7-2",
+      "colourName": "7-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 127.2
+        },
+        {
+          "count": 1,
+          "lengthM": 129.2
+        },
+        {
+          "count": 1,
+          "lengthM": 131
+        },
+        {
+          "count": 1,
+          "lengthM": 133.1
+        },
+        {
+          "count": 1,
+          "lengthM": 137
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-8-1",
+      "row": 305,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-8-1",
+      "colourCode": "8-1",
+      "colourName": "8-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 120.4
+        },
+        {
+          "count": 1,
+          "lengthM": 123
+        },
+        {
+          "count": 1,
+          "lengthM": 124.5
+        },
+        {
+          "count": 1,
+          "lengthM": 126
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-8-2",
+      "row": 306,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-8-2",
+      "colourCode": "8-2",
+      "colourName": "8-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 116.1
+        },
+        {
+          "count": 1,
+          "lengthM": 120.9
+        },
+        {
+          "count": 1,
+          "lengthM": 125.7
+        },
+        {
+          "count": 1,
+          "lengthM": 127
+        },
+        {
+          "count": 1,
+          "lengthM": 128.2
+        },
+        {
+          "count": 1,
+          "lengthM": 128.5
+        },
+        {
+          "count": 1,
+          "lengthM": 130
+        },
+        {
+          "count": 1,
+          "lengthM": 131.2
+        },
+        {
+          "count": 1,
+          "lengthM": 139
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-9-2",
+      "row": 308,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-9-2",
+      "colourCode": "9-2",
+      "colourName": "9-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 86.5
+        },
+        {
+          "count": 1,
+          "lengthM": 87.2
+        },
+        {
+          "count": 1,
+          "lengthM": 91
+        },
+        {
+          "count": 1,
+          "lengthM": 91.7
+        },
+        {
+          "count": 1,
+          "lengthM": 92.7
+        },
+        {
+          "count": 1,
+          "lengthM": 93.6
+        },
+        {
+          "count": 1,
+          "lengthM": 95
+        },
+        {
+          "count": 1,
+          "lengthM": 96
+        },
+        {
+          "count": 1,
+          "lengthM": 96.1
+        },
+        {
+          "count": 1,
+          "lengthM": 96.6
+        },
+        {
+          "count": 1,
+          "lengthM": 97.1
+        },
+        {
+          "count": 1,
+          "lengthM": 98.8
+        },
+        {
+          "count": 1,
+          "lengthM": 99.2
+        },
+        {
+          "count": 1,
+          "lengthM": 99.5
+        },
+        {
+          "count": 1,
+          "lengthM": 99.7
+        },
+        {
+          "count": 1,
+          "lengthM": 99.9
+        },
+        {
+          "count": 1,
+          "lengthM": 100
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-10-1",
+      "row": 309,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-10-1",
+      "colourCode": "10-1",
+      "colourName": "10-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 94
+        },
+        {
+          "count": 1,
+          "lengthM": 98.4
+        },
+        {
+          "count": 1,
+          "lengthM": 102
+        },
+        {
+          "count": 1,
+          "lengthM": 132
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-10-2",
+      "row": 310,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-10-2",
+      "colourCode": "10-2",
+      "colourName": "10-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 91
+        },
+        {
+          "count": 1,
+          "lengthM": 91.8
+        },
+        {
+          "count": 1,
+          "lengthM": 92.1
+        },
+        {
+          "count": 1,
+          "lengthM": 92.9
+        },
+        {
+          "count": 1,
+          "lengthM": 96
+        },
+        {
+          "count": 1,
+          "lengthM": 100
+        },
+        {
+          "count": 1,
+          "lengthM": 101
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-11-1",
+      "row": 311,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-11-1",
+      "colourCode": "11-1",
+      "colourName": "11-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 118.3
+        },
+        {
+          "count": 1,
+          "lengthM": 122.4
+        },
+        {
+          "count": 1,
+          "lengthM": 127.8
+        },
+        {
+          "count": 1,
+          "lengthM": 132.5
+        },
+        {
+          "count": 1,
+          "lengthM": 137.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-11-2",
+      "row": 312,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-11-2",
+      "colourCode": "11-2",
+      "colourName": "11-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 134
+        },
+        {
+          "count": 1,
+          "lengthM": 135.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-12-1",
+      "row": 313,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-12-1",
+      "colourCode": "12-1",
+      "colourName": "12-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 114
+        },
+        {
+          "count": 1,
+          "lengthM": 118.8
+        },
+        {
+          "count": 1,
+          "lengthM": 128.2
+        },
+        {
+          "count": 1,
+          "lengthM": 128.6
+        },
+        {
+          "count": 1,
+          "lengthM": 131.5
+        },
+        {
+          "count": 1,
+          "lengthM": 131.9
+        },
+        {
+          "count": 1,
+          "lengthM": 132
+        },
+        {
+          "count": 1,
+          "lengthM": 133.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-12-2",
+      "row": 314,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-12-2",
+      "colourCode": "12-2",
+      "colourName": "12-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 119
+        },
+        {
+          "count": 1,
+          "lengthM": 119.3
+        },
+        {
+          "count": 1,
+          "lengthM": 120.2
+        },
+        {
+          "count": 1,
+          "lengthM": 122.6
+        },
+        {
+          "count": 1,
+          "lengthM": 123.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-13-1",
+      "row": 315,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-13-1",
+      "colourCode": "13-1",
+      "colourName": "13-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 70.6
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 1,
+          "lengthM": 72.6
+        },
+        {
+          "count": 1,
+          "lengthM": 74.1
+        },
+        {
+          "count": 1,
+          "lengthM": 75
+        },
+        {
+          "count": 1,
+          "lengthM": 75.4
+        },
+        {
+          "count": 1,
+          "lengthM": 75.6
+        },
+        {
+          "count": 1,
+          "lengthM": 77.5
+        },
+        {
+          "count": 1,
+          "lengthM": 79.2
+        },
+        {
+          "count": 1,
+          "lengthM": 79.4
+        },
+        {
+          "count": 1,
+          "lengthM": 80.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-esprit-13-2",
+      "row": 316,
+      "collectionKey": "ESPRIT",
+      "code": "ESPRIT-13-2",
+      "colourCode": "13-2",
+      "colourName": "13-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 3.7
+        },
+        {
+          "count": 1,
+          "lengthM": 70.3
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        },
+        {
+          "count": 1,
+          "lengthM": 73.8
+        },
+        {
+          "count": 1,
+          "lengthM": 74.1
+        },
+        {
+          "count": 1,
+          "lengthM": 74.7
+        },
+        {
+          "count": 1,
+          "lengthM": 75.7
+        },
+        {
+          "count": 1,
+          "lengthM": 76.4
+        },
+        {
+          "count": 1,
+          "lengthM": 76.7
+        },
+        {
+          "count": 1,
+          "lengthM": 80.1
+        },
+        {
+          "count": 1,
+          "lengthM": 88.4
+        },
+        {
+          "count": 1,
+          "lengthM": 99.5
+        },
+        {
+          "count": 1,
+          "lengthM": 99.6
+        },
+        {
+          "count": 1,
+          "lengthM": 107.3
+        },
+        {
+          "count": 1,
+          "lengthM": 108.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-flowy-1-1",
+      "row": 320,
+      "collectionKey": "FLOWY",
+      "code": "FLOWY-1-1",
+      "colourCode": "1-1",
+      "colourName": "1-1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 104.8
+        },
+        {
+          "count": 1,
+          "lengthM": 105.2
+        },
+        {
+          "count": 1,
+          "lengthM": 105.3
+        },
+        {
+          "count": 1,
+          "lengthM": 107.2
+        },
+        {
+          "count": 1,
+          "lengthM": 108
+        },
+        {
+          "count": 1,
+          "lengthM": 108.6
+        },
+        {
+          "count": 1,
+          "lengthM": 109.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-flowy-1-2",
+      "row": 321,
+      "collectionKey": "FLOWY",
+      "code": "FLOWY-1-2",
+      "colourCode": "1-2",
+      "colourName": "1-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 83.3
+        },
+        {
+          "count": 1,
+          "lengthM": 98.5
+        },
+        {
+          "count": 1,
+          "lengthM": 103.4
+        },
+        {
+          "count": 1,
+          "lengthM": 104
+        },
+        {
+          "count": 1,
+          "lengthM": 105
+        },
+        {
+          "count": 1,
+          "lengthM": 107
+        },
+        {
+          "count": 1,
+          "lengthM": 107.3
+        },
+        {
+          "count": 1,
+          "lengthM": 109.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-flexa-green",
+      "row": 324,
+      "collectionKey": "FLEXA",
+      "code": "FLEXA-GREEN",
+      "colourCode": "GREEN",
+      "colourName": "GREEN",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 31,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-flexa-blue",
+      "row": 325,
+      "collectionKey": "FLEXA",
+      "code": "FLEXA-BLUE",
+      "colourCode": "BLUE",
+      "colourName": "BLUE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 15,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-flexa-cream",
+      "row": 326,
+      "collectionKey": "FLEXA",
+      "code": "FLEXA-CREAM",
+      "colourCode": "CREAM",
+      "colourName": "CREAM",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 90,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-flexa-beige",
+      "row": 327,
+      "collectionKey": "FLEXA",
+      "code": "FLEXA-BEIGE",
+      "colourCode": "BEIGE",
+      "colourName": "BEIGE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 77,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-1-2-natural-330cm",
+      "row": 376,
+      "collectionKey": "KYA",
+      "code": "KYA-1-2-NATURAL-330CM",
+      "colourCode": "1-2 NATURAL 330CM",
+      "colourName": "1-2 NATURAL 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 75.4
+        },
+        {
+          "count": 1,
+          "lengthM": 75.5
+        },
+        {
+          "count": 1,
+          "lengthM": 76
+        },
+        {
+          "count": 1,
+          "lengthM": 76.8
+        },
+        {
+          "count": 1,
+          "lengthM": 78.4
+        },
+        {
+          "count": 1,
+          "lengthM": 80.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-1-3-linen-330cm",
+      "row": 377,
+      "collectionKey": "KYA",
+      "code": "KYA-1-3-LINEN-330CM",
+      "colourCode": "1-3 LINEN 330CM",
+      "colourName": "1-3 LINEN 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 73.6
+        },
+        {
+          "count": 1,
+          "lengthM": 73.7
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 74.1
+        },
+        {
+          "count": 1,
+          "lengthM": 74.2
+        },
+        {
+          "count": 1,
+          "lengthM": 74.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-1-4-grey-330cm",
+      "row": 378,
+      "collectionKey": "KYA",
+      "code": "KYA-1-4-GREY-330CM",
+      "colourCode": "1-4 GREY 330CM",
+      "colourName": "1-4 GREY 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 5.6
+        },
+        {
+          "count": 1,
+          "lengthM": 33.5
+        },
+        {
+          "count": 1,
+          "lengthM": 59.3
+        },
+        {
+          "count": 1,
+          "lengthM": 73.8
+        },
+        {
+          "count": 1,
+          "lengthM": 74.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-2-2-abstrak-off-wht-340cm",
+      "row": 380,
+      "collectionKey": "KYA",
+      "code": "KYA-2-2-ABSTRAK-OFF-WHT-340CM",
+      "colourCode": "2-2 ABSTRAK OFF WHT 340CM",
+      "colourName": "2-2 ABSTRAK OFF WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 3,
+          "lengthM": 59.2
+        },
+        {
+          "count": 1,
+          "lengthM": 59.4
+        },
+        {
+          "count": 1,
+          "lengthM": 59.8
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 60.2
+        },
+        {
+          "count": 1,
+          "lengthM": 60.3
+        },
+        {
+          "count": 1,
+          "lengthM": 60.7
+        },
+        {
+          "count": 1,
+          "lengthM": 60.9
+        },
+        {
+          "count": 1,
+          "lengthM": 61.3
+        },
+        {
+          "count": 1,
+          "lengthM": 61.9
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-3-1-silk-wht-340cm",
+      "row": 381,
+      "collectionKey": "KYA",
+      "code": "KYA-3-1-SILK-WHT-340CM",
+      "colourCode": "3-1 SILK WHT 340CM",
+      "colourName": "3-1 SILK WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 90
+        },
+        {
+          "count": 1,
+          "lengthM": 100.6
+        },
+        {
+          "count": 1,
+          "lengthM": 108.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-5-1-slub-wht-340cm",
+      "row": 383,
+      "collectionKey": "KYA",
+      "code": "KYA-5-1-SLUB-WHT-340CM",
+      "colourCode": "5-1 SLUB WHT 340CM",
+      "colourName": "5-1 SLUB WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 64.9
+        },
+        {
+          "count": 1,
+          "lengthM": 65.1
+        },
+        {
+          "count": 1,
+          "lengthM": 71.7
+        },
+        {
+          "count": 1,
+          "lengthM": 77.3
+        },
+        {
+          "count": 1,
+          "lengthM": 81.4
+        },
+        {
+          "count": 1,
+          "lengthM": 81.6
+        },
+        {
+          "count": 1,
+          "lengthM": 82.7
+        },
+        {
+          "count": 1,
+          "lengthM": 94.7
+        },
+        {
+          "count": 1,
+          "lengthM": 106.3
+        },
+        {
+          "count": 1,
+          "lengthM": 106.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-5-2-slub-off-wht-340cm",
+      "row": 384,
+      "collectionKey": "KYA",
+      "code": "KYA-5-2-SLUB-OFF-WHT-340CM",
+      "colourCode": "5-2 SLUB OFF WHT 340CM",
+      "colourName": "5-2 SLUB OFF WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 52
+        },
+        {
+          "count": 1,
+          "lengthM": 59.1
+        },
+        {
+          "count": 1,
+          "lengthM": 60.2
+        },
+        {
+          "count": 1,
+          "lengthM": 60.4
+        },
+        {
+          "count": 2,
+          "lengthM": 62.1
+        },
+        {
+          "count": 1,
+          "lengthM": 62.7
+        },
+        {
+          "count": 1,
+          "lengthM": 64.1
+        },
+        {
+          "count": 1,
+          "lengthM": 64.3
+        },
+        {
+          "count": 1,
+          "lengthM": 64.6
+        },
+        {
+          "count": 1,
+          "lengthM": 65.1
+        },
+        {
+          "count": 1,
+          "lengthM": 65.2
+        },
+        {
+          "count": 1,
+          "lengthM": 65.4
+        },
+        {
+          "count": 1,
+          "lengthM": 65.5
+        },
+        {
+          "count": 2,
+          "lengthM": 65.6
+        },
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 66.3
+        },
+        {
+          "count": 1,
+          "lengthM": 66.4
+        },
+        {
+          "count": 1,
+          "lengthM": 66.8
+        },
+        {
+          "count": 1,
+          "lengthM": 67.1
+        },
+        {
+          "count": 2,
+          "lengthM": 67.2
+        },
+        {
+          "count": 1,
+          "lengthM": 67.3
+        },
+        {
+          "count": 1,
+          "lengthM": 67.5
+        },
+        {
+          "count": 1,
+          "lengthM": 68.1
+        },
+        {
+          "count": 1,
+          "lengthM": 68.3
+        },
+        {
+          "count": 1,
+          "lengthM": 69
+        },
+        {
+          "count": 1,
+          "lengthM": 71.3
+        },
+        {
+          "count": 1,
+          "lengthM": 73.2
+        },
+        {
+          "count": 1,
+          "lengthM": 79.2
+        },
+        {
+          "count": 1,
+          "lengthM": 80.2
+        },
+        {
+          "count": 2,
+          "lengthM": 80.3
+        },
+        {
+          "count": 1,
+          "lengthM": 80.4
+        },
+        {
+          "count": 1,
+          "lengthM": 80.6
+        },
+        {
+          "count": 1,
+          "lengthM": 80.7
+        },
+        {
+          "count": 1,
+          "lengthM": 80.8
+        },
+        {
+          "count": 2,
+          "lengthM": 81
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-6-1-abstrak-wht-340cm",
+      "row": 385,
+      "collectionKey": "KYA",
+      "code": "KYA-6-1-ABSTRAK-WHT-340CM",
+      "colourCode": "6-1 ABSTRAK WHT 340CM",
+      "colourName": "6-1 ABSTRAK WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 79.8
+        },
+        {
+          "count": 1,
+          "lengthM": 80.4
+        },
+        {
+          "count": 1,
+          "lengthM": 80.5
+        },
+        {
+          "count": 1,
+          "lengthM": 80.6
+        },
+        {
+          "count": 1,
+          "lengthM": 84.1
+        },
+        {
+          "count": 1,
+          "lengthM": 119.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-6-2-abstrak-off-wht-340cm",
+      "row": 386,
+      "collectionKey": "KYA",
+      "code": "KYA-6-2-ABSTRAK-OFF-WHT-340CM",
+      "colourCode": "6-2 ABSTRAK OFF WHT 340CM",
+      "colourName": "6-2 ABSTRAK OFF WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 56.2
+        },
+        {
+          "count": 1,
+          "lengthM": 58.6
+        },
+        {
+          "count": 1,
+          "lengthM": 64.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-7-1-cotton-halus-wht-340cm",
+      "row": 387,
+      "collectionKey": "KYA",
+      "code": "KYA-7-1-COTTON-HALUS-WHT-340CM",
+      "colourCode": "7-1 COTTON HALUS WHT 340CM",
+      "colourName": "7-1 COTTON HALUS WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 112.2
+        },
+        {
+          "count": 1,
+          "lengthM": 112.3
+        },
+        {
+          "count": 1,
+          "lengthM": 116.4
+        },
+        {
+          "count": 1,
+          "lengthM": 117.2
+        },
+        {
+          "count": 1,
+          "lengthM": 117.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-7-2-cotton-halus-off-wht-340cm",
+      "row": 388,
+      "collectionKey": "KYA",
+      "code": "KYA-7-2-COTTON-HALUS-OFF-WHT-340CM",
+      "colourCode": "7-2 COTTON HALUS OFF WHT 340CM",
+      "colourName": "7-2 COTTON HALUS OFF WHT 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.7
+        },
+        {
+          "count": 1,
+          "lengthM": 75.5
+        },
+        {
+          "count": 1,
+          "lengthM": 80.3
+        },
+        {
+          "count": 1,
+          "lengthM": 85
+        },
+        {
+          "count": 1,
+          "lengthM": 90
+        },
+        {
+          "count": 1,
+          "lengthM": 92.8
+        },
+        {
+          "count": 1,
+          "lengthM": 104
+        },
+        {
+          "count": 1,
+          "lengthM": 104.3
+        },
+        {
+          "count": 1,
+          "lengthM": 111.9
+        },
+        {
+          "count": 1,
+          "lengthM": 119.3
+        },
+        {
+          "count": 1,
+          "lengthM": 120.4
+        },
+        {
+          "count": 1,
+          "lengthM": 125.3
+        },
+        {
+          "count": 1,
+          "lengthM": 127.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-8-1-cotton-wht-320cm",
+      "row": 389,
+      "collectionKey": "KYA",
+      "code": "KYA-8-1-COTTON-WHT-320CM",
+      "colourCode": "8-1 COTTON WHT 320CM",
+      "colourName": "8-1 COTTON WHT 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 104.5
+        },
+        {
+          "count": 1,
+          "lengthM": 105.5
+        },
+        {
+          "count": 1,
+          "lengthM": 106.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-8-2-cotton-off-wht-320cm",
+      "row": 390,
+      "collectionKey": "KYA",
+      "code": "KYA-8-2-COTTON-OFF-WHT-320CM",
+      "colourCode": "8-2 COTTON OFF WHT 320CM",
+      "colourName": "8-2 COTTON OFF WHT 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 48.2
+        },
+        {
+          "count": 1,
+          "lengthM": 49.5
+        },
+        {
+          "count": 2,
+          "lengthM": 50
+        },
+        {
+          "count": 2,
+          "lengthM": 50.1
+        },
+        {
+          "count": 2,
+          "lengthM": 50.2
+        },
+        {
+          "count": 1,
+          "lengthM": 50.3
+        },
+        {
+          "count": 1,
+          "lengthM": 50.5
+        },
+        {
+          "count": 1,
+          "lengthM": 50.7
+        },
+        {
+          "count": 1,
+          "lengthM": 50.9
+        },
+        {
+          "count": 1,
+          "lengthM": 51.1
+        },
+        {
+          "count": 1,
+          "lengthM": 52.3
+        },
+        {
+          "count": 1,
+          "lengthM": 52.9
+        },
+        {
+          "count": 1,
+          "lengthM": 53.2
+        },
+        {
+          "count": 1,
+          "lengthM": 53.6
+        },
+        {
+          "count": 1,
+          "lengthM": 54.1
+        },
+        {
+          "count": 1,
+          "lengthM": 55.3
+        },
+        {
+          "count": 1,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 57.3
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 60.9
+        },
+        {
+          "count": 1,
+          "lengthM": 61
+        },
+        {
+          "count": 1,
+          "lengthM": 61.3
+        },
+        {
+          "count": 1,
+          "lengthM": 94.3
+        },
+        {
+          "count": 2,
+          "lengthM": 94.6
+        },
+        {
+          "count": 2,
+          "lengthM": 94.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-9-1-slub-tebal-wht-320cm",
+      "row": 391,
+      "collectionKey": "KYA",
+      "code": "KYA-9-1-SLUB-TEBAL-WHT-320CM",
+      "colourCode": "9-1 SLUB TEBAL WHT 320CM",
+      "colourName": "9-1 SLUB TEBAL WHT 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 125.8
+        },
+        {
+          "count": 1,
+          "lengthM": 130.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-10-1-slub-bintik-wht-320cm",
+      "row": 392,
+      "collectionKey": "KYA",
+      "code": "KYA-10-1-SLUB-BINTIK-WHT-320CM",
+      "colourCode": "10-1 SLUB BINTIK WHT 320CM",
+      "colourName": "10-1 SLUB BINTIK WHT 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 82.6
+        },
+        {
+          "count": 1,
+          "lengthM": 86.4
+        },
+        {
+          "count": 1,
+          "lengthM": 86.6
+        },
+        {
+          "count": 1,
+          "lengthM": 97.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-11-1-voile-wht-330cm",
+      "row": 394,
+      "collectionKey": "KYA",
+      "code": "KYA-11-1-VOILE-WHT-330CM",
+      "colourCode": "11-1 VOILE WHT 330CM",
+      "colourName": "11-1 VOILE WHT 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 126.1
+        },
+        {
+          "count": 1,
+          "lengthM": 126.3
+        },
+        {
+          "count": 1,
+          "lengthM": 137.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-kya-11-2-voile-off-wht-330cm",
+      "row": 395,
+      "collectionKey": "KYA",
+      "code": "KYA-11-2-VOILE-OFF-WHT-330CM",
+      "colourCode": "11-2 VOILE OFF WHT 330CM",
+      "colourName": "11-2 VOILE OFF WHT 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63.5
+        },
+        {
+          "count": 2,
+          "lengthM": 65.1
+        },
+        {
+          "count": 1,
+          "lengthM": 65.6
+        },
+        {
+          "count": 1,
+          "lengthM": 69
+        },
+        {
+          "count": 1,
+          "lengthM": 73.1
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 76.1
+        },
+        {
+          "count": 1,
+          "lengthM": 76.3
+        },
+        {
+          "count": 1,
+          "lengthM": 77.1
+        },
+        {
+          "count": 1,
+          "lengthM": 78.1
+        },
+        {
+          "count": 1,
+          "lengthM": 81.1
+        },
+        {
+          "count": 1,
+          "lengthM": 83.1
+        },
+        {
+          "count": 1,
+          "lengthM": 105
+        },
+        {
+          "count": 1,
+          "lengthM": 106.2
+        },
+        {
+          "count": 1,
+          "lengthM": 116.8
+        },
+        {
+          "count": 1,
+          "lengthM": 117.8
+        },
+        {
+          "count": 1,
+          "lengthM": 127.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-1-1-320cm",
+      "row": 402,
+      "collectionKey": "MOWA",
+      "code": "MOWA-1-1-320CM",
+      "colourCode": "1-1 320CM",
+      "colourName": "1-1 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 40.1
+        },
+        {
+          "count": 1,
+          "lengthM": 41.6
+        },
+        {
+          "count": 2,
+          "lengthM": 41.9
+        },
+        {
+          "count": 1,
+          "lengthM": 42
+        },
+        {
+          "count": 1,
+          "lengthM": 42.3
+        },
+        {
+          "count": 1,
+          "lengthM": 42.9
+        },
+        {
+          "count": 2,
+          "lengthM": 43.1
+        },
+        {
+          "count": 1,
+          "lengthM": 44.4
+        },
+        {
+          "count": 1,
+          "lengthM": 74.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-1-2-320cm",
+      "row": 403,
+      "collectionKey": "MOWA",
+      "code": "MOWA-1-2-320CM",
+      "colourCode": "1-2 320CM",
+      "colourName": "1-2 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 39.3
+        },
+        {
+          "count": 1,
+          "lengthM": 41
+        },
+        {
+          "count": 1,
+          "lengthM": 41.3
+        },
+        {
+          "count": 1,
+          "lengthM": 41.4
+        },
+        {
+          "count": 1,
+          "lengthM": 42.3
+        },
+        {
+          "count": 1,
+          "lengthM": 42.7
+        },
+        {
+          "count": 1,
+          "lengthM": 43.6
+        },
+        {
+          "count": 1,
+          "lengthM": 52.9
+        },
+        {
+          "count": 1,
+          "lengthM": 53.1
+        },
+        {
+          "count": 1,
+          "lengthM": 54.7
+        },
+        {
+          "count": 1,
+          "lengthM": 73.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-6-1-320cm",
+      "row": 404,
+      "collectionKey": "MOWA",
+      "code": "MOWA-6-1-320CM",
+      "colourCode": "6-1 320CM",
+      "colourName": "6-1 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 42.5
+        },
+        {
+          "count": 1,
+          "lengthM": 42.7
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 50.3
+        },
+        {
+          "count": 2,
+          "lengthM": 50.4
+        },
+        {
+          "count": 1,
+          "lengthM": 51.2
+        },
+        {
+          "count": 1,
+          "lengthM": 51.3
+        },
+        {
+          "count": 1,
+          "lengthM": 51.5
+        },
+        {
+          "count": 1,
+          "lengthM": 52.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-6-2-320cm",
+      "row": 405,
+      "collectionKey": "MOWA",
+      "code": "MOWA-6-2-320CM",
+      "colourCode": "6-2 320CM",
+      "colourName": "6-2 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 47.1
+        },
+        {
+          "count": 1,
+          "lengthM": 48.4
+        },
+        {
+          "count": 1,
+          "lengthM": 49.2
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 50.1
+        },
+        {
+          "count": 1,
+          "lengthM": 50.7
+        },
+        {
+          "count": 1,
+          "lengthM": 52.1
+        },
+        {
+          "count": 1,
+          "lengthM": 53.8
+        },
+        {
+          "count": 1,
+          "lengthM": 63.1
+        },
+        {
+          "count": 1,
+          "lengthM": 63.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-9-2-360cm",
+      "row": 406,
+      "collectionKey": "MOWA",
+      "code": "MOWA-9-2-360CM",
+      "colourCode": "9-2 360CM",
+      "colourName": "9-2 360CM",
+      "widthCm": 360,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 66.1
+        },
+        {
+          "count": 1,
+          "lengthM": 66.3
+        },
+        {
+          "count": 1,
+          "lengthM": 66.4
+        },
+        {
+          "count": 1,
+          "lengthM": 67.5
+        },
+        {
+          "count": 1,
+          "lengthM": 68.1
+        },
+        {
+          "count": 1,
+          "lengthM": 68.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-3-1-340cm",
+      "row": 407,
+      "collectionKey": "MOWA",
+      "code": "MOWA-3-1-340CM",
+      "colourCode": "3-1 340CM",
+      "colourName": "3-1 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 33.4
+        },
+        {
+          "count": 1,
+          "lengthM": 39.7
+        },
+        {
+          "count": 1,
+          "lengthM": 41.8
+        },
+        {
+          "count": 1,
+          "lengthM": 41.9
+        },
+        {
+          "count": 1,
+          "lengthM": 42.1
+        },
+        {
+          "count": 1,
+          "lengthM": 43.3
+        },
+        {
+          "count": 1,
+          "lengthM": 43.4
+        },
+        {
+          "count": 1,
+          "lengthM": 43.8
+        },
+        {
+          "count": 1,
+          "lengthM": 44.2
+        },
+        {
+          "count": 1,
+          "lengthM": 44.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mowa-3-2-340cm",
+      "row": 408,
+      "collectionKey": "MOWA",
+      "code": "MOWA-3-2-340CM",
+      "colourCode": "3-2 340CM",
+      "colourName": "3-2 340CM",
+      "widthCm": 340,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 34.2
+        },
+        {
+          "count": 1,
+          "lengthM": 37.9
+        },
+        {
+          "count": 1,
+          "lengthM": 38.4
+        },
+        {
+          "count": 1,
+          "lengthM": 41
+        },
+        {
+          "count": 1,
+          "lengthM": 42.8
+        },
+        {
+          "count": 1,
+          "lengthM": 43.2
+        },
+        {
+          "count": 1,
+          "lengthM": 43.6
+        },
+        {
+          "count": 1,
+          "lengthM": 43.9
+        },
+        {
+          "count": 1,
+          "lengthM": 44.1
+        },
+        {
+          "count": 1,
+          "lengthM": 44.6
+        },
+        {
+          "count": 1,
+          "lengthM": 44.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-layla-a5",
+      "row": 414,
+      "collectionKey": "LAYLA",
+      "code": "LAYLA-A5",
+      "colourCode": "A5",
+      "colourName": "A5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 30.25
+        },
+        {
+          "count": 1,
+          "lengthM": 61.9
+        },
+        {
+          "count": 1,
+          "lengthM": 62.5
+        },
+        {
+          "count": 1,
+          "lengthM": 62.8
+        },
+        {
+          "count": 1,
+          "lengthM": 65.3
+        },
+        {
+          "count": 1,
+          "lengthM": 65.9
+        },
+        {
+          "count": 1,
+          "lengthM": 70.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-1-1-320-cm",
+      "row": 428,
+      "collectionKey": "LOELA",
+      "code": "LOELA-1-1-320-CM",
+      "colourCode": "1-1 320 CM",
+      "colourName": "1-1 320 CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.6
+        },
+        {
+          "count": 1,
+          "lengthM": 76.4
+        },
+        {
+          "count": 1,
+          "lengthM": 76.8
+        },
+        {
+          "count": 1,
+          "lengthM": 77.1
+        },
+        {
+          "count": 1,
+          "lengthM": 78.1
+        },
+        {
+          "count": 1,
+          "lengthM": 79.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-1-2-320-cm",
+      "row": 429,
+      "collectionKey": "LOELA",
+      "code": "LOELA-1-2-320-CM",
+      "colourCode": "1-2 320 CM",
+      "colourName": "1-2 320 CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69.8
+        },
+        {
+          "count": 1,
+          "lengthM": 74.4
+        },
+        {
+          "count": 1,
+          "lengthM": 75.9
+        },
+        {
+          "count": 2,
+          "lengthM": 77.2
+        },
+        {
+          "count": 1,
+          "lengthM": 77.6
+        },
+        {
+          "count": 1,
+          "lengthM": 79.4
+        },
+        {
+          "count": 1,
+          "lengthM": 79.5
+        },
+        {
+          "count": 1,
+          "lengthM": 80.2
+        },
+        {
+          "count": 1,
+          "lengthM": 80.7
+        },
+        {
+          "count": 1,
+          "lengthM": 81.1
+        },
+        {
+          "count": 1,
+          "lengthM": 81.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-2-1-320-cm",
+      "row": 430,
+      "collectionKey": "LOELA",
+      "code": "LOELA-2-1-320-CM",
+      "colourCode": "2-1 320 CM",
+      "colourName": "2-1 320 CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 52.9
+        },
+        {
+          "count": 1,
+          "lengthM": 99.7
+        },
+        {
+          "count": 1,
+          "lengthM": 102.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-2-2-320-cm",
+      "row": 431,
+      "collectionKey": "LOELA",
+      "code": "LOELA-2-2-320-CM",
+      "colourCode": "2-2 320 CM",
+      "colourName": "2-2 320 CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 92.8
+        },
+        {
+          "count": 1,
+          "lengthM": 103.9
+        },
+        {
+          "count": 1,
+          "lengthM": 105.8
+        },
+        {
+          "count": 1,
+          "lengthM": 107.1
+        },
+        {
+          "count": 1,
+          "lengthM": 108.1
+        },
+        {
+          "count": 1,
+          "lengthM": 109
+        },
+        {
+          "count": 1,
+          "lengthM": 109.6
+        },
+        {
+          "count": 1,
+          "lengthM": 110
+        },
+        {
+          "count": 1,
+          "lengthM": 110.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-3-1-320-cm",
+      "row": 432,
+      "collectionKey": "LOELA",
+      "code": "LOELA-3-1-320-CM",
+      "colourCode": "3-1 320 CM",
+      "colourName": "3-1 320 CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 117.5
+        },
+        {
+          "count": 1,
+          "lengthM": 120.1
+        },
+        {
+          "count": 1,
+          "lengthM": 121.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-3-2-320-cm",
+      "row": 433,
+      "collectionKey": "LOELA",
+      "code": "LOELA-3-2-320-CM",
+      "colourCode": "3-2 320 CM",
+      "colourName": "3-2 320 CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 106.2
+        },
+        {
+          "count": 1,
+          "lengthM": 109.6
+        },
+        {
+          "count": 1,
+          "lengthM": 110.6
+        },
+        {
+          "count": 1,
+          "lengthM": 110.7
+        },
+        {
+          "count": 1,
+          "lengthM": 111.9
+        },
+        {
+          "count": 1,
+          "lengthM": 112.7
+        },
+        {
+          "count": 1,
+          "lengthM": 114.5
+        },
+        {
+          "count": 1,
+          "lengthM": 116.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-4-1-300-cm",
+      "row": 434,
+      "collectionKey": "LOELA",
+      "code": "LOELA-4-1-300-CM",
+      "colourCode": "4-1 300 CM",
+      "colourName": "4-1 300 CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 100
+        },
+        {
+          "count": 1,
+          "lengthM": 100.7
+        },
+        {
+          "count": 1,
+          "lengthM": 104.2
+        },
+        {
+          "count": 1,
+          "lengthM": 107.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-4-2-300-cm",
+      "row": 435,
+      "collectionKey": "LOELA",
+      "code": "LOELA-4-2-300-CM",
+      "colourCode": "4-2 300 CM",
+      "colourName": "4-2 300 CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 54.4
+        },
+        {
+          "count": 1,
+          "lengthM": 59
+        },
+        {
+          "count": 2,
+          "lengthM": 59.2
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 60.1
+        },
+        {
+          "count": 1,
+          "lengthM": 60.7
+        },
+        {
+          "count": 1,
+          "lengthM": 82.5
+        },
+        {
+          "count": 1,
+          "lengthM": 84.5
+        },
+        {
+          "count": 1,
+          "lengthM": 112.5
+        },
+        {
+          "count": 1,
+          "lengthM": 117
+        },
+        {
+          "count": 1,
+          "lengthM": 121
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-5-1-300cm",
+      "row": 436,
+      "collectionKey": "LOELA",
+      "code": "LOELA-5-1-300CM",
+      "colourCode": "5-1 300CM",
+      "colourName": "5-1 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 96
+        },
+        {
+          "count": 1,
+          "lengthM": 96.3
+        },
+        {
+          "count": 1,
+          "lengthM": 119.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-5-2-300cm",
+      "row": 437,
+      "collectionKey": "LOELA",
+      "code": "LOELA-5-2-300CM",
+      "colourCode": "5-2 300CM",
+      "colourName": "5-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 107.5
+        },
+        {
+          "count": 1,
+          "lengthM": 113.8
+        },
+        {
+          "count": 1,
+          "lengthM": 115.4
+        },
+        {
+          "count": 1,
+          "lengthM": 115.8
+        },
+        {
+          "count": 1,
+          "lengthM": 119
+        },
+        {
+          "count": 1,
+          "lengthM": 119.2
+        },
+        {
+          "count": 1,
+          "lengthM": 122.2
+        },
+        {
+          "count": 1,
+          "lengthM": 123.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-6-1-320cm",
+      "row": 438,
+      "collectionKey": "LOELA",
+      "code": "LOELA-6-1-320CM",
+      "colourCode": "6-1 320CM",
+      "colourName": "6-1 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 83.8
+        },
+        {
+          "count": 1,
+          "lengthM": 97.5
+        },
+        {
+          "count": 1,
+          "lengthM": 99.3
+        },
+        {
+          "count": 1,
+          "lengthM": 110.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-6-2-320cm",
+      "row": 439,
+      "collectionKey": "LOELA",
+      "code": "LOELA-6-2-320CM",
+      "colourCode": "6-2 320CM",
+      "colourName": "6-2 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 92.1
+        },
+        {
+          "count": 1,
+          "lengthM": 92.8
+        },
+        {
+          "count": 1,
+          "lengthM": 98
+        },
+        {
+          "count": 1,
+          "lengthM": 98.1
+        },
+        {
+          "count": 1,
+          "lengthM": 99.3
+        },
+        {
+          "count": 1,
+          "lengthM": 100.8
+        },
+        {
+          "count": 1,
+          "lengthM": 101.7
+        },
+        {
+          "count": 1,
+          "lengthM": 104
+        },
+        {
+          "count": 1,
+          "lengthM": 110.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-7-1-300cm",
+      "row": 440,
+      "collectionKey": "LOELA",
+      "code": "LOELA-7-1-300CM",
+      "colourCode": "7-1 300CM",
+      "colourName": "7-1 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 46.1
+        },
+        {
+          "count": 1,
+          "lengthM": 46.7
+        },
+        {
+          "count": 1,
+          "lengthM": 47
+        },
+        {
+          "count": 1,
+          "lengthM": 47.2
+        },
+        {
+          "count": 1,
+          "lengthM": 51.4
+        },
+        {
+          "count": 1,
+          "lengthM": 51.7
+        },
+        {
+          "count": 1,
+          "lengthM": 53.2
+        },
+        {
+          "count": 1,
+          "lengthM": 55.5
+        },
+        {
+          "count": 1,
+          "lengthM": 55.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-7-2-300cm",
+      "row": 441,
+      "collectionKey": "LOELA",
+      "code": "LOELA-7-2-300CM",
+      "colourCode": "7-2 300CM",
+      "colourName": "7-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 46.2
+        },
+        {
+          "count": 1,
+          "lengthM": 46.3
+        },
+        {
+          "count": 1,
+          "lengthM": 47.6
+        },
+        {
+          "count": 2,
+          "lengthM": 48.1
+        },
+        {
+          "count": 1,
+          "lengthM": 48.5
+        },
+        {
+          "count": 1,
+          "lengthM": 48.6
+        },
+        {
+          "count": 1,
+          "lengthM": 48.8
+        },
+        {
+          "count": 2,
+          "lengthM": 49.2
+        },
+        {
+          "count": 1,
+          "lengthM": 49.3
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 4,
+          "lengthM": 50.1
+        },
+        {
+          "count": 1,
+          "lengthM": 50.2
+        },
+        {
+          "count": 1,
+          "lengthM": 52
+        },
+        {
+          "count": 1,
+          "lengthM": 56.1
+        },
+        {
+          "count": 1,
+          "lengthM": 66.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-8-1-300cm",
+      "row": 442,
+      "collectionKey": "LOELA",
+      "code": "LOELA-8-1-300CM",
+      "colourCode": "8-1 300CM",
+      "colourName": "8-1 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 93.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-8-2-300cm",
+      "row": 443,
+      "collectionKey": "LOELA",
+      "code": "LOELA-8-2-300CM",
+      "colourCode": "8-2 300CM",
+      "colourName": "8-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 90
+        },
+        {
+          "count": 1,
+          "lengthM": 97.6
+        },
+        {
+          "count": 1,
+          "lengthM": 98.9
+        },
+        {
+          "count": 1,
+          "lengthM": 99.2
+        },
+        {
+          "count": 1,
+          "lengthM": 100.2
+        },
+        {
+          "count": 1,
+          "lengthM": 100.3
+        },
+        {
+          "count": 1,
+          "lengthM": 100.4
+        },
+        {
+          "count": 1,
+          "lengthM": 100.6
+        },
+        {
+          "count": 1,
+          "lengthM": 101.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-9-1-300cm",
+      "row": 444,
+      "collectionKey": "LOELA",
+      "code": "LOELA-9-1-300CM",
+      "colourCode": "9-1 300CM",
+      "colourName": "9-1 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 107.5
+        },
+        {
+          "count": 1,
+          "lengthM": 113.7
+        },
+        {
+          "count": 1,
+          "lengthM": 119.6
+        },
+        {
+          "count": 1,
+          "lengthM": 130.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-9-2-300cm",
+      "row": 445,
+      "collectionKey": "LOELA",
+      "code": "LOELA-9-2-300CM",
+      "colourCode": "9-2 300CM",
+      "colourName": "9-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 111.8
+        },
+        {
+          "count": 1,
+          "lengthM": 112.7
+        },
+        {
+          "count": 2,
+          "lengthM": 113.8
+        },
+        {
+          "count": 1,
+          "lengthM": 116.1
+        },
+        {
+          "count": 1,
+          "lengthM": 119.4
+        },
+        {
+          "count": 1,
+          "lengthM": 126.8
+        },
+        {
+          "count": 1,
+          "lengthM": 130.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-10-2-300cm",
+      "row": 446,
+      "collectionKey": "LOELA",
+      "code": "LOELA-10-2-300CM",
+      "colourCode": "10-2 300CM",
+      "colourName": "10-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 91.7
+        },
+        {
+          "count": 1,
+          "lengthM": 97
+        },
+        {
+          "count": 1,
+          "lengthM": 97.6
+        },
+        {
+          "count": 1,
+          "lengthM": 97.7
+        },
+        {
+          "count": 1,
+          "lengthM": 98.2
+        },
+        {
+          "count": 1,
+          "lengthM": 98.5
+        },
+        {
+          "count": 1,
+          "lengthM": 100.7
+        },
+        {
+          "count": 2,
+          "lengthM": 101.3
+        },
+        {
+          "count": 1,
+          "lengthM": 102.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-11-2-300cm",
+      "row": 447,
+      "collectionKey": "LOELA",
+      "code": "LOELA-11-2-300CM",
+      "colourCode": "11-2 300CM",
+      "colourName": "11-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 55.2
+        },
+        {
+          "count": 1,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 56.1
+        },
+        {
+          "count": 1,
+          "lengthM": 56.3
+        },
+        {
+          "count": 2,
+          "lengthM": 56.4
+        },
+        {
+          "count": 1,
+          "lengthM": 56.9
+        },
+        {
+          "count": 1,
+          "lengthM": 57.1
+        },
+        {
+          "count": 1,
+          "lengthM": 59
+        },
+        {
+          "count": 1,
+          "lengthM": 62.4
+        },
+        {
+          "count": 1,
+          "lengthM": 64.7
+        },
+        {
+          "count": 1,
+          "lengthM": 99.4
+        },
+        {
+          "count": 1,
+          "lengthM": 113.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-loela-12-2-300cm",
+      "row": 448,
+      "collectionKey": "LOELA",
+      "code": "LOELA-12-2-300CM",
+      "colourCode": "12-2 300CM",
+      "colourName": "12-2 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 1,
+          "lengthM": 98.9
+        },
+        {
+          "count": 1,
+          "lengthM": 107.2
+        },
+        {
+          "count": 1,
+          "lengthM": 110.1
+        },
+        {
+          "count": 1,
+          "lengthM": 111.1
+        },
+        {
+          "count": 1,
+          "lengthM": 112.2
+        },
+        {
+          "count": 1,
+          "lengthM": 112.8
+        },
+        {
+          "count": 1,
+          "lengthM": 113.8
+        },
+        {
+          "count": 1,
+          "lengthM": 115
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-1",
+      "row": 452,
+      "collectionKey": "LUNA",
+      "code": "LUNA-1",
+      "colourCode": "1",
+      "colourName": "1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 1.5
+        },
+        {
+          "count": 1,
+          "lengthM": 40
+        },
+        {
+          "count": 1,
+          "lengthM": 43.6
+        },
+        {
+          "count": 1,
+          "lengthM": 48
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 51.2
+        },
+        {
+          "count": 1,
+          "lengthM": 51.8
+        },
+        {
+          "count": 1,
+          "lengthM": 55
+        },
+        {
+          "count": 1,
+          "lengthM": 55.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-2",
+      "row": 453,
+      "collectionKey": "LUNA",
+      "code": "LUNA-2",
+      "colourCode": "2",
+      "colourName": "2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 51
+        },
+        {
+          "count": 1,
+          "lengthM": 52
+        },
+        {
+          "count": 1,
+          "lengthM": 53
+        },
+        {
+          "count": 1,
+          "lengthM": 54
+        },
+        {
+          "count": 1,
+          "lengthM": 55
+        },
+        {
+          "count": 2,
+          "lengthM": 56
+        },
+        {
+          "count": 2,
+          "lengthM": 57
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-3",
+      "row": 454,
+      "collectionKey": "LUNA",
+      "code": "LUNA-3",
+      "colourCode": "3",
+      "colourName": "3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 3,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 57.5
+        },
+        {
+          "count": 1,
+          "lengthM": 58
+        },
+        {
+          "count": 1,
+          "lengthM": 63
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-4",
+      "row": 455,
+      "collectionKey": "LUNA",
+      "code": "LUNA-4",
+      "colourCode": "4",
+      "colourName": "4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 21.7
+        },
+        {
+          "count": 3,
+          "lengthM": 42
+        },
+        {
+          "count": 1,
+          "lengthM": 42.5
+        },
+        {
+          "count": 1,
+          "lengthM": 52
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-5",
+      "row": 456,
+      "collectionKey": "LUNA",
+      "code": "LUNA-5",
+      "colourCode": "5",
+      "colourName": "5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 13.55
+        },
+        {
+          "count": 1,
+          "lengthM": 48.7
+        },
+        {
+          "count": 1,
+          "lengthM": 50.8
+        },
+        {
+          "count": 1,
+          "lengthM": 53
+        },
+        {
+          "count": 1,
+          "lengthM": 53
+        },
+        {
+          "count": 1,
+          "lengthM": 56.5
+        },
+        {
+          "count": 1,
+          "lengthM": 56.6
+        },
+        {
+          "count": 2,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 57.3
+        },
+        {
+          "count": 1,
+          "lengthM": 58
+        },
+        {
+          "count": 1,
+          "lengthM": 58.5
+        },
+        {
+          "count": 1,
+          "lengthM": 58.6
+        },
+        {
+          "count": 1,
+          "lengthM": 77.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-6",
+      "row": 457,
+      "collectionKey": "LUNA",
+      "code": "LUNA-6",
+      "colourCode": "6",
+      "colourName": "6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-7",
+      "row": 458,
+      "collectionKey": "LUNA",
+      "code": "LUNA-7",
+      "colourCode": "7",
+      "colourName": "7",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 54
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-9",
+      "row": 460,
+      "collectionKey": "LUNA",
+      "code": "LUNA-9",
+      "colourCode": "9",
+      "colourName": "9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 56.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-10",
+      "row": 461,
+      "collectionKey": "LUNA",
+      "code": "LUNA-10",
+      "colourCode": "10",
+      "colourName": "10",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-11",
+      "row": 462,
+      "collectionKey": "LUNA",
+      "code": "LUNA-11",
+      "colourCode": "11",
+      "colourName": "11",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 55
+        },
+        {
+          "count": 3,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 57.3
+        },
+        {
+          "count": 1,
+          "lengthM": 57.7
+        },
+        {
+          "count": 1,
+          "lengthM": 58
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-a12",
+      "row": 474,
+      "collectionKey": "LUNA",
+      "code": "LUNA-A12",
+      "colourCode": "A12",
+      "colourName": "A12",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 58.5
+        },
+        {
+          "count": 1,
+          "lengthM": 66.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-a16",
+      "row": 475,
+      "collectionKey": "LUNA",
+      "code": "LUNA-A16",
+      "colourCode": "A16",
+      "colourName": "A16",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 58
+        },
+        {
+          "count": 3,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 76.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-luna-a18",
+      "row": 476,
+      "collectionKey": "LUNA",
+      "code": "LUNA-A18",
+      "colourCode": "A18",
+      "colourName": "A18",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 58
+        },
+        {
+          "count": 1,
+          "lengthM": 59
+        },
+        {
+          "count": 5,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-3",
+      "row": 483,
+      "collectionKey": "LYON",
+      "code": "LYON-3",
+      "colourCode": "3",
+      "colourName": "3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 68
+        },
+        {
+          "count": 1,
+          "lengthM": 78
+        },
+        {
+          "count": 1,
+          "lengthM": 84
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-4",
+      "row": 484,
+      "collectionKey": "LYON",
+      "code": "LYON-4",
+      "colourCode": "4",
+      "colourName": "4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-7",
+      "row": 487,
+      "collectionKey": "LYON",
+      "code": "LYON-7",
+      "colourCode": "7",
+      "colourName": "7",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 81
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-10",
+      "row": 489,
+      "collectionKey": "LYON",
+      "code": "LYON-10",
+      "colourCode": "10",
+      "colourName": "10",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 67
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 2,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-11",
+      "row": 490,
+      "collectionKey": "LYON",
+      "code": "LYON-11",
+      "colourCode": "11",
+      "colourName": "11",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-12",
+      "row": 491,
+      "collectionKey": "LYON",
+      "code": "LYON-12",
+      "colourCode": "12",
+      "colourName": "12",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 2.2
+        },
+        {
+          "count": 1,
+          "lengthM": 5.8
+        },
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 85
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-13",
+      "row": 492,
+      "collectionKey": "LYON",
+      "code": "LYON-13",
+      "colourCode": "13",
+      "colourName": "13",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 78
+        },
+        {
+          "count": 2,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-14",
+      "row": 493,
+      "collectionKey": "LYON",
+      "code": "LYON-14",
+      "colourCode": "14",
+      "colourName": "14",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 68
+        },
+        {
+          "count": 1,
+          "lengthM": 79
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-15",
+      "row": 494,
+      "collectionKey": "LYON",
+      "code": "LYON-15",
+      "colourCode": "15",
+      "colourName": "15",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 58
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 4,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-lyon-16",
+      "row": 495,
+      "collectionKey": "LYON",
+      "code": "LYON-16",
+      "colourCode": "16",
+      "colourName": "16",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 67
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 3,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-a2-cream-abu",
+      "row": 500,
+      "collectionKey": "MAIA",
+      "code": "MAIA-A2-CREAM-ABU",
+      "colourCode": "A2 CREAM ABU",
+      "colourName": "A2 CREAM ABU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 72
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-a3-coklat-abu",
+      "row": 501,
+      "collectionKey": "MAIA",
+      "code": "MAIA-A3-COKLAT-ABU",
+      "colourCode": "A3 COKLAT ABU",
+      "colourName": "A3 COKLAT ABU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 68
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 1,
+          "lengthM": 72.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-a4-abu-silver",
+      "row": 502,
+      "collectionKey": "MAIA",
+      "code": "MAIA-A4-ABU-SILVER",
+      "colourCode": "A4 ABU SILVER",
+      "colourName": "A4 ABU SILVER",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 70.6
+        },
+        {
+          "count": 1,
+          "lengthM": 71.1
+        },
+        {
+          "count": 1,
+          "lengthM": 75.5
+        },
+        {
+          "count": 1,
+          "lengthM": 76.3
+        },
+        {
+          "count": 1,
+          "lengthM": 76.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-a5-abu-muda",
+      "row": 503,
+      "collectionKey": "MAIA",
+      "code": "MAIA-A5-ABU-MUDA",
+      "colourCode": "A5 ABU MUDA",
+      "colourName": "A5 ABU MUDA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 51.5
+        },
+        {
+          "count": 1,
+          "lengthM": 54
+        },
+        {
+          "count": 1,
+          "lengthM": 76.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-b1-cream",
+      "row": 506,
+      "collectionKey": "MAIA",
+      "code": "MAIA-B1-CREAM",
+      "colourCode": "B1 CREAM",
+      "colourName": "B1 CREAM",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69
+        },
+        {
+          "count": 1,
+          "lengthM": 73.5
+        },
+        {
+          "count": 2,
+          "lengthM": 76
+        },
+        {
+          "count": 1,
+          "lengthM": 76.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-b3-ungu-coklat",
+      "row": 508,
+      "collectionKey": "MAIA",
+      "code": "MAIA-B3-UNGU-COKLAT",
+      "colourCode": "B3 UNGU COKLAT",
+      "colourName": "B3 UNGU COKLAT",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 47
+        },
+        {
+          "count": 1,
+          "lengthM": 47.8
+        },
+        {
+          "count": 1,
+          "lengthM": 48
+        },
+        {
+          "count": 1,
+          "lengthM": 48.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-b4-abu-muda",
+      "row": 509,
+      "collectionKey": "MAIA",
+      "code": "MAIA-B4-ABU-MUDA",
+      "colourCode": "B4 ABU MUDA",
+      "colourName": "B4 ABU MUDA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 40.8
+        },
+        {
+          "count": 1,
+          "lengthM": 40.9
+        },
+        {
+          "count": 1,
+          "lengthM": 43
+        },
+        {
+          "count": 1,
+          "lengthM": 43.5
+        },
+        {
+          "count": 1,
+          "lengthM": 63
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maia-b5-abu-tua",
+      "row": 510,
+      "collectionKey": "MAIA",
+      "code": "MAIA-B5-ABU-TUA",
+      "colourCode": "B5 ABU TUA",
+      "colourName": "B5 ABU TUA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 78
+        },
+        {
+          "count": 1,
+          "lengthM": 78.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-a1-cream-khaki",
+      "row": 530,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-A1-CREAM-KHAKI",
+      "colourCode": "A1 CREAM KHAKI",
+      "colourName": "A1 CREAM KHAKI",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 77
+        },
+        {
+          "count": 1,
+          "lengthM": 83
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-a3-coklat-abu",
+      "row": 532,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-A3-COKLAT-ABU",
+      "colourCode": "A3 COKLAT ABU",
+      "colourName": "A3 COKLAT ABU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 67.6
+        },
+        {
+          "count": 1,
+          "lengthM": 67.7
+        },
+        {
+          "count": 1,
+          "lengthM": 74.3
+        },
+        {
+          "count": 1,
+          "lengthM": 78.5
+        },
+        {
+          "count": 1,
+          "lengthM": 78.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-a4-abu-silver",
+      "row": 533,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-A4-ABU-SILVER",
+      "colourCode": "A4 ABU SILVER",
+      "colourName": "A4 ABU SILVER",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 67.5
+        },
+        {
+          "count": 1,
+          "lengthM": 68.1
+        },
+        {
+          "count": 1,
+          "lengthM": 74.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b1-cream",
+      "row": 536,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B1-CREAM",
+      "colourCode": "B1 CREAM",
+      "colourName": "B1 CREAM",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.8
+        },
+        {
+          "count": 1,
+          "lengthM": 76
+        },
+        {
+          "count": 1,
+          "lengthM": 77
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b2-coklat-susu",
+      "row": 537,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B2-COKLAT-SUSU",
+      "colourCode": "B2 COKLAT SUSU",
+      "colourName": "B2 COKLAT SUSU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 65.5
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 71.3
+        },
+        {
+          "count": 1,
+          "lengthM": 72.1
+        },
+        {
+          "count": 1,
+          "lengthM": 72.4
+        },
+        {
+          "count": 1,
+          "lengthM": 73.4
+        },
+        {
+          "count": 1,
+          "lengthM": 74.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b3-ungu-coklat",
+      "row": 538,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B3-UNGU-COKLAT",
+      "colourCode": "B3 UNGU COKLAT",
+      "colourName": "B3 UNGU COKLAT",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 72.2
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 74.5
+        },
+        {
+          "count": 1,
+          "lengthM": 76
+        },
+        {
+          "count": 2,
+          "lengthM": 78.5
+        },
+        {
+          "count": 1,
+          "lengthM": 79.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b4-abu-muda",
+      "row": 539,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B4-ABU-MUDA",
+      "colourCode": "B4 ABU MUDA",
+      "colourName": "B4 ABU MUDA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 47.8
+        },
+        {
+          "count": 1,
+          "lengthM": 64.3
+        },
+        {
+          "count": 1,
+          "lengthM": 66.7
+        },
+        {
+          "count": 1,
+          "lengthM": 68.7
+        },
+        {
+          "count": 1,
+          "lengthM": 73.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b5-abu-tua",
+      "row": 540,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B5-ABU-TUA",
+      "colourCode": "B5 ABU TUA",
+      "colourName": "B5 ABU TUA",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 58.5
+        },
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 68.5
+        },
+        {
+          "count": 1,
+          "lengthM": 72.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b6-off-white",
+      "row": 541,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B6-OFF-WHITE",
+      "colourCode": "B6 OFF WHITE",
+      "colourName": "B6 OFF WHITE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.2
+        },
+        {
+          "count": 1,
+          "lengthM": 75.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b7-pink",
+      "row": 542,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B7-PINK",
+      "colourCode": "B7 PINK",
+      "colourName": "B7 PINK",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-maudy-b8-hijau",
+      "row": 543,
+      "collectionKey": "MAUDY",
+      "code": "MAUDY-B8-HIJAU",
+      "colourCode": "B8 HIJAU",
+      "colourName": "B8 HIJAU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 75.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-medical-a1",
+      "row": 547,
+      "collectionKey": "MEDICAL",
+      "code": "MEDICAL-A1",
+      "colourCode": "A1",
+      "colourName": "A1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 4.1
+        },
+        {
+          "count": 2,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 61
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 62.6
+        },
+        {
+          "count": 1,
+          "lengthM": 63.9
+        },
+        {
+          "count": 1,
+          "lengthM": 66.5
+        },
+        {
+          "count": 1,
+          "lengthM": 67
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-medical-a2",
+      "row": 548,
+      "collectionKey": "MEDICAL",
+      "code": "MEDICAL-A2",
+      "colourCode": "A2",
+      "colourName": "A2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 21
+        },
+        {
+          "count": 1,
+          "lengthM": 51
+        },
+        {
+          "count": 1,
+          "lengthM": 55
+        },
+        {
+          "count": 1,
+          "lengthM": 58
+        },
+        {
+          "count": 1,
+          "lengthM": 59.5
+        },
+        {
+          "count": 1,
+          "lengthM": 60.3
+        },
+        {
+          "count": 1,
+          "lengthM": 65.1
+        },
+        {
+          "count": 2,
+          "lengthM": 67.2
+        },
+        {
+          "count": 1,
+          "lengthM": 68.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-medical-a3",
+      "row": 549,
+      "collectionKey": "MEDICAL",
+      "code": "MEDICAL-A3",
+      "colourCode": "A3",
+      "colourName": "A3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 5.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-medical-a4",
+      "row": 550,
+      "collectionKey": "MEDICAL",
+      "code": "MEDICAL-A4",
+      "colourCode": "A4",
+      "colourName": "A4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 39.2
+        },
+        {
+          "count": 1,
+          "lengthM": 52.5
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 61
+        },
+        {
+          "count": 1,
+          "lengthM": 67
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-medical-b1",
+      "row": 551,
+      "collectionKey": "MEDICAL",
+      "code": "MEDICAL-B1",
+      "colourCode": "B1",
+      "colourName": "B1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 9.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-medical-b4",
+      "row": 554,
+      "collectionKey": "MEDICAL",
+      "code": "MEDICAL-B4",
+      "colourCode": "B4",
+      "colourName": "B4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 47
+        },
+        {
+          "count": 1,
+          "lengthM": 90.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-4",
+      "row": 564,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-4",
+      "colourCode": "4",
+      "colourName": "4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 3,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-5",
+      "row": 565,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-5",
+      "colourCode": "5",
+      "colourName": "5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-6",
+      "row": 566,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-6",
+      "colourCode": "6",
+      "colourName": "6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69
+        },
+        {
+          "count": 1,
+          "lengthM": 77
+        },
+        {
+          "count": 4,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-7",
+      "row": 567,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-7",
+      "colourCode": "7",
+      "colourName": "7",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 37.32
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-11-2",
+      "row": 571,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-11-2",
+      "colourCode": "11-2",
+      "colourName": "11-2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 77
+        },
+        {
+          "count": 1,
+          "lengthM": 78
+        },
+        {
+          "count": 2,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-28",
+      "row": 583,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-28",
+      "colourCode": "28",
+      "colourName": "28",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 2,
+          "lengthM": 65
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        },
+        {
+          "count": 3,
+          "lengthM": 80
+        },
+        {
+          "count": 2,
+          "lengthM": 88
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-30",
+      "row": 584,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-30",
+      "colourCode": "30",
+      "colourName": "30",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-31",
+      "row": 585,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-31",
+      "colourCode": "31",
+      "colourName": "31",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 4,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-32",
+      "row": 586,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-32",
+      "colourCode": "32",
+      "colourName": "32",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 67
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        },
+        {
+          "count": 1,
+          "lengthM": 77
+        },
+        {
+          "count": 8,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 2,
+          "lengthM": 82
+        },
+        {
+          "count": 1,
+          "lengthM": 83
+        },
+        {
+          "count": 1,
+          "lengthM": 84
+        },
+        {
+          "count": 1,
+          "lengthM": 85
+        },
+        {
+          "count": 1,
+          "lengthM": 86
+        },
+        {
+          "count": 1,
+          "lengthM": 88
+        },
+        {
+          "count": 1,
+          "lengthM": 90
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-33",
+      "row": 587,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-33",
+      "colourCode": "33",
+      "colourName": "33",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 48
+        },
+        {
+          "count": 1,
+          "lengthM": 59
+        },
+        {
+          "count": 1,
+          "lengthM": 61
+        },
+        {
+          "count": 1,
+          "lengthM": 63
+        },
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 85
+        },
+        {
+          "count": 1,
+          "lengthM": 87
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-35",
+      "row": 588,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-35",
+      "colourCode": "35",
+      "colourName": "35",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        },
+        {
+          "count": 7,
+          "lengthM": 80
+        },
+        {
+          "count": 2,
+          "lengthM": 97
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-36",
+      "row": 589,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-36",
+      "colourCode": "36",
+      "colourName": "36",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 49
+        },
+        {
+          "count": 1,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 59
+        },
+        {
+          "count": 1,
+          "lengthM": 65
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 2,
+          "lengthM": 79
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 81
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-37",
+      "row": 590,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-37",
+      "colourCode": "37",
+      "colourName": "37",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 78
+        },
+        {
+          "count": 5,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 99
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-38",
+      "row": 591,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-38",
+      "colourCode": "38",
+      "colourName": "38",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 88
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-mirage-39",
+      "row": 592,
+      "collectionKey": "MIRAGE",
+      "code": "MIRAGE-39",
+      "colourCode": "39",
+      "colourName": "39",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 65
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 2,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 85
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-natura-a3",
+      "row": 601,
+      "collectionKey": "NATURA",
+      "code": "NATURA-A3",
+      "colourCode": "A3",
+      "colourName": "A3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 51.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-nuflex-blue",
+      "row": 615,
+      "collectionKey": "NUFLEX",
+      "code": "NUFLEX-BLUE",
+      "colourCode": "BLUE",
+      "colourName": "BLUE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 33,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-nuflex-green",
+      "row": 616,
+      "collectionKey": "NUFLEX",
+      "code": "NUFLEX-GREEN",
+      "colourCode": "GREEN",
+      "colourName": "GREEN",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 42,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-nuflex-cream",
+      "row": 617,
+      "collectionKey": "NUFLEX",
+      "code": "NUFLEX-CREAM",
+      "colourCode": "CREAM",
+      "colourName": "CREAM",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 61,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-nuflex-grey",
+      "row": 618,
+      "collectionKey": "NUFLEX",
+      "code": "NUFLEX-GREY",
+      "colourCode": "GREY",
+      "colourName": "GREY",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 24,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-organics-b6",
+      "row": 636,
+      "collectionKey": "ORGANICS",
+      "code": "ORGANICS-B6",
+      "colourCode": "B6",
+      "colourName": "B6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 57
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-pandora-a5",
+      "row": 667,
+      "collectionKey": "PANDORA",
+      "code": "PANDORA-A5",
+      "colourCode": "A5",
+      "colourName": "A5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 26.9
+        },
+        {
+          "count": 2,
+          "lengthM": 80.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-pandora-a6",
+      "row": 668,
+      "collectionKey": "PANDORA",
+      "code": "PANDORA-A6",
+      "colourCode": "A6",
+      "colourName": "A6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 11.8
+        },
+        {
+          "count": 1,
+          "lengthM": 78.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-pandora-b5",
+      "row": 674,
+      "collectionKey": "PANDORA",
+      "code": "PANDORA-B5",
+      "colourCode": "B5",
+      "colourName": "B5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 55.9
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-pandora-b6",
+      "row": 675,
+      "collectionKey": "PANDORA",
+      "code": "PANDORA-B6",
+      "colourCode": "B6",
+      "colourName": "B6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 52.9
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a1",
+      "row": 697,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A1",
+      "colourCode": "A1",
+      "colourName": "A1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 68
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a2",
+      "row": 698,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A2",
+      "colourCode": "A2",
+      "colourName": "A2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 4,
+          "lengthM": 65
+        },
+        {
+          "count": 2,
+          "lengthM": 66
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a4",
+      "row": 700,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A4",
+      "colourCode": "A4",
+      "colourName": "A4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a5",
+      "row": 701,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A5",
+      "colourCode": "A5",
+      "colourName": "A5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 66
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a6",
+      "row": 702,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A6",
+      "colourCode": "A6",
+      "colourName": "A6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 64.5
+        },
+        {
+          "count": 2,
+          "lengthM": 66
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a7",
+      "row": 703,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A7",
+      "colourCode": "A7",
+      "colourName": "A7",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 63
+        },
+        {
+          "count": 1,
+          "lengthM": 67.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-a8",
+      "row": 704,
+      "collectionKey": "PORTA",
+      "code": "PORTA-A8",
+      "colourCode": "A8",
+      "colourName": "A8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 61.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-b2",
+      "row": 706,
+      "collectionKey": "PORTA",
+      "code": "PORTA-B2",
+      "colourCode": "B2",
+      "colourName": "B2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63
+        },
+        {
+          "count": 1,
+          "lengthM": 63.5
+        },
+        {
+          "count": 1,
+          "lengthM": 69
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-b4",
+      "row": 708,
+      "collectionKey": "PORTA",
+      "code": "PORTA-B4",
+      "colourCode": "B4",
+      "colourName": "B4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 61
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-b5",
+      "row": 709,
+      "collectionKey": "PORTA",
+      "code": "PORTA-B5",
+      "colourCode": "B5",
+      "colourName": "B5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 66
+        },
+        {
+          "count": 2,
+          "lengthM": 69
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-b6",
+      "row": 710,
+      "collectionKey": "PORTA",
+      "code": "PORTA-B6",
+      "colourCode": "B6",
+      "colourName": "B6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 65
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-b7",
+      "row": 711,
+      "collectionKey": "PORTA",
+      "code": "PORTA-B7",
+      "colourCode": "B7",
+      "colourName": "B7",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 67.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-porta-b8",
+      "row": 712,
+      "collectionKey": "PORTA",
+      "code": "PORTA-B8",
+      "colourCode": "B8",
+      "colourName": "B8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 64.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-1",
+      "row": 716,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-1",
+      "colourCode": "1",
+      "colourName": "1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.8
+        },
+        {
+          "count": 2,
+          "lengthM": 74.9
+        },
+        {
+          "count": 1,
+          "lengthM": 75.2
+        },
+        {
+          "count": 1,
+          "lengthM": 75.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-2",
+      "row": 717,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-2",
+      "colourCode": "2",
+      "colourName": "2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 72.8
+        },
+        {
+          "count": 2,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 73.2
+        },
+        {
+          "count": 1,
+          "lengthM": 73.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-4",
+      "row": 719,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-4",
+      "colourCode": "4",
+      "colourName": "4",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69.7
+        },
+        {
+          "count": 1,
+          "lengthM": 70.4
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        },
+        {
+          "count": 2,
+          "lengthM": 71.2
+        },
+        {
+          "count": 1,
+          "lengthM": 71.8
+        },
+        {
+          "count": 1,
+          "lengthM": 72.1
+        },
+        {
+          "count": 1,
+          "lengthM": 73.6
+        },
+        {
+          "count": 1,
+          "lengthM": 74.5
+        },
+        {
+          "count": 1,
+          "lengthM": 74.6
+        },
+        {
+          "count": 1,
+          "lengthM": 75.2
+        },
+        {
+          "count": 1,
+          "lengthM": 75.7
+        },
+        {
+          "count": 1,
+          "lengthM": 77
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-5",
+      "row": 720,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-5",
+      "colourCode": "5",
+      "colourName": "5",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 71.3
+        },
+        {
+          "count": 1,
+          "lengthM": 71.5
+        },
+        {
+          "count": 1,
+          "lengthM": 71.6
+        },
+        {
+          "count": 1,
+          "lengthM": 71.8
+        },
+        {
+          "count": 1,
+          "lengthM": 72.2
+        },
+        {
+          "count": 1,
+          "lengthM": 72.4
+        },
+        {
+          "count": 1,
+          "lengthM": 72.5
+        },
+        {
+          "count": 1,
+          "lengthM": 72.7
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 73.2
+        },
+        {
+          "count": 2,
+          "lengthM": 73.4
+        },
+        {
+          "count": 1,
+          "lengthM": 73.5
+        },
+        {
+          "count": 1,
+          "lengthM": 74.3
+        },
+        {
+          "count": 1,
+          "lengthM": 74.4
+        },
+        {
+          "count": 1,
+          "lengthM": 75.1
+        },
+        {
+          "count": 1,
+          "lengthM": 76.5
+        },
+        {
+          "count": 1,
+          "lengthM": 76.7
+        },
+        {
+          "count": 1,
+          "lengthM": 77
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-6",
+      "row": 721,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-6",
+      "colourCode": "6",
+      "colourName": "6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 72.5
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 73.8
+        },
+        {
+          "count": 1,
+          "lengthM": 73.9
+        },
+        {
+          "count": 1,
+          "lengthM": 74.2
+        },
+        {
+          "count": 3,
+          "lengthM": 74.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-7",
+      "row": 722,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-7",
+      "colourCode": "7",
+      "colourName": "7",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 73.9
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 74.1
+        },
+        {
+          "count": 2,
+          "lengthM": 74.2
+        },
+        {
+          "count": 1,
+          "lengthM": 74.4
+        },
+        {
+          "count": 1,
+          "lengthM": 74.5
+        },
+        {
+          "count": 1,
+          "lengthM": 74.6
+        },
+        {
+          "count": 1,
+          "lengthM": 74.8
+        },
+        {
+          "count": 1,
+          "lengthM": 75
+        },
+        {
+          "count": 1,
+          "lengthM": 75.2
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-8",
+      "row": 723,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-8",
+      "colourCode": "8",
+      "colourName": "8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 71.8
+        },
+        {
+          "count": 1,
+          "lengthM": 71.9
+        },
+        {
+          "count": 1,
+          "lengthM": 72.3
+        },
+        {
+          "count": 1,
+          "lengthM": 72.4
+        },
+        {
+          "count": 1,
+          "lengthM": 72.7
+        },
+        {
+          "count": 1,
+          "lengthM": 72.8
+        },
+        {
+          "count": 1,
+          "lengthM": 73.1
+        },
+        {
+          "count": 1,
+          "lengthM": 73.2
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 74.5
+        },
+        {
+          "count": 1,
+          "lengthM": 74.6
+        },
+        {
+          "count": 1,
+          "lengthM": 75.7
+        },
+        {
+          "count": 1,
+          "lengthM": 76.3
+        },
+        {
+          "count": 1,
+          "lengthM": 76.5
+        },
+        {
+          "count": 1,
+          "lengthM": 76.7
+        },
+        {
+          "count": 1,
+          "lengthM": 76.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-10",
+      "row": 725,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-10",
+      "colourCode": "10",
+      "colourName": "10",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63.2
+        },
+        {
+          "count": 1,
+          "lengthM": 63.3
+        },
+        {
+          "count": 1,
+          "lengthM": 63.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-11",
+      "row": 726,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-11",
+      "colourCode": "11",
+      "colourName": "11",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 73.2
+        },
+        {
+          "count": 1,
+          "lengthM": 73.3
+        },
+        {
+          "count": 1,
+          "lengthM": 73.8
+        },
+        {
+          "count": 3,
+          "lengthM": 74.1
+        },
+        {
+          "count": 2,
+          "lengthM": 74.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-premium-12",
+      "row": 727,
+      "collectionKey": "PREMIUM",
+      "code": "PREMIUM-12",
+      "colourCode": "12",
+      "colourName": "12",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 73.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-green",
+      "row": 734,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-GREEN",
+      "colourCode": "GREEN",
+      "colourName": "GREEN",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 98,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-blue",
+      "row": 735,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-BLUE",
+      "colourCode": "BLUE",
+      "colourName": "BLUE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 31,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-beige",
+      "row": 737,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-BEIGE",
+      "colourCode": "BEIGE",
+      "colourName": "BEIGE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 4,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-citrus",
+      "row": 738,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-CITRUS",
+      "colourCode": "CITRUS",
+      "colourName": "CITRUS",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 26,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-cream",
+      "row": 739,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-CREAM",
+      "colourCode": "CREAM",
+      "colourName": "CREAM",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 31,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-sand",
+      "row": 740,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-SAND",
+      "colourCode": "SAND",
+      "colourName": "SAND",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 14,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-white",
+      "row": 741,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-WHITE",
+      "colourCode": "WHITE",
+      "colourName": "WHITE",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 23,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-grey",
+      "row": 742,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-GREY",
+      "colourCode": "GREY",
+      "colourName": "GREY",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 34
+        },
+        {
+          "count": 27,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-mink",
+      "row": 743,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-MINK",
+      "colourCode": "MINK",
+      "colourName": "MINK",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 48,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-proflex-warna-baru",
+      "row": 744,
+      "collectionKey": "PROFLEX",
+      "code": "PROFLEX-WARNA-BARU",
+      "colourCode": "WARNA BARU",
+      "colourName": "WARNA BARU",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 300
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-6",
+      "row": 749,
+      "collectionKey": "QUIN",
+      "code": "QUIN-6",
+      "colourCode": "6",
+      "colourName": "6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63
+        },
+        {
+          "count": 1,
+          "lengthM": 68
+        },
+        {
+          "count": 1,
+          "lengthM": 69
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-8",
+      "row": 750,
+      "collectionKey": "QUIN",
+      "code": "QUIN-8",
+      "colourCode": "8",
+      "colourName": "8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-13",
+      "row": 754,
+      "collectionKey": "QUIN",
+      "code": "QUIN-13",
+      "colourCode": "13",
+      "colourName": "13",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 90
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-15",
+      "row": 756,
+      "collectionKey": "QUIN",
+      "code": "QUIN-15",
+      "colourCode": "15",
+      "colourName": "15",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 78
+        },
+        {
+          "count": 1,
+          "lengthM": 88
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-21",
+      "row": 759,
+      "collectionKey": "QUIN",
+      "code": "QUIN-21",
+      "colourCode": "21",
+      "colourName": "21",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 71
+        },
+        {
+          "count": 2,
+          "lengthM": 75
+        },
+        {
+          "count": 1,
+          "lengthM": 76
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-25",
+      "row": 760,
+      "collectionKey": "QUIN",
+      "code": "QUIN-25",
+      "colourCode": "25",
+      "colourName": "25",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        },
+        {
+          "count": 1,
+          "lengthM": 74
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-26",
+      "row": 761,
+      "collectionKey": "QUIN",
+      "code": "QUIN-26",
+      "colourCode": "26",
+      "colourName": "26",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 38.5
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 83
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-27",
+      "row": 762,
+      "collectionKey": "QUIN",
+      "code": "QUIN-27",
+      "colourCode": "27",
+      "colourName": "27",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 43.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-28",
+      "row": 763,
+      "collectionKey": "QUIN",
+      "code": "QUIN-28",
+      "colourCode": "28",
+      "colourName": "28",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 39.95
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-a1",
+      "row": 764,
+      "collectionKey": "QUIN",
+      "code": "QUIN-A1",
+      "colourCode": "A1",
+      "colourName": "A1",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 67
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 81
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-a2",
+      "row": 765,
+      "collectionKey": "QUIN",
+      "code": "QUIN-A2",
+      "colourCode": "A2",
+      "colourName": "A2",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 52
+        },
+        {
+          "count": 1,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 75
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-a3",
+      "row": 766,
+      "collectionKey": "QUIN",
+      "code": "QUIN-A3",
+      "colourCode": "A3",
+      "colourName": "A3",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 2,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 61
+        },
+        {
+          "count": 1,
+          "lengthM": 63
+        },
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 68
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        },
+        {
+          "count": 1,
+          "lengthM": 71
+        },
+        {
+          "count": 1,
+          "lengthM": 79
+        },
+        {
+          "count": 3,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-a9",
+      "row": 772,
+      "collectionKey": "QUIN",
+      "code": "QUIN-A9",
+      "colourCode": "A9",
+      "colourName": "A9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-quin-a10",
+      "row": 773,
+      "collectionKey": "QUIN",
+      "code": "QUIN-A10",
+      "colourCode": "A10",
+      "colourName": "A10",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 57
+        },
+        {
+          "count": 1,
+          "lengthM": 60
+        },
+        {
+          "count": 2,
+          "lengthM": 62
+        },
+        {
+          "count": 2,
+          "lengthM": 63
+        },
+        {
+          "count": 2,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 65
+        },
+        {
+          "count": 1,
+          "lengthM": 66
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 80
+        },
+        {
+          "count": 1,
+          "lengthM": 85
+        },
+        {
+          "count": 1,
+          "lengthM": 95
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-raine-8",
+      "row": 788,
+      "collectionKey": "RAINE",
+      "code": "RAINE-8",
+      "colourCode": "8",
+      "colourName": "8",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 41
+        },
+        {
+          "count": 1,
+          "lengthM": 47.2
+        },
+        {
+          "count": 1,
+          "lengthM": 47.5
+        },
+        {
+          "count": 1,
+          "lengthM": 50
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-1-1-garis-abu-330cm",
+      "row": 808,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-1-1-GARIS-ABU-330CM",
+      "colourCode": "1-1 GARIS ABU 330CM",
+      "colourName": "1-1 GARIS ABU 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 98
+        },
+        {
+          "count": 1,
+          "lengthM": 102.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-1-2-garis-cream-330cm",
+      "row": 809,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-1-2-GARIS-CREAM-330CM",
+      "colourCode": "1-2 GARIS CREAM 330CM",
+      "colourName": "1-2 GARIS CREAM 330CM",
+      "widthCm": 330,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 54
+        },
+        {
+          "count": 1,
+          "lengthM": 54.7
+        },
+        {
+          "count": 1,
+          "lengthM": 54.9
+        },
+        {
+          "count": 1,
+          "lengthM": 93.8
+        },
+        {
+          "count": 1,
+          "lengthM": 101.2
+        },
+        {
+          "count": 1,
+          "lengthM": 102.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-2-1-linen-tebal-abu-300cm",
+      "row": 812,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-2-1-LINEN-TEBAL-ABU-300CM",
+      "colourCode": "2-1 LINEN TEBAL ABU 300CM",
+      "colourName": "2-1 LINEN TEBAL ABU 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 59
+        },
+        {
+          "count": 1,
+          "lengthM": 70.1
+        },
+        {
+          "count": 1,
+          "lengthM": 75
+        },
+        {
+          "count": 1,
+          "lengthM": 76.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-2-2-linen-off-wht-300cm",
+      "row": 813,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-2-2-LINEN-OFF-WHT-300CM",
+      "colourCode": "2-2 LINEN OFF WHT 300CM",
+      "colourName": "2-2 LINEN OFF WHT 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 63.5
+        },
+        {
+          "count": 1,
+          "lengthM": 63.8
+        },
+        {
+          "count": 1,
+          "lengthM": 64.6
+        },
+        {
+          "count": 1,
+          "lengthM": 65.1
+        },
+        {
+          "count": 1,
+          "lengthM": 67.5
+        },
+        {
+          "count": 1,
+          "lengthM": 68.1
+        },
+        {
+          "count": 1,
+          "lengthM": 70.2
+        },
+        {
+          "count": 1,
+          "lengthM": 70.5
+        },
+        {
+          "count": 1,
+          "lengthM": 72.1
+        },
+        {
+          "count": 1,
+          "lengthM": 73.7
+        },
+        {
+          "count": 1,
+          "lengthM": 74.4
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-2-4-linen-tebal-natural-300cm",
+      "row": 815,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-2-4-LINEN-TEBAL-NATURAL-300CM",
+      "colourCode": "2-4 LINEN TEBAL NATURAL 300CM",
+      "colourName": "2-4 LINEN TEBAL NATURAL 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 38.2
+        },
+        {
+          "count": 1,
+          "lengthM": 39.8
+        },
+        {
+          "count": 1,
+          "lengthM": 59.7
+        },
+        {
+          "count": 1,
+          "lengthM": 61.6
+        },
+        {
+          "count": 1,
+          "lengthM": 62.8
+        },
+        {
+          "count": 1,
+          "lengthM": 63.4
+        },
+        {
+          "count": 1,
+          "lengthM": 63.5
+        },
+        {
+          "count": 1,
+          "lengthM": 63.6
+        },
+        {
+          "count": 2,
+          "lengthM": 63.7
+        },
+        {
+          "count": 1,
+          "lengthM": 63.9
+        },
+        {
+          "count": 1,
+          "lengthM": 64
+        },
+        {
+          "count": 1,
+          "lengthM": 64.2
+        },
+        {
+          "count": 2,
+          "lengthM": 64.6
+        },
+        {
+          "count": 1,
+          "lengthM": 65.1
+        },
+        {
+          "count": 1,
+          "lengthM": 65.3
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-3-net-natural-300cm",
+      "row": 816,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-3-NET-NATURAL-300CM",
+      "colourCode": "3 NET NATURAL 300CM",
+      "colourName": "3 NET NATURAL 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 55
+        },
+        {
+          "count": 1,
+          "lengthM": 84.8
+        },
+        {
+          "count": 1,
+          "lengthM": 91.5
+        },
+        {
+          "count": 1,
+          "lengthM": 92.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-4-linen-tebal-300cm",
+      "row": 817,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-4-LINEN-TEBAL-300CM",
+      "colourCode": "4 LINEN TEBAL 300CM",
+      "colourName": "4 LINEN TEBAL 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 85.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-rejuve-5-linen-soft-300cm",
+      "row": 818,
+      "collectionKey": "REJUVE",
+      "code": "REJUVE-5-LINEN-SOFT-300CM",
+      "colourCode": "5 LINEN SOFT 300CM",
+      "colourName": "5 LINEN SOFT 300CM",
+      "widthCm": 300,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 113.1
+        },
+        {
+          "count": 1,
+          "lengthM": 113.2
+        },
+        {
+          "count": 1,
+          "lengthM": 114
+        },
+        {
+          "count": 1,
+          "lengthM": 117.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-a1-khaki-320cm",
+      "row": 875,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-A1-KHAKI-320CM",
+      "colourCode": "A1 KHAKI 320CM",
+      "colourName": "A1 KHAKI 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 60.8
+        },
+        {
+          "count": 1,
+          "lengthM": 66.6
+        },
+        {
+          "count": 1,
+          "lengthM": 72.7
+        },
+        {
+          "count": 1,
+          "lengthM": 73
+        },
+        {
+          "count": 1,
+          "lengthM": 73.1
+        },
+        {
+          "count": 1,
+          "lengthM": 73.3
+        },
+        {
+          "count": 1,
+          "lengthM": 74.7
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-a3-abu-muda-320cm",
+      "row": 876,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-A3-ABU-MUDA-320CM",
+      "colourCode": "A3 ABU MUDA 320CM",
+      "colourName": "A3 ABU MUDA 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.2
+        },
+        {
+          "count": 1,
+          "lengthM": 76.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-a4-cream-320cm",
+      "row": 877,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-A4-CREAM-320CM",
+      "colourCode": "A4 CREAM 320CM",
+      "colourName": "A4 CREAM 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 49.6
+        },
+        {
+          "count": 1,
+          "lengthM": 69.1
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-a5-abu-silver-320cm",
+      "row": 878,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-A5-ABU-SILVER-320CM",
+      "colourCode": "A5 ABU SILVER 320CM",
+      "colourName": "A5 ABU SILVER 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 32.3
+        },
+        {
+          "count": 1,
+          "lengthM": 41.8
+        },
+        {
+          "count": 1,
+          "lengthM": 51.1
+        },
+        {
+          "count": 1,
+          "lengthM": 63.2
+        },
+        {
+          "count": 1,
+          "lengthM": 67.1
+        },
+        {
+          "count": 1,
+          "lengthM": 67.2
+        },
+        {
+          "count": 1,
+          "lengthM": 71.2
+        },
+        {
+          "count": 1,
+          "lengthM": 72
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-a6-abu-tua-320cm",
+      "row": 879,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-A6-ABU-TUA-320CM",
+      "colourCode": "A6 ABU TUA 320CM",
+      "colourName": "A6 ABU TUA 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 74.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-b3-khaki-320cm",
+      "row": 882,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-B3-KHAKI-320CM",
+      "colourCode": "B3 KHAKI 320CM",
+      "colourName": "B3 KHAKI 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 48.7
+        },
+        {
+          "count": 1,
+          "lengthM": 58.3
+        },
+        {
+          "count": 1,
+          "lengthM": 60.5
+        },
+        {
+          "count": 1,
+          "lengthM": 61.2
+        },
+        {
+          "count": 1,
+          "lengthM": 61.4
+        },
+        {
+          "count": 1,
+          "lengthM": 62
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-b4-abu-muda-320cm",
+      "row": 883,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-B4-ABU-MUDA-320CM",
+      "colourCode": "B4 ABU MUDA 320CM",
+      "colourName": "B4 ABU MUDA 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 45.5
+        },
+        {
+          "count": 1,
+          "lengthM": 47.7
+        },
+        {
+          "count": 1,
+          "lengthM": 47.8
+        },
+        {
+          "count": 1,
+          "lengthM": 48.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-stellar-b7-abu-tua-320cm",
+      "row": 886,
+      "collectionKey": "STELLAR",
+      "code": "STELLAR-B7-ABU-TUA-320CM",
+      "colourCode": "B7 ABU TUA 320CM",
+      "colourName": "B7 ABU TUA 320CM",
+      "widthCm": 320,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 47
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-terra-a6",
+      "row": 897,
+      "collectionKey": "TERRA",
+      "code": "TERRA-A6",
+      "colourCode": "A6",
+      "colourName": "A6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 65.6
+        },
+        {
+          "count": 1,
+          "lengthM": 68.2
+        },
+        {
+          "count": 1,
+          "lengthM": 68.5
+        },
+        {
+          "count": 1,
+          "lengthM": 68.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-terra-a9",
+      "row": 900,
+      "collectionKey": "TERRA",
+      "code": "TERRA-A9",
+      "colourCode": "A9",
+      "colourName": "A9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 68.3
+        },
+        {
+          "count": 1,
+          "lengthM": 69
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-terra-b9",
+      "row": 910,
+      "collectionKey": "TERRA",
+      "code": "TERRA-B9",
+      "colourCode": "B9",
+      "colourName": "B9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 65.8
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-terra-c6",
+      "row": 917,
+      "collectionKey": "TERRA",
+      "code": "TERRA-C6",
+      "colourCode": "C6",
+      "colourName": "C6",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 55.7
+        },
+        {
+          "count": 1,
+          "lengthM": 66.6
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-terra-c9",
+      "row": 920,
+      "collectionKey": "TERRA",
+      "code": "TERRA-C9",
+      "colourCode": "C9",
+      "colourName": "C9",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 69.2
+        },
+        {
+          "count": 1,
+          "lengthM": 70.5
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-jaring-pvc",
+      "row": 937,
+      "collectionKey": "JARING",
+      "code": "JARING-PVC",
+      "colourCode": "PVC",
+      "colourName": "PVC",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 45
+        },
+        {
+          "count": 1,
+          "lengthM": 47
+        },
+        {
+          "count": 106,
+          "lengthM": 50
+        },
+        {
+          "count": 1,
+          "lengthM": 55
+        },
+        {
+          "count": 2,
+          "lengthM": 60
+        },
+        {
+          "count": 1,
+          "lengthM": 70
+        }
+      ]
+    },
+    {
+      "id": "sku-imp-vitrase-rs-putih",
+      "row": 941,
+      "collectionKey": "VITRASE",
+      "code": "VITRASE-RS-PUTIH",
+      "colourCode": "RS PUTIH",
+      "colourName": "RS PUTIH",
+      "widthCm": 280,
+      "buyPrice": 0,
+      "sellPrice": 0,
+      "rolls": [
+        {
+          "count": 1,
+          "lengthM": 40
+        },
+        {
+          "count": 1,
+          "lengthM": 42
+        },
+        {
+          "count": 1,
+          "lengthM": 45
+        },
+        {
+          "count": 3,
+          "lengthM": 46
+        },
+        {
+          "count": 1,
+          "lengthM": 47
+        },
+        {
+          "count": 1,
+          "lengthM": 49
+        },
+        {
+          "count": 4,
+          "lengthM": 50
+        },
+        {
+          "count": 2,
+          "lengthM": 51
+        },
+        {
+          "count": 2,
+          "lengthM": 53
+        },
+        {
+          "count": 3,
+          "lengthM": 54
+        },
+        {
+          "count": 6,
+          "lengthM": 55
+        },
+        {
+          "count": 3,
+          "lengthM": 56
+        },
+        {
+          "count": 1,
+          "lengthM": 57
+        },
+        {
+          "count": 6,
+          "lengthM": 60
+        }
+      ]
+    }
+  ],
+  "samples": [
+    {
+      "collectionKey": "ALHAMBRA",
+      "qty": 1,
+      "metres": 23,
+      "names": [
+        "ALHAMBRA SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "TUSCANY",
+      "qty": 1,
+      "metres": 3,
+      "names": [
+        "TUSCANY SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "ALURA",
+      "qty": 1,
+      "metres": 1,
+      "names": [
+        "ALURA SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "AOKI",
+      "qty": 1,
+      "metres": 66,
+      "names": [
+        "AOKI SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "BINDER",
+      "qty": 1,
+      "metres": 148,
+      "names": [
+        "BINDER SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "BLEND",
+      "qty": 1,
+      "metres": 73,
+      "names": [
+        "BLEND VIT SAMPLE LB 3 MTR"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "CALICO",
+      "qty": 1,
+      "metres": 81,
+      "names": [
+        "CALICO SAMPLE LB 300 CM"
+      ],
+      "widthCm": 300
+    },
+    {
+      "collectionKey": "CANVA",
+      "qty": 1,
+      "metres": 91,
+      "names": [
+        "CANVA SAMPLE LB 300 CM 100% BLACKOUT"
+      ],
+      "widthCm": 300
+    },
+    {
+      "collectionKey": "DION",
+      "qty": 1,
+      "metres": 49,
+      "names": [
+        "DION SAMPLE LB 320CM BLACKOUT"
+      ],
+      "widthCm": 320
+    },
+    {
+      "collectionKey": "ECLIPSE",
+      "qty": 1,
+      "metres": 32,
+      "names": [
+        "ECLIPSE SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "ESPRIT",
+      "qty": 1,
+      "metres": 1,
+      "names": [
+        "ESPRIT AMOUR SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "FLEXA",
+      "qty": 1,
+      "metres": 414,
+      "names": [
+        "FLEXA SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "FLOWY",
+      "qty": 1,
+      "metres": 170,
+      "names": [
+        "FLOWY SAMPLE 360 CM"
+      ],
+      "widthCm": 360
+    },
+    {
+      "collectionKey": "GAIA",
+      "qty": 1,
+      "metres": 10,
+      "names": [
+        "GAIA SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "HAVA",
+      "qty": 1,
+      "metres": 33,
+      "names": [
+        "HAVA SAMPLE LB 280CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "KYA",
+      "qty": 1,
+      "metres": 22,
+      "names": [
+        "KYA VITRAS 340cm-320 cm SAMPLE"
+      ],
+      "widthCm": 340
+    },
+    {
+      "collectionKey": "LAYLA",
+      "qty": 1,
+      "metres": 77,
+      "names": [
+        "LAYLA SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "LOELA",
+      "qty": 1,
+      "metres": 277,
+      "names": [
+        "LOELA SAMPLE 360-300CM"
+      ],
+      "widthCm": 300
+    },
+    {
+      "collectionKey": "LUNA",
+      "qty": 1,
+      "metres": 54,
+      "names": [
+        "LUNA SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "LUNALITE",
+      "qty": 1,
+      "metres": 135,
+      "names": [
+        "LUNALITE SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "LYON",
+      "qty": 1,
+      "metres": 51,
+      "names": [
+        "LYON SAMPLE LB 140 - 150 CM"
+      ],
+      "widthCm": 150
+    },
+    {
+      "collectionKey": "MAIA",
+      "qty": 1,
+      "metres": 44,
+      "names": [
+        "MAIA SAMPLE LB 280 CM 100% BLACKOUT"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "MAUDY",
+      "qty": 1,
+      "metres": 100,
+      "names": [
+        "MAUDY SAMPLE LB 280 CM 100% BLACKOUT"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "MEDICAL",
+      "qty": 1,
+      "metres": 15,
+      "names": [
+        "MEDICAL SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "MIRAGE",
+      "qty": 1,
+      "metres": 45,
+      "names": [
+        "MIRAGE SAMPLE LB 140CM"
+      ],
+      "widthCm": 140
+    },
+    {
+      "collectionKey": "MOWA",
+      "qty": 1,
+      "metres": 283,
+      "names": [
+        "MOWA SAMPLE 360CM-300CM"
+      ],
+      "widthCm": 360
+    },
+    {
+      "collectionKey": "NUFLEX",
+      "qty": 1,
+      "metres": 218,
+      "names": [
+        "NUFLEX SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "ORGANICS",
+      "qty": 1,
+      "metres": 87,
+      "names": [
+        "ORGANICS SAMPLE LB 280CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "OSIANA",
+      "qty": 1,
+      "metres": 4,
+      "names": [
+        "OSIANA SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "PANDORA",
+      "qty": 1,
+      "metres": 26,
+      "names": [
+        "PANDORA SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "PORTA",
+      "qty": 1,
+      "metres": 95,
+      "names": [
+        "PORTA SAMPLE 320 CM 100% BOUT"
+      ],
+      "widthCm": 320
+    },
+    {
+      "collectionKey": "PREMIUM",
+      "qty": 1,
+      "metres": 18,
+      "names": [
+        "PREMIUM BRIA SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "QUIN",
+      "qty": 1,
+      "metres": 39,
+      "names": [
+        "QUIN LYON SAMPLE"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "RAINE",
+      "qty": 1,
+      "metres": 49,
+      "names": [
+        "RAINE SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "RASTIK",
+      "qty": 1,
+      "metres": 26,
+      "names": [
+        "RASTIK SAMPLE LB 140-150 CM"
+      ],
+      "widthCm": 150
+    },
+    {
+      "collectionKey": "REJUVE",
+      "qty": 1,
+      "metres": 87,
+      "names": [
+        "REJUVE SAMPLE VITRAS 300CM"
+      ],
+      "widthCm": 300
+    },
+    {
+      "collectionKey": "STELLAR",
+      "qty": 1,
+      "metres": 16,
+      "names": [
+        "STELLAR SAMPLE LB 320CM 100% BLACKOUT"
+      ],
+      "widthCm": 320
+    },
+    {
+      "collectionKey": "TERRA",
+      "qty": 1,
+      "metres": 6,
+      "names": [
+        "TERRA SAMPLE LB 300CM"
+      ],
+      "widthCm": 300
+    },
+    {
+      "collectionKey": "VERSAILLES",
+      "qty": 1,
+      "metres": 14,
+      "names": [
+        "VERSAILLES SAMPLE LB 280 CM"
+      ],
+      "widthCm": 280
+    },
+    {
+      "collectionKey": "JARING",
+      "qty": 1,
+      "metres": 93,
+      "names": [
+        "JARING PVC LB 155 CM SAMPLE"
+      ],
+      "widthCm": 155
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 
 import { buildSeed } from '../src/domain/seed.js';
 import {
@@ -21,6 +22,7 @@ import {
 import { changeSellPrice, sellPriceHistory } from '../src/domain/pricing.js';
 import { invoicesWithoutDelivery } from '../src/domain/deliveries.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
+import { syncImportedStock } from '../src/domain/stock-sync.js';
 import { migrate } from '../src/data/store.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
 
@@ -878,4 +880,46 @@ test('acting on a roll with zero length is rejected', () => {
     () => createRoll(db, { skuId: 'sku-luna-01', currentMm: 0, warehouseId: 'wh-jkt', lot: 'X' }),
     'INVALID_LENGTH',
   );
+});
+
+test('stock sync archives old rolls and imports plan rolls and samples', () => {
+  const db = buildSeed();
+  const oldAvailable = db.rolls.filter((roll) => ['available', 'quarantine'].includes(roll.status)).length;
+  const plan = {
+    key: 'test-sync',
+    source: 'test.xlsx',
+    date: '2026-11-13',
+    warehouseId: 'wh-jkt',
+    categoryName: 'Kain',
+    collections: [{ key: 'TEST', name: 'TEST', widthCm: 280 }],
+    skus: [{
+      id: 'sku-test-1', row: 2, collectionKey: 'TEST', code: 'TEST-A1', colourCode: 'A1',
+      colourName: 'A1', widthCm: 280, buyPrice: 0, sellPrice: 0,
+      rolls: [{ count: 2, lengthM: 50 }, { count: 1, lengthM: 25 }],
+    }],
+    samples: [{ collectionKey: 'TEST', qty: 1, metres: 20, names: ['TEST SAMPLE'] }],
+  };
+  const summary = syncImportedStock(db, { plan, user: MGR });
+  assert.equal(summary.rolls, 3);
+  assert.equal(summary.metres, 125);
+  assert.equal(summary.samples, 1);
+  assert.equal(summary.archivedRolls, oldAvailable);
+  assert.equal(db.rolls.filter((roll) => roll.importedKey === 'test-sync').length, 3);
+  assert.equal(db.rolls.filter((roll) => ['available', 'quarantine'].includes(roll.status)).length, 3);
+  assert.equal(db.skus.find((sku) => sku.code === 'TEST-A1').active, true);
+  assert.equal(db.sampleStocks.find((stock) => stock.collectionId === 'col-imp-test').qty, 1);
+  assert.equal(db.meta.stockSync.key, 'test-sync');
+  assert.throws(() => syncImportedStock(db, { plan, user: MGR }),
+    (err) => err.code === 'STOCK_ALREADY_SYNCED');
+});
+
+test('bundled 13 Nov 2026 stock plan matches the confirmed totals', () => {
+  const plan = JSON.parse(fs.readFileSync(new URL('../src/data/stock-13nov2026.json', import.meta.url), 'utf8'));
+  assert.equal(plan.key, 'excel-2026-11-13');
+  assert.equal(plan.collections.length, 47);
+  assert.equal(plan.skus.length, 257);
+  assert.equal(plan.samples.length, 40);
+  assert.equal(plan.skus.reduce((total, sku) => total + sku.rolls.reduce((sum, group) => sum + group.count, 0), 0), 2175);
+  assert.equal(Math.round(plan.skus.reduce((total, sku) => total + sku.rolls.reduce((sum, group) => sum + group.count * group.lengthM, 0), 0) * 100) / 100, 144590.62);
+  assert.equal(plan.samples.reduce((total, sample) => total + sample.qty, 0), 40);
 });

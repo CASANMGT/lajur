@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.24.0
+# Design System - Lavishome v2.25.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -280,6 +280,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Roll tag & scan:** print a real QR code to `#/scan/:id`. Logged-out visitors see stock status, total cut, remaining metres and cut history; actions prompt login and retain the scanned URL. Keep the tag monochrome with collection, motif, colour, width, lot, length and warehouse/bin.
 - **A4 tag sheet:** the tag dialog lists all rolls with a search field and checkboxes, plus bulk scopes (collection or all available), repeat copies and include-sold. Show a live summary: selected rolls × copies = tags and A4 pages. Print plain (no letterhead/signatures) at `@page A4 margin 8mm`, two columns × four rows, 62mm card height, page-break-inside avoid. The QR points at `#/scan/:id`.
 - **Stock hierarchy:** default to the collection/motif → colour tree, sorted by the most available metres. Show available rolls first; sold/consumed roots collapse into a **Terjual / habis** subsection. The list view repeats the same split with group header rows.
+- **Excel stock sync:** manager-only. Show the plan source/date, SKU/roll/metre/sample counts, warehouse, lot, exclusions and the old-roll archive warning. Require a confirmation checkbox before applying. After sync, show a persistent **sudah disinkronkan** notice with counts and archived-roll count. Never delete old rolls; mark them void and keep invoice/movement references valid.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.
 - **Internal warehouse sale:** label transfers as internal sales and show ongkir plus ongkir per metre. Destination HPP includes the shipping allocation.

@@ -9,6 +9,7 @@ import {
 } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, movementRow, warehouseOptions } from './common.js';
 import { settingsOf } from '../../domain/settings.js';
+import { STOCK_SYNC_META, stockPlanUrl, stockSyncSummary, syncImportedStock } from '../../domain/stock-sync.js';
 import { printStockTagsHtml } from './print.js';
 
 const filters = { q: '', collection: '', status: 'all', available: false };
@@ -230,6 +231,8 @@ export function render(ctx) {
 
   const { db, ui, role } = ctx;
   const collections = db.collections.filter((c) => c.id !== 'col-rel' && c.id !== 'col-motor');
+  const synced = db.meta?.stockSync;
+  const canSync = role === 'manager' && !synced;
   return `
     ${pageHead({
       eyebrow: 'Persediaan',
@@ -237,8 +240,14 @@ export function render(ctx) {
       sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
       actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok manual</button>` : ''}
         <a class="btn" href="#/pembelian">${icon('truck')} Terima PO</a>
-        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="print-tags">${icon('printer')} Tag A4</button><button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
+        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="print-tags">${icon('printer')} Tag A4</button><button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}
+        ${canSync ? `<button class="btn" type="button" data-act="sync-stock">${icon('upload')} Sinkron stok 13 Nov</button>` : ''}`,
     })}
+    ${synced
+      ? `<div class="notice notice-teal" style="margin-bottom:12px">${icon('checkCircle')}<div><strong>Stok ${esc(synced.date)} sudah disinkronkan.</strong> ${Number(synced.rolls).toLocaleString('id-ID')} roll · ${Number(synced.metres).toLocaleString('id-ID')} m · ${synced.samples} sample · ${synced.archivedRolls} roll lama diarsipkan. Sumber: ${esc(synced.source)}.</div></div>`
+      : canSync
+        ? `<div class="notice notice-warn" style="margin-bottom:12px">${icon('upload')}<div><strong>Stok Excel 13 Nov 2026 siap disinkronkan.</strong> ${STOCK_SYNC_META.skus} SKU · ${Number(STOCK_SYNC_META.rolls).toLocaleString('id-ID')} roll · ${Number(STOCK_SYNC_META.metres).toLocaleString('id-ID')} m · ${STOCK_SYNC_META.samples} sample. Tinjau ringkasan sebelum mengganti stok.</div></div>`
+        : ''}
     ${summaryStrip(ctx)}
     <div class="filterbar">
       <div class="search">
@@ -715,6 +724,56 @@ function openPrintTags(ctx, roll = null) {
   });
 }
 
+async function openStockSync(ctx) {
+  if (ctx.role !== 'manager') {
+    toast('Sinkron stok hanya dapat dilakukan manajer.', { tone: 'error' });
+    return;
+  }
+  let plan;
+  try {
+    const response = await fetch(stockPlanUrl(), { cache: 'no-store' });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    plan = await response.json();
+  } catch (err) {
+    toast(`Rencana stok tidak dapat dimuat: ${err.message}`, { tone: 'error' });
+    return;
+  }
+  const summary = stockSyncSummary(ctx.db, plan);
+  openModal({
+    title: `Sinkron stok ${summary.date}`,
+    description: 'Tinjau ringkasan sebelum mengganti stok tersedia. Stok lama diarsipkan, bukan dihapus.',
+    submitLabel: 'Sinkronkan sekarang',
+    wide: true,
+    body: `<div class="stack-sm">
+      <div class="notice notice-warn">${icon('alert')}<div><strong>Stok tersedia akan diganti.</strong> ${summary.currentRolls} roll lama akan diarsipkan (status void). Invoice, proyek, dan riwayat pergerakan tetap tersimpan.</div></div>
+      <div class="grid grid-3" style="margin:10px 0">
+        ${statCard({ label: 'SKU', value: String(summary.skus), meta: `${summary.collections} koleksi` })}
+        ${statCard({ label: 'Roll', value: Number(summary.rolls).toLocaleString('id-ID'), meta: `${Number(summary.metres).toLocaleString('id-ID')} m`, tone: 'accent' })}
+        ${statCard({ label: 'Buku sample', value: String(summary.samples), meta: `${Number(summary.sampleMetres).toLocaleString('id-ID')} m sample` })}
+      </div>
+      <div class="meta">
+        <div><span>Sumber</span><strong>${esc(summary.source)}</strong></div>
+        <div><span>Gudang</span><strong>${esc(summary.warehouse)}</strong></div>
+        <div><span>Lot / penerimaan</span><strong class="mono">STOK-13NOV2026</strong></div>
+        <div><span>Harga</span><strong>Rp 0 (isi setelah sinkron)</strong></div>
+        <div><span>Dikecualikan</span><strong>BIAYA, FOLDER</strong></div>
+        <div><span>PROFLEX BEIGE</span><strong>200 m sesuai rincian roll</strong></div>
+      </div>
+      <label class="checkline"><input type="checkbox" name="confirm" required /> Saya sudah memeriksa ringkasan dan ingin mengganti stok tersedia dengan data 13 Nov 2026.</label>
+    </div>`,
+    onSubmit(form, close) {
+      if (!form.confirm.checked) throw new Error('Centang konfirmasi sebelum sinkron.');
+      const result = ctx.store.update((db) => syncImportedStock(db, {
+        plan,
+        warehouseId: plan.warehouseId,
+        user: ctx.user,
+      }));
+      close();
+      toast(`Sinkron selesai: ${result.rolls.toLocaleString('id-ID')} roll · ${result.metres.toLocaleString('id-ID')} m · ${result.samples} sample.`, { tone: 'success' });
+    },
+  });
+}
+
 export function openStockShare(ctx, { customerId = null } = {}) {
   const { db } = ctx;
   const customers = (db.customers ?? []).filter((c) => c.stage !== 'dormant');
@@ -860,6 +919,7 @@ export function mount(ctx) {
   });
   document.querySelector('[data-act="print-tags"]')?.addEventListener('click', () => openPrintTags(ctx));
   document.querySelector('[data-act="share-stock"]')?.addEventListener('click', () => openStockShare(ctx));
+  document.querySelectorAll('[data-act="sync-stock"]').forEach((button) => button.addEventListener('click', () => openStockSync(ctx)));
   document.querySelector('[data-act="add-stock"]')?.addEventListener('click', () => openAddStock(ctx));
   if (ctx.route.query?.add && can(ctx.role, 'stock.add')) {
     history.replaceState(null, '', '#/stok');

@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-81%2F81-brightgreen) ![Version](https://img.shields.io/badge/version-2.24.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-83%2F83-brightgreen) ![Version](https://img.shields.io/badge/version-2.25.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 81 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 83 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -239,8 +239,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **81 passed, 0 failed** (79 domain/UI + 2 auth) |
-| Module import check | **50/50 modules** |
+| `node --test` | **83 passed, 0 failed** (81 domain/UI + 2 auth) |
+| Module import check | **51/51 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -280,6 +280,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Day display | Surat jalan cards/list/print show **Hari** (e.g. Jumat), not a raw date |
 | AWB removal | Edit surat jalan → **Hapus foto resi**; the typed resi remains |
 | Sample-book photo | Buku sample stock/procurement accepts a photo; thumbnail opens full-size and can be replaced/removed |
+| Stock sync 13 Nov | Manager-only **Sinkron stok 13 Nov** preview: 257 SKUs, 2,175 rolls, 144,590.62 m, 40 samples; old rolls archived, invoice history preserved |
 | Courier marks | JNE, J&T, SiCepat, AnterAja, Grab, GoSend, Lalamove, Bali Kargo and Lavishome Fleet wordmarks in cards, tables and print |
 | AWB photo scan | Uploaded label photo is read by barcode/ZXing/OCR; Code128 `541680005420019` and a faint photo both filled the resi field in browser QA |
 | Package tracking | GoSend/Grab/Lalamove share links are stored per delivery; JNE/J&T/SiCepat/AnterAja/Bali Kargo open official tracking pages; **Salin** copies courier + resi + URL for WhatsApp |
@@ -405,7 +406,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.24.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.25.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
