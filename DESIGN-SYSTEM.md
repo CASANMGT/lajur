@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.19
+# Design System - Lavishome v2.20
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -270,8 +270,9 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 ### 5.18 Buku sample stock, roll QR, WA share and price review
 
-- **Buku sample stock:** show books per collection with price, refundable deposit, minimum, location and procurement history. Buku sample pabrik adds stock from the factory; "Beri buku sample" decrements one piece and creates the customer history record. The customer summary shows books, un-converted books, conversion count, purchase total and last date.
-- **Roll tag:** print a real QR code from the stable roll URL. Keep the tag monochrome, with collection, cloth type, colour, width, lot, length and warehouse/bin. Phone cameras should open the roll; do not imply a handheld-scanner integration.
+- **Buku sample stock:** show books per collection with price, refundable deposit, minimum, warehouse, location and procurement history. Filter stock by Tersedia/Habis and distribution by Terkonversi/Belum konversi. Managers can edit qty/price/deposit/minimum/warehouse. Buku sample pabrik adds stock from the factory; "Beri buku sample" decrements one piece.
+- **Collection motif & pricing:** show motif and base motif price on the collection; each colour/SKU displays its independent sell price.
+- **Roll tag & scan:** print a real QR code to `#/scan/:id`. Logged-out visitors see stock status, total cut, remaining metres and cut history; actions prompt login and retain the scanned URL. Keep the tag monochrome with collection, motif, colour, width, lot, length and warehouse/bin.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.
 - **Internal warehouse sale:** label transfers as internal sales and show ongkir plus ongkir per metre. Destination HPP includes the shipping allocation.

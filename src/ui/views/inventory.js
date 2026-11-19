@@ -61,7 +61,7 @@ function rowsHtml(ctx) {
           ${swatch(sku)}
           <div class="txt">
             <strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode || '')}</strong>
-            <span>${esc(sku?.clothType || '')}${sku?.clothType ? ' · ' : ''}${esc(sku?.code)}${sku?.widthCm ? ` · ${sku.widthCm} cm` : ''}</span>
+            <span>${esc(sku?.motive || sku?.clothType || '')}${sku?.motive || sku?.clothType ? ' · ' : ''}${esc(sku?.code)}${sku?.widthCm ? ` · ${sku.widthCm} cm` : ''}</span>
           </div>
         </div>
       </td>
@@ -330,7 +330,7 @@ function renderDetail(ctx) {
           ${badge(status.label, status.tone)}
           ${roll.condition !== 'good' ? badge(roll.condition === 'damaged' ? 'Rusak' : 'Cacat ringan', 'warn') : ''}
         </div>
-        <p class="sub">${esc(sku?.collectionName)} · ${esc(sku?.clothType || '')} · ${esc(sku?.colourName || sku?.colourCode || '')} · Lot ${esc(roll.lot)} · QR <span class="mono">${esc(roll.barcode || roll.id)}</span></p>
+        <p class="sub">${esc(sku?.collectionName)} · ${esc(sku?.motive || sku?.clothType || '')} · ${esc(sku?.colourName || sku?.colourCode || '')} · Lot ${esc(roll.lot)} · QR <span class="mono">${esc(roll.barcode || roll.id)}</span></p>
       </div>
       <div class="page-actions">
         <button class="btn" type="button" data-action="print-label">${icon('printer')} Tag stok / QR</button>

@@ -14,7 +14,7 @@ import {
 } from '../../domain/pricing.js';
 import { procureSampleStock } from '../../domain/crm.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';
-import { pageHead, statCard, can } from './common.js';
+import { pageHead, statCard, can, warehouseOptions } from './common.js';
 
 let tab = 'produk';
 
@@ -63,7 +63,7 @@ function renderProducts(ctx) {
       <thead><tr><th>Kode</th><th>Koleksi</th><th>Warna</th><th class="hide-sm">Pemasok</th><th class="num">Lebar</th><th class="num">Beli / m</th><th class="num">Jual / m</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
       <tbody>${db.skus.map((s) => `<tr>
         <td><div class="cell-main">${s.image ? `<img src="${esc(s.image)}" alt="Foto ${esc(s.code)}" class="thumb zoomable" data-zoom="${esc(s.image)}" data-zoom-title="Foto ${esc(s.code)}" role="button" tabindex="0" aria-label="Perbesar foto ${esc(s.code)}" />` : `<span class="thumb thumb-empty">${swatch(s)}</span>`}<div class="txt"><strong class="mono">${esc(s.code)}</strong><span>${esc(s.id)}</span></div></div></td>
-        <td>${esc(s.collectionName)}<div class="xs muted">${esc(s.clothType || '—')}</div></td>
+        <td>${esc(s.collectionName)}<div class="xs muted">${esc(s.motive || s.clothType || '—')}</div></td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">${swatch(s)}<span>${esc(s.colourName || '—')} <span class="muted xs">(${esc(s.colourCode)})</span><div class="xs mono">${s.swatch ? esc(s.swatch) : 'hex belum diset'}</div></span></div></td>
         <td class="hide-sm">${supplierNames(db, { skuId: s.id })}</td>
         <td class="num">${s.widthCm ? `${s.widthCm} cm` : '—'}</td>
@@ -189,7 +189,7 @@ function renderCategories(ctx) {
         <tbody>${db.collections.map((c) => {
           const stock = (db.sampleStocks ?? []).find((s) => s.collectionId === c.id);
           return `<tr>
-          <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.description)}</div></td>
+          <td><strong>${esc(c.name)}</strong><div class="xs muted">Motif ${esc(c.motive || '—')} · dasar ${fmt.money(c.motivePrice || 0)}</div><div class="xs muted">${esc(c.description)}</div></td>
           <td>${badge(c.clothType || '—', 'teal')}</td>
           <td>${esc(byId(db.categories, c.categoryId)?.name ?? '—')}</td>
           <td class="num">${db.skus.filter((s) => s.collectionId === c.id).length}</td>
@@ -740,6 +740,8 @@ function openCollection(ctx, collection = null) {
     body: `<div class="form-grid">
       ${field('Nama koleksi', `<input class="input" name="name" value="${esc(collection?.name ?? '')}" required />`)}
       ${field('Tipe kain', `<input class="input" name="clothType" value="${esc(collection?.clothType ?? '')}" placeholder="Blackout / Sheer / Dimout" required />`, { hint: 'Tipe kain ditentukan sebelum warna.' })}
+      ${field('Motif', `<input class="input" name="motive" value="${esc(collection?.motive ?? '')}" placeholder="Nama motif koleksi" />`, { hint: 'Setiap koleksi dapat memiliki motif berbeda.' })}
+      ${field('Harga dasar motif / m', `<input class="input" name="motivePrice" inputmode="numeric" value="${esc(collection?.motivePrice ?? 0)}" />`, { hint: 'Harga default motif; harga per warna dapat berbeda.' })}
       ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${collection?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
       ${field('Panjang roll default (m)', `<input class="input" type="number" min="1" step="0.5" name="defaultRollLengthM" value="${esc(collection?.defaultRollLengthM ?? 60)}" />`)}
       ${field('Lebar kain default (cm)', `<input class="input" type="number" min="1" name="defaultWidthCm" value="${esc(collection?.defaultWidthCm ?? 300)}" />`)}
@@ -748,6 +750,7 @@ function openCollection(ctx, collection = null) {
       ${field('Minimum stok buku sample', `<input class="input" name="sampleMin" inputmode="numeric" value="${esc(collection?.sampleMin ?? 1)}" />`)}
       ${field(editing ? 'Tambah buku sample pabrik (pcs)' : 'Buku sample awal dari pabrik (pcs)', `<input class="input" name="sampleQty" inputmode="numeric" value="${editing ? 0 : 1}" />`, { hint: 'Buku sample diprocure dari pabrik; tidak memotong roll.' })}
       ${field('Harga pokok buku sample / pcs', `<input class="input" name="sampleUnitCost" inputmode="numeric" value="0" />`)}
+      ${field('Gudang buku sample', `<select class="select" name="sampleWarehouse">${warehouseOptions(ctx.db, 'wh-jkt')}</select>`)}
       ${field('Pemasok buku sample', `<select class="select" name="sampleSupplier"><option value="">- Tanpa pemasok -</option>${(ctx.db.suppliers ?? []).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
       ${field('Deskripsi', `<input class="input" name="description" value="${esc(collection?.description ?? '')}" />`, { full: true })}
     </div>`,
@@ -759,6 +762,8 @@ function openCollection(ctx, collection = null) {
           categoryId: form.category.value,
           description: form.description.value,
           clothType: form.clothType.value,
+          motive: form.motive.value,
+          motivePrice: Number(String(form.motivePrice.value).replace(/\D/g, '')) || 0,
           defaultRollLengthM: Number(form.defaultRollLengthM.value || 60),
           defaultWidthCm: Number(form.defaultWidthCm.value || 300),
           samplePrice: Number(String(form.samplePrice.value).replace(/\D/g, '')) || 0,
@@ -776,6 +781,7 @@ function openCollection(ctx, collection = null) {
             unitCost: Number(String(form.sampleUnitCost.value).replace(/\D/g, '')) || 0,
             supplierId: form.sampleSupplier.value || null,
             date: todayJakarta(),
+            warehouseId: form.sampleWarehouse.value,
             notes: editing ? 'Tambah buku sample pabrik.' : 'Buku sample awal koleksi dari pabrik.',
             user: ctx.user,
           });

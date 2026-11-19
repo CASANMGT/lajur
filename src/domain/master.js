@@ -103,8 +103,11 @@ const collectionDefaults = (value) => {
   assert(width > 0, 'INVALID_WIDTH', 'Lebar kain default harus lebih dari 0 cm.');
   const clothType = String(value.clothType ?? '').trim();
   assert(clothType.length >= 2, 'INVALID_CLOTH_TYPE', 'Tipe kain minimal 2 karakter.');
+  const motive = String(value.motive ?? clothType).trim();
   return {
     clothType,
+    motive,
+    motivePrice: Math.max(0, Math.round(Number(value.motivePrice) || 0)),
     defaultRollLengthM: length,
     defaultWidthCm: width,
     samplePrice: Math.max(0, Math.round(Number(value.samplePrice) || 0)),
@@ -114,8 +117,8 @@ const collectionDefaults = (value) => {
 };
 
 export function renameCollection(db, {
-  id, name, categoryId = null, description = '', clothType = null,
-  defaultRollLengthM = null, defaultWidthCm = null, samplePrice = null,
+  id, name, categoryId = null, description = '', clothType = null, motive = null,
+  motivePrice = null, defaultRollLengthM = null, defaultWidthCm = null, samplePrice = null,
   sampleDeposit = null, sampleMin = null, user,
 }) {
   const collection = byId(db.collections, id);
@@ -130,6 +133,8 @@ export function renameCollection(db, {
   if (categoryId) assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
   const defaults = collectionDefaults({
     clothType: clothType ?? collection.clothType,
+    motive: motive ?? collection.motive,
+    motivePrice: motivePrice ?? collection.motivePrice,
     defaultRollLengthM: defaultRollLengthM ?? collection.defaultRollLengthM,
     defaultWidthCm: defaultWidthCm ?? collection.defaultWidthCm,
     samplePrice: samplePrice ?? collection.samplePrice,
@@ -144,6 +149,7 @@ export function renameCollection(db, {
   db.skus.filter((s) => s.collectionId === id).forEach((s) => {
     s.collectionName = clean;
     s.clothType = defaults.clothType;
+    s.motive = defaults.motive;
   });
   for (const stock of db.sampleStocks ?? []) {
     if (stock.collectionId !== id) continue;
@@ -156,15 +162,16 @@ export function renameCollection(db, {
 }
 
 export function createCollection(db, {
-  name, categoryId, description = '', clothType = 'Kain', defaultRollLengthM = 60,
-  defaultWidthCm = 300, samplePrice = 0, sampleDeposit = 0, sampleMin = 0, user,
+  name, categoryId, description = '', clothType = 'Kain', motive = '', motivePrice = 0,
+  defaultRollLengthM = 60, defaultWidthCm = 300, samplePrice = 0, sampleDeposit = 0,
+  sampleMin = 0, user,
 }) {
   const clean = String(name ?? '').trim();
   assert(clean.length >= 2, 'INVALID_NAME', 'Nama koleksi minimal 2 karakter.');
   assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
   assert(!db.collections.some((c) => c.name.toLowerCase() === clean.toLowerCase()), 'DUPLICATE_NAME', 'Nama koleksi sudah dipakai.');
   const defaults = collectionDefaults({
-    clothType, defaultRollLengthM, defaultWidthCm, samplePrice, sampleDeposit, sampleMin,
+    clothType, motive, motivePrice, defaultRollLengthM, defaultWidthCm, samplePrice, sampleDeposit, sampleMin,
   });
   const collection = {
     id: `col-${uid('').slice(1, 9)}`,
@@ -236,13 +243,14 @@ export function saveSku(db, {
     collectionId,
     collectionName: collection.name,
     clothType: collection.clothType ?? '',
+    motive: collection.motive ?? '',
     code: cleanCode,
     colourCode: cleanColour,
     colourName: String(colourName ?? '').trim() || null,
     swatch: swatch || null,
     widthCm: Number(widthCm) || 0,
     buyPrice: Math.round(Number(buyPrice) || 0),
-    sellPrice: Math.round(Number(sellPrice) || 0),
+    sellPrice: Math.round(Number(sellPrice) || 0) || Math.round(Number(collection.motivePrice) || 0),
     active,
     dormant: !active,
     image: image || '',

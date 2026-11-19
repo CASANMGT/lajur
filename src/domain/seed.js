@@ -46,19 +46,19 @@ export const MASTER = {
     { id: 'cat-motor', name: 'Motor & Otomasi' },
   ],
   collections: [
-    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 25000, sampleDeposit: 50000, sampleMin: 2, description: 'Blackout tebal, jatuh vertikal rapi.' },
-    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 2, description: 'Sheer ringan untuk lapis kedua.' },
-    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 1, description: 'Dimout ekonomis untuk unit hunian.' },
-    { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', clothType: 'Aksesori', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Rel aluminium dan aksesori.' },
-    { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', clothType: 'Otomasi', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Motor, remote, dan kontrol.' },
+    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', motive: 'Luna Plain', motivePrice: 125000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 25000, sampleDeposit: 50000, sampleMin: 2, description: 'Blackout tebal, jatuh vertikal rapi.' },
+    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', motive: 'Aria Sheer', motivePrice: 99000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 2, description: 'Sheer ringan untuk lapis kedua.' },
+    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', motive: 'Nova Dimout', motivePrice: 149000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 1, description: 'Dimout ekonomis untuk unit hunian.' },
+    { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', clothType: 'Aksesori', motive: 'Rel', motivePrice: 0, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Rel aluminium dan aksesori.' },
+    { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', clothType: 'Otomasi', motive: 'Motor', motivePrice: 0, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Motor, remote, dan kontrol.' },
   ],
   skus: [
-    { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 69500, sellPriceUpdatedAt: '2026-06-01', active: true, dormant: false },
-    { id: 'sku-luna-02', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', code: 'Luna-02', colourCode: '02', colourName: 'Sand', swatch: '#C9B79C', unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 70000, sellPriceUpdatedAt: '2026-10-01', active: true, dormant: false },
-    { id: 'sku-aria-01', collectionId: 'col-aria', collectionName: 'Aria', clothType: 'Sheer', code: 'Aria-01', colourCode: '01', colourName: 'Putih', swatch: '#F1EEE4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, sellPriceUpdatedAt: '2026-05-15', active: true, dormant: false },
-    { id: 'sku-aria-02', collectionId: 'col-aria', collectionName: 'Aria', clothType: 'Sheer', code: 'Aria-02', colourCode: '02', colourName: 'Greige', swatch: '#C9C2B4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, sellPriceUpdatedAt: '2026-09-20', active: true, dormant: false },
-    { id: 'sku-nova-01', collectionId: 'col-nova', collectionName: 'Nova', clothType: 'Dimout', code: 'Nova-01', colourCode: '01', colourName: 'Charcoal', swatch: '#3D444B', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, sellPriceUpdatedAt: '2026-07-01', active: true, dormant: false },
-    { id: 'sku-nova-02', collectionId: 'col-nova', collectionName: 'Nova', clothType: 'Dimout', code: 'Nova-02', colourCode: '02', colourName: 'Terracotta', swatch: '#A85F45', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, sellPriceUpdatedAt: '2026-07-01', active: false, dormant: true, dormantSince: '2026-01-15' },
+    { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', motive: 'Luna Plain', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 69500, sellPriceUpdatedAt: '2026-06-01', active: true, dormant: false },
+    { id: 'sku-luna-02', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', motive: 'Luna Plain', code: 'Luna-02', colourCode: '02', colourName: 'Sand', swatch: '#C9B79C', unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 70000, sellPriceUpdatedAt: '2026-10-01', active: true, dormant: false },
+    { id: 'sku-aria-01', collectionId: 'col-aria', collectionName: 'Aria', clothType: 'Sheer', motive: 'Aria Sheer', code: 'Aria-01', colourCode: '01', colourName: 'Putih', swatch: '#F1EEE4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, sellPriceUpdatedAt: '2026-05-15', active: true, dormant: false },
+    { id: 'sku-aria-02', collectionId: 'col-aria', collectionName: 'Aria', clothType: 'Sheer', motive: 'Aria Sheer', code: 'Aria-02', colourCode: '02', colourName: 'Greige', swatch: '#C9C2B4', unit: 'm', widthCm: 300, sellPrice: 99000, buyPrice: 55000, sellPriceUpdatedAt: '2026-09-20', active: true, dormant: false },
+    { id: 'sku-nova-01', collectionId: 'col-nova', collectionName: 'Nova', clothType: 'Dimout', motive: 'Nova Dimout', code: 'Nova-01', colourCode: '01', colourName: 'Charcoal', swatch: '#3D444B', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, sellPriceUpdatedAt: '2026-07-01', active: true, dormant: false },
+    { id: 'sku-nova-02', collectionId: 'col-nova', collectionName: 'Nova', clothType: 'Dimout', motive: 'Nova Dimout', code: 'Nova-02', colourCode: '02', colourName: 'Terracotta', swatch: '#A85F45', unit: 'm', widthCm: 280, sellPrice: 149000, buyPrice: 82000, sellPriceUpdatedAt: '2026-07-01', active: false, dormant: true, dormantSince: '2026-01-15' },
   ],
   parts: [
     { id: 'part-rel-3', sku: 'REL-300', name: 'Rel gorden 3 m', categoryId: 'cat-part', brand: 'Alumindo', unit: 'pcs', sellPrice: 85000, buyPrice: 52000, image: '/assets/parts/rail.svg', active: true },
@@ -257,11 +257,11 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.fleetAsset = db.fleetAssets.length;
 
   const sampleSeeds = [
-    ['col-luna', 6, 2, 25000, 50000, 15000, 'SUP-001'],
-    ['col-aria', 5, 2, 20000, 40000, 12000, 'SUP-003'],
-    ['col-nova', 3, 1, 20000, 40000, 12000, 'SUP-003'],
+    ['col-luna', 6, 2, 25000, 50000, 15000, 'SUP-001', 'wh-jkt'],
+    ['col-aria', 5, 2, 20000, 40000, 12000, 'SUP-003', 'wh-jkt'],
+    ['col-nova', 3, 1, 20000, 40000, 12000, 'SUP-003', 'wh-bali'],
   ];
-  sampleSeeds.forEach(([collectionId, qty, minQty, samplePrice, sampleDeposit, unitCost, supplierId], index) => {
+  sampleSeeds.forEach(([collectionId, qty, minQty, samplePrice, sampleDeposit, unitCost, supplierId, warehouseId], index) => {
     const id = `SS-${String(index + 1).padStart(4, '0')}`;
     db.sampleStocks.push({
       id,
@@ -272,7 +272,8 @@ export function buildSeed({ dataset = 'main' } = {}) {
       samplePrice,
       sampleDeposit,
       unitCost,
-      location: 'Showroom Jakarta',
+      warehouseId,
+      location: warehouseId === 'wh-bali' ? 'Showroom Bali' : 'Showroom Jakarta',
       procurements: [{
         id: `SPR-${String(index + 1).padStart(4, '0')}`,
         qty,

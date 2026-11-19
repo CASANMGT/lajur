@@ -34,7 +34,7 @@ export function printLabelHtml(roll, sku, wh) {
   const origin = typeof window !== 'undefined' && window.location?.origin && !window.location.origin.startsWith('file:')
     ? window.location.origin
     : '';
-  const qrValue = origin ? `${origin}/#/stok/${roll.id}` : barcode;
+  const qrValue = origin ? `${origin}/#/scan/${roll.id}` : barcode;
   return `
     <div style="border:2px solid #172b3a;border-radius:8px;padding:16px;max-width:420px">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -42,7 +42,7 @@ export function printLabelHtml(roll, sku, wh) {
       </div>
       <div style="font-family:ui-monospace,monospace;font-size:26px;font-weight:700;letter-spacing:.02em;margin:10px 0 2px">${esc(roll.id)}</div>
       <div style="font-size:14px;font-weight:600">${esc(sku?.collectionName)} — ${esc(sku?.colourName || sku?.colourCode)}</div>
-      <div style="font-size:11px;color:#62727c;margin-bottom:10px">${esc(sku?.clothType ?? '')} · ${esc(sku?.code)} · Kode warna ${esc(sku?.colourCode)} · ${esc(sku?.widthCm)} cm</div>
+      <div style="font-size:11px;color:#62727c;margin-bottom:10px">${esc(sku?.motive || sku?.clothType || '')} · ${esc(sku?.code)} · Kode warna ${esc(sku?.colourCode)} · ${esc(sku?.widthCm)} cm</div>
       <table style="margin:0">
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">LOT</td><td style="border:0;padding:2px 0;font-size:12px;font-weight:700">${esc(roll.lot)}</td></tr>
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">PANJANG</td><td style="border:0;padding:2px 0;font-size:16px;font-weight:700">${fmt.m(roll.currentMm)}</td></tr>

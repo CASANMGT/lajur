@@ -27,6 +27,7 @@ import * as production from './views/production.js';
 import * as deliveries from './views/deliveries.js';
 import * as catalog from './views/catalog.js';
 import * as guide from './views/guide.js';
+import * as scan from './views/scan.js';
 
 const VIEWS = {
   ringkasan: dashboard,
@@ -42,6 +43,7 @@ const VIEWS = {
   pelanggan: customers,
   sampel: samples,
   katalog: catalog,
+  scan,
   opname,
   laporan: reports,
   master,
@@ -94,6 +96,13 @@ export function renderApp() {
   const app = document.getElementById('app');
   const users = store.db.users.filter((u) => u.active !== false);
   const user = sessionUser(store.db.users);
+  const scanRoute = parseHash();
+
+  // Public QR landing: show stock status even when logged out.
+  if (scanRoute.name === 'scan') {
+    scan.renderScan(app, scanRoute, user);
+    return;
+  }
 
   if (!user) {
     closeModal();

@@ -16,6 +16,7 @@ import { createProject, handoverProject, issueProject, reserveProject } from '..
 import {
   applyDepositToInvoice, createSample, createSampleBook, createCustomer,
   giveSampleBook, procureSampleStock, refundDeposit, sampleCollectionStats, sampleCustomerStats,
+  updateSampleStock,
 } from '../src/domain/crm.js';
 import { changeSellPrice, sellPriceHistory } from '../src/domain/pricing.js';
 import { invoicesWithoutDelivery } from '../src/domain/deliveries.js';
@@ -547,7 +548,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 17);
+  assert.equal(migrated.meta.version, 18);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
   assert.deepEqual(migrated.fleetAssets, []);
@@ -559,7 +560,7 @@ test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
   db.fleetAssets = [];
   db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 17);
+  assert.equal(migrated.meta.version, 18);
   assert.equal(migrated.transportCompanies.length, 6);
   assert.equal(migrated.fleetAssets.length, 3);
   assert.equal(migrated.sequences.fleetAsset, 3);
@@ -575,7 +576,7 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   delete delivery.transportId;
   delete delivery.transportName;
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 17);
+  assert.equal(migrated.meta.version, 18);
   assert.equal(migrated.deliveries[0].transportId, 'TRP-006');
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });
@@ -602,11 +603,14 @@ test('collections define cloth type and 60m x 300cm defaults; rolls carry QR tag
   const db = buildSeed();
   const luna = db.collections.find((c) => c.id === 'col-luna');
   assert.equal(luna.clothType, 'Blackout');
+  assert.equal(luna.motive, 'Luna Plain');
+  assert.equal(luna.motivePrice, 125000);
   assert.equal(luna.defaultRollLengthM, 60);
   assert.equal(luna.defaultWidthCm, 300);
   assert.equal(luna.samplePrice, 25000);
   assert.equal(luna.sampleDeposit, 50000);
   assert.equal(db.skus.find((s) => s.id === 'sku-luna-01').clothType, 'Blackout');
+  assert.equal(db.skus.find((s) => s.id === 'sku-luna-01').motive, 'Luna Plain');
   assert.ok(db.rolls.every((r) => r.barcode));
   assert.equal(db.rolls[0].barcode, db.rolls[0].id);
   const sku = db.skus.find((s) => s.id === db.rolls[0].skuId);
@@ -620,6 +624,15 @@ test('factory sample stock is procured per collection, distributed and tracked',
   const db = buildSeed();
   const stock = db.sampleStocks.find((s) => s.collectionId === 'col-luna');
   const before = stock.qty;
+  assert.equal(stock.warehouseId, 'wh-jkt');
+  const edited = updateSampleStock(db, {
+    id: stock.id, qty: before + 1, samplePrice: 26000, sampleDeposit: 52000, minQty: 2, warehouseId: 'wh-bali', user: MGR,
+  });
+  assert.equal(edited.qty, before + 1);
+  assert.equal(edited.samplePrice, 26000);
+  assert.equal(edited.warehouseId, 'wh-bali');
+  assert.equal(db.collections.find((c) => c.id === 'col-luna').samplePrice, 26000);
+  updateSampleStock(db, { id: stock.id, qty: before, samplePrice: 25000, sampleDeposit: 50000, minQty: 2, warehouseId: 'wh-jkt', user: MGR });
   const rollBefore = db.rolls.find((r) => r.id === 'RL-0001').currentMm;
   const received = procureSampleStock(db, {
     collectionId: 'col-luna', qty: 2, unitCost: 15000, supplierId: 'SUP-001', user: OP,

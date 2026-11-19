@@ -2,6 +2,38 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.20.0] — 2026-11-19
+
+**Release name: Scan Stok & Motif.** Adds a public QR stock-status page, buku sample stock/price editing with warehouse locations, conversion filters, and collection motive/base pricing.
+
+### Added
+
+- **Public QR scan page:** scanning `#/scan/RL-0001` shows stock status and cut history even when logged out. Visitors get a login prompt for full actions; the scanned roll URL survives login.
+- **Buku sample filters:** Tersedia / Habis filter for stock; Terkonversi / Belum konversi filter beside riwayat distribusi.
+- **Edit buku sample:** manager can edit qty, sample price, refundable deposit, minimum and warehouse location directly from the stock row.
+- **Sample warehouse location:** sample stock can be in Gudang Jakarta or Gudang Bali, chosen during procurement, edit, or initial collection creation.
+- **Motive & base price:** each collection stores a motif and a base motif price; each colour/SKU keeps its own sell price, allowing different prices per colour.
+- **Roll cut/leftover page:** current stock, total cut, remaining metres, cut history and full movement history.
+
+### Changed
+
+- QR payload now targets `/ #/scan/:id`; detail remains available after login.
+- Collection master displays motif, base price, sample price/deposit/stock and warehouse.
+- Version bumped to 2.20.0, schema 18, backup v18.
+
+### Verification
+
+- `node --test`: **74 passed**.
+- Module imports **47 modules**; render checks green.
+- Browser QA: logged-out scan page, login redirect, cut-history page, stock/history filters, sample edit/warehouse, collection motive.
+
+### Known limitations
+
+- Public scan reads the local demo dataset. Cross-device live scanning requires the shared API/PostgreSQL client to be wired to the UI.
+- No handheld scanner integration.
+
+---
+
 ## [2.19.0] — 2026-11-19
 
 **Release name: Buku Sample & QR Scan.** Makes the QR scan open the roll page even before login, adds a clear cut-history/leftover view, and renames the sample flow to factory-supplied **buku sample** per collection with no in-app book assembly.

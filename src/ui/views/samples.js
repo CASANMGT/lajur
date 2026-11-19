@@ -6,18 +6,20 @@ import {
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
   SAMPLE_MODE, createSample, depositBalance, linkSampleToInvoice, procureSampleStock,
-  refundDeposit, sampleCollectionStats, sampleCustomerStats,
+  refundDeposit, sampleCollectionStats, sampleCustomerStats, updateSampleStock,
 } from '../../domain/crm.js';
 import { settingsOf } from '../../domain/settings.js';
-import { pageHead, statCard, can } from './common.js';
+import { pageHead, statCard, can, warehouseOf, warehouseOptions } from './common.js';
 
 
-let filter = { status: 'all' };
+let filter = { history: 'all', stock: 'all' };
 
 export function render(ctx) {
   const { db, role, user } = ctx;
   const samples = db.samples
-    .filter((s) => filter.status === 'all' || s.status === filter.status)
+    .filter((s) => filter.history === 'all'
+      || (filter.history === 'converted' && s.linkedInvoiceId)
+      || (filter.history === 'unconverted' && !s.linkedInvoiceId))
     .sort((a, b) => String(b.date).localeCompare(String(a.date)));
   const active = db.samples.filter((s) => s.status === 'active').length;
   const converted = db.samples.filter((s) => s.status === 'converted').length;
@@ -28,6 +30,9 @@ export function render(ctx) {
   const customerStats = sampleCustomerStats(db).filter((s) => s.total > 0)
     .sort((a, b) => b.total - a.total || String(b.lastDate).localeCompare(String(a.lastDate)));
   const stocks = db.sampleStocks ?? [];
+  const filteredStocks = stocks.filter((s) => filter.stock === 'all'
+    || (filter.stock === 'available' && s.qty > 0)
+    || (filter.stock === 'unavailable' && s.qty <= 0));
   const stockTotal = stocks.reduce((a, s) => a + (Number(s.qty) || 0), 0);
 
   return `
@@ -45,26 +50,29 @@ export function render(ctx) {
       ${statCard({ label: 'Refund tercatat', value: fmt.money(deposits.reduce((a, d) => a + d.refunded, 0)), meta: 'Tidak boleh melebihi saldo' })}
     </div>
 
-    <div class="row" style="margin-bottom:12px">
-      ${[['all', 'Semua buku sample'], ['active', 'Aktif'], ['converted', 'Terkonversi']].map(([k, label]) => `<button class="chip" type="button" data-sample-status="${k}" aria-pressed="${filter.status === k}">${label}</button>`).join('')}
-    </div>
-
     <section class="card" style="margin-bottom:16px">
       <div class="card-head"><div><h2>Katalog & stok buku sample</h2><p>Buku sample diprocure dari pabrik per koleksi, bukan dipotong dari roll. Harga, deposit, dan jumlah stok tersedia untuk pelanggan.</p></div><span class="badge no-dot">${stockTotal} pcs</span></div>
+      <div class="card-pad" style="padding-top:0">
+        <div class="row" style="margin-bottom:10px">
+          ${[['all', 'Semua stok'], ['available', 'Tersedia'], ['unavailable', 'Habis / tidak tersedia']].map(([k, label]) => `<button class="chip" type="button" data-stock-filter="${k}" aria-pressed="${filter.stock === k}">${label}</button>`).join('')}
+        </div>
+      </div>
       <div class="table-wrap"><table class="data">
         <thead><tr><th>Koleksi / tipe</th><th class="num">Harga buku sample</th><th class="num">Deposit</th><th class="num">Stok</th><th class="num">Minimum</th><th>Lokasi</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
-        <tbody>${stocks.map((s) => {
+        <tbody>${filteredStocks.map((s) => {
           const collection = byId(db.collections, s.collectionId);
+          const warehouse = warehouseOf(db, s.warehouseId);
           return `<tr>
-            <td><strong class="small">${esc(collection?.name ?? '—')}</strong><div class="xs muted">${esc(collection?.clothType ?? '—')} · ${esc(collection?.defaultRollLengthM ?? 60)} m × ${esc(collection?.defaultWidthCm ?? 300)} cm</div></td>
+            <td><strong class="small">${esc(collection?.name ?? '—')}</strong><div class="xs muted">${esc(collection?.motive || collection?.clothType || '—')} · ${esc(collection?.defaultRollLengthM ?? 60)} m × ${esc(collection?.defaultWidthCm ?? 300)} cm</div></td>
             <td class="num">${fmt.money(s.samplePrice ?? collection?.samplePrice ?? 0)}</td>
             <td class="num">${fmt.money(s.sampleDeposit ?? collection?.sampleDeposit ?? 0)}<div class="xs muted">refundable</div></td>
             <td class="num strong">${s.qty}</td>
             <td class="num">${s.minQty ?? 1}</td>
-            <td class="small">${esc(s.location || '—')}</td>
+            <td class="small">${esc(warehouse?.name ?? s.location ?? '—')}<div class="xs muted">${esc(s.location || '')}</div></td>
             <td>${s.qty <= 0 ? badge('Habis', 'danger') : s.qty <= (s.minQty ?? 1) ? badge('Menipis', 'warn') : badge('Tersedia', 'ok')}</td>
             <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
               ${s.qty > 0 && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" type="button" data-give-stock="${s.id}">Beri buku sample</button>` : ''}
+              ${role === 'manager' ? `<button class="btn btn-sm" type="button" data-edit-stock="${s.id}">Edit</button>` : ''}
               <button class="btn btn-sm" type="button" data-procurement="${s.id}">Riwayat</button>
             </div></td>
           </tr>`;
@@ -89,6 +97,11 @@ export function render(ctx) {
 
     <section class="card">
       <div class="card-head"><div><h2>Riwayat distribusi buku sample</h2><p>Koleksi, pelanggan, jenis, nomor stok, dan hasil konversi.</p></div><span class="badge no-dot">${samples.length}</span></div>
+      <div class="card-pad" style="padding-top:0">
+        <div class="row" style="margin-bottom:10px">
+          ${[['all', 'Semua'], ['converted', 'Terkonversi'], ['unconverted', 'Belum konversi']].map(([k, label]) => `<button class="chip" type="button" data-history-filter="${k}" aria-pressed="${filter.history === k}">${label}</button>`).join('')}
+        </div>
+      </div>
       <div class="table-wrap desktop-table">
         <table class="data">
           <thead><tr><th>Buku sample</th><th>Pelanggan</th><th>Koleksi</th><th class="num">Qty</th><th>Stok / sumber</th><th>Jenis</th><th>Hasil</th><th><span class="sr-only">Aksi</span></th></tr></thead>
@@ -210,7 +223,8 @@ function openProcureSample(ctx) {
       ${field('Harga pokok / buku sample (Rp)', `<input class="input" name="unitCost" inputmode="numeric" placeholder="0" />`)}
       ${field('Pemasok / pabrik', `<select class="select" name="supplier"><option value="">— Tanpa pemasok —</option>${suppliers.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
       ${field('Tanggal terima', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Lokasi buku sample', `<input class="input" name="location" value="Showroom Jakarta" />`)}
+      ${field('Gudang lokasi', `<select class="select" name="warehouse">${warehouseOptions(ctx.db, ctx.db.warehouses.find((w) => w.active !== false)?.id)}</select>`)}
+      ${field('Detail lokasi / showroom', `<input class="input" name="location" placeholder="Showroom Jakarta" />`)}
       ${field('Catatan', `<input class="input" name="notes" placeholder="Nomor pengiriman, warna, batch pabrik" />`, { full: true })}
     </div>`,
     onSubmit(form, close) {
@@ -223,6 +237,7 @@ function openProcureSample(ctx) {
         supplierId: form.supplier.value || null,
         date: form.date.value,
         notes: form.notes.value,
+        warehouseId: form.warehouse.value,
         location: form.location.value,
         user: ctx.user,
       }));
@@ -255,6 +270,40 @@ function openProcurementHistory(ctx, stock) {
   });
 }
 
+function openEditStock(ctx, stock) {
+  const collection = byId(ctx.db.collections, stock.collectionId);
+  const warehouses = ctx.db.warehouses.filter((w) => w.active !== false);
+  openModal({
+    title: `Edit buku sample ${collection?.name ?? ''}`,
+    description: 'Koreksi stok, harga, deposit, minimum, dan lokasi gudang buku sample.',
+    submitLabel: 'Simpan buku sample',
+    body: `<div class="form-grid">
+      ${field('Jumlah stok (pcs)', `<input class="input" name="qty" inputmode="numeric" value="${stock.qty}" />`)}
+      ${field('Harga buku sample / pcs', `<input class="input" name="samplePrice" inputmode="numeric" value="${stock.samplePrice ?? collection?.samplePrice ?? 0}" />`)}
+      ${field('Deposit refundable / pcs', `<input class="input" name="sampleDeposit" inputmode="numeric" value="${stock.sampleDeposit ?? collection?.sampleDeposit ?? 0}" />`)}
+      ${field('Minimum stok', `<input class="input" name="sampleMin" inputmode="numeric" value="${stock.minQty ?? collection?.sampleMin ?? 1}" />`)}
+      ${field('Gudang lokasi', `<select class="select" name="warehouse">${warehouseOptions(ctx.db, stock.warehouseId || warehouses[0]?.id)}</select>`)}
+      ${field('Detail lokasi / showroom', `<input class="input" name="location" value="${esc(stock.location ?? '')}" placeholder="Showroom Jakarta" />`)}
+    </div>`,
+    onSubmit(form, close) {
+      const qty = Number(form.qty.value || 0);
+      if (qty < 0) throw new Error('Stok tidak boleh negatif.');
+      ctx.store.update((db) => updateSampleStock(db, {
+        id: stock.id,
+        qty,
+        samplePrice: Number(String(form.samplePrice.value).replace(/\D/g, '')) || 0,
+        sampleDeposit: Number(String(form.sampleDeposit.value).replace(/\D/g, '')) || 0,
+        minQty: Number(String(form.sampleMin.value).replace(/\D/g, '')) || 0,
+        warehouseId: form.warehouse.value,
+        location: form.location.value,
+        user: ctx.user,
+      }));
+      close();
+      toast('Stok dan harga buku sample diperbarui.', { tone: 'success' });
+    },
+  });
+}
+
 function openGiveStock(ctx, stock) {
   const collection = byId(ctx.db.collections, stock.collectionId);
   const customers = ctx.db.customers.filter((c) => c.stage !== 'dormant');
@@ -269,7 +318,7 @@ function openGiveStock(ctx, stock) {
     description: 'Buku sample koleksi dari pabrik. Stok berkurang satu pcs; free/deposit/refundable mengikuti aturan yang ada.',
     submitLabel: 'Beri buku sample',
     body: `<div class="form-grid">
-      <div class="span-2 notice notice-info">${icon('spark')}<div><strong>${esc(collection?.name ?? '')} · ${esc(collection?.clothType ?? '')}</strong><div class="small">Stok ${stock.qty} pcs · harga buku sample ${fmt.money(samplePrice)} · deposit refundable ${fmt.money(sampleDeposit)}</div></div></div>
+      <div class="span-2 notice notice-info">${icon('spark')}<div><strong>${esc(collection?.name ?? '')} · ${esc(collection?.clothType ?? '')}</strong><div class="small">${esc(warehouseOf(ctx.db, stock.warehouseId)?.name ?? stock.location ?? '—')} · stok ${stock.qty} pcs · harga buku sample ${fmt.money(samplePrice)} · deposit refundable ${fmt.money(sampleDeposit)}</div></div></div>
       ${field('Pelanggan', `<select class="select" name="customer">${customers.map((c) => `<option value="${c.id}">${esc(c.name)}${c.company ? ` - ${esc(c.company)}` : ''}</option>`).join('')}</select>`)}
       ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
       ${field('Jenis buku sample', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit">Deposit refundable</option></select>`)}
@@ -301,14 +350,22 @@ function openGiveStock(ctx, stock) {
 }
 
 export function mount(ctx) {
-  document.querySelectorAll('[data-sample-status]').forEach((btn) => btn.addEventListener('click', () => {
-    filter.status = btn.dataset.sampleStatus;
+  document.querySelectorAll('[data-stock-filter]').forEach((btn) => btn.addEventListener('click', () => {
+    filter.stock = btn.dataset.stockFilter;
+    ctx.store.emit();
+  }));
+  document.querySelectorAll('[data-history-filter]').forEach((btn) => btn.addEventListener('click', () => {
+    filter.history = btn.dataset.historyFilter;
     ctx.store.emit();
   }));
   document.querySelector('[data-act="procure-sample"]')?.addEventListener('click', () => openProcureSample(ctx));
   document.querySelectorAll('[data-procurement]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.procurement);
     if (stock) openProcurementHistory(ctx, stock);
+  }));
+  document.querySelectorAll('[data-edit-stock]').forEach((btn) => btn.addEventListener('click', () => {
+    const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.editStock);
+    if (stock) openEditStock(ctx, stock);
   }));
   document.querySelectorAll('[data-give-stock]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.giveStock);

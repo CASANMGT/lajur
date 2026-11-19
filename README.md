@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-74%2F74-brightgreen) ![Version](https://img.shields.io/badge/version-2.19.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-74%2F74-brightgreen) ![Version](https://img.shields.io/badge/version-2.20.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,7 +60,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 74 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -240,7 +240,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Check | Result |
 |-------|--------|
 | `node --test` | **74 passed, 0 failed** (72 domain/UI + 2 auth) |
-| Module import check | **46/46 modules** |
+| Module import check | **47/47 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -271,9 +271,9 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
 | Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lavishome Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
 | Collection metadata | Luna/Aria/Nova define Blackout/Sheer/Dimout and default 60 m × 300 cm; new SKUs inherit the cloth type |
-| Sample stock | 10 factory sample pieces across Luna/Aria/Nova; Luna sample price Rp 25.000 and refundable deposit Rp 50.000; giving SS-0001 reduced stock 4 → 3 and created DEP-0004 |
+| Buku sample stock | 10 factory books across Luna/Aria/Nova; Luna price Rp 25.000 and refundable deposit Rp 50.000; giving SS-0001 reduced stock 4 → 3; manager can edit qty/price/warehouse |
 | QR stock tag | RL-0001 prints a QR tag with `RL-0001`, collection, Blackout, 280 cm, lot, length and JKT/A-01-01; QR opens the roll URL when scanned |
-| QR scan landing | Scanned `#/stok/RL-0001` survives login; RL-0007 shows 1 cut 70 m → 69.5 m, total cut and remaining stock |
+| QR scan landing | Public `#/scan/RL-0001` shows stock status while logged out; login/detail link preserves roll; RL-0007 shows 1 cut 70 m → 69.5 m |
 | WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
 | Price review | Luna-01 last changed 170 days ago; save was blocked until the 90-day confirmation was checked, then Rp 125.000 → Rp 130.000 |
 | Transfer ongkir | Transfer with Rp 300.000 over 10 m adds Rp 30.000/m to destination roll HPP |
@@ -382,7 +382,9 @@ node tools/render-check.mjs
 - Supplier PO, partial receiving per roll/lot, duplicate and over-receipt protection, payable payments, supplier returns.
 - Projects: allocate, reserve, invoice/stock issue, handover, shortage, material cost, instructions.
 - Customers, CRM stages, activities, optional NPWP for faktur pajak, WhatsApp number, samples with conversion, sample deposits, indent deposits, refund guards.
-- **Collection sample stock:** factory-procured sample pieces per collection with price, refundable deposit, stock and procurement history; give to a customer and see per-customer sample/purchase history.
+- **Buku sample stock:** factory books per collection with price, refundable deposit, stock, procurement history, warehouse location, filters and manager editing; give to a customer and see per-customer purchase history.
+- **Collection motif & pricing:** each collection has a motif and base motif price; each colour/SKU has its own sell price.
+- **Public QR stock page:** scan status works before login and shows stock/leftover plus cut history; full actions prompt login.
 - **QR stock tags:** every roll carries a QR tag with collection, cloth type, colour, width, location and length; scanning opens the roll detail.
 - **Price control:** selling-price history with last update, old/new price and a 90-day review confirmation.
 - **WA stock share:** customer detail and Stock build a copy-paste availability message and open WhatsApp.
@@ -392,7 +394,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.19.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.20.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

@@ -1,6 +1,6 @@
 /** Single source of truth for release and schema versions. */
 
-export const APP_VERSION = '2.19.0';
-export const SCHEMA_VERSION = 17;
+export const APP_VERSION = '2.20.0';
+export const SCHEMA_VERSION = 18;
 export const RELEASE_DATE = '2026-11-19';
-export const RELEASE_NAME = 'Buku Sample & QR Scan';
+export const RELEASE_NAME = 'Scan Stok & Motif';

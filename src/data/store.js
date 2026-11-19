@@ -132,6 +132,7 @@ export function migrate(db) {
       const category = (db.categories ?? []).find((c) => c.id === collection.categoryId);
       collection.clothType = category?.name ?? 'Kain';
     }
+    if (!collection.motive) collection.motive = collection.clothType ?? collection.name;
     if (!collection.defaultRollLengthM) collection.defaultRollLengthM = 60;
     if (!collection.defaultWidthCm) collection.defaultWidthCm = 300;
     const defaults = sampleDefaults[collection.id] ?? { samplePrice: 0, sampleDeposit: 0, sampleMin: 1 };
@@ -139,9 +140,16 @@ export function migrate(db) {
     if (collection.sampleDeposit === undefined) collection.sampleDeposit = defaults.sampleDeposit;
     if (collection.sampleMin === undefined) collection.sampleMin = defaults.sampleMin;
   }
+  for (const collection of db.collections ?? []) {
+    if (collection.motivePrice === undefined) {
+      const firstSku = (db.skus ?? []).find((s) => s.collectionId === collection.id);
+      collection.motivePrice = Number(firstSku?.sellPrice) || 0;
+    }
+  }
   for (const sku of db.skus ?? []) {
     const collection = (db.collections ?? []).find((c) => c.id === sku.collectionId);
     if (!sku.clothType) sku.clothType = collection?.clothType ?? '';
+    if (!sku.motive) sku.motive = collection?.motive ?? '';
     if (!sku.sellPriceUpdatedAt) sku.sellPriceUpdatedAt = '2026-06-01';
   }
   for (const part of db.parts ?? []) {
@@ -171,6 +179,8 @@ export function migrate(db) {
           samplePrice: collection.samplePrice ?? stock.samplePrice ?? 0,
           sampleDeposit: collection.sampleDeposit ?? stock.sampleDeposit ?? 0,
           unitCost: Number(stock.unitCost) || 0,
+          warehouseId: stock.warehouseId
+            ?? (/bali/i.test(String(stock.location ?? '')) ? 'wh-bali' : 'wh-jkt'),
           location: stock.location ?? 'Showroom Jakarta',
           procurements: [],
           updatedAt: stock.updatedAt ?? new Date().toISOString(),
@@ -203,6 +213,7 @@ export function migrate(db) {
           samplePrice: collection.samplePrice ?? 0,
           sampleDeposit: collection.sampleDeposit ?? 0,
           unitCost: 0,
+          warehouseId: 'wh-jkt',
           location: 'Showroom Jakarta',
           procurements: [],
           updatedAt: new Date().toISOString(),

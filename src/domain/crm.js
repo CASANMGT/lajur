@@ -125,12 +125,13 @@ export function sampleStockForCollection(db, collectionId) {
  */
 export function procureSampleStock(db, {
   collectionId, qty, unitCost = 0, supplierId = null, date = todayJakarta(),
-  notes = '', location = 'Showroom Jakarta', user,
+  notes = '', location = '', warehouseId = 'wh-jkt', user,
 }) {
   const collection = byId(db.collections, collectionId);
   assert(collection, 'COLLECTION_NOT_FOUND', 'Koleksi tidak ditemukan.');
+  if (warehouseId) assert(byId(db.warehouses, warehouseId), 'WAREHOUSE_NOT_FOUND', 'Gudang sample tidak ditemukan.');
   const count = Math.round(Number(qty));
-  assert(count > 0, 'INVALID_QTY', 'Jumlah sample dari pabrik harus lebih dari 0 pcs.');
+  assert(count > 0, 'INVALID_QTY', 'Jumlah buku sample dari pabrik harus lebih dari 0 pcs.');
   const cost = Math.max(0, Math.round(Number(unitCost) || 0));
   if (supplierId) assert(byId(db.suppliers, supplierId), 'SUPPLIER_NOT_FOUND', 'Pemasok tidak ditemukan.');
   db.sampleStocks = db.sampleStocks ?? [];
@@ -145,7 +146,8 @@ export function procureSampleStock(db, {
       samplePrice: collection.samplePrice ?? 0,
       sampleDeposit: collection.sampleDeposit ?? 0,
       unitCost: 0,
-      location,
+      warehouseId: warehouseId || 'wh-jkt',
+      location: String(location ?? '').trim() || byId(db.warehouses, warehouseId)?.name || 'Gudang Pusat Jakarta',
       procurements: [],
       updatedAt: isoNow(),
       history: [],
@@ -161,7 +163,10 @@ export function procureSampleStock(db, {
   stock.samplePrice = collection.samplePrice ?? stock.samplePrice ?? 0;
   stock.sampleDeposit = collection.sampleDeposit ?? stock.sampleDeposit ?? 0;
   stock.minQty = collection.sampleMin ?? stock.minQty ?? 1;
-  stock.location = String(location ?? stock.location ?? '').trim() || stock.location;
+  if (warehouseId) stock.warehouseId = warehouseId;
+  stock.location = String(location ?? '').trim()
+    || byId(db.warehouses, stock.warehouseId)?.name
+    || stock.location;
   stock.updatedAt = isoNow();
   stock.procurements = stock.procurements ?? [];
   const procurement = {
@@ -179,6 +184,37 @@ export function procureSampleStock(db, {
   stock.history.unshift({ at: isoNow(), action: 'Procurement pabrik', qty: count, by: user?.name ?? 'Sistem', note: procurement.notes });
   audit(db, user, 'procure_sample', 'sampleStock', stock.id, `${collection.name} · ${count} pcs`);
   return { stock, procurement };
+}
+
+/** Edit buku sample stock, price, deposit, minimum and warehouse location. */
+export function updateSampleStock(db, {
+  id, qty, samplePrice, sampleDeposit, minQty, warehouseId, location, user,
+}) {
+  const stock = getSampleStock(db, id);
+  assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok buku sample tidak ditemukan.');
+  const collection = byId(db.collections, stock.collectionId);
+  const nextQty = Math.max(0, Math.round(Number(qty ?? stock.qty) || 0));
+  const nextPrice = Math.max(0, Math.round(Number(samplePrice ?? stock.samplePrice) || 0));
+  const nextDeposit = Math.max(0, Math.round(Number(sampleDeposit ?? stock.sampleDeposit) || 0));
+  const nextMin = Math.max(0, Math.round(Number(minQty ?? stock.minQty) || 0));
+  if (warehouseId) assert(byId(db.warehouses, warehouseId), 'WAREHOUSE_NOT_FOUND', 'Gudang sample tidak ditemukan.');
+  Object.assign(stock, {
+    qty: nextQty,
+    samplePrice: nextPrice,
+    sampleDeposit: nextDeposit,
+    minQty: nextMin,
+    warehouseId: warehouseId || stock.warehouseId || 'wh-jkt',
+    location: String(location ?? '').trim() || byId(db.warehouses, warehouseId || stock.warehouseId)?.name || stock.location,
+    updatedAt: isoNow(),
+  });
+  if (collection) {
+    collection.samplePrice = nextPrice;
+    collection.sampleDeposit = nextDeposit;
+    collection.sampleMin = nextMin;
+  }
+  audit(db, user, 'ubah_stok_sample', 'sampleStock', stock.id,
+    `${stock.qty} pcs · ${nextPrice} · ${nextDeposit}`);
+  return stock;
 }
 
 /** Customer-level sample and purchase history. */

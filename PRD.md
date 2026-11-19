@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.19
+# PRD - Lavishome v2.20
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.19.0 (schema 17)
+**Version:** 2.20.0 (schema 18)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.19: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.20: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -170,7 +170,7 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Project fulfilment | One invoice; no partial issue or multi-invoice project |
 | Permissions | PIN session gates the UI; no server enforcement, no shared session |
 | Attachments | File metadata only; bytes are not stored |
-| Barcode | Label is printable; no scanner integration |
+| QR / scan | QR printable; public scan page shows local stock status; no handheld-scanner integration |
 | Payments | Recorded locally; no gateway, bank or reconciliation |
 | As-of inventory | Movement history exists; historical balance reconstruction is not exposed |
 | Transit exceptions | Damaged/lost/disputed goods in transit need a future workflow |
@@ -188,7 +188,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | Entity | Key fields |
 |--------|-----------|
 | `warehouse` | id, code, name, bin prefix, address, phone, **active** |
-| `collection` | id, name, category, clothType, defaultRollLengthM (60), defaultWidthCm (300), samplePrice, sampleDeposit, sampleMin, description |
+| `collection` | id, name, category, clothType, motive, motivePrice, defaultRollLengthM (60), defaultWidthCm (300), samplePrice, sampleDeposit, sampleMin, description |
 | `sku` (colour variant) | id, collectionId, collectionName, clothType, code, colourCode, colourName, swatch (nullable), widthCm, unit `m`, buy/sell price, sellPriceUpdatedAt, brand/notes/image optional, active/dormant |
 | `part` | id, SKU, name, category, brand, unit `pcs`, buy/sell price, image/notes optional, parentPartId optional (same category), active |
 | `roll` | id, barcode (stable QR value), skuId, lot, receivedAt, receiptRef, originalMm, currentMm, reservedMm, warehouseId, bin, status, condition, costPerM, parentRollId, rootRollId, transit, reservations[] |
@@ -217,7 +217,7 @@ Authentication and server authorization; transactional posting with idempotency;
 | `work centre` | stage, name, capacityPerDay, ratePerPiece |
 | `settings` | lowStockMm, taskDueDays, requireProofOnReceipt, uiMode simple/advanced (default simple), onlineAssignmentEnabled (default on), salesOrderEnabled (default off), productionEnabled (default off), operatorCanSeeCosts, sampleDepositRequired |
 | `sample` | id, customer, sku, source roll/stockId, qty, mode free/paid/deposit, depositId, linkedInvoiceId, status |
-| `sample stock` | id, collectionId, qty pieces, minQty, samplePrice, sampleDeposit, unitCost, location, procurements[], history[] |
+| `sample stock` | id, collectionId, qty pieces, minQty, samplePrice, sampleDeposit, unitCost, warehouseId, location, procurements[], history[] |
 | `sell price history` | id, itemType sku/part, itemId, oldPrice, newPrice, changedAt, changedBy, note, staleDays |
 | `sample book` | id, name, customer/prospect, date, status ready/given, items[] (sampleId, skuId, rollId, qtyMm), givenTo, givenAt, history[] |
 | `deposit` | id, customer, kind indent/sample, amount, applied, refunded, ledger[], sampleId |
@@ -426,8 +426,8 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 ### 6.17 Buku sample stock, roll QR, WA stock and price review
 
 1. **Collection first, colour second:** collection defines cloth type and default roll size; SKU defines colour and actual width. The default is 60 m × 300 cm.
-2. **Buku sample stock:** factory-procured books per collection. Add stock from the collection form or the Buku sample pabrik action with qty, cost, supplier and date. The Buku Sample page shows price, refundable deposit, minimum, procurement history, customer purchase summary and distribution history. Giving a book never cuts a roll.
-3. **Roll tags:** each roll has a stable QR code and prints a stock tag with collection, cloth type, colour, width, lot, length and warehouse/bin. Scanning opens the roll detail even when logged out (the URL survives login), showing current stock, total cut, remaining metres, each cut with before/after metres and the full movement history. Searching `RL-0001` or the barcode value finds the roll.
+2. **Buku sample stock:** factory-procured books per collection. Add stock from the collection form or the Buku sample pabrik action with qty, cost, supplier, date and warehouse (Jakarta/Bali). The Buku Sample page filters stock by Tersedia/Habis and distribution by Terkonversi/Belum konversi. Managers can edit qty, price, refundable deposit, minimum and warehouse. Giving a book never cuts a roll.
+3. **Roll tags:** each roll has a stable QR code and prints a stock tag with collection, motif, colour, width, lot, length and warehouse/bin. Scanning `#/scan/:id` opens a public stock-status page even when logged out; it shows current stock, total cut, remaining metres and cut history, with a login prompt for full actions. Searching `RL-0001` or the barcode value finds the roll.
 4. **WA stock:** customer master stores a WhatsApp number. Customer detail and Stock generate a message of available metres/prices, copy it, or open `wa.me`.
 5. **Price review:** sell-price changes are separate from master edits. The price editor shows current price, last update, history and a 90-day confirmation gate.
 6. **Warehouse sale:** transfer ongkir is recorded per transfer and divided across requested metres; received rolls carry the higher landed HPP.
@@ -519,6 +519,9 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-78 | WhatsApp is optional on a customer. The stock message lists only available stock and never cost or supplier data. |
 | BR-79 | Warehouse-to-warehouse transfer is an internal sale: ongkir is recorded and added to destination roll HPP when received. |
 | BR-80 | A posted invoice without a surat jalan is surfaced as an operational warning; printing remains delivery-only. |
+| BR-81 | QR scan needs no login to show a read-only stock status page; actions require login and the scanned roll URL is retained. |
+| BR-82 | Buku sample stock supports Tersedia/Habis and Terkonversi/Belum konversi filters; managers may edit qty, price, deposit, minimum and Jakarta/Bali warehouse. |
+| BR-83 | Each collection defines a motif and base motif price; each colour/SKU keeps an independent sell price. |
 
 ---
 
@@ -526,7 +529,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.19 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.20 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -672,6 +675,9 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-86 | A price unchanged ≥90 days blocks saving until confirmation and records old/new price history | Pass |
 | AC-87 | Transfer ongkir increases destination roll HPP by ongkir ÷ requested metres | Pass |
 | AC-88 | Pengiriman lists posted invoices without a surat jalan | Pass |
+| AC-89 | Logged-out QR scan renders stock status; detail button prompts login and preserves the scanned roll | Pass |
+| AC-90 | Buku sample filters Tersedia/Habis and Terkonversi/Belum konversi; manager edits stock/price/warehouse | Pass |
+| AC-91 | Collection stores motif/base price; colour variants keep independent prices | Pass |
 
 Test evidence: `node --test` → 74/74 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
@@ -716,7 +722,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock, QR stock scan page, WA stock share, sell-price review, transfer ongkir | 74/74 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir | 74/74 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

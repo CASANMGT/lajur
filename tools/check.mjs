@@ -15,6 +15,7 @@ const modules = [
   '../src/ui/views/tasks.js', '../src/ui/views/samples.js',
   '../src/ui/views/orders.js', '../src/ui/views/settings.js',
   '../src/ui/views/production.js', '../src/ui/views/deliveries.js', '../src/ui/views/catalog.js', '../src/ui/views/guide.js',
+  '../src/ui/views/scan.js',
 ];
 
 let failed = 0;
