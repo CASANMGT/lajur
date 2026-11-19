@@ -9,14 +9,24 @@ import {
 } from '../../domain/inventory.js';
 import { pageHead, statCard, warehouseOf, can, roleHint, movementRow, warehouseOptions } from './common.js';
 import { settingsOf } from '../../domain/settings.js';
-import { printLabelHtml } from './print.js';
+import { printStockTagsHtml } from './print.js';
 
 const filters = { q: '', collection: '', status: 'all', available: false };
-let stockView = 'list';
+let stockView = 'tree';
+
+const CLOSED_ROLL = new Set(['sold', 'consumed', 'void']);
+const isClosedRoll = (roll) => CLOSED_ROLL.has(roll.status);
 
 function rollStatus(roll) {
   if (roll.transit) return { label: 'Transit', tone: 'info' };
   return ROLL_STATUS[roll.status] ?? { label: roll.status, tone: 'muted' };
+}
+
+/** Available stock first (most available on top), sold/consumed at the bottom. */
+function byAvailability(a, b) {
+  const closed = Number(isClosedRoll(a)) - Number(isClosedRoll(b));
+  if (closed) return closed;
+  return availableMm(b) - availableMm(a) || String(b.id).localeCompare(String(a.id));
 }
 
 function matches(db, roll, { whId }) {
@@ -44,12 +54,27 @@ function rowsHtml(ctx) {
   const { db, ui } = ctx;
   const list = db.rolls
     .filter((r) => matches(db, r, { whId: ui.warehouseId }))
-    .sort((a, b) => b.id.localeCompare(a.id));
+    .sort(byAvailability);
 
   if (!list.length) {
-    return `<tr><td colspan="9">${''}</td></tr>`;
+    return `<tr><td colspan="7"><div class="empty">${icon('search')}<strong>Tidak ada roll</strong><p>Ubah kata kunci atau filter gudang.</p></div></td></tr>`;
   }
-  return list.map((roll) => {
+  const available = list.filter((r) => !isClosedRoll(r));
+  const sold = list.filter(isClosedRoll);
+  const groupRow = (label, count, mm, tone) => `<tr class="group-row"><td colspan="7"><span class="group-title ${tone}">${label}</span><span class="xs muted">${count} roll · ${fmt.m(mm)} ${tone === 'sold' ? 'tercatat' : 'tersedia'}</span></td></tr>`;
+  const total = (rows) => rows.reduce((a, r) => a + (isClosedRoll(r) ? r.currentMm : availableMm(r)), 0);
+  const body = [];
+  if (available.length) {
+    if (sold.length) body.push(groupRow('Stok tersedia', available.length, total(available), 'available'));
+    body.push(...available.map(rowHtml).filter(Boolean));
+  }
+  if (sold.length) {
+    body.push(groupRow('Terjual / habis', sold.length, total(sold), 'sold'));
+    body.push(...sold.map(rowHtml).filter(Boolean));
+  }
+  return body.join('');
+
+  function rowHtml(roll) {
     const sku = byId(db.skus, roll.skuId);
     const status = rollStatus(roll);
     const wh = roll.transit ? byId(db.warehouses, roll.transit.toWarehouseId) : byId(db.warehouses, roll.warehouseId);
@@ -71,7 +96,7 @@ function rowsHtml(ctx) {
       <td class="num ${avail === 0 ? 'muted' : ''}">${isSellable(roll) ? fmt.m(avail) : '—'}</td>
       <td>${badge(status.label, status.tone)}</td>
     </tr>`;
-  }).join('');
+  }
 }
 
 function treeRows(nodes, db) {
@@ -119,10 +144,17 @@ function hierarchyInner(ctx) {
             </div>
             ${s.sku?.swatch ? `<span class="xs mono muted">${esc(s.sku.swatch)}</span>` : ''}
           </div>
-          <div class="tree-head" aria-hidden="true">
+          ${s.availableNodes.length ? `<div class="tree-head" aria-hidden="true">
             <span>Roll</span><span>Lot / lokasi</span><span class="num">Fisik</span><span class="num">Terpesan</span><span class="num">Tersedia</span><span>Status</span>
           </div>
-          <div class="tree-nodes">${treeRows(s.nodes, db)}</div>
+          <div class="tree-nodes">${treeRows(s.availableNodes, db)}</div>` : ''}
+          ${s.soldNodes.length ? `<details class="tree-sold">
+            <summary><span class="group-title sold">Terjual / habis</span><span class="xs muted">${s.soldNodes.length} induk · ${fmt.m(s.soldNodes.reduce((a, n) => a + n.subtreePhysicalMm, 0))} tercatat</span></summary>
+            <div class="tree-head" aria-hidden="true">
+              <span>Roll</span><span>Lot / lokasi</span><span class="num">Fisik</span><span class="num">Terpesan</span><span class="num">Tersedia</span><span>Status</span>
+            </div>
+            <div class="tree-nodes">${treeRows(s.soldNodes, db)}</div>
+          </details>` : ''}
         </div>`).join('')}
       </div>
     </details>`;
@@ -133,9 +165,12 @@ function cardsHtml(ctx) {
   const { db, ui } = ctx;
   const list = db.rolls
     .filter((r) => matches(db, r, { whId: ui.warehouseId }))
-    .sort((a, b) => b.id.localeCompare(a.id));
+    .sort(byAvailability);
   if (!list.length) return `<div class="empty">${icon('search')}<strong>Tidak ada roll</strong><p>Ubah kata kunci atau filter gudang.</p></div>`;
-  return list.map((roll) => {
+  const available = list.filter((r) => !isClosedRoll(r));
+  const sold = list.filter(isClosedRoll);
+  const head = (label, count, mm, tone) => `<div class="stock-group-head"><span class="group-title ${tone}">${label}</span><span class="xs muted">${count} roll · ${fmt.m(mm)}</span></div>`;
+  const card = (roll) => {
     const sku = byId(db.skus, roll.skuId);
     const status = rollStatus(roll);
     const wh = roll.transit ? byId(db.warehouses, roll.transit.toWarehouseId) : byId(db.warehouses, roll.warehouseId);
@@ -153,7 +188,17 @@ function cardsHtml(ctx) {
         <div class="kv"><span>Tersedia</span><strong>${isSellable(roll) ? fmt.m(avail) : '—'}</strong></div>
       </div>
     </a>`;
-  }).join('');
+  };
+  const out = [];
+  if (available.length) {
+    if (sold.length) out.push(head('Stok tersedia', available.length, available.reduce((a, r) => a + availableMm(r), 0), 'available'));
+    out.push(...available.map(card));
+  }
+  if (sold.length) {
+    out.push(head('Terjual / habis', sold.length, sold.reduce((a, r) => a + r.currentMm, 0), 'sold'));
+    out.push(...sold.map(card));
+  }
+  return out.join('');
 }
 
 function summaryStrip(ctx) {
@@ -192,7 +237,7 @@ export function render(ctx) {
       sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
       actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok manual</button>` : ''}
         <a class="btn" href="#/pembelian">${icon('truck')} Terima PO</a>
-        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
+        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="print-tags">${icon('printer')} Tag A4</button><button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}`,
     })}
     ${summaryStrip(ctx)}
     <div class="filterbar">
@@ -535,6 +580,50 @@ function openAddStock(ctx) {
   });
 }
 
+function openPrintTags(ctx, roll = null) {
+  const collections = ctx.db.collections.filter((c) => (ctx.db.skus ?? []).some((s) => s.collectionId === c.id));
+  const scopeOptions = [
+    ...(roll ? [`<option value="single">Roll ini — ${esc(roll.id)}</option>`] : []),
+    '<option value="collection">Semua roll dalam motif/koleksi</option>',
+    '<option value="available">Semua roll dengan stok tersedia</option>',
+  ].join('');
+  openModal({
+    title: 'Cetak tag stok A4',
+    description: 'Pilih satu roll, ulangi beberapa kali, atau cetak banyak roll dari motif/koleksi yang sama.',
+    submitLabel: 'Buka cetak A4',
+    body: `<div class="form-grid">
+      ${field('Cakupan', `<select class="select" name="scope">${scopeOptions}</select>`)}
+      ${field('Koleksi / motif', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`)}
+      ${field('Ulangi tiap tag', `<input class="input" type="number" name="copies" min="1" max="40" value="1" />`, { hint: 'Jumlah salinan per roll. A4 menampung 8 tag.' })}
+      ${field('Roll terjual/habis', `<label class="checkline"><input type="checkbox" name="includeSold" /> Sertakan roll yang sudah habis/terjual</label>`, { full: true })}
+    </div>`,
+    onMount(form) {
+      const sync = () => {
+        form.collection.closest('.field').style.opacity = form.scope.value === 'collection' ? '1' : '.45';
+        form.collection.disabled = form.scope.value !== 'collection';
+      };
+      form.scope.addEventListener('change', sync);
+      sync();
+    },
+    onSubmit(form, close) {
+      const scope = form.scope.value;
+      let rolls = [];
+      if (scope === 'single' && roll) rolls = [roll];
+      if (scope === 'collection') {
+        const skuIds = new Set((ctx.db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
+        rolls = (ctx.db.rolls ?? []).filter((r) => skuIds.has(r.skuId)
+          && (form.includeSold.checked || availableMm(r) > 0));
+      }
+      if (scope === 'available') rolls = (ctx.db.rolls ?? []).filter((r) => availableMm(r) > 0);
+      if (!rolls.length) throw new Error('Tidak ada roll untuk dicetak pada cakupan ini.');
+      const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));
+      printDocument('Tag stok A4', printStockTagsHtml(ctx.db, rolls, { copies }), { plain: true });
+      close();
+      toast(`${rolls.length} roll × ${copies} salinan disiapkan untuk A4.`, { tone: 'success' });
+    },
+  });
+}
+
 export function openStockShare(ctx, { customerId = null } = {}) {
   const { db } = ctx;
   const customers = (db.customers ?? []).filter((c) => c.stage !== 'dormant');
@@ -613,9 +702,7 @@ export function mount(ctx) {
   if (ctx.route.id) {
     document.querySelector('[data-action="print-label"]')?.addEventListener('click', () => {
       const roll = ctx.db.rolls.find((r) => r.id === ctx.route.id);
-      const sku = byId(ctx.db.skus, roll.skuId);
-      const wh = warehouseOf(ctx.db, roll.transit?.toWarehouseId ?? roll.warehouseId);
-      printDocument(`Tag stok ${roll.id}`, printLabelHtml(roll, sku, wh));
+      if (roll) openPrintTags(ctx, roll);
     });
     document.querySelector('[data-action="quarantine"]')?.addEventListener('click', async () => {
       const reason = await promptText({
@@ -680,6 +767,7 @@ export function mount(ctx) {
     // Force a full view re-render via store emit.
     ctx.store.emit();
   });
+  document.querySelector('[data-act="print-tags"]')?.addEventListener('click', () => openPrintTags(ctx));
   document.querySelector('[data-act="share-stock"]')?.addEventListener('click', () => openStockShare(ctx));
   document.querySelector('[data-act="add-stock"]')?.addEventListener('click', () => openAddStock(ctx));
   if (ctx.route.query?.add && can(ctx.role, 'stock.add')) {

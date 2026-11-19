@@ -980,7 +980,15 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
 }
 .modal-head h2 { font-size: var(--text-lg); }
 .modal-head p { margin-top: 4px; font-size: 12.5px; color: var(--muted); }
-.modal-body { padding: var(--s-4); overflow-y: auto; min-height: 0; }
+.modal-body {
+  padding: var(--s-4);
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.select[multiple] { min-height: 132px; padding: 6px; }
+.select[multiple] option { padding: 5px 7px; border-radius: 6px; }
 .modal-foot {
   padding: var(--s-3) var(--s-4);
   border-top: 1px solid var(--line);
@@ -1766,6 +1774,46 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   .card { box-shadow: none; border-color: #bbb; }
   .print-page { padding: 24px; }
 }
+
+/* ------------------------------------------------------- stock availability */
+.group-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.group-title.available { color: var(--teal); }
+.group-title.sold { color: var(--muted); }
+tr.group-row td {
+  background: var(--ivory-50);
+  border-top: 1px solid var(--line);
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+tr.group-row:first-child td { border-top: 0; }
+tr.group-row .xs { margin-left: 8px; }
+.stock-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 2px 6px;
+}
+.tree-sold { margin-top: 10px; border-top: 1px dashed var(--line-strong); padding-top: 6px; }
+.tree-sold > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 8px;
+}
+.tree-sold > summary::-webkit-details-marker { display: none; }
+.tree-sold > summary::before { content: "+"; color: var(--muted); font-size: 12px; }
+.tree-sold[open] > summary::before { content: "−"; }
+.tree-sold > summary:hover { background: var(--ivory-50); }
+.tree-sold .tree-nodes { opacity: 0.78; }
 
 /* ---------------------------------------------------------------- roll tree */
 .tree-collection { overflow: hidden; }

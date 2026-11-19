@@ -548,7 +548,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 18);
+  assert.equal(migrated.meta.version, 19);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
   assert.deepEqual(migrated.fleetAssets, []);
@@ -560,7 +560,7 @@ test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
   db.fleetAssets = [];
   db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 18);
+  assert.equal(migrated.meta.version, 19);
   assert.equal(migrated.transportCompanies.length, 6);
   assert.equal(migrated.fleetAssets.length, 3);
   assert.equal(migrated.sequences.fleetAsset, 3);
@@ -576,7 +576,7 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   delete delivery.transportId;
   delete delivery.transportName;
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 18);
+  assert.equal(migrated.meta.version, 19);
   assert.equal(migrated.deliveries[0].transportId, 'TRP-006');
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });
@@ -765,16 +765,19 @@ test('v2.14 third-party vehicles leave the internal fleet during migration', () 
   assert.equal(migrated.drivers.find((d) => d.id === 'DRV-003').plateNumber, 'B 5566 GH');
 });
 
-test('internal fleet assignment moves the vehicle and syncs the driver', () => {
+test('fleet vehicles can list several drivers without stealing links', () => {
   const db = buildSeed();
   const asset = saveFleetAsset(db, {
-    code: 'B 9999 ZZ', name: 'Tes Van', type: 'mobil', driverId: 'DRV-001', capacityKg: 700, user: MGR,
+    code: 'B 9999 ZZ', name: 'Tes Van', type: 'mobil', driverIds: ['DRV-001', 'DRV-002'], capacityKg: 700, user: MGR,
   });
   assert.equal(asset.id, 'FLT-004');
   assert.equal(asset.ownership, 'internal');
   assert.equal(asset.transportId, 'TRP-001');
   assert.equal(asset.driverId, 'DRV-001');
-  assert.equal(db.fleetAssets.find((a) => a.id === 'FLT-001').driverId, null);
+  assert.deepEqual([...asset.driverIds].sort(), ['DRV-001', 'DRV-002']);
+  // The old vehicle keeps the driver's link even though the new vehicle is now
+  // the default; a driver is allowed to use both.
+  assert.ok(db.fleetAssets.find((a) => a.id === 'FLT-001').driverIds.includes('DRV-001'));
   const asep = db.drivers.find((d) => d.id === 'DRV-001');
   assert.equal(asep.plateNumber, 'B 9999 ZZ');
   assert.equal(asep.vehicleType, 'mobil');
@@ -782,13 +785,23 @@ test('internal fleet assignment moves the vehicle and syncs the driver', () => {
   expectError(() => saveFleetAsset(db, { code: 'B 1111 AA', name: 'Tanpa transport', transportId: 'TRP-404', user: MGR }), 'TRANSPORT_NOT_FOUND');
 });
 
-test('driver assignment moves the internal vehicle between drivers', () => {
+test('driver assignment links several vehicles and can move the default', () => {
   const db = buildSeed();
-  saveDriver(db, { id: 'DRV-001', name: 'Asep', fleetAssetId: 'FLT-003', user: MGR });
-  assert.equal(db.fleetAssets.find((a) => a.id === 'FLT-001').driverId, null);
-  assert.equal(db.fleetAssets.find((a) => a.id === 'FLT-003').driverId, 'DRV-001');
-  assert.equal(db.drivers.find((d) => d.id === 'DRV-001').plateNumber, 'B 5566 GH');
-  assert.equal(db.drivers.find((d) => d.id === 'DRV-003').plateNumber, '');
+  const asep = () => db.drivers.find((d) => d.id === 'DRV-001');
+  const asset = (id) => db.fleetAssets.find((a) => a.id === id);
+
+  saveDriver(db, { id: 'DRV-001', name: 'Asep', fleetAssetIds: ['FLT-001', 'FLT-003'], user: MGR });
+  assert.ok(asset('FLT-001').driverIds.includes('DRV-001'));
+  assert.ok(asset('FLT-003').driverIds.includes('DRV-001'));
+  assert.equal(asset('FLT-001').driverId, 'DRV-001');
+  assert.equal(asep().plateNumber, 'B 1234 CD');
+
+  saveDriver(db, { id: 'DRV-001', name: 'Asep', fleetAssetIds: ['FLT-002'], user: MGR });
+  assert.equal(asset('FLT-001').driverIds.includes('DRV-001'), false);
+  assert.equal(asset('FLT-002').driverId, 'DRV-001');
+  assert.equal(asep().plateNumber, 'B 9876 EF');
+  // The previous default driver of FLT-002 stays linked, just not default.
+  assert.ok(asset('FLT-002').driverIds.includes('DRV-002'));
 });
 
 test('surat jalan captures J&T/JNE consignment fields', () => {

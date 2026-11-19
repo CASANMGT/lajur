@@ -312,6 +312,7 @@ function hierarchyNode(roll, childrenMap, seen) {
   const physicalMm = roll.currentMm || 0;
   const reservedMm = roll.reservedMm || 0;
   const avail = availableMm(roll);
+  const closed = ['sold', 'consumed', 'void'].includes(roll.status);
   return {
     roll,
     children,
@@ -320,6 +321,9 @@ function hierarchyNode(roll, childrenMap, seen) {
     availableMm: avail,
     subtreePhysicalMm: physicalMm + children.reduce((a, c) => a + c.subtreePhysicalMm, 0),
     subtreeAvailableMm: avail + children.reduce((a, c) => a + c.subtreeAvailableMm, 0),
+    // Count rolls that are still in stock (not sold/consumed/void), so a fully
+    // reserved or quarantined roll stays in the available section, not "sold".
+    subtreeActive: (closed ? 0 : 1) + children.reduce((a, c) => a + c.subtreeActive, 0),
   };
 }
 
@@ -364,12 +368,37 @@ export function rollHierarchy(db, { warehouseId = null, rolls = null } = {}) {
         .sort((a, b) => a.id.localeCompare(b.id));
       const seen = new Set(roots.map((r) => r.id));
       const nodes = roots.map((r) => hierarchyNode(r, childrenMap, seen));
+      // Available rolls come first, sorted by the most available length. Rolls
+      // that are sold/consumed move to a separate group, including sold child
+      // pieces that hang under a still-active parent roll.
+      nodes.sort((a, b) => b.subtreeAvailableMm - a.subtreeAvailableMm || a.roll.id.localeCompare(b.roll.id));
+      const soldNodes = [];
+      const pruneClosed = (node) => ({
+        ...node,
+        children: node.children.flatMap((child) => {
+          if (child.subtreeActive === 0) {
+            soldNodes.push(child);
+            return [];
+          }
+          return [pruneClosed(child)];
+        }),
+      });
+      const availableNodes = nodes.flatMap((node) => {
+        if (node.subtreeActive === 0) {
+          soldNodes.push(node);
+          return [];
+        }
+        return [pruneClosed(node)];
+      });
+      soldNodes.sort((a, b) => b.subtreePhysicalMm - a.subtreePhysicalMm || a.roll.id.localeCompare(b.roll.id));
       const physicalMm = nodes.reduce((a, n) => a + n.subtreePhysicalMm, 0);
       const availableMmTotal = nodes.reduce((a, n) => a + n.subtreeAvailableMm, 0);
       const reservedMm = rolls.reduce((a, r) => a + (r.reservedMm || 0), 0);
       skus.push({
         sku,
         nodes,
+        availableNodes,
+        soldNodes,
         rollCount: rolls.length,
         rootCount: roots.length,
         childCount: rolls.length - roots.length,
@@ -378,7 +407,8 @@ export function rollHierarchy(db, { warehouseId = null, rolls = null } = {}) {
         reservedMm,
       });
     }
-    skus.sort((a, b) => String(a.sku?.code ?? '').localeCompare(String(b.sku?.code ?? '')));
+    // Colour/SKU groups are ordered by the most available stock first.
+    skus.sort((a, b) => b.availableMm - a.availableMm || String(a.sku?.code ?? '').localeCompare(String(b.sku?.code ?? '')));
     result.push({
       id: group.id,
       name: group.name,
@@ -390,7 +420,8 @@ export function rollHierarchy(db, { warehouseId = null, rolls = null } = {}) {
       reservedMm: skus.reduce((a, s) => a + s.reservedMm, 0),
     });
   }
-  result.sort((a, b) => a.name.localeCompare(b.name));
+  // Collections/motifs are ordered by the most available stock first.
+  result.sort((a, b) => b.availableMm - a.availableMm || a.name.localeCompare(b.name));
   return result;
 }
 

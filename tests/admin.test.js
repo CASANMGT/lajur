@@ -129,7 +129,7 @@ test('part parent must share a category and cannot form a cycle', () => {  const
   }), (err) => err.code === 'PARENT_CYCLE');
 });
 
-test('driver master stores name, vehicle type and unique plate', () => {
+test('driver master stores name, vehicle type and allows a shared plate', () => {
   const db = buildSeed();
   const driver = saveDriver(db, {
     name: 'Joko', phone: '0812-0000-1111', vehicleType: 'motor', plateNumber: 'B 9999 ZZ', user: MGR,
@@ -138,9 +138,12 @@ test('driver master stores name, vehicle type and unique plate', () => {
   assert.equal(driver.vehicleType, 'motor');
   assert.equal(driver.plateNumber, 'B 9999 ZZ');
   assert.equal(db.drivers.some((d) => d.id === driver.id), true);
-  assert.throws(() => saveDriver(db, {
-    name: 'Duplikat', vehicleType: 'mobil', plateNumber: 'b 9999 zz', user: MGR,
-  }), (err) => err.code === 'DUPLICATE_PLATE');
+  // A plate is no longer unique per driver: the same company vehicle may be
+  // used by several drivers.
+  const second = saveDriver(db, {
+    name: 'Budi', vehicleType: 'motor', plateNumber: 'b 9999 zz', user: MGR,
+  });
+  assert.equal(second.plateNumber, 'B 9999 ZZ');
   saveDriver(db, { id: driver.id, name: 'Joko', vehicleType: 'motor', plateNumber: 'B 9999 ZZ', active: false, user: MGR });
   assert.equal(db.drivers.find((d) => d.id === driver.id).active, false);
 });

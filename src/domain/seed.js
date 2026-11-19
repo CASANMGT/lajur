@@ -211,9 +211,9 @@ export function buildSeed({ dataset = 'main' } = {}) {
   );
 
   db.fleetAssets.push(
-    { id: 'FLT-001', code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-001', capacityKg: 50, taxExpiry: '2027-03-31', active: true, notes: 'Motor operasional Jakarta.' },
-    { id: 'FLT-002', code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-002', capacityKg: 800, taxExpiry: '2027-01-31', active: true, notes: 'Mobil boks kecil.' },
-    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-003', capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk engkel untuk roll panjang.' },
+    { id: 'FLT-001', code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-001', driverIds: ['DRV-001', 'DRV-002'], capacityKg: 50, taxExpiry: '2027-03-31', active: true, notes: 'Motor operasional Jakarta.' },
+    { id: 'FLT-002', code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-002', driverIds: ['DRV-002', 'DRV-001', 'DRV-003'], capacityKg: 800, taxExpiry: '2027-01-31', active: true, notes: 'Mobil boks kecil.' },
+    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-003', driverIds: ['DRV-003', 'DRV-002'], capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk engkel untuk roll panjang.' },
   );
 
   db.supplierPrices.push(

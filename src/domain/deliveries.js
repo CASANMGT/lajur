@@ -10,6 +10,7 @@ import {
   DomainError, assert, audit, byId, isoNow, nextId, todayJakarta,
 } from './core.js';
 import { requireInvoice } from './sales.js';
+import { fleetAssetOfDriver } from './master.js';
 
 export const DELIVERY_STATUS = {
   draft: { label: 'Dibuat', tone: 'muted' },
@@ -29,6 +30,22 @@ export const COURIERS = {
   sicepat: { label: 'SiCepat' },
   anteraja: { label: 'AnterAja' },
 };
+
+export const SERVICES_BY_COURIER = {
+  internal: ['REG', 'CARGO'],
+  lalamove: ['MOTOR', 'MOBIL', 'CARGO'],
+  gosend: ['INSTANT', 'SAMEDAY'],
+  grabexpress: ['INSTANT', 'SAMEDAY'],
+  'bali-kargo': ['REG', 'CARGO'],
+  jnt: ['EZ', 'ECO', 'CARGO'],
+  jne: ['REG', 'YES', 'OKS'],
+  sicepat: ['REG', 'BEST', 'CARGO'],
+  anteraja: ['REG', 'NEXTDAY'],
+};
+
+export function servicesForCourier(courier) {
+  return SERVICES_BY_COURIER[courier] ?? ['REG'];
+}
 
 export function getDelivery(db, id) {
   return db.deliveries?.find((d) => d.id === id) ?? null;
@@ -64,7 +81,7 @@ export function deliverySchedule(db, { limit = 12 } = {}) {
 
 function fleetForDriver(db, driverId) {
   if (!driverId) return null;
-  return (db.fleetAssets ?? []).find((a) => a.driverId === driverId && (a.ownership ?? 'internal') === 'internal') ?? null;
+  return fleetAssetOfDriver(db, driverId);
 }
 
 /**
@@ -91,8 +108,9 @@ function pushHistory(delivery, action, user, note = '') {
 export function createDelivery(db, {
   invoiceId, pic, date = todayJakarta(), address = '', courier = 'internal', transportId = null,
   fleetAssetId = null, driverId = null, driver = '', driverPhone = '', vehicleType = '',
-  plateNumber = '', vehicle = '', trackingRef = '', recipientName = '', recipientPhone = '',
-  service = 'REG', weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
+  plateNumber = '', vehicle = '', trackingRef = '', awbImage = '', recipientCustomerId = null,
+  eta = '', recipientName = '', recipientPhone = '',
+  service = null, weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
   instructions = '', notes = '', user,
 }) {
   const invoice = requireInvoice(db, invoiceId);
@@ -102,17 +120,23 @@ export function createDelivery(db, {
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
   if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
+  const nextCourier = String(courier ?? 'internal').trim() || 'internal';
+  const nextService = String(service ?? '').trim() || servicesForCourier(nextCourier)[0];
+  assert(servicesForCourier(nextCourier).includes(nextService), 'INVALID_SERVICE',
+    `Layanan ${nextService} tidak tersedia untuk ${COURIERS[nextCourier]?.label ?? nextCourier}.`);
   const explicitFleet = fleetAssetId ? (db.fleetAssets ?? []).find((a) => a.id === fleetAssetId) : null;
   if (fleetAssetId) assert(explicitFleet, 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
-  const fleet = courier === 'internal'
+  const fleet = nextCourier === 'internal'
     ? (explicitFleet ?? fleetForDriver(db, driverMaster?.id))
     : null;
   const transport = resolveTransport(db, {
     transportId: fleet?.transportId ?? transportId,
     driver: driverMaster,
-    courier,
+    courier: nextCourier,
   });
   const customer = byId(db.customers, invoice.customerId);
+  const recipientId = String(recipientCustomerId ?? '').trim() || invoice.customerId;
+  assert(byId(db.customers, recipientId), 'CUSTOMER_NOT_FOUND', 'Pelanggan penerima tidak ditemukan.');
   const lines = invoice.lines
     .filter((line) => line.kind !== 'service')
     .map((line) => ({
@@ -133,7 +157,7 @@ export function createDelivery(db, {
     date,
     pic: cleanPic,
     address: String(address ?? '').trim() || customer?.address || '',
-    courier: String(courier ?? 'internal').trim() || 'internal',
+    courier: nextCourier,
     transportId: transport?.id ?? null,
     transportName: transport?.name ?? '',
     fleetAssetId: fleet?.id ?? null,
@@ -144,9 +168,12 @@ export function createDelivery(db, {
     vehicleType: fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? '').trim(),
     plateNumber: fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber || vehicle || '').trim(),
     trackingRef: String(trackingRef ?? '').trim(),
+    awbImage: String(awbImage ?? ''),
+    recipientCustomerId: recipientId,
+    eta: String(eta ?? '').trim(),
     recipientName: String(recipientName ?? '').trim() || customer?.name || invoice.customerName,
     recipientPhone: String(recipientPhone ?? '').trim() || customer?.phone || '',
-    service: String(service ?? 'REG').trim() || 'REG',
+    service: nextService,
     weightKg: Math.max(0, Number(weightKg) || 0),
     pieces: Math.max(0, Math.round(Number(pieces) || 0)),
     shippingCost: Math.max(0, Number(shippingCost) || 0),
@@ -175,16 +202,22 @@ export function createDelivery(db, {
 export function updateDelivery(db, {
   id, pic, date, address, courier = 'internal', transportId = null, fleetAssetId = null,
   driverId = null, driver = '', driverPhone = '', vehicleType = '', plateNumber = '', trackingRef = '',
-  recipientName = '', recipientPhone = '', service = 'REG', weightKg = 0, pieces = 0, shippingCost = 0,
-  insurance = 0, codAmount = 0, instructions = '', notes, user,
+  awbImage = '', recipientCustomerId = null, eta = '', recipientName = '', recipientPhone = '',
+  service = null, weightKg = 0, pieces = 0, shippingCost = 0, insurance = 0, codAmount = 0,
+  instructions = '', notes, user,
 }) {
   const delivery = requireDelivery(db, id);
   assert(delivery.status === 'draft', 'INVALID_STATUS', 'Surat jalan hanya dapat diubah sebelum dikirim.');
   const cleanPic = String(pic ?? delivery.pic).trim();
+  const recipientId = String(recipientCustomerId ?? delivery.recipientCustomerId ?? delivery.customerId ?? '').trim();
+  if (recipientId) assert(byId(db.customers, recipientId), 'CUSTOMER_NOT_FOUND', 'Pelanggan penerima tidak ditemukan.');
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
   if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const nextCourier = String(courier ?? delivery.courier ?? 'internal').trim() || 'internal';
+  const nextService = String(service ?? '').trim() || servicesForCourier(nextCourier)[0];
+  assert(servicesForCourier(nextCourier).includes(nextService), 'INVALID_SERVICE',
+    `Layanan ${nextService} tidak tersedia untuk ${COURIERS[nextCourier]?.label ?? nextCourier}.`);
   const explicitFleet = fleetAssetId ? (db.fleetAssets ?? []).find((a) => a.id === fleetAssetId) : null;
   if (fleetAssetId) assert(explicitFleet, 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
   const fleet = nextCourier === 'internal'
@@ -210,9 +243,12 @@ export function updateDelivery(db, {
     vehicleType: fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? delivery.vehicleType ?? '').trim(),
     plateNumber: fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber ?? delivery.plateNumber ?? '').trim(),
     trackingRef: String(trackingRef ?? delivery.trackingRef ?? '').trim(),
+    awbImage: String(awbImage ?? delivery.awbImage ?? ''),
+    recipientCustomerId: recipientId,
+    eta: String(eta ?? delivery.eta ?? '').trim(),
     recipientName: String(recipientName ?? delivery.recipientName ?? '').trim(),
     recipientPhone: String(recipientPhone ?? delivery.recipientPhone ?? '').trim(),
-    service: String(service ?? delivery.service ?? 'REG').trim() || 'REG',
+    service: nextService,
     weightKg: Math.max(0, Number(weightKg ?? delivery.weightKg) || 0),
     pieces: Math.max(0, Math.round(Number(pieces ?? delivery.pieces) || 0)),
     shippingCost: Math.max(0, Number(shippingCost ?? delivery.shippingCost) || 0),

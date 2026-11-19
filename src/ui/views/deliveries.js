@@ -8,6 +8,7 @@ import {
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { pageHead, statCard, can } from './common.js';
 import { printDeliveryHtml } from './print.js';
+import { openEditDelivery } from './sales.js';
 
 let filter = 'active';
 
@@ -76,12 +77,13 @@ export function render(ctx) {
         <tbody>${all.map((d) => `<tr>
           <td class="mono strong">${esc(d.id)}<div class="xs muted">${esc(d.invoiceId)}</div></td>
           <td><strong class="small">${esc(d.customerName)}</strong><div class="xs muted">PIC ${esc(d.pic)} · ${esc(d.recipientName || '—')}</div></td>
-          <td>${esc(d.date)}</td>
+          <td>${esc(d.date)}${d.eta ? `<div class="xs muted">ETA ${esc(d.eta)}</div>` : ''}</td>
           <td><strong class="small">${esc(d.driver || '—')}</strong><div class="xs muted">${esc(d.vehicleName || VEHICLE_TYPES[d.vehicleType]?.label || d.vehicleType || '—')}${d.plateNumber ? ` · ${esc(d.plateNumber)}` : ''}</div><div class="xs muted">${esc(d.transportName || '—')}</div></td>
           <td class="small">${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.service || 'REG')}${d.trackingRef ? `<div class="xs muted mono">${esc(d.trackingRef)}</div>` : ''}<div class="xs muted">${d.weightKg ? `${d.weightKg} kg` : '—'} · ${d.pieces || '—'} koli</div></td>
           <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}${d.receivedBy ? `<div class="xs muted">oleh ${esc(d.receivedBy)}</div>` : ''}</td>
           <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">${icon('printer')} Surat jalan</button>
+            ${d.status === 'draft' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
             ${d.status === 'delivered' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm btn-primary" data-confirm="${d.id}">Konfirmasi terima</button>` : ''}
@@ -96,6 +98,7 @@ export function render(ctx) {
           <div class="xs muted">${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}</div>
           <div class="row" style="margin-top:4px;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">Cetak</button>
+            ${d.status === 'draft' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
             ${d.status === 'delivered' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm btn-primary" data-confirm="${d.id}">Konfirmasi</button>` : ''}
@@ -130,6 +133,10 @@ export function mount(ctx) {
   document.querySelectorAll('[data-print-delivery]').forEach((btn) => btn.addEventListener('click', () => {
     const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.printDelivery);
     if (delivery) printDocument(`Surat jalan ${delivery.id}`, printDeliveryHtml(ctx.db, delivery));
+  }));
+  document.querySelectorAll('[data-edit-delivery]').forEach((btn) => btn.addEventListener('click', () => {
+    const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.editDelivery);
+    if (delivery) openEditDelivery(ctx, delivery);
   }));
   document.querySelectorAll('[data-dispatch]').forEach((btn) => btn.addEventListener('click', async () => {
     const ok = await confirmAction({ title: 'Kirim barang?', message: 'Status menjadi Dikirim. Stok sudah keluar saat faktur terbit.', confirmLabel: 'Kirim' });

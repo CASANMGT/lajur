@@ -426,12 +426,35 @@ export function activeFleetAssets(db) {
   return (db.fleetAssets ?? []).filter((a) => a.active !== false && (a.ownership ?? 'internal') === 'internal');
 }
 
-export function fleetAssetOfDriver(db, driverId) {
-  if (!driverId) return null;
-  return (db.fleetAssets ?? []).find((a) => a.driverId === driverId) ?? null;
+/** All driver IDs linked to a vehicle, primary driver included. */
+export function driverIdsOfFleetAsset(asset) {
+  const linked = Array.isArray(asset?.driverIds) ? asset.driverIds : [];
+  return [...new Set([asset?.driverId, ...linked].filter(Boolean))];
 }
 
-/** Keep the driver's vehicle snapshot aligned with the internal fleet assignment. */
+/** Drivers that may use a vehicle. Many-to-many: a vehicle can have several drivers. */
+export function driversForFleetAsset(db, asset) {
+  if (!asset) return [];
+  return driverIdsOfFleetAsset(asset).map((id) => driverOf(db, id)).filter(Boolean);
+}
+
+/**
+ * Vehicles a driver may use, primary/default first. A driver is never locked to
+ * one vehicle and a vehicle is never locked to one driver.
+ */
+export function fleetAssetsForDriver(db, driverId) {
+  if (!driverId) return [];
+  return (db.fleetAssets ?? [])
+    .filter((a) => (a.ownership ?? 'internal') === 'internal' && driverIdsOfFleetAsset(a).includes(driverId))
+    .sort((a, b) => Number(b.driverId === driverId) - Number(a.driverId === driverId));
+}
+
+/** Default vehicle for a driver (used only as a prefill, never a restriction). */
+export function fleetAssetOfDriver(db, driverId) {
+  return fleetAssetsForDriver(db, driverId)[0] ?? null;
+}
+
+/** Keep the driver's vehicle snapshot aligned with the default linked vehicle. */
 function syncDriverVehicle(db, driverId) {
   const driver = driverOf(db, driverId);
   if (!driver) return;
@@ -447,7 +470,7 @@ function syncDriverVehicle(db, driverId) {
 
 export function saveFleetAsset(db, {
   id = null, code, name, type = 'motor', transportId = null,
-  driverId = null, capacityKg = 0, taxExpiry = '', active = true, notes = '', user,
+  driverId = null, driverIds = null, capacityKg = 0, taxExpiry = '', active = true, notes = '', user,
 }) {
   const cleanCode = String(code ?? '').trim().toUpperCase();
   const cleanName = String(name ?? '').trim();
@@ -464,37 +487,52 @@ export function saveFleetAsset(db, {
   assert(!db.fleetAssets.some((a) => a.id !== id && a.code.toUpperCase() === cleanCode), 'DUPLICATE_CODE', `Aset ${cleanCode} sudah ada.`);
   const existing = id ? db.fleetAssets.find((a) => a.id === id) : null;
   if (id) assert(existing, 'FLEET_NOT_FOUND', 'Aset transport tidak ditemukan.');
-  const previousDriverId = existing?.driverId ?? null;
-  if (driver?.id) {
+
+  // Link many drivers to this vehicle. `driverId` is only the default driver;
+  // it never removes drivers from other vehicles and vice versa.
+  const requestedLinks = driverIds === null ? null : (Array.isArray(driverIds) ? driverIds : [driverIds]);
+  const links = requestedLinks !== null
+    ? [...new Set(requestedLinks.map((value) => String(value ?? '').trim()).filter(Boolean))]
+    : driverIdsOfFleetAsset(existing);
+  for (const linkedId of links) assert(driverOf(db, linkedId), 'DRIVER_NOT_FOUND', `Driver ${linkedId} tidak ditemukan.`);
+  if (driver?.id && !links.includes(driver.id)) links.push(driver.id);
+  let primaryId = driver?.id ?? null;
+  if (!primaryId) {
+    primaryId = existing?.driverId && links.includes(existing.driverId) ? existing.driverId : (links[0] ?? null);
+  }
+  if (primaryId) {
     for (const asset of db.fleetAssets) {
-      if (asset.id !== id && asset.driverId === driver.id) asset.driverId = null;
+      if (asset.id !== id && asset.driverId === primaryId) asset.driverId = null;
     }
   }
+
+  const before = new Set(driverIdsOfFleetAsset(existing));
   const patch = {
     code: cleanCode,
     name: cleanName,
     type,
     ownership: 'internal',
     transportId: transport?.id ?? null,
-    driverId: driver?.id ?? null,
+    driverId: primaryId,
+    driverIds: links,
     capacityKg: Math.max(0, Number(capacityKg) || 0),
     taxExpiry,
     active,
     notes: String(notes ?? '').trim(),
     updatedAt: isoNow(),
   };
+  let saved;
   if (existing) {
     Object.assign(existing, patch);
-    syncDriverVehicle(db, previousDriverId);
-    syncDriverVehicle(db, driver?.id);
+    saved = existing;
     audit(db, user, 'ubah_aset_transport', 'fleetAsset', existing.id, cleanCode);
-    return existing;
+  } else {
+    saved = { id: nextId(db, 'fleetAsset', 'FLT', 3), ...patch, createdAt: isoNow() };
+    db.fleetAssets.push(saved);
+    audit(db, user, 'buat_aset_transport', 'fleetAsset', saved.id, cleanCode);
   }
-  const asset = { id: nextId(db, 'fleetAsset', 'FLT', 3), ...patch, createdAt: isoNow() };
-  db.fleetAssets.push(asset);
-  syncDriverVehicle(db, driver?.id);
-  audit(db, user, 'buat_aset_transport', 'fleetAsset', asset.id, cleanCode);
-  return asset;
+  for (const linkedId of new Set([...before, ...links])) syncDriverVehicle(db, linkedId);
+  return saved;
 }
 
 export function activeDrivers(db) {
@@ -507,16 +545,31 @@ export function driverOf(db, id) {
 
 export function saveDriver(db, {
   id = null, name, phone = '', vehicleType = 'motor', plateNumber = '', transportId = null,
-  fleetAssetId = null, active = true, notes = '', user,
+  fleetAssetId = null, fleetAssetIds = null, active = true, notes = '', user,
 }) {
   const cleanName = String(name ?? '').trim();
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama driver minimal 2 karakter.');
-  const asset = fleetAssetId ? (db.fleetAssets ?? []).find((a) => a.id === fleetAssetId) : null;
-  if (fleetAssetId) assert(asset, 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
-  if (asset) {
-    vehicleType = asset.type;
-    plateNumber = asset.code;
-    if (asset.transportId) transportId = asset.transportId;
+  db.fleetAssets = db.fleetAssets ?? [];
+
+  // Many-to-many: a driver may be linked to several vehicles. `fleetAssetId`
+  // (single) stays supported as the default vehicle for older forms.
+  const requestedFleetIds = fleetAssetIds === null ? null : (Array.isArray(fleetAssetIds) ? fleetAssetIds : [fleetAssetIds]);
+  const selectedIds = requestedFleetIds !== null
+    ? [...new Set(requestedFleetIds.map((value) => String(value ?? '').trim()).filter(Boolean))]
+    : [];
+  const legacyId = fleetAssetId ? String(fleetAssetId) : null;
+  const targetIds = [...selectedIds];
+  if (legacyId && !targetIds.includes(legacyId)) targetIds.push(legacyId);
+  const linkChange = fleetAssetIds !== null || Boolean(legacyId);
+  for (const linkedId of targetIds) {
+    assert(db.fleetAssets.some((a) => a.id === linkedId), 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
+  }
+  const primaryAsset = (legacyId ? db.fleetAssets.find((a) => a.id === legacyId) : null)
+    ?? (targetIds.length ? db.fleetAssets.find((a) => a.id === targetIds[0]) : null);
+  if (primaryAsset) {
+    vehicleType = primaryAsset.type;
+    plateNumber = primaryAsset.code;
+    if (primaryAsset.transportId) transportId = primaryAsset.transportId;
   }
   assert(VEHICLE_TYPES[vehicleType], 'INVALID_VEHICLE', 'Jenis kendaraan tidak dikenal.');
   const plate = String(plateNumber ?? '').trim().toUpperCase();
@@ -524,8 +577,6 @@ export function saveDriver(db, {
   const transport = transportId ? transportOf(db, transportId) : null;
   if (transportId) assert(transport, 'TRANSPORT_NOT_FOUND', 'Transport tidak ditemukan.');
   db.drivers = db.drivers ?? [];
-  assert(!db.drivers.some((d) => d.id !== id && d.id !== asset?.driverId && plate
-    && d.plateNumber?.toUpperCase() === plate), 'DUPLICATE_PLATE', `Nomor polisi ${plate} sudah dipakai.`);
 
   const patch = {
     name: cleanName,
@@ -547,21 +598,22 @@ export function saveDriver(db, {
     db.drivers.push(driver);
   }
 
-  if (asset) {
-    const previousDriverId = asset.driverId && asset.driverId !== driver.id ? asset.driverId : null;
-    for (const other of db.fleetAssets ?? []) {
-      if (other.id !== asset.id && other.driverId === driver.id) other.driverId = null;
+  if (linkChange) {
+    const currentPrimary = fleetAssetOfDriver(db, driver.id);
+    const chosenPrimaryId = legacyId
+      ?? (currentPrimary && targetIds.includes(currentPrimary.id) ? currentPrimary.id : (targetIds[0] ?? null));
+    for (const asset of db.fleetAssets) {
+      const links = new Set(driverIdsOfFleetAsset(asset));
+      if (targetIds.includes(asset.id)) links.add(driver.id); else links.delete(driver.id);
+      asset.driverIds = [...links];
+      if (asset.driverId === driver.id && asset.id !== chosenPrimaryId) {
+        asset.driverId = links.has(driver.id) ? null : (asset.driverIds[0] ?? null);
+      }
+      if (asset.id === chosenPrimaryId) asset.driverId = driver.id;
     }
-    asset.driverId = driver.id;
-    syncDriverVehicle(db, previousDriverId);
     syncDriverVehicle(db, driver.id);
-  } else {
-    for (const other of db.fleetAssets ?? []) {
-      if (other.driverId === driver.id) other.driverId = null;
-    }
-    // Keep an explicitly typed legacy plate when no fleet asset is selected;
-    // otherwise clear the stale snapshot after losing the assignment.
-    if (!plate) syncDriverVehicle(db, driver.id);
+    // A typed legacy plate survives when no vehicle remains linked.
+    if (!fleetAssetOfDriver(db, driver.id) && plate) driver.plateNumber = plate;
   }
   audit(db, user, (id && active) ? 'ubah_driver' : (active ? 'buat_driver' : 'nonaktifkan_driver'), 'driver', driver.id, `${cleanName} · ${plate || 'tanpa kendaraan'}`);
   return driver;

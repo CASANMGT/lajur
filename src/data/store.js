@@ -277,18 +277,31 @@ export function migrate(db) {
     if (transport?.type === 'third_party' && internalTransport) asset.transportId = internalTransport.id;
     if (asset.capacityKg === undefined) asset.capacityKg = 0;
     if (asset.active === undefined) asset.active = true;
+    if (!Array.isArray(asset.driverIds)) asset.driverIds = [];
+    asset.driverIds = [...new Set(asset.driverIds.filter((id) => (db.drivers ?? []).some((d) => d.id === id)))];
+    if (asset.driverId && (db.drivers ?? []).some((d) => d.id === asset.driverId)) {
+      if (!asset.driverIds.includes(asset.driverId)) asset.driverIds.push(asset.driverId);
+    } else {
+      asset.driverId = asset.driverIds[0] ?? null;
+    }
   }
   for (const driver of db.drivers ?? []) {
-    const asset = db.fleetAssets.find((a) => a.driverId === driver.id);
+    const assets = db.fleetAssets.filter((a) => a.driverId === driver.id || (a.driverIds ?? []).includes(driver.id));
+    const asset = assets.find((a) => a.driverId === driver.id) ?? assets[0] ?? null;
     if (asset) {
       driver.vehicleType = asset.type;
       driver.plateNumber = asset.code;
       driver.transportId = asset.transportId ?? driver.transportId;
     }
+    // Derived snapshot for backup/export readability; the asset holds the links.
+    driver.fleetAssetIds = assets.map((a) => a.id);
   }
   for (const delivery of db.deliveries) {
     if (delivery.recipientName === undefined) delivery.recipientName = delivery.customerName ?? '';
     if (delivery.recipientPhone === undefined) delivery.recipientPhone = '';
+    if (delivery.recipientCustomerId === undefined) delivery.recipientCustomerId = delivery.customerId ?? '';
+    if (delivery.eta === undefined) delivery.eta = '';
+    if (delivery.awbImage === undefined) delivery.awbImage = '';
     if (!delivery.service) delivery.service = 'REG';
     if (delivery.weightKg === undefined) delivery.weightKg = 0;
     if (delivery.pieces === undefined) delivery.pieces = 0;
@@ -302,6 +315,7 @@ export function migrate(db) {
     } else {
       const fleet = db.fleetAssets.find((a) => a.id === delivery.fleetAssetId)
         ?? db.fleetAssets.find((a) => a.driverId === delivery.driverId)
+        ?? db.fleetAssets.find((a) => (a.driverIds ?? []).includes(delivery.driverId))
         ?? null;
       delivery.fleetAssetId = fleet?.id ?? null;
       delivery.vehicleName = fleet?.name ?? '';
@@ -367,6 +381,7 @@ export function migrate(db) {
         db.fleetAssets.push({
           id: nextFleetId(), code: def.code, name: def.name, type: def.type, ownership: 'internal',
           transportId: transport?.id ?? null, driverId: driver?.id ?? null,
+          driverIds: driver ? [driver.id] : [],
           capacityKg: def.capacityKg, taxExpiry: def.taxExpiry, active: true, notes: def.notes,
           createdAt: new Date().toISOString(),
         });
@@ -375,7 +390,9 @@ export function migrate(db) {
   }
   for (const delivery of db.deliveries) {
     if (delivery.courier !== 'internal' || delivery.fleetAssetId) continue;
-    const fleet = db.fleetAssets.find((a) => a.driverId === delivery.driverId) ?? null;
+    const fleet = db.fleetAssets.find((a) => a.driverId === delivery.driverId)
+      ?? db.fleetAssets.find((a) => (a.driverIds ?? []).includes(delivery.driverId))
+      ?? null;
     if (!fleet) continue;
     delivery.fleetAssetId = fleet.id;
     delivery.vehicleName = fleet.name;

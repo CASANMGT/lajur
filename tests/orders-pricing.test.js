@@ -151,3 +151,30 @@ test('local PO defaults to the latest recorded supplier price', () => {
   assert.equal(po.lines[0].unitCostIdr, 69500);
   assert.equal(availableMm(db.rolls.find((r) => r.id === 'RL-0001')) > 0, true);
 });
+
+test('roll hierarchy puts the most available colour first and separates sold rolls', () => {
+  const db = buildSeed();
+  const soldSku = db.skus.find((s) => s.id === 'sku-aria-02');
+  for (const roll of db.rolls.filter((r) => r.skuId === soldSku.id && r.warehouseId === 'wh-jkt')) {
+    roll.status = 'sold';
+  }
+  const groups = rollHierarchy(db, { warehouseId: 'wh-jkt' });
+  for (let index = 1; index < groups.length; index += 1) {
+    assert.ok(groups[index - 1].availableMm >= groups[index].availableMm);
+  }
+  const group = groups.find((g) => g.skus.some((s) => s.sku.id === soldSku.id));
+  const entry = group.skus.find((s) => s.sku.id === soldSku.id);
+  assert.ok(entry.soldNodes.length > 0);
+  assert.equal(entry.availableNodes.length, 0);
+  for (let index = 1; index < group.skus.length; index += 1) {
+    assert.ok(group.skus[index - 1].availableMm >= group.skus[index].availableMm);
+  }
+  const luna = groups.find((g) => g.name === 'Luna');
+  assert.ok(luna.availableMm >= groups[groups.length - 1].availableMm);
+  // Sold child pieces under an active parent are moved out of the available
+  // tree instead of being mixed into it.
+  const luna02 = luna.skus.find((s) => s.sku.id === 'sku-luna-02');
+  assert.ok(luna02.soldNodes.length > 0);
+  const flatten = (nodes) => nodes.flatMap((n) => [n, ...flatten(n.children)]);
+  assert.equal(flatten(luna02.availableNodes).some((n) => ['sold', 'consumed'].includes(n.roll.status)), false);
+});

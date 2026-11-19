@@ -2,6 +2,7 @@
 
 import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, amountCell, confirmAction,
+  imageToDataUrl,
 } from '../dom.js';
 import { MM_PER_M, byId, daysBetween, parseM, todayJakarta } from '../../domain/core.js';
 import {
@@ -11,9 +12,9 @@ import {
 } from '../../domain/sales.js';
 import {
   DELIVERY_STATUS, COURIERS, confirmDelivery, createDelivery, deliveryForInvoice, deliverySchedule,
-  dispatchDelivery, driverDeliveriesOn, markDelivered, updateDelivery,
+  dispatchDelivery, driverDeliveriesOn, markDelivered, servicesForCourier, updateDelivery,
 } from '../../domain/deliveries.js';
-import { VEHICLE_TYPES } from '../../domain/master.js';
+import { driversForFleetAsset, fleetAssetsForDriver, VEHICLE_TYPES } from '../../domain/master.js';
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
 import { createSalesOrder } from '../../domain/orders.js';
 import { settingsOf } from '../../domain/settings.js';
@@ -138,7 +139,6 @@ function renderDetail(ctx) {
   if (inv.status === 'posted' && out > 0 && can(role, 'invoice.pay')) actions.push(`<button class="btn btn-primary" data-act="pay">${icon('wallet')} Terima pembayaran</button>`);
   if (inv.status === 'posted' && out > 0 && applicableDeposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
   if (inv.status === 'posted' && can(role, 'return.create')) actions.push(`<button class="btn" data-act="return">${icon('refresh')} Retur</button>`);
-  if (inv.status === 'posted' && !delivery && can(role, 'invoice.create') && advanced) actions.push(`<button class="btn" data-act="new-delivery">${icon('truck')} Surat jalan</button>`);
   actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak</button>`);
 
   return `
@@ -276,6 +276,8 @@ function deliveryCard(inv, delivery, role) {
         <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}</span></div>
         <div class="row-between"><span class="small muted">Penerima</span><span class="small">${esc(delivery.recipientName || '—')}<div class="xs muted">${esc(delivery.recipientPhone || '')}</div></span></div>
         <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Estimasi tiba</span><span class="small">${esc(delivery.eta || '—')}</span></div>
+        ${delivery.awbImage ? `<div class="reward"><img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e4ded2" /></div>` : ''}
         <div class="row-between"><span class="small muted">Transport / armada</span><span class="small">${esc(delivery.transportName || '—')}</span></div>
         <div class="row-between"><span class="small muted">Berat / koli</span><span class="small">${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</span></div>
         <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>
@@ -284,7 +286,7 @@ function deliveryCard(inv, delivery, role) {
       </div>
       <div class="row" style="margin-top:10px;flex-wrap:wrap">
         <button class="btn btn-sm" data-act="print-delivery">${icon('printer')} Surat jalan</button>
-        ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit PIC</button><button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
+        ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit surat jalan</button><button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
         ${delivery.status === 'dispatched' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="deliver-delivery">Tandai tiba</button>` : ''}
         ${delivery.status === 'delivered' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="confirm-delivery">Konfirmasi terima</button>` : ''}
       </div>
@@ -691,26 +693,33 @@ function mapEmbed(address) {
 function deliveryFields(db, delivery, customer) {
   const drivers = (db.drivers ?? []).filter((d) => d.active !== false);
   const fleet = (db.fleetAssets ?? []).filter((a) => a.active !== false && (a.ownership ?? 'internal') === 'internal');
-  const assignedFleet = (driverId) => fleet.find((a) => a.driverId === driverId) ?? null;
+  const assignedFleet = (driverId) => fleetAssetsForDriver(db, driverId)[0] ?? null;
   const selectedFleetId = delivery?.fleetAssetId ?? assignedFleet(delivery?.driverId)?.id ?? '';
   const address = delivery?.address ?? customer?.address ?? '';
+  const chosenCustomerId = delivery?.recipientCustomerId ?? delivery?.customerId ?? customer?.id ?? '';
+  const customers = [...(db.customers ?? [])].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const picNames = [...new Set([
+    delivery?.pic, ...(db.users ?? []).filter((u) => u.active !== false).map((u) => u.name),
+  ].filter(Boolean))].sort((a, b) => a.localeCompare(b));
   return `
-    ${field('PIC pengiriman', `<input class="input" name="pic" value="${esc(delivery?.pic ?? '')}" required />`, { hint: 'Penanggung jawab pengiriman dari gudang.' })}
+    ${field('Pelanggan / penerima', `<select class="select" name="recipientCustomerId">${customers.map((c) => `<option value="${c.id}" data-name="${esc(c.name)}" data-phone="${esc(c.phone || c.whatsapp || '')}" data-address="${esc(c.address || '')}" ${chosenCustomerId === c.id ? 'selected' : ''}>${esc(c.name)}${c.company && c.company !== c.name ? ` · ${esc(c.company)}` : ''}</option>`).join('')}</select>`, { hint: 'Pilih pelanggan; penerima dan alamat terisi otomatis dan masih bisa diubah.' })}
+    ${field('PIC pengiriman', `<input class="input" name="pic" list="delivery-pics" value="${esc(delivery?.pic ?? '')}" required /><datalist id="delivery-pics">${picNames.map((name) => `<option value="${esc(name)}"></option>`).join('')}</datalist>`, { hint: 'Pilih staf atau ketik nama PIC dari gudang.' })}
     ${field('Tanggal kirim', `<input class="input" type="date" name="date" value="${esc(delivery?.date ?? todayJakarta())}" />`)}
+    ${field('Estimasi tiba', `<input class="input" type="date" name="eta" value="${esc(delivery?.eta ?? '')}" />`, { hint: 'Perkiraan tanggal barang tiba di pelanggan.' })}
     ${field('Penerima', `<input class="input" name="recipientName" value="${esc(delivery?.recipientName ?? customer?.name ?? '')}" placeholder="Nama penerima" />`)}
     ${field('Telepon penerima', `<input class="input" name="recipientPhone" value="${esc(delivery?.recipientPhone ?? customer?.phone ?? '')}" />`)}
     ${field('Kurir / pihak ketiga', `<select class="select" name="courier">${Object.entries(COURIERS).map(([k, v]) => `<option value="${k}" ${delivery?.courier === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
-    ${field('Layanan', `<select class="select" name="service">${['REG', 'YES', 'OKS', 'COD', 'CARGO'].map((s) => `<option value="${s}" ${delivery?.service === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
+    ${field('Layanan', `<select class="select" name="service">${servicesForCourier(delivery?.courier ?? 'internal').map((s) => `<option value="${s}" ${delivery?.service === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
     <div class="span-2" data-internal-fleet>
       <div class="form-grid">
         ${field('Driver internal', `<select class="select" name="driver"><option value="">— Tanpa driver internal —</option>${drivers.map((d) => {
-          const assigned = assignedFleet(d.id);
-          return `<option value="${d.id}" data-fleet="${esc(assigned?.id ?? '')}" data-phone="${esc(d.phone ?? '')}" ${delivery?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${assigned ? esc(assigned.name) : 'belum ada kendaraan'}</option>`;
-        }).join('')}</select>`, { hint: 'Driver dan kendaraan dinas berasal dari Master Data → Driver & armada.' })}
+          const linked = fleetAssetsForDriver(db, d.id);
+          return `<option value="${d.id}" data-fleet="${esc(linked[0]?.id ?? '')}" data-phone="${esc(d.phone ?? '')}" ${delivery?.driverId === d.id ? 'selected' : ''}>${esc(d.name)} · ${linked.length ? `${linked.length} kendaraan` : 'belum ada kendaraan'}</option>`;
+        }).join('')}</select>`, { hint: 'Driver bebas memakai kendaraan internal mana pun; pilihan ini hanya default.' })}
         ${field('Kendaraan internal', `<select class="select" name="fleetAsset"><option value="">— Pilih kendaraan —</option>${fleet.map((a) => {
-          const driver = byId(db.drivers, a.driverId);
-          return `<option value="${a.id}" data-type="${esc(a.type)}" data-plate="${esc(a.code)}" data-driver="${esc(a.driverId ?? '')}" ${selectedFleetId === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}${driver ? ` · ${esc(driver.name)}` : ' · belum ada driver'}</option>`;
-        }).join('')}</select>`, { hint: 'Hanya armada internal Lavishome Fleet.' })}
+          const linkedDrivers = driversForFleetAsset(db, a);
+          return `<option value="${a.id}" data-type="${esc(a.type)}" data-plate="${esc(a.code)}" data-driver="${esc(a.driverId ?? '')}" ${selectedFleetId === a.id ? 'selected' : ''}>${esc(a.name)} · ${esc(a.code)}${linkedDrivers.length ? ` · ${linkedDrivers.map((d) => d.name).join(', ')}` : ' · belum ada driver'}</option>`;
+        }).join('')}</select>`, { hint: 'Semua armada internal dapat dipakai driver mana pun.' })}
         ${field('Telepon driver', `<input class="input" name="driverPhone" value="${esc(delivery?.driverPhone ?? '')}" />`)}
         ${field('Jenis kendaraan', `<select class="select" name="vehicleType"><option value="">—</option>${Object.entries(VEHICLE_TYPES).map(([k, v]) => `<option value="${k}" ${delivery?.vehicleType === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
         ${field('Nomor polisi', `<input class="input" name="plateNumber" value="${esc(delivery?.plateNumber ?? '')}" placeholder="B 1234 CD" />`)}
@@ -723,6 +732,7 @@ function deliveryFields(db, delivery, customer) {
       ${field('Nama driver / kurir (opsional)', `<input class="input" name="driverName" value="${esc(delivery && delivery.courier !== 'internal' ? delivery.driver : '')}" placeholder="Nama driver kurir" />`)}
     </div>
     ${field('No. resi / AWB', `<input class="input" name="trackingRef" value="${esc(delivery?.trackingRef ?? '')}" placeholder="JNE / J&T / Lalamove" />`)}
+    ${field('Foto / scan resi (opsional)', `<input class="input" type="file" name="awbFile" accept="image/*" />`, { hint: 'Upload foto label resi; dapat dipakai untuk scan manual.' })}
     ${field('Berat (kg)', `<input class="input" name="weightKg" inputmode="decimal" value="${delivery?.weightKg ?? 0}" />`)}
     ${field('Jumlah koli', `<input class="input" name="pieces" inputmode="numeric" value="${delivery?.pieces ?? 1}" />`)}
     ${field('Ongkir (Rp)', `<input class="input" name="shippingCost" inputmode="numeric" value="${delivery?.shippingCost ?? 0}" />`)}
@@ -759,18 +769,19 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
     const opt = form.driver?.selectedOptions[0];
     if (!opt?.value) return;
     form.driverPhone.value = opt.dataset.phone || '';
-    if (form.fleetAsset) form.fleetAsset.value = opt.dataset.fleet || '';
-    if (opt.dataset.fleet) {
+    // Only prefill the default vehicle when none is chosen. The driver and the
+    // vehicle stay independent: any linked vehicle can be used.
+    if (form.fleetAsset && !form.fleetAsset.value && opt.dataset.fleet) {
+      form.fleetAsset.value = opt.dataset.fleet;
       syncVehicle();
-    } else {
-      form.vehicleType.value = '';
-      form.plateNumber.value = '';
     }
   };
   const syncFleet = () => {
     const opt = form.fleetAsset?.selectedOptions[0];
     if (!opt?.value) return;
-    if (opt.dataset.driver) form.driver.value = opt.dataset.driver;
+    // Prefill the vehicle's default driver only when the user has not picked
+    // one; never replace an explicitly chosen driver.
+    if (!form.driver.value && opt.dataset.driver) form.driver.value = opt.dataset.driver;
     const driverOpt = form.driver?.selectedOptions[0];
     if (driverOpt?.value) form.driverPhone.value = driverOpt.dataset.phone || form.driverPhone.value;
     syncVehicle();
@@ -792,8 +803,15 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
     panel.hidden = false;
     panel.innerHTML = `${icon('calendar')}<div><strong>Jadwal driver pada ${esc(form.date.value)}</strong>${list.map((d) => `<div class="small">${esc(d.customerName)} · ${esc(d.id)} · ${esc(d.status)}</div>`).join('')}</div>`;
   };
+  const syncService = () => {
+    const options = servicesForCourier(form.courier.value);
+    const current = form.service.value;
+    form.service.innerHTML = options.map((s) => `<option value="${s}">${esc(s)}</option>`).join('');
+    form.service.value = options.includes(current) ? current : options[0];
+  };
   const syncMode = () => {
     const internal = form.courier.value === 'internal';
+    syncService();
     setHidden('[data-internal-fleet]', !internal);
     setHidden('[data-third-party]', internal);
     if (!internal) {
@@ -820,6 +838,20 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
     if (frame) frame.src = mapEmbed(address);
     if (link) link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || 'Jakarta')}`;
   };
+  let lastCustomerAddress = form.recipientCustomerId?.selectedOptions[0]?.dataset.address ?? '';
+  const syncCustomer = () => {
+    const opt = form.recipientCustomerId?.selectedOptions[0];
+    if (!opt?.value) return;
+    const name = opt.dataset.name || '';
+    const phone = opt.dataset.phone || '';
+    const address = opt.dataset.address || '';
+    if (name) form.recipientName.value = name;
+    if (phone) form.recipientPhone.value = phone;
+    if (!form.address.value.trim() || form.address.value === lastCustomerAddress) form.address.value = address;
+    lastCustomerAddress = address;
+    syncMap();
+  };
+  form.recipientCustomerId?.addEventListener('change', syncCustomer);
   form.address?.addEventListener('input', syncMap);
 }
 
@@ -835,8 +867,10 @@ function openCreateDelivery(ctx, inv) {
       form.pic.value = form.pic.value || ctx.user.name;
       bindDeliveryFields(form, ctx.db);
     },
-    onSubmit(form, close) {
+    async onSubmit(form, close) {
       const internal = form.courier.value === 'internal';
+      const awbFile = form.awbFile?.files?.[0];
+      const awbImage = awbFile ? await imageToDataUrl(awbFile, { maxBytes: 800_000 }) : '';
       ctx.store.update((db) => createDelivery(db, {
         invoiceId: inv.id,
         pic: form.pic.value,
@@ -850,6 +884,9 @@ function openCreateDelivery(ctx, inv) {
         vehicleType: internal ? form.vehicleType.value : '',
         plateNumber: internal ? form.plateNumber.value : '',
         trackingRef: form.trackingRef.value,
+        awbImage,
+        recipientCustomerId: form.recipientCustomerId?.value ?? null,
+        eta: form.eta?.value ?? '',
         recipientName: form.recipientName.value,
         recipientPhone: form.recipientPhone.value,
         weightKg: Number(String(form.weightKg.value).replace(',', '.')),
@@ -868,17 +905,21 @@ function openCreateDelivery(ctx, inv) {
   });
 }
 
-function openEditDelivery(ctx, delivery) {
+export function openEditDelivery(ctx, delivery) {
   const customer = byId(ctx.db.customers, delivery.customerId);
   openModal({
-    title: `Edit PIC ${delivery.id}`,
-    description: 'PIC, driver, kurir, dan alamat dapat diubah sebelum barang dikirim.',
+    title: `Edit surat jalan ${delivery.id}`,
+    description: 'PIC, pelanggan/penerima, estimasi tiba, driver, kurir, AWB, dan alamat dapat diubah sebelum barang dikirim.',
     wide: true,
     submitLabel: 'Simpan',
     body: deliveryFields(ctx.db, delivery, customer),
     onMount(form) { bindDeliveryFields(form, ctx.db, delivery); },
-    onSubmit(form, close) {
+    async onSubmit(form, close) {
       const internal = form.courier.value === 'internal';
+      const awbFile = form.awbFile?.files?.[0];
+      const awbImage = awbFile
+        ? await imageToDataUrl(awbFile, { maxBytes: 800_000 })
+        : (delivery.awbImage ?? '');
       ctx.store.update((db) => updateDelivery(db, {
         id: delivery.id,
         pic: form.pic.value,
@@ -892,6 +933,9 @@ function openEditDelivery(ctx, delivery) {
         vehicleType: internal ? form.vehicleType.value : '',
         plateNumber: internal ? form.plateNumber.value : '',
         trackingRef: form.trackingRef.value,
+        awbImage,
+        recipientCustomerId: form.recipientCustomerId?.value ?? null,
+        eta: form.eta?.value ?? '',
         recipientName: form.recipientName.value,
         recipientPhone: form.recipientPhone.value,
         weightKg: Number(String(form.weightKg.value).replace(',', '.')),
@@ -940,7 +984,7 @@ export function mount(ctx) {
   if (ctx.route.id) {
     const inv = ctx.db.invoices.find((i) => i.id === ctx.route.id);
     if (!inv) return;
-    const on = (name, fn) => document.querySelector(`[data-act="${name}"]`)?.addEventListener('click', fn);
+    const on = (name, fn) => document.querySelectorAll(`[data-act="${name}"]`).forEach((btn) => btn.addEventListener('click', fn));
     on('post', () => {
       try {
         ctx.store.update((db) => postInvoice(db, { id: inv.id, user: ctx.user }));

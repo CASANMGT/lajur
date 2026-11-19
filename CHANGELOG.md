@@ -2,6 +2,38 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.21.0] — 2026-11-19
+
+**Release name: Tag A4 & Armada Fleksibel.** A4 QR tag sheets, a reliable editable surat jalan with courier-specific services and AWB photos, stock hierarchy split by availability, and many-to-many driver/vehicle links.
+
+### Added
+
+- **A4 stock tags:** **Tag A4** prints 8 tags per sheet (2 × 4) in plain A4 mode — one roll, repeated copies, or every roll in a motif/collection, with an include-sold option.
+- **Surat jalan edit:** draft surat jalan can be edited from the invoice and the Pengiriman table. The form supports customer/recipient selection, PIC suggestions, estimated arrival (`ETA`), and a scrollable modal.
+- **AWB photo:** AWB/resi can be typed or uploaded as an image (max 800 KB), stored on the delivery and shown on the invoice detail.
+- **Courier service map:** `SERVICES_BY_COURIER` validates services server-side; JNE accepts only REG/YES/OKS, J&T EZ/ECO/CARGO, and so on.
+- **Many-to-many drivers/vehicles:** drivers can use several company vehicles and vehicles can be used by several drivers; Master Data uses multi-select lists and surat jalan picks driver and vehicle independently.
+- **Stock availability split:** the default hierarchy is collection/motif → colour, ordered by most available; sold/consumed rolls move to a **Terjual / habis** group. The list view adds the same group headers.
+
+### Changed
+
+- Removed the duplicate top **Surat jalan** action; only the single **Buat surat jalan** card remains and all action buttons are bound (including multiple mobile/desktop instances).
+- Surat jalan defaults to the driver’s/vehicle’s linked pair but no longer overwrites an explicit choice.
+- Delivery records now store `recipientCustomerId`, `eta`, and `awbImage`; fleet assets store `driverIds`.
+- Version bumped to 2.21.0, schema 19, backup v19.
+
+### Verification
+
+- `node --test`: **76 passed**.
+- Module imports **47 modules**; render checks green.
+- Browser QA: A4 sheet generated 26 tags for 13 rolls × 2 copies at 8mm margins; JNE service list REG/YES/OKS; surat jalan create/edit with ETA and recipient; driver linked to two vehicles and both vehicle rows updated; stock tree/list availability grouping.
+
+### Migration
+
+- Existing `driverId` links are copied into `driverIds`; `recipientCustomerId`, `eta`, `awbImage` and default courier services are filled on load. No manual data action required.
+
+---
+
 ## [2.20.0] — 2026-11-19
 
 **Release name: Scan Stok & Motif.** Adds a public QR stock-status page, buku sample stock/price editing with warehouse locations, conversion filters, and collection motive/base pricing.

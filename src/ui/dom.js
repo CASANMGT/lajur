@@ -357,7 +357,7 @@ export function confirmAction({ title = 'Konfirmasi', message, confirmLabel = 'L
 /* Printing                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export function printDocument(title, innerHtml) {
+export function printDocument(title, innerHtml, { plain = false } = {}) {
   const win = window.open('', '_blank', 'width=820,height=900');
   if (!win) {
     toast('Jendela cetak diblokir browser. Izinkan popup untuk mencetak.', { tone: 'error' });
@@ -366,9 +366,10 @@ export function printDocument(title, innerHtml) {
   const safeTitle = JSON.stringify(title).replace(/</g, '\\u003c');
   win.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${esc(title)}</title>
     <style>
-      @page { size: A4; margin: 16mm; }
+      @page { size: A4; margin: ${plain ? '8mm' : '16mm'}; }
       * { box-sizing: border-box; }
       body { font: 12px/1.5 Inter, "Segoe UI", system-ui, sans-serif; color: #172b3a; margin: 0; padding-top: 56px; }
+      ${plain ? '.doc-head, .foot { display: none !important; }' : ''}
       h1 { font-size: 18px; margin: 0 0 2px; letter-spacing: -0.02em; }
       h2 { font-size: 14px; margin: 18px 0 6px; }
       .doc-head { display: flex; justify-content: space-between; border-bottom: 1px solid #cfc6b6; padding-bottom: 10px; margin-bottom: 14px; }
@@ -408,12 +409,12 @@ export function printDocument(title, innerHtml) {
       <button type="button" class="secondary" onclick="window.print()">Cetak</button>
       <button type="button" id="pdf-download">Unduh PDF</button>
     </div>
-    <div class="doc-head">
+    ${plain ? '' : `<div class="doc-head">
       <div><div class="brand">lavishome</div><small>PT Lavishome Tekstil Nusantara · Gudang Tekstil</small></div>
       <div style="text-align:right"><small>${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}</small></div>
-    </div>
+    </div>`}
     ${innerHtml}
-    <div class="foot"><div>Dibuat oleh<div class="sign">Nama & tanggal</div></div><div>Diperiksa<div class="sign">Nama & tanggal</div></div><div>Diterima<div class="sign">Nama & tanggal</div></div></div>
+    ${plain ? '' : `<div class="foot"><div>Dibuat oleh<div class="sign">Nama & tanggal</div></div><div>Diperiksa<div class="sign">Nama & tanggal</div></div><div>Diterima<div class="sign">Nama & tanggal</div></div></div>`}
     <script type="module">
       const title = ${safeTitle};
       const button = document.getElementById('pdf-download');
@@ -484,7 +485,7 @@ export function imageToDataUrl(file, { maxBytes = 250_000 } = {}) {
   return new Promise((resolve, reject) => {
     if (!file) return resolve(null);
     if (!file.type?.startsWith('image/')) return reject(new Error('Berkas harus berupa gambar.'));
-    if (file.size > maxBytes) return reject(new Error('Gambar maksimal 250 KB untuk demo.'));
+    if (file.size > maxBytes) return reject(new Error(`Gambar maksimal ${Math.round(maxBytes / 1000)} KB.`));
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result));
     reader.onerror = () => reject(new Error('Gagal membaca gambar.'));

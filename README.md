@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-74%2F74-brightgreen) ![Version](https://img.shields.io/badge/version-2.20.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-76%2F76-brightgreen) ![Version](https://img.shields.io/badge/version-2.21.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 74 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 76 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -184,11 +184,11 @@ Lajur/
 16. **Panduan** - open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, buku sample and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
 17. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 18. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
-19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & armada** stores internal drivers and assigns each to one Lavishome Fleet vehicle; the **Armada internal** table holds only internal motor/mobil/truk with capacity and tax expiry. **Transport & kurir** keeps third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T, JNE) separate from assets.
+19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & armada** stores internal drivers and links them to one **or more** Lavishome Fleet vehicles (and a vehicle to several drivers); the **Armada internal** table holds only internal motor/mobil/truk with capacity and tax expiry. **Transport & kurir** keeps third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T, JNE) separate from assets.
 20. **Produksi WIP** (after enabling it) — create an order from a roll, cut into pieces, sew/QC, reject/rework, see payroll and capacity. Stock leaves raw fabric at cutting; no invoice is created.
 21. **Laporan → Produksi & payroll** (when WIP is enabled) — WIP metres, open payroll, QC rejects, capacity and order progress.
 22. **Laporan → Penjualan** — invoice performance; the optional sales-order table appears only when Pesanan is enabled.
-23. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create **Surat Jalan** with courier (internal, J&T, JNE, Lalamove, GoSend), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**; the surat jalan prints as a J&T/JNE-style consignment note with AWB barcode and signature blocks.
+23. **Faktur → Buat faktur** — line prices fill from master (no blank part price); choose fixed or percentage discount; post. On the invoice detail, issue **Faktur Pajak**, create or edit **Surat Jalan** with customer/recipient, PIC, estimated arrival, courier (internal, J&T, JNE, Lalamove, GoSend), a service list that follows the selected courier (JNE = REG/YES/OKS), AWB typed **or photographed**, recipient/phone, weight, pieces, shipping/insurance/COD, any internal driver + any internal vehicle, address autocomplete and map preview, then Kirim → Tandai tiba → Konfirmasi terima. Every print action opens **Cetak** and **Unduh PDF**; the surat jalan prints as a J&T/JNE-style consignment note with AWB barcode and signature blocks.
 
 ### Role experience
 
@@ -239,7 +239,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **74 passed, 0 failed** (72 domain/UI + 2 auth) |
+| `node --test` | **76 passed, 0 failed** (74 domain/UI + 2 auth) |
 | Module import check | **47/47 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -263,16 +263,18 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | NPWP opsional | Customer and tax-invoice forms accept a blank NPWP; filled NPWP validates 15/16 digits; tax invoice falls back to customer NPWP; blank prints `-` |
 | Surat jalan | Seed SJ-0001 (PIC Henny) confirmed by Budi; new flow draft → dispatched → delivered → confirmed; stock unchanged |
 | Print + PDF | Print preview has Cetak + Unduh PDF; test PDF generated 60.370 bytes (`Tes-PDF-Lajur.pdf`) |
-| Driver master | 3 drivers seeded (motor/mobil/truk); form autofills vehicle + plate; delivery snapshots driver/vehicle |
+| Driver master | 3 drivers seeded (motor/mobil/truk); multi-select links a driver to several vehicles; delivery snapshots driver/vehicle |
 | Driver accounts | Asep/Rudi/Slamet login with driver role; nav only Ringkasan/Tugas/Pengiriman/Panduan; invoice redirect |
 | Transport master | Lavishome Fleet, Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers linked to a transport |
-| Fleet assets | 3 seeded internal vehicles (Honda Vario, Hilux, Isuzu Elf), each assigned to Asep/Rudi/Slamet; third-party courier vehicles are not assets; duplicate plate rejected |
-| Driver assignment | Moving Asep from the Vario to the Hilux unassigns Rudi, updates both drivers’ plate/type and both vehicle rows |
+| Fleet assets | 3 seeded internal vehicles (Honda Vario, Hilux, Isuzu Elf), each linked to several drivers; third-party courier vehicles are not assets |
+| Driver assignment | Asep can keep the Vario and add the Hilux; Rudi stays linked too. Changing the default vehicle updates Asep’s plate/type without removing the other link |
 | Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
 | Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lavishome Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
 | Collection metadata | Luna/Aria/Nova define Blackout/Sheer/Dimout and default 60 m × 300 cm; new SKUs inherit the cloth type |
 | Buku sample stock | 10 factory books across Luna/Aria/Nova; Luna price Rp 25.000 and refundable deposit Rp 50.000; giving SS-0001 reduced stock 4 → 3; manager can edit qty/price/warehouse |
-| QR stock tag | RL-0001 prints a QR tag with `RL-0001`, collection, Blackout, 280 cm, lot, length and JKT/A-01-01; QR opens the roll URL when scanned |
+| QR stock tag A4 | **Tag A4** prints 8 tags per A4 sheet (2 × 4), one or repeated copies, or every roll in a motif/collection; QR opens the roll URL when scanned |
+| Stock hierarchy | Default **Hierarki koleksi**: motif → colour, most available first; available rolls above a separate **Terjual / habis** group; list view shows the same split |
+| Surat jalan edit | Exactly one **Buat surat jalan** action; **Edit surat jalan** supports customer/recipient, PIC, ETA, courier service and AWB photo |
 | QR scan landing | Public `#/scan/RL-0001` shows stock status while logged out; login/detail link preserves roll; RL-0007 shows 1 cut 70 m → 69.5 m |
 | WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
 | Price review | Luna-01 last changed 170 days ago; save was blocked until the 90-day confirmation was checked, then Rp 125.000 → Rp 130.000 |
@@ -336,10 +338,10 @@ node tools/render-check.mjs
 - **Sales orders with detail, editing and print:** creator, contents, line prices, draft editing with re-reservation, printable “Pesanan Penjualan”. Optional module.
 - **Invoice discount:** fixed rupiah or percentage, applied to the subtotal with the computed discount shown on screen and in print.
 - **Faktur pajak:** issued after posting, DPP/PPN 11% calculated from the invoice total, optional NPWP (15/16 digits when filled, falls back to the customer record), printable tax invoice; no manual price entry.
-- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), service, AWB/resi, recipient/phone, weight, pieces, shipping/insurance/COD, driver/vehicle/transport from master, address autocomplete and map preview, dispatch → arrived → receiver confirmation; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
+- **Surat jalan & delivery tracking:** courier-style consignment note (Internal/J&T/JNE/Lalamove/GoSend/Bali Kargo), courier-specific service list (JNE = REG/YES/OKS, others rejected server-side), AWB typed or uploaded as a photo/scan, customer/recipient + PIC + estimated arrival, weight, pieces, shipping/insurance/COD, any internal driver + any internal vehicle, address autocomplete and map preview, dispatch → arrived → receiver confirmation; editable before dispatch; printable surat jalan with barcode and signatures; stock never moves again after the invoice.
 - **Print + PDF everywhere:** every printable document opens a preview with **Cetak** and **Unduh PDF**. PDF is generated in the browser from the document layout.
-- **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected on surat jalan; driver details snapshot into the delivery.
-- **Internal fleet & driver assignment:** only Lavishome Fleet vehicles; each driver is attached to one vehicle, assignment moves cleanly between drivers, duplicate plates rejected and audited.
+- **Driver & vehicle master:** names, phone, motor/mobil/truk and plate numbers are stored in Master Data and selected independently on surat jalan; driver details snapshot into the delivery.
+- **Internal fleet & many-to-many assignment:** only Lavishome Fleet vehicles; a driver can be linked to several vehicles and a vehicle to several drivers. The first/default vehicle is only a prefill, never a restriction, and every change is audited.
 - **Third-party delivery:** Lalamove/J&T/JNE/GoSend/Bali Kargo remain courier options, not fleet assets; their surat jalan uses courier/AWB and an optional courier driver name.
 - **Mobile drawer scroll:** sidebar navigation scrolls independently on small phones, including Advanced mode with many menu items.
 - **Supplier price book:** every product/part lists its suppliers, latest price, MOQ and validity; new quotes update the master buy price.
@@ -360,7 +362,7 @@ node tools/render-check.mjs
 - Direct stock intake without PO (opening balance/correction) with unique document, lot, per-roll lengths, cost, reason and audit.
 - **Driver role & portal:** Asep/Rudi/Slamet have user accounts (PIN 1212/2323/3434), see only their deliveries/tasks, and can Kirim/Tiba; receiver confirmation stays with sales/manager.
 - **Transport master:** internal Lavishome Fleet + Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers link to a transport company.
-- **Fleet assets:** internal motor/mobil/truk with plate, capacity, tax expiry and assigned driver.
+- **Fleet assets:** internal motor/mobil/truk with plate, capacity, tax expiry and a many-to-many list of drivers who may use it.
 - **Buku sample stock:** factory books per collection with price/deposit, procurement history, distribution and conversion; no in-app assembly.
 - **Catalog:** colour/width/price/availability listing with Cetak/PDF for potential customers.
 - **In-app tutorial:** Panduan covers 14 processes from stock and purchasing to tax/surat jalan, buku sample, catalog, tasks and reporting.
@@ -385,7 +387,7 @@ node tools/render-check.mjs
 - **Buku sample stock:** factory books per collection with price, refundable deposit, stock, procurement history, warehouse location, filters and manager editing; give to a customer and see per-customer purchase history.
 - **Collection motif & pricing:** each collection has a motif and base motif price; each colour/SKU has its own sell price.
 - **Public QR stock page:** scan status works before login and shows stock/leftover plus cut history; full actions prompt login.
-- **QR stock tags:** every roll carries a QR tag with collection, cloth type, colour, width, location and length; scanning opens the roll detail.
+- **QR stock tags on A4:** every roll carries a QR tag with collection, motif, colour, width, location and length; print a single roll, repeated copies, or all rolls in a motif/collection, 8 per A4 sheet; scanning opens the roll detail.
 - **Price control:** selling-price history with last update, old/new price and a 90-day review confirmation.
 - **WA stock share:** customer detail and Stock build a copy-paste availability message and open WhatsApp.
 - **Internal warehouse sale:** transfer ongkir is capitalised into destination roll HPP.
@@ -394,7 +396,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.20.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.21.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

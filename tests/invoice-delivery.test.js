@@ -154,3 +154,29 @@ test('surat jalan tracks PIC and confirmation without moving stock again', () =>
   assert.throws(() => createDelivery(db, { invoiceId: inv.id, pic: 'Rani', user: OP }),
     (err) => err.code === 'DELIVERY_EXISTS');
 });
+
+test('courier service is validated per courier and AWB photo, ETA and recipient customer are stored', () => {
+  const db = buildSeed();
+  const inv = partInvoice(db, 1);
+  postInvoice(db, { id: inv.id, user: SALES });
+  assert.throws(() => createDelivery(db, {
+    invoiceId: inv.id, pic: 'Henny', courier: 'jnt', service: 'YES', user: SALES,
+  }), (err) => err.code === 'INVALID_SERVICE');
+  const delivery = createDelivery(db, {
+    invoiceId: inv.id, pic: 'Henny', courier: 'jne', service: 'YES', trackingRef: 'JNE-0001',
+    awbImage: 'data:image/png;base64,AAAA', recipientCustomerId: 'CUS-0002', eta: '2026-11-25',
+    user: SALES,
+  });
+  assert.equal(delivery.service, 'YES');
+  assert.equal(delivery.trackingRef, 'JNE-0001');
+  assert.equal(delivery.awbImage, 'data:image/png;base64,AAAA');
+  assert.equal(delivery.recipientCustomerId, 'CUS-0002');
+  assert.equal(delivery.eta, '2026-11-25');
+  assert.throws(() => updateDelivery(db, {
+    id: delivery.id, pic: 'Henny', courier: 'jne', service: 'EZ', trackingRef: 'JNE-0001', user: SALES,
+  }), (err) => err.code === 'INVALID_SERVICE');
+  updateDelivery(db, {
+    id: delivery.id, pic: 'Henny', courier: 'jne', service: 'OKS', trackingRef: 'JNE-0001', user: SALES,
+  });
+  assert.equal(delivery.service, 'OKS');
+});
