@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.18
+# PRD - Lavishome v2.19
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.18.0 (schema 17)
+**Version:** 2.19.0 (schema 17)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.18: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.19: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -145,7 +145,7 @@ Needs speed on the floor, often on a phone, sometimes with gloves.
 | Driver accounts | Asep/Rudi/Slamet are users with role driver and linked driver records; driver sees assigned deliveries/tasks, can Kirim/Tiba, but not confirm receiver |
 | Transport & courier master | Lavishome Fleet internal plus third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express); third parties are not fleet assets |
 | Internal fleet | Motor/mobil/truk owned by Lavishome Fleet with plate, assigned driver, capacity and tax expiry; one driver per vehicle, duplicate plates rejected |
-| Sample book | Build a giveaway book from collection sample stock; each item consumes one sample; print/PDF and mark who received it |
+| Buku sample | Factory-supplied stock per collection; distribute one book to a customer, track history and conversion; no in-app book assembly |
 | Catalog | Customer-facing colour/width/price/availability listing; print/PDF |
 | In-app guide | 14 tutorial sections covering every business-process input |
 | Manual stock | Stok → Tambah stok manual records fabric rolls or parts without a PO |
@@ -405,11 +405,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 10. **Warehouses:** only Jakarta (`JKT`) and Bali (`DPS`) are active demo locations; legacy Bandung/Surabaya references migrate to Bali.
 11. **Chinese suppliers:** at least four import suppliers (Ningbo, Shaoxing, Yiwu, Guangzhou), CNY price records and a draft Chinese PO are available in Advanced mode.
 
-### 6.15 Driver accounts, sample books, catalog and guide
+### 6.15 Driver accounts, buku sample, catalog and guide
 
 1. **Driver users:** Asep/Rudi/Slamet exist as users with role `driver`, each linked to a driver record. Driver can log in, see assigned surat jalan/tasks, Kirim/Tiba; sales/manager confirms the receiver.
 2. **Transport & courier:** Lavishome Fleet internal plus third-party Lalamove/GoSend/Bali Kargo/J&T/JNE as delivery options. Third parties are not fleet assets; internal drivers are attached to a Lavishome Fleet vehicle.
-3. **Sample book:** choose a customer/prospect, add several collection sample stocks, create the book. Each item consumes one sample and produces a sample record. Print/PDF the book and mark who received it.
+3. **Buku sample:** factory books are stocked per collection. Distribute one to a customer/prospect and record mode/history. The app does not assemble its own book from roll cuts.
 4. **Catalog:** customer-facing colors, width, sell price and availability; print/PDF; no cost/margin.
 5. **Guide:** in-app Panduan with 14 sections covering every input flow and links to the relevant screen.
 
@@ -423,11 +423,11 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 6. **Driver ↔ vehicle assignment:** a driver selects one internal vehicle; the vehicle row also assigns a driver. Moving a driver or vehicle updates both records, and one driver cannot hold two vehicles. A driver without a vehicle is shown as **Belum ditugaskan**.
 7. **Delivery modes:** internal delivery shows driver + assigned vehicle and snapshots `fleetAssetId`, `vehicleName`, `vehicleType` and plate. Third-party delivery hides internal fleet fields, keeps courier/service/AWB and stores an optional courier driver name with no fleet asset. The delivery stores `transportId`/`transportName`; card, list and print show the vehicle and transport.
 
-### 6.17 Sample stock, roll tags, WA stock and price review
+### 6.17 Buku sample stock, roll QR, WA stock and price review
 
 1. **Collection first, colour second:** collection defines cloth type and default roll size; SKU defines colour and actual width. The default is 60 m × 300 cm.
-2. **Sample stock:** samples are factory-procured physical pieces per collection. Add stock from the collection form or the Sample pabrik action with qty, cost, supplier and date. The Samples page shows stock, sample price, refundable deposit, minimum, procurement history, customer sample/purchase summary and distribution history. Giving a sample never cuts a roll.
-3. **Roll tags:** each roll has a stable QR code and prints a stock tag with collection, cloth type, colour, width, lot, length and warehouse/bin. Scanning opens the roll detail; searching `RL-0001` or the barcode value finds the roll.
+2. **Buku sample stock:** factory-procured books per collection. Add stock from the collection form or the Buku sample pabrik action with qty, cost, supplier and date. The Buku Sample page shows price, refundable deposit, minimum, procurement history, customer purchase summary and distribution history. Giving a book never cuts a roll.
+3. **Roll tags:** each roll has a stable QR code and prints a stock tag with collection, cloth type, colour, width, lot, length and warehouse/bin. Scanning opens the roll detail even when logged out (the URL survives login), showing current stock, total cut, remaining metres, each cut with before/after metres and the full movement history. Searching `RL-0001` or the barcode value finds the roll.
 4. **WA stock:** customer master stores a WhatsApp number. Customer detail and Stock generate a message of available metres/prices, copy it, or open `wa.me`.
 5. **Price review:** sell-price changes are separate from master edits. The price editor shows current price, last update, history and a 90-day confirmation gate.
 6. **Warehouse sale:** transfer ongkir is recorded per transfer and divided across requested metres; received rolls carry the higher landed HPP.
@@ -504,7 +504,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-63 | Only Jakarta and Bali are active demo warehouses. Legacy Bandung/Surabaya references migrate to Bali. |
 | BR-64 | A driver is a user with role `driver` linked to a driver record. Driver access is limited to assigned deliveries/tasks; drivers may dispatch/mark arrived but only sales/manager confirm receipt. |
 | BR-65 | Corporate transport companies are master data; a driver may be linked to one. Delivery keeps the driver/vehicle snapshot. |
-| BR-66 | A sample book is built from one or more collection sample stocks. Each item consumes one sample and creates a normal sample; giving the book records recipient/date and does not move stock again. |
+| BR-66 | A buku sample is stock procured from the factory per collection. The app never assembles its own book; giving a book consumes one stock piece, records recipient/date and does not move roll stock. |
 | BR-67 | The catalog shows active sellable colours, width, sell price and available stock; it never exposes cost, supplier or margin. |
 | BR-68 | Internal fleet codes/plates are unique. One driver may hold at most one vehicle; assigning a driver/vehicle moves the pair and clears the previous driver’s snapshot. Later edits never rewrite deliveries that already snapshotted driver/vehicle. |
 | BR-69 | A surat jalan may carry consignment fields (service, AWB, recipient, weight, pieces, shipping, insurance, COD, instructions). These fields are delivery data only and never change stock, invoice total or AR. |
@@ -513,7 +513,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-72 | A surat jalan snapshots its transport/armada. An internal delivery uses the selected internal vehicle and its Lavishome Fleet transport; a third-party courier maps to its transport and carries no internal fleet asset. Later master edits never rewrite the delivery. |
 | BR-73 | Third-party couriers are options, not assets. They may store courier/AWB and an optional courier driver name but never an internal `fleetAssetId`. |
 | BR-74 | Every collection defines a cloth type and default roll size (default 60 m × 300 cm); colour remains on the SKU. |
-| BR-75 | Sample stock is counted in pieces per collection. Factory procurement increases stock and records qty, cost, supplier and date; giving a sample decrements one piece and writes customer, date, mode, source and conversion history. Samples never cut sellable rolls. |
+| BR-75 | Buku sample stock is counted per collection. Factory procurement increases stock and records qty, cost, supplier and date; giving a book decrements one piece and writes customer, date, mode, source and conversion history. Buku sample never cut sellable rolls. |
 | BR-76 | Every roll has a stable QR code; the printable tag includes QR, collection, cloth type, colour, width, lot, length and warehouse/bin. |
 | BR-77 | Selling prices keep a change history. A price unchanged for 90 days or more cannot be changed without explicit confirmation; the old/new price, user and note are retained. |
 | BR-78 | WhatsApp is optional on a customer. The stock message lists only available stock and never cost or supplier data. |
@@ -526,7 +526,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.18 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.19 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -656,7 +656,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-70 | Four Chinese suppliers and a draft Chinese PO are present and selectable | Pass |
 | AC-71 | Driver users can log in, see only assigned deliveries/tasks, and cannot open invoices/master/settings | Pass |
 | AC-72 | Transport master shows 4 companies; drivers link to internal/Bali Kargo | Pass |
-| AC-73 | Sample book built from 2 collection sample stocks reduces sample stock and can be marked given to a prospect | Pass |
+| AC-73 | Buku sample stock is procured per collection and distribution reduces books; no in-app book assembly | Pass |
 | AC-74 | Catalog renders active colours/prices and prints/PDFs; in-app guide renders 14 sections | Pass |
 | AC-75 | Internal fleet seeds 3 vehicles, assigns each driver to one vehicle, stores capacity/tax and rejects duplicate plates | Pass |
 | AC-76 | Surat jalan captures J&T/JNE consignment fields and prints an AWB/barcode/signature consignment note without prices | Pass |
@@ -666,7 +666,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-80 | Surat jalan form selects the internal vehicle assigned to the driver; generated card/list/print show the vehicle and Lavishome Fleet transport | Pass |
 | AC-81 | Moving a driver/vehicle assignment updates both records; third-party delivery has no fleet asset and keeps courier/AWB only | Pass |
 | AC-82 | Collections render cloth type and 60 m × 300 cm default; new SKUs inherit the cloth type | Pass |
-| AC-83 | Factory sample stock is priced per collection, decremented when given, and customer/collection history shows samples/purchases and procurement | Pass |
+| AC-83 | Factory buku sample stock is priced per collection, decremented when given, and customer/collection history shows books/purchases and procurement | Pass |
 | AC-84 | Every roll prints a QR tag with stable barcode value and location | Pass |
 | AC-85 | Customer WhatsApp is stored and the stock share action produces a copy-paste message and wa.me link | Pass |
 | AC-86 | A price unchanged ≥90 days blocks saving until confirmation and records old/new price history | Pass |
@@ -716,7 +716,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, sample stock, QR stock tags, WA stock share, sell-price review, transfer ongkir | 74/74 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock, QR stock scan page, WA stock share, sell-price review, transfer ongkir | 74/74 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

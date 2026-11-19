@@ -1,17 +1,16 @@
 /** Sample & Deposit — dedicated customer-sample and deposit workspace. */
 
 import {
-  esc, icon, fmt, badge, toast, openModal, field, printDocument,
+  esc, icon, fmt, badge, toast, openModal, field,
 } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
-  SAMPLE_BOOK_STATUS, SAMPLE_MODE, createSample, createSampleBook, depositBalance,
-  giveSampleBook, linkSampleToInvoice, procureSampleStock, refundDeposit, sampleCollectionStats,
-  sampleCustomerStats,
+  SAMPLE_MODE, createSample, depositBalance, linkSampleToInvoice, procureSampleStock,
+  refundDeposit, sampleCollectionStats, sampleCustomerStats,
 } from '../../domain/crm.js';
 import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, can } from './common.js';
-import { printSampleBookHtml } from './print.js';
+
 
 let filter = { status: 'all' };
 
@@ -25,7 +24,6 @@ export function render(ctx) {
   const rate = db.samples.length ? Math.round((converted / db.samples.length) * 100) : 0;
   const deposits = db.deposits.filter((d) => d.kind === 'sample' || d.kind === 'indent');
   const openDeposit = deposits.reduce((a, d) => a + depositBalance(d), 0);
-  const books = db.sampleBooks ?? [];
   const collectionStats = sampleCollectionStats(db);
   const customerStats = sampleCustomerStats(db).filter((s) => s.total > 0)
     .sort((a, b) => b.total - a.total || String(b.lastDate).localeCompare(String(a.lastDate)));
@@ -35,26 +33,26 @@ export function render(ctx) {
   return `
     ${pageHead({
       eyebrow: 'CRM',
-      title: 'Sample & Deposit',
-      sub: 'Sample dipotong dari roll tertentu. Deposit adalah kewajiban, bukan omzet.',
-      actions: `${can(role, 'sample.create') ? `<button class="btn" type="button" data-act="procure-sample">${icon('plus')} Sample pabrik</button><button class="btn" type="button" data-act="new-book">${icon('layers')} Buku sample</button>` : ''}`,
+      title: 'Buku Sample & Deposit',
+      sub: 'Stok buku sample dari pabrik per koleksi. Deposit adalah kewajiban, bukan omzet.',
+      actions: `${can(role, 'sample.create') ? `<button class="btn" type="button" data-act="procure-sample">${icon('plus')} Buku sample pabrik</button>` : ''}`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
-      ${statCard({ label: 'Sample aktif', value: String(active), meta: `${db.samples.length} total sample`, tone: 'accent', iconName: 'spark' })}
+      ${statCard({ label: 'Buku sample aktif', value: String(active), meta: `${db.samples.length} total buku sample`, tone: 'accent', iconName: 'spark' })}
       ${statCard({ label: 'Konversi', value: `${rate}%`, meta: `${converted} berujung pembelian` })}
-      ${statCard({ label: 'Stok sample', value: String(stockTotal), meta: `${stocks.length} SKU sample siap`, iconName: 'layers' })}
+      ${statCard({ label: 'Stok buku sample', value: String(stockTotal), meta: `${stocks.length} koleksi siap`, iconName: 'layers' })}
       ${statCard({ label: 'Deposit terbuka', value: fmt.money(openDeposit), meta: `${deposits.filter((d) => depositBalance(d) > 0).length} saldo aktif`, tone: 'warn', iconName: 'wallet' })}
       ${statCard({ label: 'Refund tercatat', value: fmt.money(deposits.reduce((a, d) => a + d.refunded, 0)), meta: 'Tidak boleh melebihi saldo' })}
     </div>
 
     <div class="row" style="margin-bottom:12px">
-      ${[['all', 'Semua sample'], ['active', 'Aktif'], ['converted', 'Terkonversi']].map(([k, label]) => `<button class="chip" type="button" data-sample-status="${k}" aria-pressed="${filter.status === k}">${label}</button>`).join('')}
+      ${[['all', 'Semua buku sample'], ['active', 'Aktif'], ['converted', 'Terkonversi']].map(([k, label]) => `<button class="chip" type="button" data-sample-status="${k}" aria-pressed="${filter.status === k}">${label}</button>`).join('')}
     </div>
 
     <section class="card" style="margin-bottom:16px">
-      <div class="card-head"><div><h2>Katalog & stok sample koleksi</h2><p>Sample diprocure dari pabrik per koleksi, bukan dipotong dari roll. Harga, deposit, dan jumlah stok tersedia untuk pelanggan.</p></div><span class="badge no-dot">${stockTotal} pcs</span></div>
+      <div class="card-head"><div><h2>Katalog & stok buku sample</h2><p>Buku sample diprocure dari pabrik per koleksi, bukan dipotong dari roll. Harga, deposit, dan jumlah stok tersedia untuk pelanggan.</p></div><span class="badge no-dot">${stockTotal} pcs</span></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Koleksi / tipe</th><th class="num">Harga sample</th><th class="num">Deposit</th><th class="num">Stok</th><th class="num">Minimum</th><th>Lokasi</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Koleksi / tipe</th><th class="num">Harga buku sample</th><th class="num">Deposit</th><th class="num">Stok</th><th class="num">Minimum</th><th>Lokasi</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${stocks.map((s) => {
           const collection = byId(db.collections, s.collectionId);
           return `<tr>
@@ -66,18 +64,18 @@ export function render(ctx) {
             <td class="small">${esc(s.location || '—')}</td>
             <td>${s.qty <= 0 ? badge('Habis', 'danger') : s.qty <= (s.minQty ?? 1) ? badge('Menipis', 'warn') : badge('Tersedia', 'ok')}</td>
             <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
-              ${s.qty > 0 && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" type="button" data-give-stock="${s.id}">Beri sample</button>` : ''}
+              ${s.qty > 0 && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" type="button" data-give-stock="${s.id}">Beri buku sample</button>` : ''}
               <button class="btn btn-sm" type="button" data-procurement="${s.id}">Riwayat</button>
             </div></td>
           </tr>`;
-        }).join('') || `<tr><td colspan="8"><div class="empty">${icon('layers')}<strong>Belum ada stok sample</strong><p>Tambah sample koleksi dari pabrik.</p></div></td></tr>`}</tbody>
+        }).join('') || `<tr><td colspan="8"><div class="empty">${icon('layers')}<strong>Belum ada stok buku sample</strong><p>Tambah buku sample koleksi dari pabrik.</p></div></td></tr>`}</tbody>
       </table></div>
     </section>
 
     <section class="card" style="margin-bottom:16px">
-      <div class="card-head"><div><h2>Ringkasan sample pelanggan</h2><p>Berapa sample yang diambil, berapa yang berujung pembelian, dan total pembelian pelanggan.</p></div><span class="badge no-dot">${customerStats.length}</span></div>
+      <div class="card-head"><div><h2>Ringkasan buku sample pelanggan</h2><p>Berapa buku sample yang diambil, berapa yang berujung pembelian, dan total pembelian pelanggan.</p></div><span class="badge no-dot">${customerStats.length}</span></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Pelanggan</th><th class="num">Sample</th><th class="num">Belum beli</th><th class="num">Konversi</th><th class="num">Pembelian</th><th>Terakhir</th></tr></thead>
+        <thead><tr><th>Pelanggan</th><th class="num">Buku sample</th><th class="num">Belum beli</th><th class="num">Konversi</th><th class="num">Pembelian</th><th>Terakhir</th></tr></thead>
         <tbody>${customerStats.map((s) => `<tr data-href="#/pelanggan/${s.customer.id}" tabindex="0" role="link">
           <td><strong class="small">${esc(s.customer.name)}</strong><div class="xs muted">${esc(s.customer.company || s.customer.city || '')}</div></td>
           <td class="num">${s.total}<div class="xs muted">${s.pieces ? `${s.pieces} pcs` : fmt.m(s.qtyMm)}</div></td>
@@ -85,15 +83,15 @@ export function render(ctx) {
           <td class="num">${s.converted}</td>
           <td class="num">${fmt.money(s.purchases)}<div class="xs muted">${s.invoices} faktur</div></td>
           <td class="small">${esc(s.lastDate || '—')}</td>
-        </tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada distribusi sample.</td></tr>'}</tbody>
+        </tr>`).join('') || '<tr><td colspan="6" class="muted">Belum ada distribusi buku sample.</td></tr>'}</tbody>
       </table></div>
     </section>
 
     <section class="card">
-      <div class="card-head"><div><h2>Riwayat distribusi sample</h2><p>Roll sumber, lot, panjang, pelanggan, dan hasil konversi.</p></div><span class="badge no-dot">${samples.length}</span></div>
+      <div class="card-head"><div><h2>Riwayat distribusi buku sample</h2><p>Koleksi, pelanggan, jenis, nomor stok, dan hasil konversi.</p></div><span class="badge no-dot">${samples.length}</span></div>
       <div class="table-wrap desktop-table">
         <table class="data">
-          <thead><tr><th>Sample</th><th>Pelanggan</th><th>Produk</th><th class="num">Qty</th><th>Roll / lot</th><th>Jenis</th><th>Hasil</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+          <thead><tr><th>Buku sample</th><th>Pelanggan</th><th>Koleksi</th><th class="num">Qty</th><th>Stok / sumber</th><th>Jenis</th><th>Hasil</th><th><span class="sr-only">Aksi</span></th></tr></thead>
           <tbody>${samples.map((s) => {
             const sku = byId(db.skus, s.skuId);
             const collection = byId(db.collections, s.collectionId ?? sku?.collectionId);
@@ -102,14 +100,14 @@ export function render(ctx) {
             return `<tr>
               <td class="mono">${esc(s.id)}<div class="xs muted">${esc(s.date)}</div></td>
               <td><a class="small" href="#/pelanggan/${s.customerId}">${esc(customer?.name ?? '—')}</a></td>
-              <td><strong class="small">${esc(collection?.name ?? sku?.collectionName)} ${s.stockId ? '· sample koleksi' : esc(sku?.colourName || sku?.colourCode || '')}</strong><div class="xs muted">${esc(collection?.clothType ?? sku?.clothType ?? '')}${s.stockId ? '' : ` · ${esc(sku?.code ?? '')}`}</div></td>
+              <td><strong class="small">${esc(collection?.name ?? sku?.collectionName)} ${s.stockId ? '· buku sample koleksi' : esc(sku?.colourName || sku?.colourCode || '')}</strong><div class="xs muted">${esc(collection?.clothType ?? sku?.clothType ?? '')}${s.stockId ? '' : ` · ${esc(sku?.code ?? '')}`}</div></td>
               <td class="num">${s.stockId ? '1 pcs' : fmt.m(s.qtyMm)}</td>
-              <td>${s.rollId ? `<a class="mono xs" href="#/stok/${s.rollId}">${esc(s.rollId)}</a>` : `<span class="mono xs">${esc(s.stockId ?? '—')}</span>`}<div class="xs muted">${esc(roll?.lot ?? (s.stockId ? 'stok sample pabrik' : 'stok sample'))}</div></td>
+              <td>${s.rollId ? `<a class="mono xs" href="#/stok/${s.rollId}">${esc(s.rollId)}</a>` : `<span class="mono xs">${esc(s.stockId ?? '—')}</span>`}<div class="xs muted">${esc(roll?.lot ?? (s.stockId ? 'stok buku sample pabrik' : 'stok buku sample'))}</div></td>
               <td>${badge(SAMPLE_MODE[s.mode].label, SAMPLE_MODE[s.mode].tone)}</td>
               <td>${s.linkedInvoiceId ? `<a class="xs strong" href="#/penjualan/${s.linkedInvoiceId}">${esc(s.linkedInvoiceId)}</a>` : badge('Belum beli', 'muted')}</td>
               <td class="right">${!s.linkedInvoiceId && can(role, 'sample.create') ? `<button class="btn btn-sm" type="button" data-link="${s.id}">Kaitkan</button>` : ''}</td>
             </tr>`;
-          }).join('') || `<tr><td colspan="8"><div class="empty">${icon('spark')}<strong>Belum ada sample</strong></div></td></tr>`}</tbody>
+          }).join('') || `<tr><td colspan="8"><div class="empty">${icon('spark')}<strong>Belum ada buku sample</strong></div></td></tr>`}</tbody>
         </table>
       </div>
       <div class="mobile-cards">
@@ -123,27 +121,8 @@ export function render(ctx) {
             <div class="xs muted">${esc(collection?.name ?? sku?.collectionName)} · ${s.stockId ? '1 pcs' : fmt.m(s.qtyMm)} · ${esc(s.stockId || s.rollId || '—')}</div>
             <div class="row" style="margin-top:4px">${s.linkedInvoiceId ? badge(`Terkonversi ${s.linkedInvoiceId}`, 'ok') : badge('Belum beli', 'muted')} ${!s.linkedInvoiceId && can(role, 'sample.create') ? `<button class="btn btn-sm" type="button" data-link="${s.id}">Kaitkan</button>` : ''}</div>
           </div>`;
-        }).join('') || `<div class="empty">${icon('spark')}<strong>Belum ada sample</strong></div>`}
+        }).join('') || `<div class="empty">${icon('spark')}<strong>Belum ada buku sample</strong></div>`}
       </div>
-    </section>
-
-    <div class="section-title"><h2>Buku sample</h2><span class="small muted">Kumpulan potongan roll untuk diberikan ke pelanggan/prospek</span></div>
-    <section class="card" style="margin-bottom:16px">
-      <div class="table-wrap"><table class="data">
-        <thead><tr><th>Buku</th><th>Pelanggan / prospek</th><th class="num">Sample</th><th>Tanggal</th><th>Status</th><th>Diberikan</th><th><span class="sr-only">Aksi</span></th></tr></thead>
-        <tbody>${books.map((b) => `<tr>
-          <td><strong class="small">${esc(b.name)}</strong><div class="xs muted mono">${esc(b.id)}</div></td>
-          <td class="small">${esc(b.customerName)}</td>
-          <td class="num">${b.items.length}</td>
-          <td>${esc(b.date)}</td>
-          <td>${badge(SAMPLE_BOOK_STATUS[b.status]?.label ?? b.status, SAMPLE_BOOK_STATUS[b.status]?.tone ?? 'muted')}</td>
-          <td class="small">${esc(b.givenTo || '—')}${b.givenDate ? `<div class="xs muted">${esc(b.givenDate)}</div>` : ''}</td>
-          <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
-            <button class="btn btn-sm" data-print-book="${b.id}">${icon('printer')} Cetak</button>
-            ${b.status !== 'given' && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" data-give-book="${b.id}">Beri</button>` : ''}
-          </div></td>
-        </tr>`).join('') || `<tr><td colspan="7"><div class="empty">${icon('layers')}<strong>Belum ada buku sample</strong><p>Buat buku dari beberapa potongan roll.</p></div></td></tr>`}</tbody>
-      </table></div>
     </section>
 
     <div class="section-title"><h2>Deposit pelanggan</h2><span class="small muted">Saldo = nominal − dipakai − direfund</span></div>
@@ -157,7 +136,7 @@ export function render(ctx) {
             return `<tr>
               <td class="mono">${esc(d.id)}<div class="xs muted">${esc(d.receivedAt)}</div></td>
               <td><a class="small" href="#/pelanggan/${d.customerId}">${esc(customer?.name ?? '—')}</a></td>
-              <td>${badge(d.kind === 'sample' ? 'Sample' : 'Indent', d.kind === 'sample' ? 'copper' : 'info')}</td>
+              <td>${badge(d.kind === 'sample' ? 'Buku sample' : 'Indent', d.kind === 'sample' ? 'copper' : 'info')}</td>
               <td class="num">${fmt.money(d.amount)}</td>
               <td class="num ${balance ? 'strong' : 'muted'}">${fmt.money(balance)}</td>
               <td class="xs muted">${d.ledger.map((l) => `${l.type} ${fmt.money(l.amount)}`).join(' · ')}</td>
@@ -168,7 +147,7 @@ export function render(ctx) {
       </div>
     </section>
 
-    <div class="notice notice-info" style="margin-top:14px">${icon('alert')}<div><strong>Aturan.</strong> Sample memotong roll sumber; deposit sample hanya dapat direfund setelah ada pembelian terkait. Deposit indent memerlukan persetujuan manajer.</div></div>`;
+    <div class="notice notice-info" style="margin-top:14px">${icon('alert')}<div><strong>Aturan.</strong> Buku sample adalah stok pabrik per koleksi dan tidak memotong roll. Deposit buku sample hanya dapat direfund setelah ada pembelian terkait. Deposit indent memerlukan persetujuan manajer.</div></div>`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -176,7 +155,7 @@ export function render(ctx) {
 function openLink(ctx, sample) {
   const invoices = ctx.db.invoices.filter((i) => i.customerId === sample.customerId && i.status === 'posted' && i.date >= sample.date);
   if (!invoices.length) {
-    toast('Belum ada faktur terbit setelah tanggal sample.', { tone: 'error' });
+    toast('Belum ada faktur terbit setelah tanggal buku sample.', { tone: 'error' });
     return;
   }
   openModal({
@@ -185,7 +164,7 @@ function openLink(ctx, sample) {
     onSubmit(form, close) {
       ctx.store.update((db) => linkSampleToInvoice(db, { sampleId: sample.id, invoiceId: form.invoice.value, user: ctx.user }));
       close();
-      toast('Sample dikaitkan ke pembelian.', { tone: 'success' });
+      toast('Buku sample dikaitkan ke pembelian.', { tone: 'success' });
     },
   });
 }
@@ -199,7 +178,7 @@ function openRefund(ctx, deposit) {
     body: `
       ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="${balance}" />`)}
       ${field('Alasan', `<input class="input" name="reason" placeholder="Wajib diisi" />`)}
-      ${deposit.kind === 'sample' ? `<div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div>Refund sample memerlukan pembelian yang sudah dikaitkan.</div></div>` : ''}
+      ${deposit.kind === 'sample' ? `<div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div>Refund buku sample memerlukan pembelian yang sudah dikaitkan.</div></div>` : ''}
     `,
     onSubmit(form, close) {
       ctx.store.update((db) => refundDeposit(db, {
@@ -214,87 +193,6 @@ function openRefund(ctx, deposit) {
   });
 }
 
-function openNewBook(ctx) {
-  const { db } = ctx;
-  const stockList = (db.sampleStocks ?? []).filter((s) => s.qty > 0);
-  if (!stockList.length) {
-    toast('Tidak ada stok sample koleksi untuk buku sample.', { tone: 'error' });
-    return;
-  }
-  const stockOptions = stockList.map((s) => {
-    const collection = byId(db.collections, s.collectionId);
-    return `<option value="${s.id}">${esc(collection?.name)} · ${esc(collection?.clothType)} · stok ${s.qty} pcs</option>`;
-  }).join('');
-  const row = () => `<div class="alloc-row" data-book-line style="grid-template-columns:1fr 34px">
-    <select class="select book-stock">${stockOptions}</select>
-    <button class="icon-btn" type="button" data-remove aria-label="Hapus">${icon('x')}</button>
-  </div>`;
-  const customers = db.customers.filter((c) => c.stage !== 'dormant');
-  openModal({
-    title: 'Buku sample koleksi baru',
-    description: 'Setiap item mengambil satu sample koleksi dari stok pabrik. Stok sample berkurang; roll tidak dipotong.',
-    wide: true,
-    submitLabel: 'Buat buku sample',
-    body: `
-      ${field('Nama buku', `<input class="input" name="name" placeholder="Sample book Hotel Arunika" required />`, { full: true })}
-      ${field('Pelanggan / prospek', `<select class="select" name="customer">${customers.map((c) => `<option value="${c.id}">${esc(c.name)}${c.company ? ` — ${esc(c.company)}` : ''}</option>`).join('')}</select>`)}
-      ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      <div class="section-title" style="margin:16px 0 6px"><h3>Sample koleksi</h3></div>
-      <div id="book-rows">${row()}</div>
-      <button class="btn btn-sm" type="button" data-add>${icon('plus')} Tambah koleksi</button>
-      ${field('Catatan', `<input class="input" name="notes" placeholder="Tujuan, warna/koleksi yang dicari, instruksi" />`, { full: true })}
-      ${settingsOf(db).sampleDepositRequired ? `<div class="notice notice-warn">${icon('alert')}<div>Sample gratis dinonaktifkan. Buku sample memakai mode gratis; ubah preferensi atau gunakan sample individual.</div></div>` : ''}
-    `,
-    onMount(form) {
-      const rows = form.querySelector('#book-rows');
-      const bind = (r) => {
-        r.querySelector('[data-remove]').addEventListener('click', () => { if (rows.children.length > 1) r.remove(); });
-      };
-      bind(rows.firstElementChild);
-      form.querySelector('[data-add]').addEventListener('click', () => {
-        rows.insertAdjacentHTML('beforeend', row());
-        bind(rows.lastElementChild);
-      });
-    },
-    onSubmit(form, close) {
-      const items = [...form.querySelectorAll('[data-book-line]')]
-        .map((r) => ({ stockId: r.querySelector('.book-stock').value }))
-        .filter((i) => i.stockId);
-      if (!items.length) throw new Error('Tambahkan minimal satu sample koleksi.');
-      const book = ctx.store.update((db) => createSampleBook(db, {
-        name: form.name.value,
-        customerId: form.customer.value,
-        date: form.date.value,
-        items,
-        notes: form.notes.value,
-        user: ctx.user,
-      }));
-      close();
-      toast(`Buku ${book.id} dibuat: ${book.items.length} sample koleksi dari stok pabrik.`, { tone: 'success' });
-    },
-  });
-}
-
-function openGiveBook(ctx, book) {
-  openModal({
-    title: `Beri buku ${book.name}`,
-    description: 'Catat siapa yang menerima buku sample fisik.',
-    submitLabel: 'Tandai diberikan',
-    body: `
-      ${field('Diberikan kepada', `<input class="input" name="givenTo" value="${esc(book.customerName)}" required />`)}
-      ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Catatan', `<input class="input" name="note" placeholder="Kontak, lokasi, hasil follow-up" />`, { full: true })}
-    `,
-    onSubmit(form, close) {
-      ctx.store.update((db) => giveSampleBook(db, {
-        id: book.id, givenTo: form.givenTo.value, date: form.date.value, note: form.note.value, user: ctx.user,
-      }));
-      close();
-      toast('Buku sample ditandai sudah diberikan.', { tone: 'success' });
-    },
-  });
-}
-
 function openProcureSample(ctx) {
   const collections = ctx.db.collections.filter((c) => ctx.db.skus.some((s) => s.collectionId === c.id));
   if (!collections.length) {
@@ -303,21 +201,21 @@ function openProcureSample(ctx) {
   }
   const suppliers = ctx.db.suppliers ?? [];
   openModal({
-    title: 'Sample dari pabrik',
-    description: 'Catat procurement sample koleksi dari pabrik. Sample masuk stok showroom; tidak memotong roll jual.',
+    title: 'Buku sample dari pabrik',
+    description: 'Catat procurement buku sample koleksi dari pabrik. Buku sample masuk stok showroom; tidak memotong roll jual.',
     submitLabel: 'Simpan procurement',
     body: `<div class="form-grid">
       ${field('Koleksi', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.clothType)} · harga ${fmt.money(c.samplePrice || 0)} / deposit ${fmt.money(c.sampleDeposit || 0)}</option>`).join('')}</select>`, { full: true })}
-      ${field('Jumlah sample (pcs)', `<input class="input" name="qty" inputmode="numeric" value="1" />`)}
-      ${field('Harga pokok / sample (Rp)', `<input class="input" name="unitCost" inputmode="numeric" placeholder="0" />`)}
+      ${field('Jumlah buku sample (pcs)', `<input class="input" name="qty" inputmode="numeric" value="1" />`)}
+      ${field('Harga pokok / buku sample (Rp)', `<input class="input" name="unitCost" inputmode="numeric" placeholder="0" />`)}
       ${field('Pemasok / pabrik', `<select class="select" name="supplier"><option value="">— Tanpa pemasok —</option>${suppliers.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
       ${field('Tanggal terima', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Lokasi sample', `<input class="input" name="location" value="Showroom Jakarta" />`)}
+      ${field('Lokasi buku sample', `<input class="input" name="location" value="Showroom Jakarta" />`)}
       ${field('Catatan', `<input class="input" name="notes" placeholder="Nomor pengiriman, warna, batch pabrik" />`, { full: true })}
     </div>`,
     onSubmit(form, close) {
       const qty = Number(form.qty.value || 0);
-      if (!(qty > 0)) throw new Error('Jumlah sample harus lebih dari 0 pcs.');
+      if (!(qty > 0)) throw new Error('Jumlah buku sample harus lebih dari 0 pcs.');
       ctx.store.update((db) => procureSampleStock(db, {
         collectionId: form.collection.value,
         qty,
@@ -329,7 +227,7 @@ function openProcureSample(ctx) {
         user: ctx.user,
       }));
       close();
-      toast('Procurement sample pabrik dicatat; stok sample koleksi bertambah.', { tone: 'success' });
+      toast('Procurement buku sample pabrik dicatat; stok buku sample koleksi bertambah.', { tone: 'success' });
     },
   });
 }
@@ -339,7 +237,7 @@ function openProcurementHistory(ctx, stock) {
   const history = (stock.procurements ?? []).slice().sort((a, b) => String(b.date).localeCompare(String(a.date)));
   openModal({
     title: `Riwayat procurement ${collection?.name ?? stock.collectionId}`,
-    description: 'Semua sample koleksi ini berasal dari pabrik, bukan potongan roll.',
+    description: 'Semua buku sample koleksi ini berasal dari pabrik, bukan potongan roll.',
     submitLabel: 'Tutup',
     wide: true,
     body: `<div class="table-wrap"><table class="data">
@@ -361,21 +259,21 @@ function openGiveStock(ctx, stock) {
   const collection = byId(ctx.db.collections, stock.collectionId);
   const customers = ctx.db.customers.filter((c) => c.stage !== 'dormant');
   if (!customers.length) {
-    toast('Belum ada pelanggan untuk menerima sample.', { tone: 'error' });
+    toast('Belum ada pelanggan untuk menerima buku sample.', { tone: 'error' });
     return;
   }
   const samplePrice = stock.samplePrice ?? collection?.samplePrice ?? 0;
   const sampleDeposit = stock.sampleDeposit ?? collection?.sampleDeposit ?? 0;
   openModal({
-    title: `Beri sample ${collection?.name ?? ''}`,
-    description: 'Sample koleksi dari pabrik. Stok sample berkurang satu pcs; free/deposit/refundable mengikuti aturan yang ada.',
-    submitLabel: 'Beri sample',
+    title: `Beri buku sample ${collection?.name ?? ''}`,
+    description: 'Buku sample koleksi dari pabrik. Stok berkurang satu pcs; free/deposit/refundable mengikuti aturan yang ada.',
+    submitLabel: 'Beri buku sample',
     body: `<div class="form-grid">
-      <div class="span-2 notice notice-info">${icon('spark')}<div><strong>${esc(collection?.name ?? '')} · ${esc(collection?.clothType ?? '')}</strong><div class="small">Stok ${stock.qty} pcs · harga sample ${fmt.money(samplePrice)} · deposit refundable ${fmt.money(sampleDeposit)}</div></div></div>
+      <div class="span-2 notice notice-info">${icon('spark')}<div><strong>${esc(collection?.name ?? '')} · ${esc(collection?.clothType ?? '')}</strong><div class="small">Stok ${stock.qty} pcs · harga buku sample ${fmt.money(samplePrice)} · deposit refundable ${fmt.money(sampleDeposit)}</div></div></div>
       ${field('Pelanggan', `<select class="select" name="customer">${customers.map((c) => `<option value="${c.id}">${esc(c.name)}${c.company ? ` - ${esc(c.company)}` : ''}</option>`).join('')}</select>`)}
       ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Jenis sample', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit">Deposit refundable</option></select>`)}
-      ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="0" />`, { hint: 'Kosongkan untuk memakai harga sample/deposit koleksi.' })}
+      ${field('Jenis buku sample', `<select class="select" name="mode"><option value="free">Gratis</option><option value="paid">Berbayar</option><option value="deposit">Deposit refundable</option></select>`)}
+      ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="0" />`, { hint: 'Kosongkan untuk memakai harga buku sample/deposit koleksi.' })}
       ${field('Catatan', `<input class="input" name="notes" placeholder="Permintaan customer, ruangan, follow-up" />`, { full: true })}
     </div>`,
     onMount(form) {
@@ -397,7 +295,7 @@ function openGiveStock(ctx, stock) {
         user: ctx.user,
       }));
       close();
-      toast('Sample diberikan; stok sample dan riwayat pelanggan diperbarui.', { tone: 'success' });
+      toast('Buku sample diberikan; stok buku sample dan riwayat pelanggan diperbarui.', { tone: 'success' });
     },
   });
 }
@@ -408,7 +306,6 @@ export function mount(ctx) {
     ctx.store.emit();
   }));
   document.querySelector('[data-act="procure-sample"]')?.addEventListener('click', () => openProcureSample(ctx));
-  document.querySelector('[data-act="new-book"]')?.addEventListener('click', () => openNewBook(ctx));
   document.querySelectorAll('[data-procurement]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.procurement);
     if (stock) openProcurementHistory(ctx, stock);
@@ -416,14 +313,6 @@ export function mount(ctx) {
   document.querySelectorAll('[data-give-stock]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.giveStock);
     if (stock) openGiveStock(ctx, stock);
-  }));
-  document.querySelectorAll('[data-give-book]').forEach((btn) => btn.addEventListener('click', () => {
-    const book = (ctx.db.sampleBooks ?? []).find((b) => b.id === btn.dataset.giveBook);
-    if (book) openGiveBook(ctx, book);
-  }));
-  document.querySelectorAll('[data-print-book]').forEach((btn) => btn.addEventListener('click', () => {
-    const book = (ctx.db.sampleBooks ?? []).find((b) => b.id === btn.dataset.printBook);
-    if (book) printDocument(`Buku sample ${book.id}`, printSampleBookHtml(ctx.db, book));
   }));
   document.querySelectorAll('[data-link]').forEach((btn) => btn.addEventListener('click', () => {
     const sample = ctx.db.samples.find((s) => s.id === btn.dataset.link);

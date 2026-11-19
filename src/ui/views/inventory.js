@@ -308,6 +308,12 @@ function renderDetail(ctx) {
   const wh = roll.transit ? warehouseOf(db, roll.transit.toWarehouseId) : warehouseOf(db, roll.warehouseId);
   const avail = availableMm(roll);
   const trail = rollTrail(db, roll.id);
+  const cutHistory = db.movements
+    .filter((m) => (m.rollId === roll.id || m.parentRollId === roll.id)
+      && m.beforeMm != null && m.afterMm != null && m.afterMm < m.beforeMm)
+    .slice()
+    .sort((a, b) => String(b.at ?? b.date).localeCompare(String(a.at ?? a.date)));
+  const totalCutMm = cutHistory.reduce((a, m) => a + (Number(m.qtyMm) || 0), 0);
   const ancestors = rollAncestors(db, roll.id);
   const directChildren = db.rolls.filter((r) => r.parentRollId === roll.id);
   const descendants = rollDescendants(db, roll.id);
@@ -352,7 +358,8 @@ function renderDetail(ctx) {
           <hr class="divider" />
           <div class="grid grid-3">
             <div><div class="xs muted">Panjang awal</div><div class="strong num">${fmt.m(roll.originalMm)}</div></div>
-            <div><div class="xs muted">Panjang aktual</div><div class="strong num" style="font-size:1.25rem">${fmt.m(roll.currentMm)}</div></div>
+            <div><div class="xs muted">Total dipotong</div><div class="strong num">${fmt.m(totalCutMm)}</div></div>
+            <div><div class="xs muted">Sisa roll (stok aktual)</div><div class="strong num" style="font-size:1.25rem">${fmt.m(roll.currentMm)}</div></div>
             <div><div class="xs muted">Tersedia</div><div class="strong num">${isSellable(roll) ? fmt.m(avail) : '—'}</div></div>
             <div><div class="xs muted">Terpesan</div><div class="strong num">${roll.reservedMm ? fmt.m(roll.reservedMm) : '—'}</div></div>
             <div><div class="xs muted">Harga pokok / m</div><div class="strong num">${showCost ? fmt.money(roll.costPerM) : '—'}</div></div>
@@ -360,6 +367,24 @@ function renderDetail(ctx) {
           </div>
           ${roll.reservedMm ? `<div class="notice notice-warn" style="margin-top:12px">${icon('clock')}<div><strong>${fmt.m(roll.reservedMm)} terpesan.</strong> ${esc((roll.reservations ?? []).map((r) => `${r.ref} (${fmt.m(r.qtyMm)})`).join(', '))}</div></div>` : ''}
           ${roll.transit ? `<div class="notice notice-info" style="margin-top:12px">${icon('truck')}<div><strong>Dalam perjalanan</strong> dari ${esc(warehouseOf(db, roll.transit.fromWarehouseId)?.name)} ke ${esc(warehouseOf(db, roll.transit.toWarehouseId)?.name)}. Tidak dihitung sebagai stok di gudang mana pun.</div></div>` : ''}
+        </section>
+
+        <section class="card">
+          <div class="card-head"><div><h2>Riwayat potong & sisa roll</h2><p>Setiap potongan, referensi dokumen, dan sisa meter setelah potong.</p></div><span class="badge no-dot">${cutHistory.length} potong</span></div>
+          <div class="card-pad">
+            <div class="row-between" style="margin-bottom:10px"><span class="small muted">Sisa saat ini</span><strong class="num">${fmt.m(roll.currentMm)}</strong></div>
+            ${cutHistory.length ? `<div class="table-wrap"><table class="data">
+              <thead><tr><th>Tanggal</th><th class="num">Potong</th><th class="num">Sebelum</th><th class="num">Sisa setelah</th><th>Referensi</th><th>Oleh / catatan</th></tr></thead>
+              <tbody>${cutHistory.map((m) => `<tr>
+                <td class="small">${esc(formatDateLong(m.date))}<div class="xs muted">${esc(String(m.at ?? '').slice(0, 10))}</div></td>
+                <td class="num strong">${fmt.m(m.qtyMm)}</td>
+                <td class="num">${m.beforeMm != null ? fmt.m(m.beforeMm) : '—'}</td>
+                <td class="num strong">${m.afterMm != null ? fmt.m(m.afterMm) : '—'}</td>
+                <td class="small mono">${esc(m.ref || '—')}</td>
+                <td class="small">${esc(m.userName || m.userId || '—')}<div class="xs muted">${esc(m.note || '')}</div></td>
+              </tr>`).join('')}</tbody>
+            </table></div>` : `<div class="empty" style="padding:18px">${icon('cut')}<strong>Belum ada potongan</strong><p>Roll masih utuh ${fmt.m(roll.currentMm)}.</p></div>`}
+          </div>
         </section>
 
         <section class="card">

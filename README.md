@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-74%2F74-brightgreen) ![Version](https://img.shields.io/badge/version-2.18.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-74%2F74-brightgreen) ![Version](https://img.shields.io/badge/version-2.19.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,7 +60,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 74 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -180,8 +180,8 @@ Lajur/
 12. **Master Data → Gudang** — add or rename a warehouse, change its code/prefix/contact, or deactivate an empty one. Deactivation is refused while stock, transit, parts, active requests, or an opname still reference it. Collection names can be renamed without changing SKU IDs.
 13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Henny, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
 14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty. The rate is entered by the user at PO time and stored with timestamp/source.
-15. **Sample & Deposit** — factory-procured sample stock per collection, sample price/refundable deposit, procurement history, customer distribution and conversion, deposit ledger and refunds. **Buku sample** builds a giveaway book from collection sample stock; **Katalog** lists colours/prices for customers. Both print/PDF.
-16. **Panduan** — open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, sample book and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
+15. **Buku Sample & Deposit** - factory-procured buku sample stock per collection, book price/refundable deposit, procurement history, customer distribution and conversion, deposit ledger and refunds. Buku sample is stocked, not assembled in-app; **Katalog** lists colours/prices for customers.
+16. **Panduan** - open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, buku sample and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
 17. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 18. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
 19. **Master data** — product and part lists show **pemasok** and the latest supplier price; **Harga** records a new quote and updates the master buy price. Add/edit spare parts with brand, optional parent part, and image; each edit writes to audit. Click a thumbnail to enlarge it. **Driver & armada** stores internal drivers and assigns each to one Lavishome Fleet vehicle; the **Armada internal** table holds only internal motor/mobil/truk with capacity and tax expiry. **Transport & kurir** keeps third-party delivery options (Lalamove, GoSend, Bali Kargo, J&T, JNE) separate from assets.
@@ -273,12 +273,13 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Collection metadata | Luna/Aria/Nova define Blackout/Sheer/Dimout and default 60 m × 300 cm; new SKUs inherit the cloth type |
 | Sample stock | 10 factory sample pieces across Luna/Aria/Nova; Luna sample price Rp 25.000 and refundable deposit Rp 50.000; giving SS-0001 reduced stock 4 → 3 and created DEP-0004 |
 | QR stock tag | RL-0001 prints a QR tag with `RL-0001`, collection, Blackout, 280 cm, lot, length and JKT/A-01-01; QR opens the roll URL when scanned |
+| QR scan landing | Scanned `#/stok/RL-0001` survives login; RL-0007 shows 1 cut 70 m → 69.5 m, total cut and remaining stock |
 | WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
 | Price review | Luna-01 last changed 170 days ago; save was blocked until the 90-day confirmation was checked, then Rp 125.000 → Rp 130.000 |
 | Transfer ongkir | Transfer with Rp 300.000 over 10 m adds Rp 30.000/m to destination roll HPP |
 | Surat jalan missing | Pengiriman lists INV-0004, INV-0003 and INV-0001 as posted invoices without a surat jalan |
 | PostgreSQL store | Schema 16 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
-| Sample book | Created from 2 collection sample stocks; stock sample decremented; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
+| Buku sample | 10 factory books available after seeding; giving SS-0001 reduces stock 4 → 3 and records customer history; no in-app book assembly |
 | Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
 | Guide | 14 in-app tutorial sections rendered |
 | Courier + map | Internal/J&T/JNE/Lalamove/GoSend/SiCepat/AnterAja/Bali Kargo; address autocomplete from customers/history; map iframe updates with address |
@@ -360,16 +361,16 @@ node tools/render-check.mjs
 - **Driver role & portal:** Asep/Rudi/Slamet have user accounts (PIN 1212/2323/3434), see only their deliveries/tasks, and can Kirim/Tiba; receiver confirmation stays with sales/manager.
 - **Transport master:** internal Lavishome Fleet + Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers link to a transport company.
 - **Fleet assets:** internal motor/mobil/truk with plate, capacity, tax expiry and assigned driver.
-- **Sample books:** build a giveaway book from collection sample stock, print/PDF, and mark who received it.
+- **Buku sample stock:** factory books per collection with price/deposit, procurement history, distribution and conversion; no in-app assembly.
 - **Catalog:** colour/width/price/availability listing with Cetak/PDF for potential customers.
-- **In-app tutorial:** Panduan covers 14 processes from stock and purchasing to tax/surat jalan, sample books, catalog, tasks and reporting.
+- **In-app tutorial:** Panduan covers 14 processes from stock and purchasing to tax/surat jalan, buku sample, catalog, tasks and reporting.
 - **Task operations:** receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname and sample tasks; assign, start, block, resume, complete, cancel; due dates, priority, cutting queue, manager board; completion note and optional physical proof.
 - **Printed task tickets:** task detail and filtered queue print tickets with Cetak/PDF; printing increments the ticket count. Online assignment can be disabled in Settings so managers print tickets and workers update Mulai/Selesai manually.
 - **Manual stock addition:** Stok → **Tambah stok manual** (also `#/stok?add=1`) records opening stock/correction without a PO for fabric or parts.
 - **Delivery schedule:** sales list shows driver/date/courier/status; the surat jalan form warns when the selected driver already has another delivery that day.
 - **Chinese supplier demos:** Ningbo, Shaoxing, Yiwu and Guangzhou import suppliers, CNY price lists and a draft Shaoxing PO (`PO-0006`).
 - **Import suppliers:** local vs import (China), CNY pricing, locked FX rate, PO value in CNY and IDR, CNY supplier bills and payments, landed cost (freight/insurance/duty/other) allocated to roll HPP, shipment tracking (BL/container, ETD/ETA, customs, arrival) and document metadata.
-- **Sample & Deposit workspace:** dedicated page for samples by customer/source roll, conversion linking, deposit ledger and refunds.
+- **Buku Sample & Deposit workspace:** factory book stock per collection, customer distribution, conversion linking, deposit ledger and refunds.
 - **Optional physical proof:** file metadata on supplier receipts, internal transfer receipts, tasks and shipments.
 - **Mobile workspace:** bottom navigation (Beranda/Tugas/Stok/Akun), 2-column task tiles, task-first operator dashboard, compact task cards.
 - Consistent 18 px icon system with 14 px stat icons (fixes oversized/missing-looking dashboard icons).
@@ -391,7 +392,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.18.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.19.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

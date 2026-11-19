@@ -101,16 +101,16 @@ const steps = [
   },
   {
     id: 'sample',
-    title: 'Sample, buku sample, dan katalog',
+    title: 'Buku sample dan katalog',
     body: `
       <ol>
-        <li>Sample adalah stok koleksi dari pabrik, bukan potongan roll. Tambah koleksi → isi harga sample, deposit refundable, dan jumlah sample awal; atau gunakan <strong>Sample pabrik</strong> di halaman Sample & Deposit.</li>
-        <li><strong>Beri sample</strong> mencatat pelanggan, tanggal, jenis (gratis/berbayar/deposit), nominal, dan hasil. Ringkasan pelanggan menunjukkan jumlah sample dan total pembelian.</li>
-        <li><strong>Riwayat</strong> pada baris sample membuka procurement pabrik: tanggal, qty, harga pokok, pemasok, dan catatan.</li>
-        <li><strong>Buku sample</strong>: pilih beberapa koleksi dari stok sample, lalu berikan ke pelanggan/prospek. Stok sample berkurang; roll tidak dipotong.</li>
+        <li>Buku sample adalah stok koleksi dari pabrik, bukan potongan roll dan bukan buku yang dirakit sendiri. Tambah koleksi → isi harga buku sample, deposit refundable, dan jumlah awal; atau gunakan <strong>Buku sample pabrik</strong> di halaman Buku Sample.</li>
+        <li><strong>Beri buku sample</strong> mencatat pelanggan, tanggal, jenis (gratis/berbayar/deposit), nominal, dan hasil. Ringkasan pelanggan menunjukkan jumlah buku sample dan total pembelian.</li>
+        <li><strong>Riwayat</strong> pada baris buku sample membuka procurement pabrik: tanggal, qty, harga pokok, pemasok, dan catatan.</li>
+        <li>Stok buku sample berkurang satu per pemberian; roll jual tidak pernah dipotong untuk sample.</li>
         <li>Buku dapat dicetak/PDF dan ditandai “Beri” kepada calon pelanggan.</li>
         <li>Buka <a href="#/katalog">Katalog</a> untuk daftar warna, lebar, harga jual, dan stok; cetak/PDF untuk pelanggan.</li>
-        <li>Sample dapat dikaitkan ke faktur saat pelanggan membeli.</li>
+        <li>Buku sample dapat dikaitkan ke faktur saat pelanggan membeli.</li>
       </ol>`,
   },
   {
@@ -179,7 +179,7 @@ export function render() {
     ${pageHead({
       eyebrow: 'Belajar',
       title: 'Panduan proses bisnis',
-      sub: 'Langkah input dari stok sampai surat jalan, sample book, katalog, dan laporan.',
+      sub: 'Langkah input dari stok sampai surat jalan, buku sample, katalog, dan laporan.',
     })}
     <div class="notice notice-info" style="margin-bottom:14px">${icon('listCheck')}<div>Setiap langkah memakai data demo yang bisa Anda ubah. Ikuti urutan, atau lompat ke bagian yang dibutuhkan.</div></div>
     <div class="stack">

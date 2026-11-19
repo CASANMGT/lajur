@@ -2,6 +2,31 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.19.0] — 2026-11-19
+
+**Release name: Buku Sample & QR Scan.** Makes the QR scan open the roll page even before login, adds a clear cut-history/leftover view, and renames the sample flow to factory-supplied **buku sample** per collection with no in-app book assembly.
+
+### Added
+
+- **QR scan landing:** scanning a roll QR opens `#/stok/:id`; if logged out, the app preserves the scanned URL through login instead of dropping the user on the dashboard.
+- **Roll cut history:** roll detail now shows panjang awal, total dipotong, sisa roll (stok aktual), each cut with before/after metres, reference and user, plus the full movement history.
+- **Buku sample catalogue:** price, refundable deposit, stock, minimum and location per collection, with procurement history.
+
+### Changed
+
+- Sample terminology is now **buku sample** across the nav, page, customer profile, collection master and guide.
+- Buku sample is factory stock per collection. In-app “make a sample book” assembly was removed; stock is procured, not built.
+- Seed sample distributions now consume buku sample stock; no seeded sample cuts a sellable roll.
+- Version bumped to 2.19.0; schema and backup stay at 17.
+
+### Verification
+
+- `node --test`: **74 passed**.
+- Module imports and server-side render green.
+- Browser QA: QR/deep link survives login; RL-0007 shows 1 cut 70 m → 69.5 m; Buku Sample page shows factory stock/price/deposit and no book assembly.
+
+---
+
 ## [2.18.0] — 2026-11-19
 
 **Release name: Sample Pabrik & QR.** Replaces roll-cut sample stock with factory-procured collection samples, adds sample pricing/deposit and procurement history, and switches roll stock tags to scannable QR codes.

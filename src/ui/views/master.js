@@ -185,7 +185,7 @@ function renderCategories(ctx) {
     <section class="card">
       <div class="card-head"><div><h2>Koleksi</h2><p>Tipe kain ditentukan sebelum warna. Default roll 60 m × 300 cm; nama dan ID tetap.</p></div>${role === 'manager' ? `<button class="btn btn-sm" data-act="new-collection">Tambah</button>` : ''}</div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Koleksi</th><th>Tipe kain</th><th>Kategori</th><th class="num">Warna</th><th>Default roll</th><th>Sample</th><th class="num">Stok sample</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Koleksi</th><th>Tipe kain</th><th>Kategori</th><th class="num">Warna</th><th>Default roll</th><th>Buku sample</th><th class="num">Stok buku sample</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${db.collections.map((c) => {
           const stock = (db.sampleStocks ?? []).find((s) => s.collectionId === c.id);
           return `<tr>
@@ -743,12 +743,12 @@ function openCollection(ctx, collection = null) {
       ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${collection?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
       ${field('Panjang roll default (m)', `<input class="input" type="number" min="1" step="0.5" name="defaultRollLengthM" value="${esc(collection?.defaultRollLengthM ?? 60)}" />`)}
       ${field('Lebar kain default (cm)', `<input class="input" type="number" min="1" name="defaultWidthCm" value="${esc(collection?.defaultWidthCm ?? 300)}" />`)}
-      ${field('Harga sample / pcs', `<input class="input" name="samplePrice" inputmode="numeric" value="${esc(collection?.samplePrice ?? 0)}" />`, { hint: 'Harga sample koleksi yang tampil di katalog sample.' })}
+      ${field('Harga buku sample / pcs', `<input class="input" name="samplePrice" inputmode="numeric" value="${esc(collection?.samplePrice ?? 0)}" />`, { hint: 'Harga buku sample koleksi yang tampil di katalog buku sample.' })}
       ${field('Deposit refundable / pcs', `<input class="input" name="sampleDeposit" inputmode="numeric" value="${esc(collection?.sampleDeposit ?? 0)}" />`)}
-      ${field('Minimum stok sample', `<input class="input" name="sampleMin" inputmode="numeric" value="${esc(collection?.sampleMin ?? 1)}" />`)}
-      ${field(editing ? 'Tambah sample pabrik (pcs)' : 'Sample awal dari pabrik (pcs)', `<input class="input" name="sampleQty" inputmode="numeric" value="${editing ? 0 : 1}" />`, { hint: 'Sample diprocure dari pabrik; tidak memotong roll.' })}
-      ${field('Harga pokok sample / pcs', `<input class="input" name="sampleUnitCost" inputmode="numeric" value="0" />`)}
-      ${field('Pemasok sample', `<select class="select" name="sampleSupplier"><option value="">— Tanpa pemasok —</option>${(ctx.db.suppliers ?? []).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
+      ${field('Minimum stok buku sample', `<input class="input" name="sampleMin" inputmode="numeric" value="${esc(collection?.sampleMin ?? 1)}" />`)}
+      ${field(editing ? 'Tambah buku sample pabrik (pcs)' : 'Buku sample awal dari pabrik (pcs)', `<input class="input" name="sampleQty" inputmode="numeric" value="${editing ? 0 : 1}" />`, { hint: 'Buku sample diprocure dari pabrik; tidak memotong roll.' })}
+      ${field('Harga pokok buku sample / pcs', `<input class="input" name="sampleUnitCost" inputmode="numeric" value="0" />`)}
+      ${field('Pemasok buku sample', `<select class="select" name="sampleSupplier"><option value="">- Tanpa pemasok -</option>${(ctx.db.suppliers ?? []).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
       ${field('Deskripsi', `<input class="input" name="description" value="${esc(collection?.description ?? '')}" />`, { full: true })}
     </div>`,
     onSubmit(form, close) {
@@ -776,7 +776,7 @@ function openCollection(ctx, collection = null) {
             unitCost: Number(String(form.sampleUnitCost.value).replace(/\D/g, '')) || 0,
             supplierId: form.sampleSupplier.value || null,
             date: todayJakarta(),
-            notes: editing ? 'Tambah sample pabrik.' : 'Sample awal koleksi dari pabrik.',
+            notes: editing ? 'Tambah buku sample pabrik.' : 'Buku sample awal koleksi dari pabrik.',
             user: ctx.user,
           });
         }
@@ -784,8 +784,8 @@ function openCollection(ctx, collection = null) {
       });
       close();
       toast(editing
-        ? `Koleksi diperbarui${sampleQty ? ` + ${sampleQty} sample pabrik` : ''}.`
-        : `Koleksi ${saved.name} dibuat${sampleQty ? ` dengan ${sampleQty} sample pabrik` : ''}.`, { tone: 'success' });
+        ? `Koleksi diperbarui${sampleQty ? ` + ${sampleQty} buku sample pabrik` : ''}.`
+        : `Koleksi ${saved.name} dibuat${sampleQty ? ` dengan ${sampleQty} buku sample pabrik` : ''}.`, { tone: 'success' });
     },
   });
 }

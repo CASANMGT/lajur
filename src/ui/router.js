@@ -104,8 +104,13 @@ export function renderApp() {
         onAuthenticated: (u) => {
           store.setUi({ role: u.role }, { rerender: false });
           const home = ROLE_HOME[u.role] ?? '#/ringkasan';
-          if (window.location.hash === home) renderApp();
-          else window.location.hash = home;
+          // Keep a scanned roll deep-link (QR) or other intended page.
+          const current = window.location.hash;
+          const target = current && !['#/masuk', '#/login', '#/ringkasan'].includes(current)
+            ? current
+            : home;
+          if (window.location.hash === target) renderApp();
+          else window.location.hash = target;
         },
       });
       document.title = 'Masuk - Lavishome';

@@ -257,9 +257,9 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.fleetAsset = db.fleetAssets.length;
 
   const sampleSeeds = [
-    ['col-luna', 4, 2, 25000, 50000, 15000, 'SUP-001'],
-    ['col-aria', 4, 2, 20000, 40000, 12000, 'SUP-003'],
-    ['col-nova', 2, 1, 20000, 40000, 12000, 'SUP-003'],
+    ['col-luna', 6, 2, 25000, 50000, 15000, 'SUP-001'],
+    ['col-aria', 5, 2, 20000, 40000, 12000, 'SUP-003'],
+    ['col-nova', 3, 1, 20000, 40000, 12000, 'SUP-003'],
   ];
   sampleSeeds.forEach(([collectionId, qty, minQty, samplePrice, sampleDeposit, unitCost, supplierId], index) => {
     const id = `SS-${String(index + 1).padStart(4, '0')}`;
@@ -463,10 +463,10 @@ export function buildSeed({ dataset = 'main' } = {}) {
   handoverProject(db, { id: p3.id, user: op, note: 'Diserahkan ke PIC gedung, tanda terima terlampir.' });
 
   /* ------------------------------------------------------- samples & DP */
-  const smp1 = createSample(db, { customerId: c2.id, skuId: 'sku-luna-02', rollId: roll(6), qtyMm: 500, mode: 'free', date: '2026-10-08', user: sales, notes: 'Sample untuk ruang tamu.' });
-  const smp2 = createSample(db, { customerId: c3.id, skuId: 'sku-aria-01', rollId: roll(11), qtyMm: 500, mode: 'deposit', amount: 300000, date: '2026-10-01', user: sales, notes: 'Sample deposit, refund setelah pembelian.' });
-  createSample(db, { customerId: c4.id, skuId: 'sku-nova-01', rollId: roll(14), qtyMm: 500, mode: 'free', date: '2026-10-12', user: sales });
-  createSample(db, { customerId: c1.id, skuId: 'sku-luna-02', rollId: roll(7), qtyMm: 500, mode: 'free', date: '2026-10-25', user: sales });
+  const smp1 = createSample(db, { customerId: c2.id, fromStockId: 'SS-0001', mode: 'free', date: '2026-10-08', user: sales, notes: 'Buku sample untuk ruang tamu.' });
+  const smp2 = createSample(db, { customerId: c3.id, fromStockId: 'SS-0002', mode: 'deposit', amount: 300000, date: '2026-10-01', user: sales, notes: 'Buku sample deposit, refund setelah pembelian.' });
+  createSample(db, { customerId: c4.id, fromStockId: 'SS-0003', mode: 'free', date: '2026-10-12', user: sales });
+  createSample(db, { customerId: c1.id, fromStockId: 'SS-0001', mode: 'free', date: '2026-10-25', user: sales });
 
   linkSampleToInvoice(db, { sampleId: smp1.id, invoiceId: invRumah.id, user: sales });
   linkSampleToInvoice(db, { sampleId: smp2.id, invoiceId: invGraha.id, user: sales });

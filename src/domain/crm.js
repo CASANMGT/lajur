@@ -13,7 +13,7 @@ import { createInvoice, invoiceOutstanding, postInvoice, requireInvoice } from '
 
 export const CRM_STAGE = {
   prospek: { label: 'Prospek', tone: 'muted' },
-  sample: { label: 'Sample dikirim', tone: 'copper' },
+  sample: { label: 'Buku sample diberikan', tone: 'copper' },
   negosiasi: { label: 'Negosiasi', tone: 'info' },
   pelanggan: { label: 'Pelanggan', tone: 'ok' },
   dormant: { label: 'Dormant', tone: 'danger' },

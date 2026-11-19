@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.18
+# Design System - Lavishome v2.19
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -252,11 +252,11 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Warehouses:** demo is Jakarta (JKT) and Bali (DPS) only. Do not label the Bali site Bandung/Surabaya.
 - **Chinese suppliers:** Advanced purchasing shows Ningbo, Shaoxing, Yiwu and Guangzhou import suppliers; each uses CNY and a manually entered PO rate.
 
-### 5.16 Driver role, sample book, catalog, guide
+### 5.16 Driver role, buku sample, catalog, guide
 
 - **Driver account:** show driver name/vehicle, only Ringkasan/Tugas/Pengiriman/Panduan in nav, no prices or master. Driver actions are Kirim and Tiba; receiver confirmation belongs to sales/manager.
 - **Transport & courier master:** Lavishome Fleet is the internal transport; Lalamove, GoSend, Bali Kargo, J&T and JNE stay as third-party delivery options. Third parties are never shown as fleet assets.
-- **Sample book:** create from multiple collection sample stocks, show item count/status, print/PDF. Use "Beri" with recipient and date; never show a second stock movement after giving the book.
+- **Buku sample:** factory stock per collection, distribute one book to a customer. Do not offer in-app book assembly from roll cuts; show stock, price, refundable deposit and procurement history.
 - **Catalog:** card grid with swatch, colour/code, width, sell price and availability; no cost/margin. Provide Cetak/PDF.
 - **Guide:** accordion sections with numbered steps and links. Keep copy practical (“Buka → isi → simpan”), not marketing.
 
@@ -268,9 +268,9 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **No price leakage:** the consignment note must never show unit prices, invoice subtotal or margin. It is a delivery document; the invoice already moved stock.
 - **Database status:** the reference server is the only place PostgreSQL is used. In the UI, the demo remains browser-local. When documenting production, state which store is active (`storage: postgres` or `json`) and never imply the static demo shares data.
 
-### 5.18 Sample stock, roll tags, WA share and price review
+### 5.18 Buku sample stock, roll QR, WA share and price review
 
-- **Sample stock:** show pieces per collection with sample price, refundable deposit, minimum, location and procurement history. Sample pabrik adds stock from the factory; “Beri sample” decrements one piece and creates the customer history record. The customer summary shows samples, un-converted samples, conversion count, purchase total and last date.
+- **Buku sample stock:** show books per collection with price, refundable deposit, minimum, location and procurement history. Buku sample pabrik adds stock from the factory; "Beri buku sample" decrements one piece and creates the customer history record. The customer summary shows books, un-converted books, conversion count, purchase total and last date.
 - **Roll tag:** print a real QR code from the stable roll URL. Keep the tag monochrome, with collection, cloth type, colour, width, lot, length and warehouse/bin. Phone cameras should open the roll; do not imply a handheld-scanner integration.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.
