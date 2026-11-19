@@ -114,55 +114,71 @@ export function sampleStocksOf(db, collectionId = null) {
   return (db.sampleStocks ?? []).filter((s) => !collectionId || s.collectionId === collectionId);
 }
 
+export function sampleStockForCollection(db, collectionId) {
+  return (db.sampleStocks ?? []).find((s) => s.collectionId === collectionId) ?? null;
+}
+
 /**
- * Cut a physical sample piece from a roll and put it into showroom sample
- * stock. The piece leaves normal sellable stock, so qty is tracked in pieces.
+ * Sample stock is procured from the factory in bulk, per collection. It is
+ * never cut from a sellable roll. Quantity is counted in sample pieces, while
+ * unit cost is the factory sample cost per piece.
  */
-export function addSampleStock(db, {
-  skuId, rollId, qtyMm = 500, location = 'Showroom Jakarta', user,
+export function procureSampleStock(db, {
+  collectionId, qty, unitCost = 0, supplierId = null, date = todayJakarta(),
+  notes = '', location = 'Showroom Jakarta', user,
 }) {
-  const sku = byId(db.skus, skuId);
-  assert(sku, 'SKU_NOT_FOUND', 'Produk tidak ditemukan.');
-  const roll = requireRoll(db, rollId);
-  assert(roll.skuId === skuId, 'SKU_MISMATCH', 'Roll bukan SKU yang dipilih.');
-  const qty = Math.round(Number(qtyMm));
-  assert(qty > 0, 'INVALID_LENGTH', 'Panjang potongan sample harus lebih dari 0 m.');
-  assert(qty <= availableMm(roll), 'INSUFFICIENT_AVAILABLE', `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
-  const id = nextId(db, 'sampleStock', 'SS', 4);
-  const { piece } = splitRoll(db, {
-    rollId,
-    qtyMm: qty,
-    user,
-    ref: id,
-    reason: `Stok sample ${sku.code}`,
-    pieceStatus: 'consumed',
-    note: 'Potongan stok sample',
-  });
+  const collection = byId(db.collections, collectionId);
+  assert(collection, 'COLLECTION_NOT_FOUND', 'Koleksi tidak ditemukan.');
+  const count = Math.round(Number(qty));
+  assert(count > 0, 'INVALID_QTY', 'Jumlah sample dari pabrik harus lebih dari 0 pcs.');
+  const cost = Math.max(0, Math.round(Number(unitCost) || 0));
+  if (supplierId) assert(byId(db.suppliers, supplierId), 'SUPPLIER_NOT_FOUND', 'Pemasok tidak ditemukan.');
   db.sampleStocks = db.sampleStocks ?? [];
-  let stock = db.sampleStocks.find((s) => s.skuId === skuId);
+  let stock = sampleStockForCollection(db, collectionId);
   if (!stock) {
     stock = {
-      id,
-      collectionId: sku.collectionId,
-      skuId,
+      id: nextId(db, 'sampleStock', 'SS', 4),
+      collectionId,
+      skuId: null,
       qty: 0,
-      minQty: 1,
-      sampleLengthMm: qty,
+      minQty: collection.sampleMin ?? 1,
+      samplePrice: collection.samplePrice ?? 0,
+      sampleDeposit: collection.sampleDeposit ?? 0,
+      unitCost: 0,
       location,
-      sourceRollId: roll.id,
+      procurements: [],
       updatedAt: isoNow(),
       history: [],
     };
     db.sampleStocks.push(stock);
   }
-  stock.qty += 1;
-  stock.sampleLengthMm = qty;
+  const previousQty = Number(stock.qty) || 0;
+  const previousCost = Number(stock.unitCost) || 0;
+  stock.qty = previousQty + count;
+  stock.unitCost = stock.qty
+    ? Math.round(((previousQty * previousCost) + (count * cost)) / stock.qty)
+    : cost;
+  stock.samplePrice = collection.samplePrice ?? stock.samplePrice ?? 0;
+  stock.sampleDeposit = collection.sampleDeposit ?? stock.sampleDeposit ?? 0;
+  stock.minQty = collection.sampleMin ?? stock.minQty ?? 1;
   stock.location = String(location ?? stock.location ?? '').trim() || stock.location;
-  stock.sourceRollId = roll.id;
   stock.updatedAt = isoNow();
-  stock.history.unshift({ at: isoNow(), action: 'Tambah stok sample', qty: 1, rollId: roll.id, pieceRollId: piece.id, by: user?.name ?? 'Sistem' });
-  audit(db, user, 'tambah_stok_sample', 'sampleStock', stock.id, `${sku.code} · 1 potong`);
-  return stock;
+  stock.procurements = stock.procurements ?? [];
+  const procurement = {
+    id: nextId(db, 'sampleProcurement', 'SPR', 4),
+    qty: count,
+    unitCost: cost,
+    totalCost: count * cost,
+    supplierId,
+    date,
+    notes: String(notes ?? '').trim(),
+    createdAt: isoNow(),
+    createdBy: user?.name ?? 'Sistem',
+  };
+  stock.procurements.unshift(procurement);
+  stock.history.unshift({ at: isoNow(), action: 'Procurement pabrik', qty: count, by: user?.name ?? 'Sistem', note: procurement.notes });
+  audit(db, user, 'procure_sample', 'sampleStock', stock.id, `${collection.name} · ${count} pcs`);
+  return { stock, procurement };
 }
 
 /** Customer-level sample and purchase history. */
@@ -181,6 +197,7 @@ export function sampleCustomerStats(db, customerId = null) {
       active: samples.filter((s) => s.status === 'active' && !s.linkedInvoiceId).length,
       converted: samples.filter((s) => s.linkedInvoiceId).length,
       qtyMm: samples.reduce((a, s) => a + (Number(s.qtyMm) || 0), 0),
+      pieces: samples.reduce((a, s) => a + (Number(s.pieces) || 0), 0),
       lastDate: samples.slice().sort((a, b) => String(b.date).localeCompare(String(a.date)))[0]?.date ?? '',
       invoices: invoices.length,
       purchases: invoices.reduce((a, i) => a + i.total, 0),
@@ -193,7 +210,7 @@ export function sampleCollectionStats(db) {
   return db.collections.filter((c) => db.skus.some((s) => s.collectionId === c.id)).map((collection) => {
     const skus = db.skus.filter((s) => s.collectionId === collection.id);
     const skuIds = new Set(skus.map((s) => s.id));
-    const samples = db.samples.filter((s) => skuIds.has(s.skuId));
+    const samples = db.samples.filter((s) => s.collectionId === collection.id || skuIds.has(s.skuId));
     const stocks = (db.sampleStocks ?? []).filter((s) => s.collectionId === collection.id);
     return {
       collection,
@@ -221,15 +238,17 @@ export function createSample(db, {
   let roll = null;
   let piece = null;
   let resolvedSkuId = skuId;
+  let collectionId = byId(db.skus, skuId)?.collectionId ?? null;
   let qty = Math.round(Number(qtyMm) || 0);
   if (fromStockId) {
     stock = getSampleStock(db, fromStockId);
     assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok sample tidak ditemukan.');
     assert(stock.qty > 0, 'SAMPLE_STOCK_EMPTY', 'Stok sample sudah habis.');
-    resolvedSkuId = stock.skuId;
+    collectionId = stock.collectionId;
+    const collectionSku = db.skus.find((s) => s.collectionId === stock.collectionId && s.active !== false);
+    resolvedSkuId = stock.skuId ?? collectionSku?.id ?? null;
     if (skuId) assert(skuId === stock.skuId, 'SKU_MISMATCH', 'Stok sample bukan SKU yang dipilih.');
-    qty = qty || stock.sampleLengthMm || 500;
-    roll = stock.sourceRollId ? db.rolls.find((r) => r.id === stock.sourceRollId) ?? null : null;
+    qty = 0;
   } else {
     roll = requireRoll(db, rollId);
     assert(roll.skuId === skuId, 'SKU_MISMATCH', 'Roll bukan SKU yang dipilih.');
@@ -237,8 +256,8 @@ export function createSample(db, {
     assert(qty > 0, 'INVALID_LENGTH', 'Panjang sample harus lebih dari 0 m.');
     assert(qty <= availableMm(roll), 'INSUFFICIENT_AVAILABLE',
       `Tersedia hanya ${availableMm(roll) / MM_PER_M} m pada ${roll.id}.`);
+    collectionId = byId(db.skus, skuId)?.collectionId ?? collectionId;
   }
-  assert(qty > 0, 'INVALID_LENGTH', 'Panjang sample harus lebih dari 0 m.');
   assert(['free', 'paid', 'deposit'].includes(mode), 'INVALID_MODE', 'Jenis sample tidak dikenal.');
   assert(!db.settings?.sampleDepositRequired || mode !== 'free', 'SAMPLE_DEPOSIT_REQUIRED',
     'Sample gratis dinonaktifkan oleh Pengaturan. Gunakan sample berbayar atau deposit.');
@@ -249,7 +268,7 @@ export function createSample(db, {
     stock.updatedAt = isoNow();
     stock.history.unshift({
       at: isoNow(), action: 'Sample diberikan', qty: -1, customerId,
-      rollId: stock.sourceRollId, by: user?.name ?? 'Sistem',
+      by: user?.name ?? 'Sistem',
     });
   } else {
     ({ piece } = splitRoll(db, {
@@ -266,11 +285,13 @@ export function createSample(db, {
   const sample = {
     id: sampleId,
     customerId,
+    collectionId,
     skuId: resolvedSkuId,
     rollId: roll?.id ?? null,
     pieceRollId: piece?.id ?? null,
     stockId: stock?.id ?? null,
-    qtyMm: qty,
+    qtyMm: stock ? 0 : qty,
+    pieces: stock ? 1 : null,
     mode,
     date,
     notes,
@@ -283,15 +304,18 @@ export function createSample(db, {
     createdBy: user?.id ?? 'system',
   };
 
+  const collection = byId(db.collections, collectionId);
   if (mode === 'paid') {
-    const value = money(amount);
+    const value = money(amount) || money(stock?.samplePrice ?? collection?.samplePrice ?? 0);
     assert(value > 0, 'INVALID_AMOUNT', 'Nominal sample berbayar wajib diisi.');
     const invoice = createInvoice(db, {
       customerId,
       lines: [
         {
           kind: 'service',
-          description: `Sample ${byId(db.skus, resolvedSkuId)?.code ?? resolvedSkuId} (${qty / MM_PER_M} m)`,
+          description: stock
+            ? `Sample koleksi ${collection?.name ?? collectionId} (1 pcs)`
+            : `Sample ${byId(db.skus, resolvedSkuId)?.code ?? resolvedSkuId} (${qty / MM_PER_M} m)`,
           unitPrice: value,
         },
       ],
@@ -302,7 +326,7 @@ export function createSample(db, {
     sample.invoiceId = invoice.id;
     sample.paidAmount = value;
   } else if (mode === 'deposit') {
-    const value = money(amount);
+    const value = money(amount) || money(stock?.sampleDeposit ?? collection?.sampleDeposit ?? 0);
     assert(value > 0, 'INVALID_AMOUNT', 'Nominal deposit sample wajib diisi.');
     const deposit = createDeposit(db, {
       customerId,
@@ -322,17 +346,19 @@ export function createSample(db, {
   logActivity(db, {
     customerId,
     type: 'sample',
-    note: `Sample ${sample.id} ${qty / MM_PER_M} m (${SAMPLE_MODE[mode].label}) dari ${stock ? `stok sample ${stock.id}` : roll?.id ?? rollId}`,
+    note: stock
+      ? `Sample koleksi ${collection?.name ?? collectionId} 1 pcs (${SAMPLE_MODE[mode].label}) dari stok ${stock.id}`
+      : `Sample ${sample.id} ${qty / MM_PER_M} m (${SAMPLE_MODE[mode].label}) dari ${roll?.id ?? rollId}`,
     user,
     date,
   });
-  audit(db, user, 'kirim_sample', 'sample', sample.id, `${qty / MM_PER_M} m · ${mode}`);
+  audit(db, user, 'kirim_sample', 'sample', sample.id, stock ? `1 pcs · ${mode}` : `${qty / MM_PER_M} m · ${mode}`);
   return sample;
 }
 
 /**
- * Build a physical sample book from roll cuts. Each item creates a normal
- * sample (stock leaves the roll) and is linked back to the book.
+ * Build a physical sample book from factory sample stock. Each item consumes
+ * one collection sample and is linked back to the book.
  */
 export function createSampleBook(db, {
   name, customerId, date = todayJakarta(), items, notes = '', user,
@@ -340,17 +366,17 @@ export function createSampleBook(db, {
   const customer = requireCustomer(db, customerId);
   const cleanName = String(name ?? '').trim();
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama buku sample minimal 2 karakter.');
-  assert(Array.isArray(items) && items.length > 0, 'EMPTY_ITEMS', 'Buku sample harus memiliki minimal satu potongan.');
+  assert(Array.isArray(items) && items.length > 0, 'EMPTY_ITEMS', 'Buku sample harus memiliki minimal satu sample koleksi.');
   const id = nextId(db, 'sampleBook', 'SB', 4);
   const built = items.map((item) => {
-    const roll = requireRoll(db, item.rollId);
-    const qty = Math.round(Number(item.qtyMm));
-    assert(qty > 0, 'INVALID_LENGTH', 'Panjang sample harus lebih dari 0 m.');
+    const stock = item.stockId
+      ? getSampleStock(db, item.stockId)
+      : sampleStockForCollection(db, item.collectionId);
+    assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok sample koleksi tidak ditemukan.');
+    assert(stock.qty > 0, 'SAMPLE_STOCK_EMPTY', `Stok sample ${stock.id} habis.`);
     const sample = createSample(db, {
       customerId,
-      skuId: roll.skuId,
-      rollId: roll.id,
-      qtyMm: qty,
+      fromStockId: stock.id,
       mode: 'free',
       date,
       notes: `Buku sample ${id}`,
@@ -358,9 +384,10 @@ export function createSampleBook(db, {
     });
     return {
       sampleId: sample.id,
+      collectionId: sample.collectionId,
       skuId: sample.skuId,
-      rollId: sample.rollId,
-      qtyMm: sample.qtyMm,
+      qtyMm: 0,
+      pieces: 1,
     };
   });
   const book = {

@@ -1,4 +1,4 @@
-# Gap analysis - Lavishome v2.17 vs. earlier PRD and design system v2
+# Gap analysis - Lavishome v2.18 vs. earlier PRD and design system v2
 
 Legend: **Done** = usable in the demo · **Partial** = usable with a documented limitation · **Planned** = production-only.
 
@@ -87,8 +87,8 @@ Legend: **Done** = usable in the demo · **Partial** = usable with a documented 
 | **Driver ↔ vehicle assignment** | **Done in v2.15** | Assign from driver or vehicle form; one driver per vehicle; moving assignment syncs both records |
 | **Third-party delivery mode** | **Done in v2.15** | Lalamove/J&T/JNE/GoSend/Bali Kargo selectable as courier; no fleet asset, optional courier driver + AWB |
 | **Collection cloth type/default roll** | **Done in v2.17** | Cloth type before colour; 60 m × 300 cm collection default |
-| **Sample stock + distribution history** | **Done in v2.17** | Pieces per collection/colour; give to customer; sample/purchase summary per customer |
-| **Roll barcode stock tag** | **Done in v2.17** | Stable Code 39 tag with collection, type, colour, width, lot, location |
+| **Sample stock + distribution history** | **Done in v2.18** | Factory-procured pieces per collection with price/deposit, procurement history, give to customer, sample/purchase summary |
+| **Roll QR stock tag** | **Done in v2.18** | Stable QR tag with collection, type, colour, width, lot, location; phone camera opens roll |
 | **Customer WhatsApp stock share** | **Done in v2.17** | WA number on customer; copy-paste stock message and wa.me |
 | **Sell-price history + 90-day review** | **Done in v2.17** | Old/new price, user, note; stale price requires confirmation |
 | **Transfer ongkir capitalization** | **Done in v2.17** | Internal warehouse sale; destination HPP includes shipping |

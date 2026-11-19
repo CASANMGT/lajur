@@ -103,12 +103,20 @@ const collectionDefaults = (value) => {
   assert(width > 0, 'INVALID_WIDTH', 'Lebar kain default harus lebih dari 0 cm.');
   const clothType = String(value.clothType ?? '').trim();
   assert(clothType.length >= 2, 'INVALID_CLOTH_TYPE', 'Tipe kain minimal 2 karakter.');
-  return { clothType, defaultRollLengthM: length, defaultWidthCm: width };
+  return {
+    clothType,
+    defaultRollLengthM: length,
+    defaultWidthCm: width,
+    samplePrice: Math.max(0, Math.round(Number(value.samplePrice) || 0)),
+    sampleDeposit: Math.max(0, Math.round(Number(value.sampleDeposit) || 0)),
+    sampleMin: Math.max(0, Math.round(Number(value.sampleMin) || 0)),
+  };
 };
 
 export function renameCollection(db, {
   id, name, categoryId = null, description = '', clothType = null,
-  defaultRollLengthM = null, defaultWidthCm = null, user,
+  defaultRollLengthM = null, defaultWidthCm = null, samplePrice = null,
+  sampleDeposit = null, sampleMin = null, user,
 }) {
   const collection = byId(db.collections, id);
   assert(collection, 'COLLECTION_NOT_FOUND', 'Koleksi tidak ditemukan.');
@@ -124,6 +132,9 @@ export function renameCollection(db, {
     clothType: clothType ?? collection.clothType,
     defaultRollLengthM: defaultRollLengthM ?? collection.defaultRollLengthM,
     defaultWidthCm: defaultWidthCm ?? collection.defaultWidthCm,
+    samplePrice: samplePrice ?? collection.samplePrice,
+    sampleDeposit: sampleDeposit ?? collection.sampleDeposit,
+    sampleMin: sampleMin ?? collection.sampleMin,
   });
   collection.name = clean;
   collection.categoryId = categoryId ?? collection.categoryId;
@@ -134,19 +145,27 @@ export function renameCollection(db, {
     s.collectionName = clean;
     s.clothType = defaults.clothType;
   });
+  for (const stock of db.sampleStocks ?? []) {
+    if (stock.collectionId !== id) continue;
+    stock.samplePrice = defaults.samplePrice;
+    stock.sampleDeposit = defaults.sampleDeposit;
+    stock.minQty = defaults.sampleMin;
+  }
   audit(db, user, 'ubah_koleksi', 'collection', id, `${clean} · ${defaults.clothType}`);
   return collection;
 }
 
 export function createCollection(db, {
   name, categoryId, description = '', clothType = 'Kain', defaultRollLengthM = 60,
-  defaultWidthCm = 300, user,
+  defaultWidthCm = 300, samplePrice = 0, sampleDeposit = 0, sampleMin = 0, user,
 }) {
   const clean = String(name ?? '').trim();
   assert(clean.length >= 2, 'INVALID_NAME', 'Nama koleksi minimal 2 karakter.');
   assert(byId(db.categories, categoryId), 'CATEGORY_NOT_FOUND', 'Kategori tidak ditemukan.');
   assert(!db.collections.some((c) => c.name.toLowerCase() === clean.toLowerCase()), 'DUPLICATE_NAME', 'Nama koleksi sudah dipakai.');
-  const defaults = collectionDefaults({ clothType, defaultRollLengthM, defaultWidthCm });
+  const defaults = collectionDefaults({
+    clothType, defaultRollLengthM, defaultWidthCm, samplePrice, sampleDeposit, sampleMin,
+  });
   const collection = {
     id: `col-${uid('').slice(1, 9)}`,
     name: clean,

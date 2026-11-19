@@ -80,6 +80,7 @@ function renderDetail(ctx) {
   const samples = db.samples.filter((s) => s.customerId === c.id);
   const deposits = db.deposits.filter((d) => d.customerId === c.id);
   const sampleQtyMm = samples.reduce((a, s) => a + (Number(s.qtyMm) || 0), 0);
+  const samplePieces = samples.reduce((a, s) => a + (Number(s.pieces) || 0), 0);
   const sampleConverted = samples.filter((s) => s.linkedInvoiceId).length;
   const purchaseTotal = invoices.filter((i) => i.status === 'posted').reduce((a, i) => a + i.total, 0);
   const receivable = customerReceivable(db, c.id);
@@ -129,7 +130,7 @@ function renderDetail(ctx) {
         </section>
 
         <section class="card">
-          <div class="card-head"><div><h2>Sample</h2><p>${samples.length} sample · ${fmt.m(sampleQtyMm)} · ${sampleConverted} berujung pembelian · total pembelian ${fmt.money(purchaseTotal)}.</p></div><span class="badge no-dot">${samples.length}</span></div>
+          <div class="card-head"><div><h2>Sample</h2><p>${samples.length} sample · ${samplePieces ? `${samplePieces} pcs` : fmt.m(sampleQtyMm)} · ${sampleConverted} berujung pembelian · total pembelian ${fmt.money(purchaseTotal)}.</p></div><span class="badge no-dot">${samples.length}</span></div>
           ${samples.length ? `<div class="table-wrap"><table class="data">
             <thead><tr><th>Sample</th><th>Roll / lot</th><th class="num">Qty</th><th>Jenis</th><th>Hasil</th><th><span class="sr-only">Aksi</span></th></tr></thead>
             <tbody>${samples.map((s) => {

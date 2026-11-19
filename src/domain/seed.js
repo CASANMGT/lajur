@@ -46,11 +46,11 @@ export const MASTER = {
     { id: 'cat-motor', name: 'Motor & Otomasi' },
   ],
   collections: [
-    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Blackout tebal, jatuh vertikal rapi.' },
-    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Sheer ringan untuk lapis kedua.' },
-    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Dimout ekonomis untuk unit hunian.' },
-    { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', clothType: 'Aksesori', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Rel aluminium dan aksesori.' },
-    { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', clothType: 'Otomasi', defaultRollLengthM: 60, defaultWidthCm: 300, description: 'Motor, remote, dan kontrol.' },
+    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 25000, sampleDeposit: 50000, sampleMin: 2, description: 'Blackout tebal, jatuh vertikal rapi.' },
+    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 2, description: 'Sheer ringan untuk lapis kedua.' },
+    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 1, description: 'Dimout ekonomis untuk unit hunian.' },
+    { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', clothType: 'Aksesori', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Rel aluminium dan aksesori.' },
+    { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', clothType: 'Otomasi', defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Motor, remote, dan kontrol.' },
   ],
   skus: [
     { id: 'sku-luna-01', collectionId: 'col-luna', collectionName: 'Luna', clothType: 'Blackout', code: 'Luna-01', colourCode: '01', colourName: null, swatch: null, unit: 'm', widthCm: 280, sellPrice: 125000, buyPrice: 69500, sellPriceUpdatedAt: '2026-06-01', active: true, dormant: false },
@@ -257,27 +257,39 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.fleetAsset = db.fleetAssets.length;
 
   const sampleSeeds = [
-    ['col-luna', 'sku-luna-01'],
-    ['col-luna', 'sku-luna-02'],
-    ['col-aria', 'sku-aria-01'],
-    ['col-aria', 'sku-aria-02'],
-    ['col-nova', 'sku-nova-01'],
+    ['col-luna', 4, 2, 25000, 50000, 15000, 'SUP-001'],
+    ['col-aria', 4, 2, 20000, 40000, 12000, 'SUP-003'],
+    ['col-nova', 2, 1, 20000, 40000, 12000, 'SUP-003'],
   ];
-  sampleSeeds.forEach(([collectionId, skuId], index) => {
+  sampleSeeds.forEach(([collectionId, qty, minQty, samplePrice, sampleDeposit, unitCost, supplierId], index) => {
+    const id = `SS-${String(index + 1).padStart(4, '0')}`;
     db.sampleStocks.push({
-      id: `SS-${String(index + 1).padStart(4, '0')}`,
+      id,
       collectionId,
-      skuId,
-      qty: 2,
-      minQty: 1,
-      sampleLengthMm: 500,
+      skuId: null,
+      qty,
+      minQty,
+      samplePrice,
+      sampleDeposit,
+      unitCost,
       location: 'Showroom Jakarta',
-      sourceRollId: null,
-      updatedAt: '2026-11-01T09:00:00+07:00',
-      history: [],
+      procurements: [{
+        id: `SPR-${String(index + 1).padStart(4, '0')}`,
+        qty,
+        unitCost,
+        totalCost: qty * unitCost,
+        supplierId,
+        date: '2026-09-01',
+        notes: 'Sample pabrik awal.',
+        createdAt: '2026-09-01T09:00:00+07:00',
+        createdBy: 'Sistem',
+      }],
+      updatedAt: '2026-09-01T09:00:00+07:00',
+      history: [{ at: '2026-09-01T09:00:00+07:00', action: 'Procurement pabrik', qty, by: 'Sistem', note: 'Sample pabrik awal.' }],
     });
   });
   db.sequences.sampleStock = db.sampleStocks.length;
+  db.sequences.sampleProcurement = sampleSeeds.length;
 
   [...db.skus, ...db.parts].forEach((item, index) => {
     db.sellPriceHistory.push({

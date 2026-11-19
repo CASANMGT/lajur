@@ -1,6 +1,7 @@
 /** Printable document fragments (used by printDocument). */
 
 import { esc, fmt } from '../dom.js';
+import qrcode from '../../vendor/qrcode.js';
 import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
@@ -10,36 +11,30 @@ import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
 
-const CODE39 = {
-  '0': 'nnnwwnwnn', '1': 'wnnwnnnnw', '2': 'nnwwnnnnw', '3': 'wnwwnnnnn', '4': 'nnnwwnnnw',
-  '5': 'wnnwwnnnn', '6': 'nnwwwnnnn', '7': 'nnnwnnwnw', '8': 'wnnwnnwnn', '9': 'nnwwnnwnn',
-  A: 'wnnnnwnnw', B: 'nnwnnwnnw', C: 'wnwnnwnnn', D: 'nnnnwwnnw', E: 'wnnnwwnnn',
-  F: 'nnwnwwnnn', G: 'nnnnnwwnw', H: 'wnnnnwwnn', I: 'nnwnnwwnn', J: 'nnnnwwwnn',
-  K: 'wnnnnnnww', L: 'nnwnnnnww', M: 'wnwnnnnwn', N: 'nnnnwnnww', O: 'wnnnwnnwn',
-  P: 'nnwnwnnwn', Q: 'nnnnnnwww', R: 'wnnnnnwwn', S: 'nnwnnnwwn', T: 'nnnnwnwwn',
-  U: 'wwnnnnnnw', V: 'nwwnnnnnw', W: 'wwwnnnnnn', X: 'nwnnwnnnw', Y: 'wwnnwnnnn',
-  Z: 'nwwnwnnnn', '-': 'nwnnnnwnw', '.': 'wwnnnnwnn', ' ': 'nwwnnnwnn',
-  '$': 'nwnwnwnnn', '/': 'nwnwnnnwn', '+': 'nwnnnwnwn', '%': 'nnnwnwnwn', '*': 'nwnnwnwnn',
-};
-
-function code39Svg(value, { height = 42 } = {}) {
-  const text = `*${String(value ?? '').toUpperCase()}*`;
-  const bars = [];
-  let x = 0;
-  for (const char of text) {
-    const pattern = CODE39[char] ?? CODE39['-'];
-    for (let i = 0; i < pattern.length; i += 1) {
-      const width = pattern[i] === 'w' ? 3 : 1;
-      if (i % 2 === 0) bars.push(`<rect x="${x}" y="0" width="${width}" height="${height}" fill="#172b3a"></rect>`);
-      x += width;
+function qrSvg(value, { size = 132 } = {}) {
+  try {
+    const qr = qrcode(0, 'M');
+    qr.addData(String(value ?? ''));
+    qr.make();
+    const count = qr.getModuleCount();
+    const cells = [];
+    for (let row = 0; row < count; row += 1) {
+      for (let col = 0; col < count; col += 1) {
+        if (qr.isDark(row, col)) cells.push(`<rect x="${col}" y="${row}" width="1" height="1"></rect>`);
+      }
     }
-    x += 1;
+    return `<svg viewBox="0 0 ${count} ${count}" role="img" aria-label="QR ${esc(value)}" shape-rendering="crispEdges" style="display:block;width:${size}px;height:${size}px;margin:0 auto;background:#fff"><rect width="${count}" height="${count}" fill="#fff"></rect><g fill="#172b3a">${cells.join('')}</g></svg>`;
+  } catch {
+    return `<div style="font-family:ui-monospace,monospace;font-size:12px;text-align:center">${esc(value)}</div>`;
   }
-  return `<svg viewBox="0 0 ${x} ${height}" preserveAspectRatio="none" role="img" aria-label="Barcode ${esc(value)}" style="display:block;width:100%;height:${height}px">${bars.join('')}</svg>`;
 }
 
 export function printLabelHtml(roll, sku, wh) {
   const barcode = roll.barcode || roll.id;
+  const origin = typeof window !== 'undefined' && window.location?.origin && !window.location.origin.startsWith('file:')
+    ? window.location.origin
+    : '';
+  const qrValue = origin ? `${origin}/#/stok/${roll.id}` : barcode;
   return `
     <div style="border:2px solid #172b3a;border-radius:8px;padding:16px;max-width:420px">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
@@ -54,9 +49,9 @@ export function printLabelHtml(roll, sku, wh) {
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">LOKASI</td><td style="border:0;padding:2px 0;font-size:12px;font-weight:700">${esc(wh?.code ?? '—')} / ${esc(roll.bin || '—')}</td></tr>
         <tr><td style="border:0;padding:2px 0;font-size:10px;color:#62727c">DITERIMA</td><td style="border:0;padding:2px 0;font-size:11px">${esc(roll.receivedAt)} · ${esc(roll.receiptRef || '—')}</td></tr>
       </table>
-      <div style="margin-top:12px">${code39Svg(barcode)}</div>
-      <div style="font-family:ui-monospace,monospace;font-size:13px;font-weight:700;letter-spacing:.18em;text-align:center;margin-top:5px">${esc(barcode)}</div>
-      <div style="font-size:8px;color:#62727c;margin-top:4px">Code 39 · scan untuk membuka roll dan lokasi ${esc(wh?.code ?? '')}/${esc(roll.bin || '—')}.</div>
+      <div style="margin-top:12px;text-align:center">${qrSvg(qrValue)}</div>
+      <div style="font-family:ui-monospace,monospace;font-size:13px;font-weight:700;letter-spacing:.12em;text-align:center;margin-top:5px">${esc(barcode)}</div>
+      <div style="font-size:8px;color:#62727c;margin-top:4px">Scan QR dengan kamera ponsel untuk membuka roll dan lokasi ${esc(wh?.code ?? '')}/${esc(roll.bin || '—')}.</div>
     </div>`;
 }
 
@@ -356,16 +351,17 @@ export function printSampleBookHtml(db, book) {
       <div><span>Dibuat oleh</span><strong>${esc(book.createdBy ?? '—')}</strong></div>
     </div>
     <table>
-      <thead><tr><th>Warna / produk</th><th>Kode</th><th class="num">Ukuran</th><th>Roll / lot</th><th>Catatan</th></tr></thead>
+      <thead><tr><th>Koleksi / warna</th><th>Kode</th><th class="num">Ukuran</th><th>Sumber</th><th>Catatan</th></tr></thead>
       <tbody>${book.items.map((item) => {
         const sku = byId(db.skus, item.skuId);
+        const collection = byId(db.collections, item.collectionId ?? sku?.collectionId);
         const roll = db.rolls.find((r) => r.id === item.rollId);
         const sample = db.samples.find((s) => s.id === item.sampleId);
         return `<tr>
-          <td><span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${esc(sku?.swatch || '#e4ded2')};border:1px solid #cfc6b6;vertical-align:middle;margin-right:6px"></span><strong>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}</strong></td>
-          <td>${esc(sku?.code)}</td>
-          <td class="num">${fmt.m(item.qtyMm)}</td>
-          <td>${esc(item.rollId)} · ${esc(roll?.lot ?? '')}</td>
+          <td><span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:${esc(sku?.swatch || '#e4ded2')};border:1px solid #cfc6b6;vertical-align:middle;margin-right:6px"></span><strong>${esc(collection?.name ?? sku?.collectionName)}${item.pieces ? '' : ` ${esc(sku?.colourName || sku?.colourCode || '')}`}</strong></td>
+          <td>${esc(item.stockId ? collection?.clothType ?? '' : sku?.code ?? '')}</td>
+          <td class="num">${item.pieces ? `${item.pieces} pcs` : fmt.m(item.qtyMm)}</td>
+          <td>${esc(item.stockId ? `Stok sample ${item.stockId}` : `${item.rollId ?? ''} · ${roll?.lot ?? ''}`)}</td>
           <td>${esc(sample?.notes ?? '')}</td>
         </tr>`;
       }).join('')}</tbody>

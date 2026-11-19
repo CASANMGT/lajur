@@ -23,7 +23,7 @@ const steps = [
         <li>Buka <a href="#/stok">Stok & Roll</a>. Pilih gudang Jakarta atau Bali.</li>
         <li>Setiap roll adalah panjang fisik dengan lot dan rak sendiri. Gunakan pencarian atau filter koleksi/status.</li>
         <li><strong>Tambah stok manual</strong> untuk saldo awal/koreksi tanpa PO: pilih kain atau part, gudang, lot, panjang roll, biaya, dan alasan.</li>
-        <li>Buka detail roll untuk melihat mutasi, induk/turunan, dan mencetak <strong>tag stok / barcode</strong>. Barcode memakai ID roll dan memuat lokasi gudang/rak.</li>
+        <li>Buka detail roll untuk melihat mutasi, induk/turunan, dan mencetak <strong>tag stok / QR</strong>. QR dapat discan kamera ponsel dan membuka roll beserta lokasi gudang/rak.</li>
         <li>Gunakan <strong>Info stok WA</strong> untuk membuat pesan stok tersedia dan membuka WhatsApp pelanggan.</li>
         <li>Gunakan <strong>Hierarki koleksi</strong> untuk melihat collection → tipe kain → warna → roll induk → turunan.</li>
       </ol>`,
@@ -104,10 +104,10 @@ const steps = [
     title: 'Sample, buku sample, dan katalog',
     body: `
       <ol>
-        <li>Buka <a href="#/sampel">Sample & Deposit</a> → <strong>Stok sample</strong> untuk memotong sample dari roll dan menyimpannya per koleksi/warna.</li>
-        <li><strong>Beri sample</strong> mencatat pelanggan, tanggal, jenis, dan hasil. Ringkasan pelanggan menunjukkan jumlah sample dan total pembelian.</li>
-        <li><strong>Sample baru</strong> tetap tersedia untuk potong langsung dari roll tanpa stok showroom.</li>
-        <li><strong>Buku sample</strong>: beri nama, pilih pelanggan/prospek, tambah beberapa potongan roll dan ukuran, lalu buat. Setiap potongan menjadi sample fisik.</li>
+        <li>Sample adalah stok koleksi dari pabrik, bukan potongan roll. Tambah koleksi → isi harga sample, deposit refundable, dan jumlah sample awal; atau gunakan <strong>Sample pabrik</strong> di halaman Sample & Deposit.</li>
+        <li><strong>Beri sample</strong> mencatat pelanggan, tanggal, jenis (gratis/berbayar/deposit), nominal, dan hasil. Ringkasan pelanggan menunjukkan jumlah sample dan total pembelian.</li>
+        <li><strong>Riwayat</strong> pada baris sample membuka procurement pabrik: tanggal, qty, harga pokok, pemasok, dan catatan.</li>
+        <li><strong>Buku sample</strong>: pilih beberapa koleksi dari stok sample, lalu berikan ke pelanggan/prospek. Stok sample berkurang; roll tidak dipotong.</li>
         <li>Buku dapat dicetak/PDF dan ditandai “Beri” kepada calon pelanggan.</li>
         <li>Buka <a href="#/katalog">Katalog</a> untuk daftar warna, lebar, harga jual, dan stok; cetak/PDF untuk pelanggan.</li>
         <li>Sample dapat dikaitkan ke faktur saat pelanggan membeli.</li>

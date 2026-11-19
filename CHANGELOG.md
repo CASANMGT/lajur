@@ -2,6 +2,39 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.18.0] — 2026-11-19
+
+**Release name: Sample Pabrik & QR.** Replaces roll-cut sample stock with factory-procured collection samples, adds sample pricing/deposit and procurement history, and switches roll stock tags to scannable QR codes.
+
+### Added
+
+- **QR stock tags:** roll tags now use a real QR code that opens the roll detail when scanned with a phone camera. QR includes the absolute app URL; the tag still shows roll, collection, cloth type, colour, width, lot, length and warehouse/bin.
+- **Collection sample stock:** sample quantity lives under the collection, not on a roll. When creating/editing a collection, enter sample price, refundable deposit, minimum stock and factory quantity/cost.
+- **Factory procurement history:** every sample receipt stores date, qty, unit cost, total, supplier and note. A “Riwayat” action shows it per collection.
+- **Sample catalogue:** stock, sample price, refundable deposit, minimum and location are visible before giving a sample.
+- **Sample book from collection stock:** books consume one collection sample per item, not roll cuts.
+
+### Changed
+
+- Giving a sample decrements collection sample stock by one pcs; the sample record stores collection, optional SKU, stockId, mode and deposit.
+- Free/paid/deposit modes remain. Paid defaults to the collection sample price; deposit defaults to the collection refundable deposit.
+- Existing per-colour sample stock is migrated and aggregated into collection-level factory stock.
+- Version bumped to 2.18.0, schema 17, backup v17.
+
+### Verification
+
+- `node --test`: **74 passed**.
+- Module imports and server-side render green.
+- Browser QA: Luna/Aria/Nova catalogue shows price/deposit/stock; deposit automatic Rp 50.000; stock decrements; procurement history; QR tag renders and prints.
+
+### Known limitations
+
+- QR scanning opens the app URL; it does not deep-link a native scanner integration.
+- Sample stock is counted in pieces, not metres.
+- QR generation uses the bundled `qrcode-generator` library.
+
+---
+
 ## [2.17.1] — 2026-11-18
 
 **Release name: Sample, Barcode & Harga polish.** Fixes migration of existing collections so their cloth type is derived from the category instead of defaulting to “Kain”.

@@ -122,6 +122,11 @@ export function migrate(db) {
   db.sequences.sampleStock = Math.max(Number(db.sequences.sampleStock) || 0, (db.sampleStocks ?? []).length);
   db.sequences.sellPriceHistory = Math.max(Number(db.sequences.sellPriceHistory) || 0, (db.sellPriceHistory ?? []).length);
 
+  const sampleDefaults = {
+    'col-luna': { samplePrice: 25000, sampleDeposit: 50000, sampleMin: 2 },
+    'col-aria': { samplePrice: 20000, sampleDeposit: 40000, sampleMin: 2 },
+    'col-nova': { samplePrice: 20000, sampleDeposit: 40000, sampleMin: 1 },
+  };
   for (const collection of db.collections ?? []) {
     if (!collection.clothType || collection.clothType === 'Kain') {
       const category = (db.categories ?? []).find((c) => c.id === collection.categoryId);
@@ -129,6 +134,10 @@ export function migrate(db) {
     }
     if (!collection.defaultRollLengthM) collection.defaultRollLengthM = 60;
     if (!collection.defaultWidthCm) collection.defaultWidthCm = 300;
+    const defaults = sampleDefaults[collection.id] ?? { samplePrice: 0, sampleDeposit: 0, sampleMin: 1 };
+    if (collection.samplePrice === undefined) collection.samplePrice = defaults.samplePrice;
+    if (collection.sampleDeposit === undefined) collection.sampleDeposit = defaults.sampleDeposit;
+    if (collection.sampleMin === undefined) collection.sampleMin = defaults.sampleMin;
   }
   for (const sku of db.skus ?? []) {
     const collection = (db.collections ?? []).find((c) => c.id === sku.collectionId);
@@ -141,25 +150,89 @@ export function migrate(db) {
   for (const roll of db.rolls ?? []) {
     if (!roll.barcode) roll.barcode = roll.id;
   }
-  if (!(db.sampleStocks ?? []).length) {
-    const fabricSkus = (db.skus ?? []).filter((s) => s.active !== false && s.dormant !== true);
-    let index = Number(db.sequences.sampleStock) || 0;
-    for (const sku of fabricSkus) {
-      index += 1;
-      db.sampleStocks.push({
-        id: `SS-${String(index).padStart(4, '0')}`,
-        collectionId: sku.collectionId,
-        skuId: sku.id,
-        qty: 1,
-        minQty: 1,
-        sampleLengthMm: 500,
-        location: 'Showroom Jakarta',
-        sourceRollId: null,
-        updatedAt: new Date().toISOString(),
-        history: [],
-      });
+  {
+    // Sample stock is collection-level. Existing per-colour rows are merged
+    // into one record per collection and treated as factory procurement.
+    const grouped = new Map();
+    for (const stock of db.sampleStocks ?? []) {
+      const collectionId = stock.collectionId
+        ?? (db.skus ?? []).find((s) => s.id === stock.skuId)?.collectionId
+        ?? null;
+      if (!collectionId) continue;
+      const collection = (db.collections ?? []).find((c) => c.id === collectionId);
+      if (!collection) continue;
+      if (!grouped.has(collectionId)) {
+        grouped.set(collectionId, {
+          id: stock.id ?? `SS-${String((Number(db.sequences.sampleStock) || 0) + grouped.size + 1).padStart(4, '0')}`,
+          collectionId,
+          skuId: null,
+          qty: 0,
+          minQty: collection.sampleMin ?? stock.minQty ?? 1,
+          samplePrice: collection.samplePrice ?? stock.samplePrice ?? 0,
+          sampleDeposit: collection.sampleDeposit ?? stock.sampleDeposit ?? 0,
+          unitCost: Number(stock.unitCost) || 0,
+          location: stock.location ?? 'Showroom Jakarta',
+          procurements: [],
+          updatedAt: stock.updatedAt ?? new Date().toISOString(),
+          history: [],
+        });
+      }
+      const row = grouped.get(collectionId);
+      row.qty += Number(stock.qty) || 0;
+      row.minQty = collection.sampleMin ?? row.minQty;
+      row.samplePrice = collection.samplePrice ?? row.samplePrice;
+      row.sampleDeposit = collection.sampleDeposit ?? row.sampleDeposit;
+      if (!row.unitCost && stock.unitCost) row.unitCost = Number(stock.unitCost) || 0;
+      row.procurements.push(...(stock.procurements ?? []));
+      row.history.push(...(stock.history ?? []));
+      if (stock.sourceRollId && !row.history.some((h) => h.note === 'Saldo awal sample (migrasi)')) {
+        row.history.push({ at: new Date().toISOString(), action: 'Saldo awal sample', qty: 0, by: 'Sistem', note: 'Saldo awal sample (migrasi)' });
+      }
     }
-    db.sequences.sampleStock = index;
+    if (!grouped.size) {
+      const fabricCollections = (db.collections ?? []).filter((c) => (db.skus ?? []).some((s) => s.collectionId === c.id));
+      let index = Number(db.sequences.sampleStock) || 0;
+      for (const collection of fabricCollections) {
+        index += 1;
+        grouped.set(collection.id, {
+          id: `SS-${String(index).padStart(4, '0')}`,
+          collectionId: collection.id,
+          skuId: null,
+          qty: collection.sampleMin ?? 1,
+          minQty: collection.sampleMin ?? 1,
+          samplePrice: collection.samplePrice ?? 0,
+          sampleDeposit: collection.sampleDeposit ?? 0,
+          unitCost: 0,
+          location: 'Showroom Jakarta',
+          procurements: [],
+          updatedAt: new Date().toISOString(),
+          history: [],
+        });
+      }
+      db.sequences.sampleStock = index;
+    }
+    let procurementSeq = Number(db.sequences.sampleProcurement) || 0;
+    for (const row of grouped.values()) {
+      if (!row.procurements.length && row.qty > 0) {
+        procurementSeq += 1;
+        row.procurements.push({
+          id: `SPR-${String(procurementSeq).padStart(4, '0')}`,
+          qty: row.qty,
+          unitCost: row.unitCost,
+          totalCost: row.qty * row.unitCost,
+          supplierId: null,
+          date: new Date().toISOString().slice(0, 10),
+          notes: 'Saldo awal sample (migrasi).',
+          createdAt: new Date().toISOString(),
+          createdBy: 'Sistem',
+        });
+      }
+      row.history.sort((a, b) => String(b.at ?? '').localeCompare(String(a.at ?? '')));
+    }
+    db.sampleStocks = [...grouped.values()];
+    db.sequences.sampleStock = Math.max(Number(db.sequences.sampleStock) || 0, db.sampleStocks.length);
+    const procurementCount = db.sampleStocks.reduce((a, s) => a + (s.procurements?.length ?? 0), 0);
+    db.sequences.sampleProcurement = Math.max(procurementSeq, procurementCount);
   }
   if (!(db.sellPriceHistory ?? []).length) {
     let index = Number(db.sequences.sellPriceHistory) || 0;

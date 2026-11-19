@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.17
+# Design System - Lavishome v2.18
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -256,7 +256,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 - **Driver account:** show driver name/vehicle, only Ringkasan/Tugas/Pengiriman/Panduan in nav, no prices or master. Driver actions are Kirim and Tiba; receiver confirmation belongs to sales/manager.
 - **Transport & courier master:** Lavishome Fleet is the internal transport; Lalamove, GoSend, Bali Kargo, J&T and JNE stay as third-party delivery options. Third parties are never shown as fleet assets.
-- **Sample book:** create from multiple roll cuts, show item count/status, print/PDF. Use “Beri” with recipient and date; never show a second stock movement after giving the book.
+- **Sample book:** create from multiple collection sample stocks, show item count/status, print/PDF. Use "Beri" with recipient and date; never show a second stock movement after giving the book.
 - **Catalog:** card grid with swatch, colour/code, width, sell price and availability; no cost/margin. Provide Cetak/PDF.
 - **Guide:** accordion sections with numbered steps and links. Keep copy practical (“Buka → isi → simpan”), not marketing.
 
@@ -270,8 +270,8 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 
 ### 5.18 Sample stock, roll tags, WA share and price review
 
-- **Sample stock:** show pieces per collection/colour with a minimum and location. “Tambah stok sample” cuts a roll; “Beri sample” decrements one piece and creates the customer history record. The customer summary shows samples, un-converted samples, conversion count, purchase total and last date.
-- **Roll tag:** print a real Code 39 barcode from the stable roll ID. Keep the tag monochrome, with collection, cloth type, colour, width, lot, length and warehouse/bin. Do not imply scanner integration beyond the printed tag.
+- **Sample stock:** show pieces per collection with sample price, refundable deposit, minimum, location and procurement history. Sample pabrik adds stock from the factory; “Beri sample” decrements one piece and creates the customer history record. The customer summary shows samples, un-converted samples, conversion count, purchase total and last date.
+- **Roll tag:** print a real QR code from the stable roll URL. Keep the tag monochrome, with collection, cloth type, colour, width, lot, length and warehouse/bin. Phone cameras should open the roll; do not imply a handheld-scanner integration.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.
 - **Internal warehouse sale:** label transfers as internal sales and show ongkir plus ongkir per metre. Destination HPP includes the shipping allocation.

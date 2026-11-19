@@ -12,6 +12,7 @@ import {
   changeSellPrice, latestSupplierPrice, saveSupplierPrice, sellPriceAgeDays, sellPriceHistory,
   supplierPriceHistory, suppliersOfItem,
 } from '../../domain/pricing.js';
+import { procureSampleStock } from '../../domain/crm.js';
 import { APP_VERSION, SCHEMA_VERSION } from '../../version.js';
 import { pageHead, statCard, can } from './common.js';
 
@@ -184,15 +185,20 @@ function renderCategories(ctx) {
     <section class="card">
       <div class="card-head"><div><h2>Koleksi</h2><p>Tipe kain ditentukan sebelum warna. Default roll 60 m × 300 cm; nama dan ID tetap.</p></div>${role === 'manager' ? `<button class="btn btn-sm" data-act="new-collection">Tambah</button>` : ''}</div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Koleksi</th><th>Tipe kain</th><th>Kategori</th><th class="num">Warna</th><th>Default roll</th><th><span class="sr-only">Aksi</span></th></tr></thead>
-        <tbody>${db.collections.map((c) => `<tr>
+        <thead><tr><th>Koleksi</th><th>Tipe kain</th><th>Kategori</th><th class="num">Warna</th><th>Default roll</th><th>Sample</th><th class="num">Stok sample</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${db.collections.map((c) => {
+          const stock = (db.sampleStocks ?? []).find((s) => s.collectionId === c.id);
+          return `<tr>
           <td><strong>${esc(c.name)}</strong><div class="xs muted">${esc(c.description)}</div></td>
           <td>${badge(c.clothType || '—', 'teal')}</td>
           <td>${esc(byId(db.categories, c.categoryId)?.name ?? '—')}</td>
           <td class="num">${db.skus.filter((s) => s.collectionId === c.id).length}</td>
           <td class="small">${esc(c.defaultRollLengthM ?? 60)} m × ${esc(c.defaultWidthCm ?? 300)} cm</td>
+          <td class="small">${fmt.money(stock?.samplePrice ?? c.samplePrice ?? 0)}<div class="xs muted">deposit ${fmt.money(stock?.sampleDeposit ?? c.sampleDeposit ?? 0)}</div></td>
+          <td class="num">${stock?.qty ?? 0}</td>
           <td class="right">${role === 'manager' ? `<button class="btn btn-sm" data-edit-collection="${c.id}">Ubah</button>` : ''}</td>
-        </tr>`).join('')}</tbody>
+        </tr>`;
+        }).join('')}</tbody>
       </table></div>
     </section>
   </div>`;
@@ -737,10 +743,17 @@ function openCollection(ctx, collection = null) {
       ${field('Kategori', `<select class="select" name="category">${ctx.db.categories.map((c) => `<option value="${c.id}" ${collection?.categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
       ${field('Panjang roll default (m)', `<input class="input" type="number" min="1" step="0.5" name="defaultRollLengthM" value="${esc(collection?.defaultRollLengthM ?? 60)}" />`)}
       ${field('Lebar kain default (cm)', `<input class="input" type="number" min="1" name="defaultWidthCm" value="${esc(collection?.defaultWidthCm ?? 300)}" />`)}
+      ${field('Harga sample / pcs', `<input class="input" name="samplePrice" inputmode="numeric" value="${esc(collection?.samplePrice ?? 0)}" />`, { hint: 'Harga sample koleksi yang tampil di katalog sample.' })}
+      ${field('Deposit refundable / pcs', `<input class="input" name="sampleDeposit" inputmode="numeric" value="${esc(collection?.sampleDeposit ?? 0)}" />`)}
+      ${field('Minimum stok sample', `<input class="input" name="sampleMin" inputmode="numeric" value="${esc(collection?.sampleMin ?? 1)}" />`)}
+      ${field(editing ? 'Tambah sample pabrik (pcs)' : 'Sample awal dari pabrik (pcs)', `<input class="input" name="sampleQty" inputmode="numeric" value="${editing ? 0 : 1}" />`, { hint: 'Sample diprocure dari pabrik; tidak memotong roll.' })}
+      ${field('Harga pokok sample / pcs', `<input class="input" name="sampleUnitCost" inputmode="numeric" value="0" />`)}
+      ${field('Pemasok sample', `<select class="select" name="sampleSupplier"><option value="">— Tanpa pemasok —</option>${(ctx.db.suppliers ?? []).map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>`)}
       ${field('Deskripsi', `<input class="input" name="description" value="${esc(collection?.description ?? '')}" />`, { full: true })}
     </div>`,
     onSubmit(form, close) {
-      ctx.store.update((db) => {
+      const sampleQty = Number(form.sampleQty.value || 0);
+      const saved = ctx.store.update((db) => {
         const payload = {
           name: form.name.value,
           categoryId: form.category.value,
@@ -748,16 +761,31 @@ function openCollection(ctx, collection = null) {
           clothType: form.clothType.value,
           defaultRollLengthM: Number(form.defaultRollLengthM.value || 60),
           defaultWidthCm: Number(form.defaultWidthCm.value || 300),
+          samplePrice: Number(String(form.samplePrice.value).replace(/\D/g, '')) || 0,
+          sampleDeposit: Number(String(form.sampleDeposit.value).replace(/\D/g, '')) || 0,
+          sampleMin: Number(String(form.sampleMin.value).replace(/\D/g, '')) || 0,
           user: ctx.user,
         };
-        if (editing) {
-          renameCollection(db, { id: collection.id, ...payload });
-        } else {
-          createCollection(db, payload);
+        const collectionRow = editing
+          ? renameCollection(db, { id: collection.id, ...payload })
+          : createCollection(db, payload);
+        if (sampleQty > 0) {
+          procureSampleStock(db, {
+            collectionId: collectionRow.id,
+            qty: sampleQty,
+            unitCost: Number(String(form.sampleUnitCost.value).replace(/\D/g, '')) || 0,
+            supplierId: form.sampleSupplier.value || null,
+            date: todayJakarta(),
+            notes: editing ? 'Tambah sample pabrik.' : 'Sample awal koleksi dari pabrik.',
+            user: ctx.user,
+          });
         }
+        return collectionRow;
       });
       close();
-      toast(editing ? 'Koleksi diperbarui; label SKU ikut menyesuaikan.' : 'Koleksi dibuat.', { tone: 'success' });
+      toast(editing
+        ? `Koleksi diperbarui${sampleQty ? ` + ${sampleQty} sample pabrik` : ''}.`
+        : `Koleksi ${saved.name} dibuat${sampleQty ? ` dengan ${sampleQty} sample pabrik` : ''}.`, { tone: 'success' });
     },
   });
 }

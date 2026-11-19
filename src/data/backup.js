@@ -10,7 +10,7 @@ import { clone } from '../domain/core.js';
 import { SCHEMA_VERSION } from '../version.js';
 
 export const BACKUP_FORMAT = 'lajur.backup';
-export const BACKUP_VERSION = 16;
+export const BACKUP_VERSION = 17;
 
 export function exportBackup(db) {
   return {
@@ -111,7 +111,10 @@ export function validateBackup(payload) {
   }
   for (const stock of db.sampleStocks ?? []) {
     need(skus, stock.skuId, 'SKU', `Stok sample ${stock.id}`);
-    need(collections, stock.collectionId, 'Koleksi', `Stok sample ${stock.id}`);
+    const collectionId = stock.collectionId
+      ?? db.skus.find((s) => s.id === stock.skuId)?.collectionId
+      ?? null;
+    if (collectionId) need(collections, collectionId, 'Koleksi', `Stok sample ${stock.id}`);
     if (stock.sourceRollId) need(rollIds, stock.sourceRollId, 'Roll', `Stok sample ${stock.id}`);
   }
   for (const history of db.sellPriceHistory ?? []) {

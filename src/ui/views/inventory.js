@@ -324,10 +324,10 @@ function renderDetail(ctx) {
           ${badge(status.label, status.tone)}
           ${roll.condition !== 'good' ? badge(roll.condition === 'damaged' ? 'Rusak' : 'Cacat ringan', 'warn') : ''}
         </div>
-        <p class="sub">${esc(sku?.collectionName)} · ${esc(sku?.clothType || '')} · ${esc(sku?.colourName || sku?.colourCode || '')} · Lot ${esc(roll.lot)} · Barcode <span class="mono">${esc(roll.barcode || roll.id)}</span></p>
+        <p class="sub">${esc(sku?.collectionName)} · ${esc(sku?.clothType || '')} · ${esc(sku?.colourName || sku?.colourCode || '')} · Lot ${esc(roll.lot)} · QR <span class="mono">${esc(roll.barcode || roll.id)}</span></p>
       </div>
       <div class="page-actions">
-        <button class="btn" type="button" data-action="print-label">${icon('printer')} Tag stok / barcode</button>
+        <button class="btn" type="button" data-action="print-label">${icon('printer')} Tag stok / QR</button>
         ${isSellable(roll) && can(role, 'invoice.create') ? `<a class="btn btn-primary" href="#/penjualan?new=1&roll=${roll.id}">${icon('cut')} Jual / potong</a>` : ''}
         ${can(role, 'stock.quarantine') && !roll.transit && ['available'].includes(roll.status) ? `<button class="btn btn-danger" type="button" data-action="quarantine">${icon('alert')} Karantina</button>` : ''}
       </div>

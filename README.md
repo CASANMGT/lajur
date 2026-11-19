@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-73%2F73-brightgreen) ![Version](https://img.shields.io/badge/version-2.17.1-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-74%2F74-brightgreen) ![Version](https://img.shields.io/badge/version-2.18.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 73 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 74 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -180,7 +180,7 @@ Lajur/
 12. **Master Data → Gudang** — add or rename a warehouse, change its code/prefix/contact, or deactivate an empty one. Deactivation is refused while stock, transit, parts, active requests, or an opname still reference it. Collection names can be renamed without changing SKU IDs.
 13. **Tugas Operasi** — create receive/picking/cutting/sewing/QC/shipment tasks, assign to Henny, start and complete with an optional proof. Manager sees overdue and cutting queues; tasks never move stock.
 14. **Pembelian → Pengiriman impor / PO-0004** — CNY PO at Rp 2,250/CNY, BL/container, ETA, landed cost; update status to customs/arrived. Receiving this PO posts roll HPP including freight/duty. The rate is entered by the user at PO time and stored with timestamp/source.
-15. **Sample & Deposit** — sample conversion, deposit ledger and refunds. **Buku sample** builds a giveaway book from several roll cuts; **Katalog** lists colours/prices for customers. Both print/PDF.
+15. **Sample & Deposit** — factory-procured sample stock per collection, sample price/refundable deposit, procurement history, customer distribution and conversion, deposit ledger and refunds. **Buku sample** builds a giveaway book from collection sample stock; **Katalog** lists colours/prices for customers. Both print/PDF.
 16. **Panduan** — open the in-app tutorial for every process, from manual stock and import PO to tax invoice, surat jalan, sample book and reporting. Driver accounts (Asep/Rudi/Slamet) see only their Pengiriman/Tugas.
 17. **Settings** (`#/pengaturan`, manager) — add staff with role/PIN, reset PIN, choose **Mode Sederhana/Lanjutan**, edit preferences, see master audit, export/restore. **Pesanan** and **Produksi WIP** are off by default; enable either in Advanced mode when needed.
 18. **Pesanan** (`#/pesanan`, after enabling it) — open `SO-0001` to see the creator, full contents and prices; edit quantity/price on a draft, then print **Pesanan Penjualan**. Confirming and invoicing keep stock unchanged until the invoice posts.
@@ -239,7 +239,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **73 passed, 0 failed** (71 domain/UI + 2 auth) |
+| `node --test` | **74 passed, 0 failed** (72 domain/UI + 2 auth) |
 | Module import check | **46/46 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
@@ -271,14 +271,14 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Consignment surat jalan | SJ-0001 seeded as JNE REG with AWB `JNE-REG-0001`, recipient Budi Santoso, 18.5 kg, 6 koli; print shows AWB barcode and signature blocks |
 | Internal vs third-party | Internal delivery snapshots FLT-002 / Toyota Hilux / Lavishome Fleet; J&T delivery has no fleet asset and stores courier driver + AWB |
 | Collection metadata | Luna/Aria/Nova define Blackout/Sheer/Dimout and default 60 m × 300 cm; new SKUs inherit the cloth type |
-| Sample stock | 10 sample pieces seeded across 5 colours; giving SS-0001 to Sari reduced stock from 2 to 1 and created SMP-0005 with history |
-| Barcode tag | RL-0001 prints a Code 39 tag with `RL-0001`, collection, Blackout, 280 cm, lot, length and JKT/A-01-01 |
+| Sample stock | 10 factory sample pieces across Luna/Aria/Nova; Luna sample price Rp 25.000 and refundable deposit Rp 50.000; giving SS-0001 reduced stock 4 → 3 and created DEP-0004 |
+| QR stock tag | RL-0001 prints a QR tag with `RL-0001`, collection, Blackout, 280 cm, lot, length and JKT/A-01-01; QR opens the roll URL when scanned |
 | WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
 | Price review | Luna-01 last changed 170 days ago; save was blocked until the 90-day confirmation was checked, then Rp 125.000 → Rp 130.000 |
 | Transfer ongkir | Transfer with Rp 300.000 over 10 m adds Rp 30.000/m to destination roll HPP |
 | Surat jalan missing | Pengiriman lists INV-0004, INV-0003 and INV-0001 as posted invoices without a surat jalan |
 | PostgreSQL store | Schema 16 with JSONB state, revision guard, audit/users/sessions/idempotency; JSON fallback verified via `/api/health` |
-| Sample book | SB-0001 from 2 roll cuts; stock cut; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
+| Sample book | Created from 2 collection sample stocks; stock sample decremented; status ready → given to Budi Prospek; print contains BUKU SAMPLE |
 | Catalog | 5 active SKUs; print/PDF contains collections, colours and prices |
 | Guide | 14 in-app tutorial sections rendered |
 | Courier + map | Internal/J&T/JNE/Lalamove/GoSend/SiCepat/AnterAja/Bali Kargo; address autocomplete from customers/history; map iframe updates with address |
@@ -360,7 +360,7 @@ node tools/render-check.mjs
 - **Driver role & portal:** Asep/Rudi/Slamet have user accounts (PIN 1212/2323/3434), see only their deliveries/tasks, and can Kirim/Tiba; receiver confirmation stays with sales/manager.
 - **Transport master:** internal Lavishome Fleet + Lalamove, GoSend, Bali Kargo, J&T Express, JNE Express; drivers link to a transport company.
 - **Fleet assets:** internal motor/mobil/truk with plate, capacity, tax expiry and assigned driver.
-- **Sample books:** build a giveaway book from multiple roll cuts, print/PDF, and mark who received it.
+- **Sample books:** build a giveaway book from collection sample stock, print/PDF, and mark who received it.
 - **Catalog:** colour/width/price/availability listing with Cetak/PDF for potential customers.
 - **In-app tutorial:** Panduan covers 14 processes from stock and purchasing to tax/surat jalan, sample books, catalog, tasks and reporting.
 - **Task operations:** receive, putaway, picking, cutting, sewing/finishing, QC, transfer, shipment, opname and sample tasks; assign, start, block, resume, complete, cancel; due dates, priority, cutting queue, manager board; completion note and optional physical proof.
@@ -381,8 +381,8 @@ node tools/render-check.mjs
 - Supplier PO, partial receiving per roll/lot, duplicate and over-receipt protection, payable payments, supplier returns.
 - Projects: allocate, reserve, invoice/stock issue, handover, shortage, material cost, instructions.
 - Customers, CRM stages, activities, optional NPWP for faktur pajak, WhatsApp number, samples with conversion, sample deposits, indent deposits, refund guards.
-- **Sample stock & distribution:** sample pieces per collection/colour, cut from a roll into showroom stock, give to a customer, and see per-customer sample/purchase history.
-- **Stock tags:** every roll carries a Code 39 barcode tag with collection, cloth type, colour, width, location and length.
+- **Collection sample stock:** factory-procured sample pieces per collection with price, refundable deposit, stock and procurement history; give to a customer and see per-customer sample/purchase history.
+- **QR stock tags:** every roll carries a QR tag with collection, cloth type, colour, width, location and length; scanning opens the roll detail.
 - **Price control:** selling-price history with last update, old/new price and a 90-day review confirmation.
 - **WA stock share:** customer detail and Stock build a copy-paste availability message and open WhatsApp.
 - **Internal warehouse sale:** transfer ongkir is capitalised into destination roll HPP.
@@ -391,7 +391,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.17.1`), changelog and GitHub Actions CI.
+- Versioned release (`v2.18.0`), changelog and GitHub Actions CI.
 
 ### Partial
 
@@ -402,7 +402,7 @@ node tools/render-check.mjs
 - Landed cost is allocated per unit at receipt; reallocation after a later shipment cost change is manual.
 - Paid sample uses a service invoice; no separate sample price list.
 - As-of inventory balances are not reconstructed; movement history is.
-- Barcode labels are visual; no scanner integration.
+- QR tags are scannable by a phone camera; there is no handheld scanner or label-printer integration.
 - Permissions are UI-level only in the static demo; a reference API exists but the UI is not wired to it.
 - Quotes are not a separate document; sales orders are.
 - Return credit above the remaining invoice balance is not carried as a customer credit balance.
