@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.22
+# PRD - Lavishome v2.22.1
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.22.0 (schema 20)
+**Version:** 2.22.1 (schema 20)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.22: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.22.1: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -535,7 +535,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.22 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.22.1 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -691,7 +691,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 
-Test evidence: `node --test` → 79/79 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 80/80 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -734,7 +734,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir, A4 QR tag sheets, editable surat jalan with ETA/AWB photo/courier services, many-to-many driver–vehicle links, availability-sorted stock hierarchy, multi-roll A4 picker, PIC role dropdown, AWB photo decoding, courier tracking links and arrival notifications | 79/79 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir, A4 QR tag sheets, editable surat jalan with ETA/AWB photo/courier services, many-to-many driver–vehicle links, availability-sorted stock hierarchy, multi-roll A4 picker, PIC role dropdown, AWB photo decoding, courier tracking links and arrival notifications, JNE Code128 scan hardening | 80/80 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

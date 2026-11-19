@@ -121,6 +121,15 @@ function loadZxing() {
   return zxingPromise;
 }
 
+async function decodeCanvas(reader, canvas) {
+  try {
+    const result = await reader.decodeFromCanvas(canvas);
+    return result ? [String(result.getText())] : [];
+  } catch {
+    return [];
+  }
+}
+
 /** ZXing fallback: works where the platform BarcodeDetector is missing. */
 async function detectZxing(file) {
   const url = URL.createObjectURL(file);
@@ -128,8 +137,37 @@ async function detectZxing(file) {
   try {
     const ZXing = await loadZxing();
     reader = new ZXing.BrowserMultiFormatReader();
-    const result = await reader.decodeFromImageUrl(url);
-    return result ? [String(result.getText())] : [];
+    try {
+      const result = await reader.decodeFromImageUrl(url);
+      if (result) return [String(result.getText())];
+    } catch {
+      // Fall through to the contrast-enhanced canvas pass.
+    }
+
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    const longest = Math.max(image.width, image.height) || 1;
+    const scale = Math.min(2, Math.max(1, 1400 / longest));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+    // A phone photo of a label is often grey and low-contrast. Stretch the
+    // greyscale range before a second ZXing pass.
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    const data = pixels.data;
+    for (let index = 0; index < data.length; index += 4) {
+      const grey = data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+      const value = Math.max(0, Math.min(255, 128 + (grey - 128) * 1.8));
+      data[index] = value;
+      data[index + 1] = value;
+      data[index + 2] = value;
+    }
+    context.putImageData(pixels, 0, 0);
+    return await decodeCanvas(reader, canvas);
   } catch {
     return [];
   } finally {

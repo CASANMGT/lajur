@@ -2,6 +2,23 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.22.1] — 2026-11-20
+
+**Release name: Resi JNE Terbaca.** Hardens AWB photo scanning for real phone photos of JNE-style labels.
+
+### Fixed
+
+- ZXing now gets a second pass on a contrast-stretched greyscale canvas when the original photo fails to decode. Low-contrast or slightly uneven photos that previously fell through to OCR can now yield the barcode value.
+- Added a regression test using the real JNE label layout and number `541680005420019`; the exact Code128 barcode was decoded in browser QA with the same number.
+
+### Verification
+
+- `node --test`: **80 passed**.
+- Browser QA: generated Code128 `541680005420019` and a deliberately faint version both filled the resi field.
+- Version bumped to 2.22.1; schema 20 and backup v20 unchanged.
+
+---
+
 ## [2.22.0] — 2026-11-19
 
 **Release name: Pilih Roll & Lacak Resi.** Pick exact rolls for A4 tags, use a real user PIC dropdown, read AWB numbers from photos, and follow deliveries with courier tracking links and arrival notifications.

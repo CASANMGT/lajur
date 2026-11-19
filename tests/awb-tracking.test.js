@@ -27,6 +27,24 @@ test('AWB photo reader prefers courier prefixes and grouped resi numbers', () =>
   assert.equal(parseAwb(''), '');
 });
 
+test('JNE label OCR picks the 15-digit resi below the barcode', () => {
+  const label = [
+    'JNE',
+    '541680005420019',
+    'Tanggal : 09-01-2019 18:08',
+    'No. Pelanggan : 10652500',
+    'Servis : REG',
+    'Deskripsi : KOSMETIK',
+    'Berat : 1 Kg',
+    'Jumlah Kiriman : 1',
+    'Biaya Kirim : Rp9.000,-',
+    'Kota Tujuan : Kebayoran Lama,Jkt S',
+  ].join('\n');
+  assert.equal(parseAwb(label, { courier: 'jne' }), '541680005420019');
+  assert.equal(parseAwb(label), '541680005420019');
+  assert.equal(parseAwb('54168 00054 20019', { courier: 'jne' }), '541680005420019');
+});
+
 test('surat jalan stores a user PIC, tracking link and notifies arrival', () => {
   const db = buildSeed();
   const invoice = postedInvoice(db);
