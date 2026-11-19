@@ -89,6 +89,15 @@ export function trackingLabel(delivery) {
   return TRACKING_PAGES[delivery?.courier]?.label ?? '';
 }
 
+/** Copy/paste text for WhatsApp or the courier tracking page. */
+export function trackingShareText(delivery) {
+  const url = deliveryTrackingUrl(delivery);
+  if (!url) return '';
+  const courier = COURIERS[delivery?.courier]?.label ?? delivery?.courier ?? 'Kurir';
+  const parts = [courier, delivery?.service, delivery?.trackingRef ? `Resi ${delivery.trackingRef}` : ''].filter(Boolean);
+  return `${parts.join(' · ')}\n${url}`;
+}
+
 export function getDelivery(db, id) {
   return db.deliveries?.find((d) => d.id === id) ?? null;
 }

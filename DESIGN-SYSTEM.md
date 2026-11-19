@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.22.1
+# Design System - Lavishome v2.22.2
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -244,7 +244,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Driver master:** Master Data → Driver & armada. Show driver, account, phone and all linked internal vehicles (name + plate). Use multi-select on both sides: a driver may hold several vehicles and a vehicle may list several drivers. The first/default vehicle is only a prefill for surat jalan, never an exclusive lock. A driver without one is marked **Belum ditugaskan**. Inactive drivers do not appear in new surat jalan forms.
 - **Surat jalan:** select any driver and any internal vehicle independently; autofill phone, type and plate from the chosen pair, but never overwrite an explicit driver/vehicle choice. PIC is a dropdown of active users grouped by role (manager, sales, operator, driver) and snapshots both name and role. Courier select: Internal, J&T, JNE, Lalamove, GoSend, SiCepat, AnterAja, Bali Kargo. The service list follows the courier (JNE = REG/YES/OKS) and is validated again server-side. Capture service, AWB/resi typed or read from a photo, tracking share link, recipient/phone, estimated arrival, weight, pieces, shipping, insurance, COD and instructions. Exactly one **Buat surat jalan** action; **Edit surat jalan** stays available while draft.
 - **AWB photo scan:** offer file upload with a preview and an inline status banner. Try `BarcodeDetector`, then ZXing, then Tesseract OCR; fill the resi field only when a candidate is found and always leave it editable. If decoding fails, say so plainly and never block saving the photo.
-- **Tracking & arrival:** show the tracking link beside the courier; app-only couriers use the pasted share link, public couriers use their official page. A delivered delivery shows a Pengiriman badge, an in-app notice and a **Notifikasi tiba** button; browser notifications are opt-in and fire on “Tiba”, never silently.
+- **Tracking & arrival:** show the tracking link beside the courier; app-only couriers use the pasted share link, public couriers use their official page. Provide **Salin** so the courier + resi + URL can be pasted into WhatsApp. A delivered delivery shows a Pengiriman badge, an in-app notice and a **Notifikasi tiba** button; browser notifications are opt-in and fire on “Tiba”, never silently.
 - **Address:** autocomplete from customer and previous delivery addresses; show an inline map preview and an external map link. Never hide the map behind a submit action.
 - **Mobile sidebar:** `overflow-y: auto`, `overscroll-behavior: contain`, safe-area bottom padding. The drawer must scroll at 320/390 with Advanced mode; bottom nav must remain below the drawer.
 - **Task flow:** create → Mulai → Selesai, note/proof optional; no stock movement.

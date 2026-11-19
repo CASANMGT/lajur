@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-80%2F80-brightgreen) ![Version](https://img.shields.io/badge/version-2.22.1-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-80%2F80-brightgreen) ![Version](https://img.shields.io/badge/version-2.22.2-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,7 +60,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 80 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -276,7 +276,7 @@ Log in as each account to see the difference. Hiding a button is still not serve
 | Stock hierarchy | Default **Hierarki koleksi**: motif → colour, most available first; available rolls above a separate **Terjual / habis** group; list view shows the same split |
 | Surat jalan edit | Exactly one **Buat surat jalan** action; **Edit surat jalan** supports customer/recipient, PIC from user roles (including driver), ETA, courier service, AWB photo and tracking link |
 | AWB photo scan | Uploaded label photo is read by barcode/ZXing/OCR; Code128 `541680005420019` and a faint photo both filled the resi field in browser QA |
-| Package tracking | GoSend/Grab/Lalamove share links are stored per delivery; JNE/J&T/SiCepat/AnterAja/Bali Kargo open official tracking pages |
+| Package tracking | GoSend/Grab/Lalamove share links are stored per delivery; JNE/J&T/SiCepat/AnterAja/Bali Kargo open official tracking pages; **Salin** copies courier + resi + URL for WhatsApp |
 | Arrival notification | Marking **Tiba** adds a Pengiriman badge and in-app notice; browser notifications can be enabled from the page |
 | QR scan landing | Public `#/scan/RL-0001` shows stock status while logged out; login/detail link preserves roll; RL-0007 shows 1 cut 70 m → 69.5 m |
 | WA stock share | Graha message lists available Aria/Luna/Nova metres and opens `wa.me/6281290004003` with prefilled text |
@@ -399,7 +399,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.22.1`), changelog and GitHub Actions CI.
+- Versioned release (`v2.22.2`), changelog and GitHub Actions CI.
 
 ### Partial
 

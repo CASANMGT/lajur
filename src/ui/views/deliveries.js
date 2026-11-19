@@ -1,10 +1,10 @@
 /** Pengiriman: surat jalan yang ditugaskan ke driver, status, dan konfirmasi. */
 
-import { esc, icon, fmt, badge, toast, confirmAction, openModal, field, printDocument } from '../dom.js';
+import { esc, icon, fmt, badge, toast, confirmAction, openModal, field, printDocument, copyText } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
   COURIERS, DELIVERY_STATUS, confirmDelivery, deliveryTrackingUrl, dispatchDelivery,
-  invoicesWithoutDelivery, markDelivered, trackingLabel,
+  invoicesWithoutDelivery, markDelivered, trackingLabel, trackingShareText,
 } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { pageHead, statCard, can } from './common.js';
@@ -87,7 +87,7 @@ export function render(ctx) {
           <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}${d.receivedBy ? `<div class="xs muted">oleh ${esc(d.receivedBy)}</div>` : ''}</td>
           <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">${icon('printer')} Surat jalan</button>
-            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a>` : ''}
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}" title="Salin link lacak">${icon('copy')} Salin</button>` : ''}
             ${d.status === 'draft' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -103,7 +103,7 @@ export function render(ctx) {
           <div class="xs muted">${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}</div>
           <div class="row" style="margin-top:4px;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">Cetak</button>
-            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a>` : ''}
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}">${icon('copy')} Salin</button>` : ''}
             ${d.status === 'draft' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -165,6 +165,20 @@ export function mount(ctx) {
       toast(err.message, { tone: 'error' });
     }
   });
+  document.querySelectorAll('[data-copy-tracking]').forEach((btn) => btn.addEventListener('click', async () => {
+    const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.copyTracking);
+    const text = trackingShareText(delivery);
+    if (!text) {
+      toast('Belum ada link lacak untuk surat jalan ini.', { tone: 'error' });
+      return;
+    }
+    try {
+      await copyText(text);
+      toast('Link lacak disalin. Tempel ke WhatsApp atau browser.', { tone: 'success' });
+    } catch (err) {
+      toast(err.message, { tone: 'error' });
+    }
+  }));
   document.querySelectorAll('[data-confirm]').forEach((btn) => btn.addEventListener('click', () => {
     const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.confirm);
     if (delivery) openConfirm(ctx, delivery);

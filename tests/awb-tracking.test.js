@@ -4,7 +4,8 @@ import assert from 'node:assert/strict';
 import { buildSeed } from '../src/domain/seed.js';
 import { createInvoice, postInvoice } from '../src/domain/sales.js';
 import {
-  createDelivery, deliveryTrackingUrl, normalizeTrackingUrl, trackingLabel, updateDelivery,
+  createDelivery, deliveryTrackingUrl, normalizeTrackingUrl, trackingLabel, trackingShareText,
+  updateDelivery,
 } from '../src/domain/deliveries.js';
 import { parseAwb } from '../src/ui/awb.js';
 
@@ -63,6 +64,9 @@ test('surat jalan stores a user PIC, tracking link and notifies arrival', () => 
   assert.equal(delivery.trackingUrl, 'https://grab.com/share/abc123');
   assert.equal(deliveryTrackingUrl(delivery), 'https://grab.com/share/abc123');
   assert.equal(trackingLabel(delivery), 'Buka link dari aplikasi');
+  assert.match(trackingShareText(delivery), /JNE Express/);
+  assert.match(trackingShareText(delivery), /Resi CGK1234567890/);
+  assert.match(trackingShareText(delivery), /https:\/\/grab\.com\/share\/abc123/);
 
   updateDelivery(db, {
     id: delivery.id,

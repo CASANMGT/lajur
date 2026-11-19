@@ -2,7 +2,7 @@
 
 import {
   esc, icon, fmt, badge, swatch, toast, openModal, field, printDocument, amountCell, confirmAction,
-  imageToDataUrl,
+  copyText, imageToDataUrl,
 } from '../dom.js';
 import { MM_PER_M, byId, daysBetween, parseM, todayJakarta } from '../../domain/core.js';
 import {
@@ -13,7 +13,7 @@ import {
 import {
   DELIVERY_STATUS, COURIERS, confirmDelivery, createDelivery, deliveryForInvoice, deliverySchedule,
   deliveryTrackingUrl, dispatchDelivery, driverDeliveriesOn, markDelivered, servicesForCourier,
-  trackingLabel, updateDelivery,
+  trackingLabel, trackingShareText, updateDelivery,
 } from '../../domain/deliveries.js';
 import { driversForFleetAsset, fleetAssetsForDriver, VEHICLE_TYPES } from '../../domain/master.js';
 import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
@@ -279,7 +279,7 @@ function deliveryCard(inv, delivery, role) {
         <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}${delivery.picRole ? ` · ${esc({ manager: 'Manajer', sales: 'Sales', operator: 'Operator gudang', driver: 'Driver' }[delivery.picRole] ?? delivery.picRole)}` : ''}</span></div>
         <div class="row-between"><span class="small muted">Penerima</span><span class="small">${esc(delivery.recipientName || '—')}<div class="xs muted">${esc(delivery.recipientPhone || '')}</div></span></div>
         <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
-        ${deliveryTrackingUrl(delivery) ? `<div class="row-between"><span class="small muted">Lacak paket</span><a class="small strong" href="${esc(deliveryTrackingUrl(delivery))}" target="_blank" rel="noopener">${esc(trackingLabel(delivery) || 'Buka link lacak')} →</a></div>` : ''}
+        ${deliveryTrackingUrl(delivery) ? `<div class="row-between"><span class="small muted">Lacak paket</span><span class="row" style="gap:6px;justify-content:flex-end"><a class="small strong" href="${esc(deliveryTrackingUrl(delivery))}" target="_blank" rel="noopener">${esc(trackingLabel(delivery) || 'Buka link lacak')} →</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${delivery.id}">${icon('copy')} Salin</button></span></div>` : ''}
         <div class="row-between"><span class="small muted">Estimasi tiba</span><span class="small">${esc(delivery.eta || '—')}</span></div>
         ${delivery.awbImage ? `<div class="reward"><img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e4ded2" /></div>` : ''}
         <div class="row-between"><span class="small muted">Transport / armada</span><span class="small">${esc(delivery.transportName || '—')}</span></div>
@@ -1109,6 +1109,20 @@ export function mount(ctx) {
         toast(err.message, { tone: 'error' });
       }
     });
+    document.querySelectorAll('[data-copy-tracking]').forEach((btn) => btn.addEventListener('click', async () => {
+      const target = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.copyTracking);
+      const text = trackingShareText(target);
+      if (!text) {
+        toast('Belum ada link lacak untuk surat jalan ini.', { tone: 'error' });
+        return;
+      }
+      try {
+        await copyText(text);
+        toast('Link lacak disalin. Tempel ke WhatsApp atau browser.', { tone: 'success' });
+      } catch (err) {
+        toast(err.message, { tone: 'error' });
+      }
+    }));
     on('confirm-delivery', () => {
       const delivery = deliveryForInvoice(ctx.db, inv.id);
       if (delivery) openConfirmDelivery(ctx, delivery);

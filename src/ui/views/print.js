@@ -5,7 +5,7 @@ import qrcode from '../../vendor/qrcode.js';
 import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
-import { COURIERS, DELIVERY_STATUS } from '../../domain/deliveries.js';
+import { COURIERS, DELIVERY_STATUS, deliveryTrackingUrl } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
 
@@ -246,6 +246,7 @@ export function printDeliveryHtml(db, delivery) {
     <div class="meta" style="margin-top:12px">
       <div><span>Faktur</span><strong>${esc(delivery.invoiceId)}</strong></div>
       <div><span>Estimasi tiba</span><strong>${esc(delivery.eta || '—')}</strong></div>
+      ${deliveryTrackingUrl(delivery) ? `<div><span>Lacak paket</span><strong style="font-size:9px;word-break:break-all">${esc(deliveryTrackingUrl(delivery))}</strong></div>` : ''}
       <div><span>Berat / koli</span><strong>${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</strong></div>
       <div><span>Ongkir / asuransi</span><strong>${fmt.money(delivery.shippingCost || 0)} / ${fmt.money(delivery.insurance || 0)}</strong></div>
       <div><span>COD</span><strong>${delivery.codAmount ? fmt.money(delivery.codAmount) : '—'}</strong></div>

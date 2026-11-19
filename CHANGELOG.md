@@ -2,6 +2,24 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.22.2] — 2026-11-20
+
+**Release name: Salin Link Lacak.** Adds one-click copy for the tracking link on surat jalan.
+
+### Added
+
+- **Salin link lacak** on the invoice delivery card and the Pengiriman table/mobile cards. Copies a ready-to-paste message: courier, service, resi and the official/app tracking URL, for example:
+  `JNE Express · YES · Resi JNE-9999`
+  `https://...`
+- The printed surat jalan now includes the tracking URL under **Lacak paket**.
+
+### Verification
+
+- `node --test`: **80 passed**.
+- Browser QA: copied `JNE Express · YES · Resi JNE-9999` + GoSend link; print output contains the same tracking URL.
+
+---
+
 ## [2.22.1] — 2026-11-20
 
 **Release name: Resi JNE Terbaca.** Hardens AWB photo scanning for real phone photos of JNE-style labels.
