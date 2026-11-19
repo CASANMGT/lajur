@@ -44,6 +44,8 @@ test('JNE label OCR picks the 15-digit resi below the barcode', () => {
   assert.equal(parseAwb(label, { courier: 'jne' }), '541680005420019');
   assert.equal(parseAwb(label), '541680005420019');
   assert.equal(parseAwb('54168 00054 20019', { courier: 'jne' }), '541680005420019');
+  assert.equal(parseAwb('541680005420019DEAKEIPSI', { courier: 'jne' }), '541680005420019');
+  assert.equal(parseAwb('No Resi: 541680005429019\nDESKRIPSI: KOSMETIK', { courier: 'jne' }), '541680005429019');
 });
 
 test('surat jalan stores a user PIC, tracking link and notifies arrival', () => {

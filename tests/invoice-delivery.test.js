@@ -10,6 +10,7 @@ import {
 } from '../src/domain/deliveries.js';
 import { partStockRow } from '../src/domain/inventory.js';
 import { createCustomer } from '../src/domain/crm.js';
+import { printDeliveryCopiesHtml, printDeliveryDotMatrixHtml } from '../src/ui/views/print.js';
 
 const SALES = { id: 'u-sales', name: 'Dimas', role: 'sales' };
 const OP = { id: 'u-op', name: 'Rani', role: 'operator' };
@@ -146,8 +147,15 @@ test('surat jalan tracks PIC and confirmation without moving stock again', () =>
   assert.equal(delivery.status, 'dispatched');
   markDelivered(db, { id: delivery.id, user: OP });
   assert.equal(delivery.status, 'delivered');
+  updateDelivery(db, {
+    id: delivery.id, pic: 'Rani Active', courier: 'gosend', service: 'INSTANT', driverId: 'DRV-001', user: OP,
+  });
+  assert.equal(delivery.pic, 'Rani Active');
+  assert.equal(delivery.status, 'delivered');
   confirmDelivery(db, { id: delivery.id, receivedBy: 'Budi Pelanggan', note: 'Sesuai', user: OP });
   assert.equal(delivery.status, 'confirmed');
+  assert.throws(() => updateDelivery(db, { id: delivery.id, pic: 'Setelah Konfirmasi', user: OP }),
+    (err) => err.code === 'INVALID_STATUS');
   assert.equal(delivery.receivedBy, 'Budi Pelanggan');
   assert.equal(delivery.history.length >= 5, true);
   assert.equal(row.qty, stockAfterInvoice);
@@ -179,4 +187,26 @@ test('courier service is validated per courier and AWB photo, ETA and recipient 
     id: delivery.id, pic: 'Henny', courier: 'jne', service: 'OKS', trackingRef: 'JNE-0001', user: SALES,
   });
   assert.equal(delivery.service, 'OKS');
+});
+
+test('surat jalan prints an A4 3-copy sheet and a dot-matrix form', () => {
+  const db = buildSeed();
+  const inv = partInvoice(db, 1);
+  postInvoice(db, { id: inv.id, user: SALES });
+  const delivery = createDelivery(db, {
+    invoiceId: inv.id, pic: 'Henny', courier: 'jne', service: 'REG',
+    trackingRef: '541680005420019', trackingUrl: 'https://www.jne.co.id/id/tracking/trace', user: SALES,
+  });
+  const a4 = printDeliveryCopiesHtml(db, delivery);
+  assert.equal((a4.match(/class="sj-copy"/g) ?? []).length, 3);
+  assert.match(a4, /ORIGINAL/);
+  assert.match(a4, /BUKTI PENGIRIMAN/);
+  assert.match(a4, /ARSIP LOGISTIK/);
+  assert.match(a4, /POTONG DI SINI/);
+  assert.match(a4, /541680005420019/);
+  const dot = printDeliveryDotMatrixHtml(db, delivery);
+  assert.match(dot, /Courier New/);
+  assert.match(dot, /SURAT JALAN/);
+  assert.match(dot, /541680005420019/);
+  assert.match(dot, /Lacak: https:\/\/www\.jne\.co\.id/);
 });

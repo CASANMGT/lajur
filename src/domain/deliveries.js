@@ -31,6 +31,28 @@ export const COURIERS = {
   anteraja: { label: 'AnterAja' },
 };
 
+/** Simple brand marks for courier documents and lists. */
+export const COURIER_BRANDS = {
+  internal: { label: 'Lavishome Fleet', short: 'LF', color: '#172b3a', fg: '#ffffff' },
+  jne: { label: 'JNE Express', short: 'JNE', color: '#c8102e', fg: '#ffffff' },
+  jnt: { label: 'J&T Express', short: 'J&T', color: '#e60012', fg: '#ffffff' },
+  sicepat: { label: 'SiCepat', short: 'SiCepat', color: '#e31e24', fg: '#ffffff' },
+  anteraja: { label: 'AnterAja', short: 'ANTERAJA', color: '#e2231a', fg: '#ffffff' },
+  gosend: { label: 'GoSend', short: 'GoSend', color: '#00aa13', fg: '#ffffff' },
+  grabexpress: { label: 'GrabExpress', short: 'Grab', color: '#00b14f', fg: '#ffffff' },
+  lalamove: { label: 'Lalamove', short: 'Lalamove', color: '#f26522', fg: '#ffffff' },
+  'bali-kargo': { label: 'Bali Kargo', short: 'BALI KARGO', color: '#1f4e79', fg: '#ffffff' },
+};
+
+export function courierBrand(courier) {
+  return COURIER_BRANDS[courier] ?? {
+    label: COURIERS[courier]?.label ?? courier ?? 'Kurir',
+    short: String(courier ?? '?').toUpperCase().slice(0, 10),
+    color: '#62727c',
+    fg: '#ffffff',
+  };
+}
+
 export const SERVICES_BY_COURIER = {
   internal: ['REG', 'CARGO'],
   lalamove: ['MOTOR', 'MOBIL', 'CARGO'],
@@ -264,7 +286,8 @@ export function updateDelivery(db, {
   instructions = '', notes, user,
 }) {
   const delivery = requireDelivery(db, id);
-  assert(delivery.status === 'draft', 'INVALID_STATUS', 'Surat jalan hanya dapat diubah sebelum dikirim.');
+  assert(['draft', 'dispatched', 'delivered'].includes(delivery.status), 'INVALID_STATUS',
+    'Surat jalan yang sudah dikonfirmasi tidak dapat diubah.');
   const requestedPicUserId = String(picUserId ?? delivery.picUserId ?? '').trim();
   const picUser = requestedPicUserId ? byId(db.users ?? [], requestedPicUserId) : null;
   if (requestedPicUserId) assert(picUser, 'USER_NOT_FOUND', 'Akun PIC tidak ditemukan.');

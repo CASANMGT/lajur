@@ -2,6 +2,30 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.23.0] — 2026-11-20
+
+**Release name: Surat Jalan 3 Salinan.** Adds courier brand marks, active surat jalan editing, number-focused AWB extraction, and two print layouts.
+
+### Added
+
+- **Courier marks:** each delivery company gets a compact brand wordmark (JNE, J&T, SiCepat, AnterAja, Grab, GoSend, Lalamove, Bali Kargo, Lavishome Fleet) in the delivery card, Pengiriman table and surat jalan print.
+- **A4 laser — 3 copies:** one A4 sheet contains **ORIGINAL / PELANGGAN**, **SALINAN / BUKTI PENGIRIMAN (POD)** and **SALINAN / ARSIP LOGISTIK**, with dashed cut lines. Each copy has its own header, AWB, addresses, items, signatures and tracking link.
+- **Dot matrix — 9.5 × 11 in:** a monochrome continuous-form layout with bordered boxes, monospace type, all items, signatures and tracking URL.
+- **Print chooser:** clicking print on a surat jalan now asks for A4 laser (3 copies) or dot matrix.
+
+### Changed
+
+- **Active surat jalan can be edited:** draft, dispatched and delivered deliveries are editable; confirmed deliveries remain locked.
+- **AWB scanning focuses on the number:** OCR output such as `541680005420019DEAKEIPSI` is reduced to the leading digit run `541680005420019`, and long numeric groups are preferred over barcode/letters.
+
+### Verification
+
+- `node --test`: **81 passed**.
+- Browser QA: A4 output has 3 copies and 2 cut lines; dot matrix uses `9.5in 11in` and contains the resi + tracking URL; delivered surat jalan opens the edit modal.
+- Version bumped to 2.23.0; schema 20 and backup v20 unchanged.
+
+---
+
 ## [2.22.2] — 2026-11-20
 
 **Release name: Salin Link Lacak.** Adds one-click copy for the tracking link on surat jalan.

@@ -361,7 +361,7 @@ export function confirmAction({ title = 'Konfirmasi', message, confirmLabel = 'L
 /* Printing                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export function printDocument(title, innerHtml, { plain = false } = {}) {
+export function printDocument(title, innerHtml, { plain = false, pageSize = 'A4', margin = null } = {}) {
   const win = window.open('', '_blank', 'width=820,height=900');
   if (!win) {
     toast('Jendela cetak diblokir browser. Izinkan popup untuk mencetak.', { tone: 'error' });
@@ -370,7 +370,7 @@ export function printDocument(title, innerHtml, { plain = false } = {}) {
   const safeTitle = JSON.stringify(title).replace(/</g, '\\u003c');
   win.document.write(`<!doctype html><html lang="id"><head><meta charset="utf-8"><title>${esc(title)}</title>
     <style>
-      @page { size: A4; margin: ${plain ? '8mm' : '16mm'}; }
+      @page { size: ${pageSize}; margin: ${margin ?? (plain ? '8mm' : '16mm')}; }
       * { box-sizing: border-box; }
       body { font: 12px/1.5 Inter, "Segoe UI", system-ui, sans-serif; color: #172b3a; margin: 0; padding-top: 56px; }
       ${plain ? '.doc-head, .foot { display: none !important; }' : ''}

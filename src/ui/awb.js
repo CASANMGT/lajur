@@ -45,7 +45,21 @@ export function parseAwb(text, { courier = '' } = {}) {
     if (prefixed) score += 60;
     if (/^(19|20)\d{6,}$/.test(token)) score -= 70;
     candidates.push({ token, score });
+
+    // OCR frequently glues the resi to the next label ("541680005420019DESKRIPSI").
+    // For an AWB the useful value is the leading digit run, not the letters.
+    const leading = token.match(/^(\d{8,20})/)?.[1];
+    if (leading && leading !== token && !seen.has(leading)) {
+      seen.add(leading);
+      candidates.push({ token: leading, score: bonus + 60 + Math.min(leading.length, 18) + leading.length * 2 });
+    }
   };
+
+  // Also scan the full text for long digit groups separated by spaces/hyphens.
+  for (const match of raw.matchAll(/\d[\d\s-]{8,24}\d/g)) {
+    const digitsOnly = match[0].replace(/\D/g, '');
+    if (digitsOnly.length >= 10 && digitsOnly.length <= 20) add(digitsOnly, 30);
+  }
 
   const label = raw.match(/(?:NO\.?\s*(?:RESI|AWB)|RESI|AWB|TRACKING(?:\s*(?:NO|NUMBER))?|CONSIGNMENT(?:\s*NO)?)\s*[:#-]?\s*([A-Z0-9][A-Z0-9 -]{5,30})/);
   if (label) {
@@ -227,8 +241,8 @@ export async function scanAwbImage(file, { courier = '' } = {}) {
   for (const value of barcodes) {
     const trackingRef = parseAwb(value, { courier });
     if (trackingRef) return { trackingRef, text: value, method: 'barcode' };
-    const compact = normalizeAwb(value);
-    if (compact.length >= 6) return { trackingRef: compact, text: value, method: 'barcode' };
+    const digitsOnly = normalizeAwb(value).match(/\d{8,20}/)?.[0] ?? '';
+    if (digitsOnly) return { trackingRef: digitsOnly, text: value, method: 'barcode' };
   }
 
   const text = await readImageText(file);

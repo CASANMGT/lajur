@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.22.2
+# Design System - Lavishome v2.23.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -265,7 +265,8 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 ### 5.17 Internal fleet, consignment notes and production database
 
 - **Armada internal:** a dedicated table with vehicle name/plate, linked drivers, capacity, tax expiry and active status. Only Lavishome Fleet vehicles appear; there is no ownership chip and no third-party vehicle. One **Kendaraan** action opens a compact modal with a multi-select of drivers. Linking a driver never removes them from another vehicle; the default driver is shown first.
-- **Consignment surat jalan:** print as a courier note, not a plain letter. Header: Lavishome mark, "SURAT JALAN / CONSIGNMENT NOTE", courier + service, document ID/date, large AWB/resi and a pseudo barcode. Two address blocks: sender (PT Lavishome Tekstil Nusantara, Jakarta/Bali warehouse, PIC) and recipient (name, phone, address). A meta grid carries invoice, weight/pieces, shipping/insurance, COD, transport/armada, driver/vehicle and status. Keep goods lines price-free; finish with PIC and receiver signature lines.
+- **Consignment surat jalan:** print as a courier note, not a plain letter. Header: Lavishome mark, courier brand wordmark, "SURAT JALAN / CONSIGNMENT NOTE", courier + service, document ID/date, large AWB/resi and a pseudo barcode. Two address blocks: sender (PT Lavishome Tekstil Nusantara, Jakarta/Bali warehouse, PIC) and recipient (name, phone, address). A meta grid carries invoice, weight/pieces, shipping/insurance, COD, transport/armada, driver/vehicle, tracking URL and status. Keep goods lines price-free; finish with PIC and receiver signature lines.
+- **Surat jalan print formats:** offer a chooser. **A4 laser** renders three 88 mm-high copies on one sheet — ORIGINAL / PELANGGAN, SALINAN / BUKTI PENGIRIMAN (POD), SALINAN / ARSIP LOGISTIK — separated by dashed cut lines, each with its own signature block. **Dot matrix** renders a monochrome 9.5 × 11 in continuous form with `Courier New`, bordered boxes and all items. Never mix prices into either layout.
 - **Delivery mode:** internal delivery shows independent driver and vehicle pickers; choosing either only prefills the other when it is still blank. Third-party delivery hides the internal fleet block, shows a courier note and an optional courier driver name, and stores no `fleetAssetId`. Snapshot vehicle and transport on the delivery; never rewrite existing documents when master data changes.
 - **No price leakage:** the consignment note must never show unit prices, invoice subtotal or margin. It is a delivery document; the invoice already moved stock.
 - **Database status:** the reference server is the only place PostgreSQL is used. In the UI, the demo remains browser-local. When documenting production, state which store is active (`storage: postgres` or `json`) and never imply the static demo shares data.

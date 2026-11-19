@@ -2,6 +2,12 @@
 
 import { esc, icon } from '../dom.js';
 import { byId } from '../../domain/core.js';
+import { courierBrand } from '../../domain/deliveries.js';
+
+export function courierMark(courier, { small = false } = {}) {
+  const brand = courierBrand(courier);
+  return `<span class="courier-mark${small ? ' sm' : ''}" style="--brand:${esc(brand.color)};--brand-fg:${esc(brand.fg)}" title="${esc(brand.label)}">${esc(brand.short)}</span>`;
+}
 
 export function pageHead({ eyebrow = '', title, sub = '', actions = '' }) {
   return `<div class="page-head">

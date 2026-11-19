@@ -5,7 +5,7 @@ import qrcode from '../../vendor/qrcode.js';
 import { byId } from '../../domain/core.js';
 import { transferTotals, lineStats } from '../../domain/transfers.js';
 import { invoiceOutstanding } from '../../domain/sales.js';
-import { COURIERS, DELIVERY_STATUS, deliveryTrackingUrl } from '../../domain/deliveries.js';
+import { COURIERS, DELIVERY_STATUS, courierBrand, deliveryTrackingUrl } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
 
@@ -274,6 +274,138 @@ export function printDeliveryHtml(db, delivery) {
     </div>
     <p class="note" style="margin-top:14px">Barang sudah dikeluarkan dari stok saat faktur ${esc(delivery.invoiceId)} diterbitkan. Surat jalan ini bukan faktur dan tidak mengurangi stok lagi.</p>
     <p class="note">Faktur ${esc(delivery.invoiceId)} · status ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)} · dokumen pengiriman, bukan faktur.</p>`;
+}
+
+function deliveryPrintData(db, delivery) {
+  const customer = byId(db.customers, delivery.customerId);
+  return {
+    customer,
+    recipient: delivery.recipientName || customer?.name || delivery.customerName,
+    recipientPhone: delivery.recipientPhone || customer?.phone || '—',
+    address: delivery.address || customer?.address || '—',
+    courierLabel: COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal',
+    brand: courierBrand(delivery.courier),
+    trackUrl: deliveryTrackingUrl(delivery),
+  };
+}
+
+function deliveryQty(line) {
+  return line.kind === 'fabric' ? fmt.m(line.qtyMm) : `${fmt.pcs(line.qtyPcs)} pcs`;
+}
+
+/** A4 laser: three cut-out copies on one sheet. */
+export function printDeliveryCopiesHtml(db, delivery) {
+  const d = deliveryPrintData(db, delivery);
+  const copies = [
+    { title: 'ORIGINAL', sub: 'PELANGGAN / CUSTOMER', original: true },
+    { title: 'SALINAN', sub: 'BUKTI PENGIRIMAN (POD)' },
+    { title: 'SALINAN', sub: 'ARSIP LOGISTIK' },
+  ];
+  const copyHtml = (copy) => `<section class="sj-copy">
+    <div class="sj-head">
+      <div class="sj-brandline">
+        <span class="sj-logo" style="background:${esc(d.brand.color)};color:${esc(d.brand.fg)}">${esc(d.brand.short)}</span>
+        <div><div class="sj-title">SURAT JALAN</div><div class="sj-sub">${esc(d.courierLabel)} · ${esc(delivery.service || 'REG')}</div></div>
+      </div>
+      <div class="sj-copy-tag ${copy.original ? 'original' : ''}">${copy.title}<span>${copy.sub}</span></div>
+      <div class="sj-doc"><div class="sj-id">${esc(delivery.id)}</div><div>${esc(delivery.date)}</div></div>
+    </div>
+    <div class="sj-awb-row"><span>NO. RESI / AWB</span><strong>${esc(delivery.trackingRef || '—')}</strong><span>${delivery.eta ? `ETA ${esc(delivery.eta)}` : ''}</span></div>
+    <div class="sj-grid">
+      <div class="sj-box"><span class="sj-k">PENGIRIM</span><strong>PT Lavishome Tekstil Nusantara</strong><div>Gudang Jakarta / Bali</div><div>PIC: ${esc(delivery.pic)}</div></div>
+      <div class="sj-box"><span class="sj-k">PENERIMA</span><strong>${esc(d.recipient)}</strong><div>${esc(d.recipientPhone)}</div><div>${esc(d.address)}</div></div>
+    </div>
+    <table class="sj-lines"><thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td>${esc(line.description)}</td><td class="num">${deliveryQty(line)}</td><td>${esc(line.note || '—')}</td></tr>`).join('')}</tbody></table>
+    <div class="sj-meta">Faktur ${esc(delivery.invoiceId)} · ${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli · ${esc(delivery.driver || '—')}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
+    <div class="sj-foot">
+      <div class="sj-sign">PIC pengiriman<strong>${esc(delivery.pic)}</strong></div>
+      <div class="sj-sign">Penerima<strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div>
+      <div class="sj-note">Bukan faktur · stok keluar saat faktur terbit${d.trackUrl ? `<br>Lacak: ${esc(d.trackUrl)}` : ''}</div>
+    </div>
+  </section>`;
+  return `<style>
+    .sj-sheet { font: 8.5pt/1.25 Inter, "Segoe UI", system-ui, sans-serif; color: #172b3a; }
+    .sj-copy { border: 1.2pt solid #172b3a; border-radius: 2mm; padding: 2.6mm 3mm; height: 88mm; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; page-break-inside: avoid; break-inside: avoid; }
+    .sj-head { display: flex; align-items: flex-start; gap: 3mm; border-bottom: 1px solid #172b3a; padding-bottom: 1.6mm; }
+    .sj-brandline { display: flex; gap: 2mm; align-items: center; flex: 1; }
+    .sj-logo { display: inline-block; border-radius: 1.2mm; padding: 1.2mm 2mm; font-size: 8pt; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap; }
+    .sj-title { font-size: 12pt; font-weight: 800; letter-spacing: -.02em; }
+    .sj-sub { font-size: 7pt; color: #62727c; }
+    .sj-copy-tag { text-align: center; font-size: 9pt; font-weight: 800; border: 1pt solid #172b3a; padding: 1mm 2mm; border-radius: 1.5mm; min-width: 29mm; }
+    .sj-copy-tag.original { background: #172b3a; color: #fff; }
+    .sj-copy-tag span { display: block; font-size: 5.8pt; letter-spacing: .08em; font-weight: 600; }
+    .sj-doc { text-align: right; font-size: 7pt; }
+    .sj-id { font-family: ui-monospace, monospace; font-size: 9pt; font-weight: 800; }
+    .sj-awb-row { display: flex; align-items: baseline; gap: 2mm; padding: 1.2mm 0; }
+    .sj-awb-row span:first-child { font-size: 6pt; letter-spacing: .1em; color: #62727c; }
+    .sj-awb-row strong { font-family: ui-monospace, monospace; font-size: 13pt; letter-spacing: .05em; }
+    .sj-awb-row span:last-child { margin-left: auto; font-size: 7pt; color: #62727c; }
+    .sj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2mm; }
+    .sj-box { border: 1px solid #cfc6b6; border-radius: 1mm; padding: 1.4mm 2mm; font-size: 7pt; min-height: 13mm; }
+    .sj-k { display: block; font-size: 5.8pt; letter-spacing: .1em; color: #62727c; margin-bottom: .5mm; }
+    .sj-box strong { font-size: 8pt; }
+    .sj-lines { margin-top: 1.5mm; font-size: 7pt; }
+    .sj-lines th { font-size: 5.8pt; padding: 1mm 1.5mm; }
+    .sj-lines td { padding: .8mm 1.5mm; }
+    .sj-meta { font-size: 6.5pt; color: #62727c; margin-top: 1mm; }
+    .sj-foot { margin-top: auto; display: flex; gap: 3mm; font-size: 6.5pt; align-items: flex-end; }
+    .sj-sign { flex: 1; border-top: 1px solid #172b3a; padding-top: 1mm; }
+    .sj-sign strong { display: block; font-size: 7pt; }
+    .sj-note { flex: 1.2; text-align: right; color: #62727c; }
+    .sj-cut { border-top: 1px dashed #62727c; margin: 2.5mm 0 1.5mm; position: relative; }
+    .sj-cut span { position: absolute; left: 50%; top: -2.6mm; transform: translateX(-50%); background: #fff; color: #62727c; font-size: 5.5pt; letter-spacing: .12em; padding: 0 1.5mm; }
+  </style>
+  <div class="sj-sheet">${copies.map((copy, index) => `${index ? '<div class="sj-cut"><span>POTONG DI SINI</span></div>' : ''}${copyHtml(copy)}`).join('')}</div>`;
+}
+
+/** Dot-matrix continuous form: 9.5 x 11 in, monochrome, 1 copy. */
+export function printDeliveryDotMatrixHtml(db, delivery) {
+  const d = deliveryPrintData(db, delivery);
+  return `<style>
+    .dm { font-family: "Courier New", ui-monospace, monospace; font-size: 9pt; line-height: 1.25; color: #000; }
+    .dm-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 4mm; }
+    .dm-head strong { font-size: 14pt; letter-spacing: .06em; }
+    .dm-brand { border: 1.5pt solid #000; padding: 1mm 2mm; font-weight: 700; font-size: 10pt; text-transform: uppercase; }
+    .dm-doc { text-align: right; font-size: 8pt; }
+    .dm-rule { border-top: 1.5pt solid #000; margin: 2mm 0; }
+    .dm-row { display: flex; gap: 3mm; align-items: baseline; margin: 1mm 0; }
+    .dm-row span { font-size: 7pt; letter-spacing: .08em; }
+    .dm-row strong { font-size: 13pt; letter-spacing: .08em; }
+    .dm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin: 2mm 0; }
+    .dm-box { border: 1pt solid #000; padding: 2mm; min-height: 16mm; font-size: 8pt; }
+    .dm-box span { display: block; font-size: 6.5pt; letter-spacing: .08em; text-transform: uppercase; }
+    .dm-lines { width: 100%; border-collapse: collapse; margin: 2mm 0; font-size: 8pt; }
+    .dm-lines th, .dm-lines td { border: 1pt solid #000; padding: 1mm 1.5mm; }
+    .dm-meta { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1mm 4mm; font-size: 8pt; margin: 2mm 0; }
+    .dm-note { border: 1pt solid #000; padding: 1.5mm; font-size: 7.5pt; margin: 2mm 0; }
+    .dm-sign { display: flex; gap: 8mm; margin-top: 8mm; font-size: 8pt; }
+    .dm-sign div { flex: 1; border-top: 1pt solid #000; padding-top: 1mm; }
+    .dm-track { font-size: 7pt; margin-top: 3mm; word-break: break-all; }
+  </style>
+  <div class="dm">
+    <div class="dm-head">
+      <div><strong>LAVISHOME</strong><br>PT Lavishome Tekstil Nusantara</div>
+      <div class="dm-brand">${esc(d.brand.short)}</div>
+      <div class="dm-doc">SURAT JALAN<br><strong>${esc(delivery.id)}</strong><br>${esc(delivery.date)}</div>
+    </div>
+    <div class="dm-rule"></div>
+    <div class="dm-row"><span>NO. RESI / AWB</span><strong>${esc(delivery.trackingRef || '-')}</strong></div>
+    <div class="dm-grid">
+      <div class="dm-box"><span>Pengirim</span>PT Lavishome Tekstil Nusantara<br>Gudang Jakarta / Bali<br>PIC: ${esc(delivery.pic)}</div>
+      <div class="dm-box"><span>Penerima</span>${esc(d.recipient)}<br>${esc(d.recipientPhone)}<br>${esc(d.address)}</div>
+    </div>
+    <table class="dm-lines"><thead><tr><th>Barang</th><th>Qty</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td>${esc(line.description)}</td><td>${deliveryQty(line)}</td><td>${esc(line.note || '-')}</td></tr>`).join('')}</tbody></table>
+    <div class="dm-meta">
+      <div>Faktur: ${esc(delivery.invoiceId)}</div><div>Status: ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
+      <div>Berat / koli: ${delivery.weightKg ? `${delivery.weightKg} kg` : '-'} / ${delivery.pieces || '-'}</div><div>ETA: ${esc(delivery.eta || '-')}</div>
+      <div>Ongkir: ${fmt.money(delivery.shippingCost || 0)}</div><div>Asuransi: ${fmt.money(delivery.insurance || 0)}</div>
+      <div>Driver: ${esc(delivery.driver || '-')}</div><div>Kendaraan: ${esc(delivery.plateNumber || '-')}</div>
+    </div>
+    ${delivery.instructions || delivery.notes ? `<div class="dm-note">${esc([delivery.instructions, delivery.notes].filter(Boolean).join(' · '))}</div>` : ''}
+    <div class="dm-sign"><div>PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div><div>Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div></div>
+    ${d.trackUrl ? `<div class="dm-track">Lacak: ${esc(d.trackUrl)}</div>` : ''}
+    <div class="dm-track">Bukan faktur · stok keluar saat faktur ${esc(delivery.invoiceId)} terbit.</div>
+  </div>`;
 }
 
 export function printSalesOrderHtml(db, order) {

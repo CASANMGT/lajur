@@ -23,8 +23,9 @@ import { isAdvancedMode } from '../../domain/features.js';
 import { availableMm, partAvailable, sellableRolls, totalParts } from '../../domain/inventory.js';
 import { scanAwbImage } from '../awb.js';
 import { enableArrivalNotifications, notifyArrival } from '../notify.js';
-import { pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
-import { printDeliveryHtml, printInvoiceHtml, printTaxInvoiceHtml } from './print.js';
+import { courierMark, pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
+import { printInvoiceHtml, printTaxInvoiceHtml } from './print.js';
+import { openDeliveryPrint } from './delivery-print.js';
 
 let statusFilter = 'all';
 
@@ -278,7 +279,7 @@ function deliveryCard(inv, delivery, role) {
         <div class="row-between"><span class="small muted">Surat jalan</span><span class="small mono">${esc(delivery.id)}</span></div>
         <div class="row-between"><span class="small muted">PIC pengiriman</span><span class="small">${esc(delivery.pic)}${delivery.picRole ? ` · ${esc({ manager: 'Manajer', sales: 'Sales', operator: 'Operator gudang', driver: 'Driver' }[delivery.picRole] ?? delivery.picRole)}` : ''}</span></div>
         <div class="row-between"><span class="small muted">Penerima</span><span class="small">${esc(delivery.recipientName || '—')}<div class="xs muted">${esc(delivery.recipientPhone || '')}</div></span></div>
-        <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
+        <div class="row-between"><span class="small muted">Kurir / layanan</span><span class="small">${courierMark(delivery.courier, { small: true })} ${esc(COURIERS[delivery.courier]?.label ?? delivery.courier ?? 'Internal')} · ${esc(delivery.service || 'REG')}${delivery.trackingRef ? `<div class="xs muted mono">${esc(delivery.trackingRef)}</div>` : ''}</span></div>
         ${deliveryTrackingUrl(delivery) ? `<div class="row-between"><span class="small muted">Lacak paket</span><span class="row" style="gap:6px;justify-content:flex-end"><a class="small strong" href="${esc(deliveryTrackingUrl(delivery))}" target="_blank" rel="noopener">${esc(trackingLabel(delivery) || 'Buka link lacak')} →</a><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${delivery.id}">${icon('copy')} Salin</button></span></div>` : ''}
         <div class="row-between"><span class="small muted">Estimasi tiba</span><span class="small">${esc(delivery.eta || '—')}</span></div>
         ${delivery.awbImage ? `<div class="reward"><img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e4ded2" /></div>` : ''}
@@ -293,7 +294,8 @@ function deliveryCard(inv, delivery, role) {
         <button class="btn btn-sm" data-act="print-delivery">${icon('printer')} Surat jalan</button>
         ${deliveryTrackingUrl(delivery) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(delivery))}" target="_blank" rel="noopener">${icon('link')} Lacak paket</a>` : ''}
         ${delivery.status !== 'confirmed' ? `<button class="btn btn-sm" data-act="notify-arrival">${icon('bell')} Notifikasi tiba</button>` : ''}
-        ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit surat jalan</button><button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
+        ${delivery.status !== 'confirmed' && can(role, 'invoice.create') ? `<button class="btn btn-sm" data-act="edit-delivery">Edit surat jalan</button>` : ''}
+        ${delivery.status === 'draft' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="dispatch-delivery">Kirim</button>` : ''}
         ${delivery.status === 'dispatched' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="deliver-delivery">Tandai tiba</button>` : ''}
         ${delivery.status === 'delivered' && can(role, 'invoice.create') ? `<button class="btn btn-sm btn-primary" data-act="confirm-delivery">Konfirmasi terima</button>` : ''}
       </div>
@@ -722,7 +724,7 @@ function deliveryFields(db, delivery, customer, user = null) {
     ${field('Estimasi tiba', `<input class="input" type="date" name="eta" value="${esc(delivery?.eta ?? '')}" />`, { hint: 'Perkiraan tanggal barang tiba di pelanggan.' })}
     ${field('Penerima', `<input class="input" name="recipientName" value="${esc(delivery?.recipientName ?? customer?.name ?? '')}" placeholder="Nama penerima" />`)}
     ${field('Telepon penerima', `<input class="input" name="recipientPhone" value="${esc(delivery?.recipientPhone ?? customer?.phone ?? '')}" />`)}
-    ${field('Kurir / pihak ketiga', `<select class="select" name="courier">${Object.entries(COURIERS).map(([k, v]) => `<option value="${k}" ${delivery?.courier === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
+    ${field('Kurir / pihak ketiga', `<div class="row" style="gap:8px;flex-wrap:nowrap"><select class="select" name="courier" style="flex:1">${Object.entries(COURIERS).map(([k, v]) => `<option value="${k}" ${delivery?.courier === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select><span data-courier-preview>${courierMark(delivery?.courier ?? 'internal')}</span></div>`)}
     ${field('Layanan', `<select class="select" name="service">${servicesForCourier(delivery?.courier ?? 'internal').map((s) => `<option value="${s}" ${delivery?.service === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`)}
     <div class="span-2" data-internal-fleet>
       <div class="form-grid">
@@ -831,6 +833,8 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
   const syncMode = () => {
     const internal = form.courier.value === 'internal';
     syncService();
+    const preview = form.querySelector('[data-courier-preview]');
+    if (preview) preview.innerHTML = courierMark(form.courier.value);
     setHidden('[data-internal-fleet]', !internal);
     setHidden('[data-third-party]', internal);
     if (!internal) {
@@ -981,7 +985,7 @@ export function openEditDelivery(ctx, delivery) {
   const customer = byId(ctx.db.customers, delivery.customerId);
   openModal({
     title: `Edit surat jalan ${delivery.id}`,
-    description: 'PIC, pelanggan/penerima, estimasi tiba, driver, kurir, AWB, dan alamat dapat diubah sebelum barang dikirim.',
+    description: 'PIC, pelanggan/penerima, estimasi tiba, driver, kurir, AWB, dan alamat dapat diubah selama surat jalan belum dikonfirmasi.',
     wide: true,
     submitLabel: 'Simpan',
     body: deliveryFields(ctx.db, delivery, customer, ctx.user),
@@ -1078,7 +1082,7 @@ export function mount(ctx) {
     on('new-delivery', () => openCreateDelivery(ctx, inv));
     on('print-delivery', () => {
       const delivery = deliveryForInvoice(ctx.db, inv.id);
-      if (delivery) printDocument(`Surat jalan ${delivery.id}`, printDeliveryHtml(ctx.db, delivery));
+      if (delivery) openDeliveryPrint(ctx.db, delivery);
     });
     on('edit-delivery', () => {
       const delivery = deliveryForInvoice(ctx.db, inv.id);
