@@ -5,6 +5,18 @@
 
 export const CHANGELOG = [
   {
+    version: '2.40.0',
+    date: '2026-11-21',
+    name: 'Opname QR, Ada/Tidak Ada & Hasil',
+    items: [
+      'Stock opname memisahkan roll yang sudah dicek dan belum dicek.',
+      'Setiap roll bisa ditandai Ada atau Tidak ada tanpa mengisi meter.',
+      'Scan QR menandai roll ada dan langsung fokus ke kolom meter (opsional).',
+      'Nama penghitung tersimpan per roll; hasil opname menampilkan peserta, durasi, dan meter hilang.',
+      'Penjualan internal memakai nama "Perusahaan Internal".',
+    ],
+  },
+  {
     version: '2.39.1',
     date: '2026-11-21',
     name: 'Label PT. Dalam',

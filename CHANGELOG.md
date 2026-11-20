@@ -2,6 +2,27 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.40.0] — 2026-11-21
+
+**Release name: Opname QR, Ada/Tidak Ada & Hasil.** Opname now separates counted and uncounted rolls, allows presence-only marks, records who counted, and reports participants/duration/missing metres.
+
+### Added
+
+- **Sudah dicek / Belum dicek** chips with live counts, alongside Koleksi and Motif filters.
+- **Mark Ada / Tidak ada** per row without entering metres. Presence-only rows are valid and keep the system metres.
+- **QR scan marks presence:** scanning a roll sets it to Ada, focuses the metre input, and leaves the operator the choice to enter metres or leave it presence-only.
+- **Who counted:** each line stores `countedBy` + `countedAt`; the row and berita acara show the name.
+- **Hasil opname card:** participants, duration, total checked, measured, presence-only, missing, variance and system/physical metres. Berita acara prints the same.
+- **Mock result:** seeded OPN-001 now includes Henny + Fauzi as participants and a realistic duration.
+- **Internal naming:** “Jual ke PT. Dalam” is now **“Jual ke Perusahaan Internal”**, and notices say **Perusahaan Internal**.
+
+### Verification
+
+- `node --test`: **102 passed**; module check **62/62**; render check passes.
+- Browser QA: OPN-002 showed 14 rolls; marking Ada changed counts to 1 checked/13 unchecked; marking Tidak ada changed 2/12; scanning `RL-0025` set presence and focused its metre field.
+
+---
+
 ## [2.39.1] — 2026-11-21
 
 **Release name: Label PT. Dalam.** Renamed the internal-sale label from “PT lain” to **PT. Dalam** in Penjualan and the internal-PO notice.

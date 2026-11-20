@@ -3,7 +3,7 @@
 import { esc, icon, fmt, badge, toast, openModal, field, confirmAction, printDocument, promptText } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
 import {
-  OPNAME_STATUS, approveOpname, cancelOpname, getSession, opnameSummary, saveCounts, startOpname,
+  OPNAME_STATUS, approveOpname, cancelOpname, getSession, opnameResult, opnameSummary, saveCounts, startOpname,
   submitOpname,
 } from '../../domain/opname.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
@@ -77,6 +77,7 @@ function renderDetail(ctx) {
   if (!s) return `${pageHead({ title: 'Tidak ditemukan' })}<div class="notice notice-danger">${icon('alert')}<div>Opname ${esc(route.id)} tidak ada.</div></div>`;
   const wh = warehouseOf(db, s.warehouseId);
   const sum = opnameSummary(s);
+  const result = opnameResult(s);
   const reviewing = s.status === 'review';
   const counting = s.status === 'counting';
   const posted = s.status === 'posted';
@@ -96,17 +97,20 @@ function renderDetail(ctx) {
     const sku = byId(db.skus, line.skuId);
     const collectionName = line.collectionName ?? sku?.collectionName ?? '';
     const motifName = line.motifName ?? sku?.colourName ?? sku?.colourCode ?? '';
-    const variance = line.countedMm === null ? null : line.countedMm - line.expectedMm;
-    const status = line.countedMm === null
+    const effective = line.countedMm !== null ? line.countedMm : (line.present === true ? line.expectedMm : 0);
+    const variance = line.present === null && line.countedMm === null ? null : effective - line.expectedMm;
+    const status = line.present === null && line.countedMm === null
       ? badge('Belum dicek', 'muted')
-      : line.countedMm <= 0
+      : line.present === false || line.countedMm === 0
         ? badge('Tidak ada', 'danger')
-        : badge(`Ada · ${fmt.m(line.countedMm)}`, 'ok');
-    return `<tr data-opname-row data-collection="${esc(collectionName)}" data-motif="${esc(motifName)}">
+        : line.countedMm === null
+          ? badge('Ada · meter belum diisi', 'info')
+          : badge(`Ada · ${fmt.m(line.countedMm)}`, 'ok');
+    return `<tr data-opname-row data-roll="${esc(line.rollId)}" data-collection="${esc(collectionName)}" data-motif="${esc(motifName)}" data-present="${line.present === true ? 'true' : line.present === false ? 'false' : ''}">
       <td><span class="mono strong">${esc(line.rollId)}</span><div class="xs muted">${esc(line.lot)}</div></td>
       <td>${esc(collectionName)} · ${esc(motifName)}<div class="xs muted">${esc(sku?.code)}${roll?.bin ? ` · Rak ${esc(roll.bin)}` : ''}</div></td>
-      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="0" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? '—' : fmt.m(line.countedMm)}</td>`}
-      <td data-opname-status>${status}</td>
+      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null || line.countedMm === 0 ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="meter" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? (line.present === true ? 'Ada' : '—') : fmt.m(line.countedMm)}</td>`}
+      <td data-opname-status>${status}${line.countedBy ? `<div class="xs muted">oleh ${esc(line.countedBy)}</div>` : ''}${counting ? `<div class="row" style="gap:4px;margin-top:4px"><button class="btn btn-sm btn-ghost" type="button" data-mark-present="${line.rollId}">Ada</button><button class="btn btn-sm btn-ghost" type="button" data-mark-absent="${line.rollId}">Tidak ada</button></div>` : ''}</td>
       ${reviewing || posted ? `<td class="num muted">${fmt.m(line.expectedMm)}</td><td class="num ${variance ? 'strong' : ''}">${variance === null ? '—' : fmt.m(variance, { signed: true })}</td>` : ''}
     </tr>`;
   }).join('');
@@ -136,6 +140,22 @@ function renderDetail(ctx) {
       ${statCard({ label: 'Penyesuaian', value: String(s.adjustments?.length ?? 0), meta: 'Baris diposting' })}
     </div>
 
+    ${reviewing || posted ? `<section class="card card-pad" style="margin-bottom:16px">
+      <div class="row-between"><div><h2>Hasil opname</h2><p class="xs muted">Siapa yang menghitung, berapa lama, dan apa yang hilang.</p></div>${badge(result.complete ? 'Lengkap' : 'Belum lengkap', result.complete ? 'ok' : 'warn')}</div>
+      <div class="grid grid-3" style="margin-top:12px">
+        <div class="kv"><span>Peserta</span><strong class="small">${result.participants.length ? result.participants.map((name) => `<span class="badge no-dot">${esc(name)}</span>`).join(' ') : '—'}</strong></div>
+        <div class="kv"><span>Durasi</span><strong>${result.durationMinutes} menit</strong></div>
+        <div class="kv"><span>Total dicek</span><strong>${result.countedLines}/${result.lines} roll</strong></div>
+        <div class="kv"><span>Dengan meter</span><strong>${result.measuredLines} roll</strong></div>
+        <div class="kv"><span>Ada tanpa meter</span><strong>${result.presenceOnly} roll</strong></div>
+        <div class="kv"><span>Tidak ada</span><strong>${result.missingLines} roll</strong></div>
+        <div class="kv"><span>Selisih meter</span><strong>${fmt.m(result.varianceMm, { signed: true })}</strong></div>
+        <div class="kv"><span>Fisik terhitung</span><strong>${fmt.m(result.countedMm)}</strong></div>
+        <div class="kv"><span>Sistem</span><strong>${fmt.m(result.expectedMm)}</strong></div>
+      </div>
+      ${result.missingRolls.length ? `<div class="notice notice-warn" style="margin-top:12px">${icon('alert')}<div><strong>Roll tidak ada:</strong> ${result.missingRolls.map((id) => `<span class="mono">${esc(id)}</span>`).join(', ')}</div></div>` : '<div class="notice notice-teal" style="margin-top:12px">' + icon('check') + '<div>Semua roll yang dicek ditemukan.</div></div>'}
+    </section>` : ''}
+
     <section class="card">
       <div class="card-head">
         <div><h2>${counting ? 'Hitung fisik (buta)' : 'Hasil hitung'}</h2><p>${counting ? 'Masukkan panjang aktual sesuai hitungan fisik di rak.' : 'Bandingkan dengan saldo sistem dan nilai selisih.'}</p></div>
@@ -147,6 +167,9 @@ function renderDetail(ctx) {
         </div>
         <div class="field"><label for="opname-motif">Motif / warna</label>
           <select class="select" id="opname-motif"><option value="">Semua motif</option>${[...new Set(sortedLines.map((line) => line.motifName ?? byId(db.skus, line.skuId)?.colourName ?? byId(db.skus, line.skuId)?.colourCode ?? '').filter(Boolean))].sort().map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join('')}</select>
+        </div>
+        <div class="row" style="gap:6px;flex-wrap:wrap">
+          ${[['all', 'Semua'], ['counted', 'Sudah dicek'], ['uncounted', 'Belum dicek']].map(([key, label]) => `<button class="chip" type="button" data-opname-state="${key}" aria-pressed="${key === 'all'}">${label} <span data-opname-state-count="${key}"></span></button>`).join('')}
         </div>
         <span class="small muted" data-opname-count>${sortedLines.length} roll</span>
       </div>
@@ -293,10 +316,15 @@ function openQrScan(ctx, session, onFound) {
 }
 
 function collectCounts() {
-  return [...document.querySelectorAll('[data-count]')].map((input) => ({
-    rollId: input.dataset.count,
-    countedMm: input.value.trim() ? parseM(input.value) : null,
-  }));
+  return [...document.querySelectorAll('[data-count]')].map((input) => {
+    const row = input.closest('tr');
+    const present = row?.dataset.present;
+    return {
+      rollId: input.dataset.count,
+      countedMm: input.value.trim() ? parseM(input.value) : null,
+      present: present === 'true' ? true : present === 'false' ? false : null,
+    };
+  });
 }
 
 function save(ctx, s, { submit = false } = {}) {
@@ -317,14 +345,44 @@ export function mount(ctx) {
     const collectionSel = document.getElementById('opname-collection');
     const motifSel = document.getElementById('opname-motif');
     const countEl = document.querySelector('[data-opname-count]');
+    let stateFilter = 'all';
+    const rowState = (row) => {
+      if (row.dataset.present === 'true' || row.dataset.present === 'false') return 'counted';
+      return row.querySelector('[data-count]')?.value.trim() ? 'counted' : 'uncounted';
+    };
+    const updateStatus = (row) => {
+      const cell = row.querySelector('[data-opname-status]');
+      if (!cell) return;
+      const input = row.querySelector('[data-count]');
+      const raw = input?.value.trim() ?? '';
+      let html;
+      if (row.dataset.present === 'false') html = badge('Tidak ada', 'danger');
+      else if (raw) {
+        const mm = parseM(raw);
+        html = mm <= 0 ? badge('Tidak ada', 'danger') : badge(`Ada · ${fmt.m(mm)}`, 'ok');
+      } else if (row.dataset.present === 'true') html = badge('Ada · meter belum diisi', 'info');
+      else html = badge('Belum dicek', 'muted');
+      cell.querySelectorAll(':scope > .badge').forEach((el) => el.remove());
+      cell.insertAdjacentHTML('afterbegin', html);
+    };
     const refreshFilter = () => {
       const collection = collectionSel?.value ?? '';
       const motif = motifSel?.value ?? '';
       let visible = 0;
+      const counts = { all: 0, counted: 0, uncounted: 0 };
       for (const row of rows) {
-        const show = (!collection || row.dataset.collection === collection) && (!motif || row.dataset.motif === motif);
+        const state = rowState(row);
+        counts.all += 1;
+        counts[state] += 1;
+        const show = (!collection || row.dataset.collection === collection)
+          && (!motif || row.dataset.motif === motif)
+          && (stateFilter === 'all' || state === stateFilter);
         row.hidden = !show;
         if (show) visible += 1;
+      }
+      for (const [key, value] of Object.entries(counts)) {
+        const el = document.querySelector(`[data-opname-state-count="${key}"]`);
+        if (el) el.textContent = `(${value})`;
       }
       if (countEl) countEl.textContent = `${visible} roll`;
     };
@@ -339,13 +397,31 @@ export function mount(ctx) {
     };
     collectionSel?.addEventListener('change', rebuildMotifs);
     motifSel?.addEventListener('change', refreshFilter);
+    document.querySelectorAll('[data-opname-state]').forEach((btn) => btn.addEventListener('click', () => {
+      stateFilter = btn.dataset.opnameState;
+      document.querySelectorAll('[data-opname-state]').forEach((chip) => chip.setAttribute('aria-pressed', String(chip === btn)));
+      refreshFilter();
+    }));
     document.querySelectorAll('[data-count]').forEach((input) => input.addEventListener('input', () => {
-      const cell = input.closest('tr')?.querySelector('[data-opname-status]');
-      if (!cell) return;
+      const row = input.closest('tr');
       const raw = input.value.trim();
-      if (!raw) { cell.innerHTML = badge('Belum dicek', 'muted'); return; }
-      const mm = parseM(raw);
-      cell.innerHTML = mm <= 0 ? badge('Tidak ada', 'danger') : badge(`Ada · ${fmt.m(mm)}`, 'ok');
+      if (raw) row.dataset.present = parseM(raw) <= 0 ? 'false' : 'true';
+      updateStatus(row);
+      refreshFilter();
+    }));
+    document.querySelectorAll('[data-mark-present]').forEach((btn) => btn.addEventListener('click', () => {
+      const row = btn.closest('tr');
+      row.dataset.present = 'true';
+      updateStatus(row);
+      refreshFilter();
+    }));
+    document.querySelectorAll('[data-mark-absent]').forEach((btn) => btn.addEventListener('click', () => {
+      const row = btn.closest('tr');
+      row.dataset.present = 'false';
+      const input = row.querySelector('[data-count]');
+      if (input) input.value = '';
+      updateStatus(row);
+      refreshFilter();
     }));
     document.querySelector('[data-act="scan"]')?.addEventListener('click', () => {
       openQrScan(ctx, s, (line) => {
@@ -354,16 +430,21 @@ export function mount(ctx) {
         setTimeout(() => {
           const input = document.querySelector(`[data-count="${line.rollId}"]`);
           if (input) {
+            const row = input.closest('tr');
+            row.dataset.present = 'true';
+            updateStatus(row);
+            refreshFilter();
             input.scrollIntoView({ block: 'center', behavior: 'smooth' });
             input.focus();
             input.select();
             input.classList.add('scan-hit');
             setTimeout(() => input.classList.remove('scan-hit'), 1800);
           }
-          toast(`Roll ${line.rollId} ditemukan · lot ${line.lot}. Masukkan panjang fisik.`, { tone: 'success' });
+          toast(`Roll ${line.rollId} ditandai ada · lot ${line.lot}. Isi meter bila perlu, atau simpan sebagai ada saja.`, { tone: 'success' });
         }, 80);
       });
     });
+    refreshFilter();
     document.querySelector('[data-act="save"]')?.addEventListener('click', () => {
       try { save(ctx, s); } catch (err) { toast(err.message, { tone: 'error' }); }
     });

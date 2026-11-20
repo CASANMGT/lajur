@@ -62,7 +62,7 @@ export function render(ctx) {
         ${advanced ? `<a class="btn" href="#/pengiriman">${icon('truck')} Surat jalan</a>` : ''}
         <button class="btn" type="button" data-act="payment-ledger">${icon('wallet')} Riwayat pembayaran</button>
         ${can(role, 'invoice.create') && (db.companies ?? []).some((c) => c.id !== ctx.companyId && c.active !== false)
-          ? `<button class="btn" type="button" data-act="internal-sale">${icon('transfer')} Jual ke PT. Dalam</button>` : ''}
+          ? `<button class="btn" type="button" data-act="internal-sale">${icon('transfer')} Jual ke Perusahaan Internal</button>` : ''}
         ${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
     })}
     ${roleHint(role, 'invoice.create', 'Membuat faktur adalah wewenang sales/CS atau manajer.')}
@@ -79,7 +79,7 @@ export function render(ctx) {
       }</button>`).join('')}
     </div>
 
-    ${incomingPOs.length ? `<div class="notice notice-info" style="margin-bottom:14px">${icon('transfer')}<div><strong>${incomingPOs.length} PO internal dari PT. Dalam menunggu.</strong> Bali mengirim permintaan pembelian dari stok Jakarta. <a class="strong" href="#/pembelian?tab=internal">Buka Pembelian internal</a> untuk menyetujui & mengirim.</div></div>` : ''}
+    ${incomingPOs.length ? `<div class="notice notice-info" style="margin-bottom:14px">${icon('transfer')}<div><strong>${incomingPOs.length} PO internal dari Perusahaan Internal menunggu.</strong> Bali mengirim permintaan pembelian dari stok Jakarta. <a class="strong" href="#/pembelian?tab=internal">Buka Pembelian internal</a> untuk menyetujui & mengirim.</div></div>` : ''}
     ${schedule.length ? `<div class="section-title"><h2>Jadwal surat jalan</h2><span class="small muted">Driver, tanggal, dan status pengiriman</span></div>
     <section class="card" style="margin-bottom:16px">
       <div class="table-wrap"><table class="data">
@@ -412,7 +412,7 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice', optio
 
   const modal = openModal({
     title: isOrder ? 'Buat pesanan penjualan'
-      : internal ? `${isPurchase ? 'Pembelian internal dari' : 'Penjualan internal ke'} ${esc(isPurchase ? sellerCompany?.name ?? 'PT. Dalam' : buyerCompany?.name ?? 'PT. Dalam')}`
+      : internal ? `${isPurchase ? 'Pembelian internal dari' : 'Penjualan internal ke'} ${esc(isPurchase ? sellerCompany?.name ?? 'Perusahaan Internal' : buyerCompany?.name ?? 'Perusahaan Internal')}`
         : 'Buat faktur',
     description: isOrder
       ? 'Pesanan tidak mengeluarkan stok. Stok keluar saat pesanan dikonversi menjadi faktur.'

@@ -8,6 +8,7 @@ import { invoiceOutstanding } from '../../domain/sales.js';
 import { COURIERS, DELIVERY_STATUS, courierBrand, deliveryTrackingUrl } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { PRIORITY, TASK_STATUS, TASK_TYPE } from '../../domain/tasks.js';
+import { opnameEffectiveMm, opnameLineDone, opnameResult } from '../../domain/opname.js';
 
 const whName = (db, id) => byId(db.warehouses, id)?.name ?? '—';
 
@@ -617,21 +618,30 @@ export function printInstructionsHtml(db, project) {
 }
 
 export function printOpnameHtml(db, session) {
+  const result = opnameResult(session);
   return `
     <h1>BERITA ACARA STOCK OPNAME</h1>
     <p class="pill">${esc(session.id)} · ${esc(session.warehouseId)}</p>
     <div class="meta" style="margin-top:12px">
       <div><span>Gudang</span><strong>${esc(whName(db, session.warehouseId))}</strong></div>
-      <div><span>Mulai</span><strong>${esc(session.startedDate)}</strong></div>
-      <div><span>Diposting</span><strong>${esc(session.postedAt ? new Date(session.postedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '—')}</strong></div>
+      <div><span>Mulai / selesai</span><strong>${esc(session.startedDate)} → ${esc(session.postedAt ? new Date(session.postedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '—')}</strong></div>
+      <div><span>Durasi</span><strong>${result.durationMinutes} menit</strong></div>
+      <div><span>Peserta</span><strong>${esc(result.participants.join(', ') || session.countedBy || '—')}</strong></div>
+      <div><span>Roll dicek</span><strong>${result.countedLines}/${result.lines} · ada tanpa meter ${result.presenceOnly} · tidak ada ${result.missingLines}</strong></div>
+      <div><span>Selisih meter</span><strong>${fmt.m(result.varianceMm, { signed: true })}</strong></div>
     </div>
     <table>
-      <thead><tr><th>Roll</th><th class="num">Sistem</th><th class="num">Hitungan</th><th class="num">Selisih</th></tr></thead>
-      <tbody>${session.lines.map((l) => `<tr>
-        <td>${esc(l.rollId)}</td><td class="num">${fmt.m(l.expectedMm)}</td>
-        <td class="num">${l.countedMm === null ? '—' : fmt.m(l.countedMm)}</td>
-        <td class="num">${l.countedMm === null ? '—' : fmt.m(l.countedMm - l.expectedMm, { signed: true })}</td>
-      </tr>`).join('')}</tbody>
+      <thead><tr><th>Roll</th><th>Siapa</th><th class="num">Sistem</th><th class="num">Hitungan</th><th class="num">Selisih</th></tr></thead>
+      <tbody>${session.lines.map((l) => {
+        const done = opnameLineDone(l);
+        const effective = opnameEffectiveMm(l);
+        return `<tr>
+        <td>${esc(l.rollId)}</td><td>${esc(l.countedBy || session.countedBy || '—')}</td><td class="num">${fmt.m(l.expectedMm)}</td>
+        <td class="num">${!done ? '—' : l.countedMm === null ? 'Ada (tanpa meter)' : fmt.m(l.countedMm)}</td>
+        <td class="num">${!done ? '—' : fmt.m(effective - l.expectedMm, { signed: true })}</td>
+      </tr>`;
+      }).join('')}</tbody>
     </table>
+    ${result.missingRolls.length ? `<p class="note">Tidak ditemukan: ${result.missingRolls.map((id) => esc(id)).join(', ')}</p>` : ''}
     <p class="note">Alasan persetujuan: ${esc(session.approveReason || '—')}</p>`;
 }

@@ -14,7 +14,7 @@ import { createDelivery } from '../src/domain/deliveries.js';
 import { printDeliveryHtml, printLabelHtml } from '../src/ui/views/print.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
 import { createPO, receivePO } from '../src/domain/purchasing.js';
-import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
+import { approveOpname, opnameResult, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
 import {
   applyDepositToInvoice, createSample, createSampleBook, createCustomer, createSampleRequest,
@@ -46,6 +46,27 @@ function expectError(fn, code) {
 }
 
 const rollOf = (db, id) => db.rolls.find((r) => r.id === id);
+
+test('opname can mark present without meters and missing rolls separately', () => {
+  const db = buildSeed();
+  const session = startOpname(db, { warehouseId: 'wh-bali', user: BALI });
+  const counts = session.lines.map((line, index) => (
+    index === 0
+      ? { rollId: line.rollId, present: true }
+      : index === 1
+        ? { rollId: line.rollId, present: false }
+        : { rollId: line.rollId, countedMm: line.expectedMm }
+  ));
+  saveCounts(db, { sessionId: session.id, counts, user: BALI });
+  submitOpname(db, { sessionId: session.id, user: BALI });
+  const result = opnameResult(session);
+  assert.equal(result.presenceOnly, 1);
+  assert.equal(result.missingLines, 1);
+  assert.equal(result.countedLines, session.lines.length);
+  assert.equal(result.complete, true);
+  assert.ok(result.participants.includes('Nicolas'));
+  assert.ok(result.missingRolls.includes(session.lines[1].rollId));
+});
 
 test('stock opname lines sort by collection, motif then roll', () => {
   const db = buildSeed();

@@ -805,6 +805,8 @@ export function buildSeed({ dataset = 'main' } = {}) {
     countedMm: l.rollId === roll(15) ? l.expectedMm - 500 : l.expectedMm,
   }));
   saveCounts(db, { sessionId: session.id, counts, user: op });
+  session.lines.forEach((line, index) => { line.countedBy = index % 3 === 0 ? 'Henny' : 'Fauzi'; });
+  session.startedAt = new Date(Date.now() - 95 * 60 * 1000).toISOString();
   submitOpname(db, { sessionId: session.id, user: op });
   approveOpname(db, { sessionId: session.id, user: mgr, reason: 'Selisih 0,5 m pada RL-0015; kain sobek saat handling, disetujui.' });
 
