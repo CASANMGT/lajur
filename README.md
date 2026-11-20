@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-83%2F83-brightgreen) ![Version](https://img.shields.io/badge/version-2.25.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-84%2F84-brightgreen) ![Version](https://img.shields.io/badge/version-2.26.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 83 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 84 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -81,6 +81,14 @@ DATABASE_URL=postgres://... npm run server
 The PostgreSQL store keeps the versioned domain document in JSONB inside ACID transactions, with optimistic revision checks (a stale writer gets `REVISION_CONFLICT`), audit rows, users/sessions and idempotency tables. The JSON-file store remains the zero-setup fallback when `DATABASE_URL` is unset.
 
 The static Vercel demo intentionally remains browser-local; the UI is not yet wired to this API. See [server/README.md](./server/README.md) for endpoints, RBAC, PostgreSQL setup and production gaps.
+
+### Production database & backup (recommended)
+
+- **Do not use Vercel static `/ localStorage` as the production stock database.** It is per-browser, has no shared concurrency, and cannot support multiple staff or devices.
+- **Recommended production topology:** Vercel (or any static host) for the UI, `server/server.mjs` on a Node host (Render/Fly/VM) for the API, and **PostgreSQL** (Supabase/Neon/RDS/Cloud SQL) for the database.
+- **Seed data is only for first-run/demo.** Do not update production stock by editing `src/domain/seed.js` or by re-syncing an Excel in one browser. The Excel import should go through the API and a PostgreSQL transaction so every user sees the same stock.
+- **Backups:** daily `pg_dump` plus provider point-in-time recovery/WAL, stored offsite; run a restore drill monthly. Keep the app-level JSON backup for portability, but it is not a replacement for database backups.
+- **Excel sync:** upload the dated Excel → preview → archive old rolls → import new rolls → commit in one transaction. Keep `meta.stockSyncHistory`/audit rows for the date and source.
 
 ---
 
@@ -239,8 +247,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **83 passed, 0 failed** (81 domain/UI + 2 auth) |
-| Module import check | **51/51 modules** |
+| `node --test` | **84 passed, 0 failed** (82 domain/UI + 2 auth) |
+| Module import check | **53/53 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -406,7 +414,7 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.25.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.26.0`), changelog and GitHub Actions CI.
 
 ### Partial
 

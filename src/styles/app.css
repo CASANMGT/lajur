@@ -1854,6 +1854,57 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
 }
 .roll-pick-meta strong { color: var(--ink); font-variant-numeric: tabular-nums; }
 
+/* ----------------------------------------------------- collection drilldown */
+.collection-card { overflow: hidden; }
+.collection-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  padding: 14px 16px;
+  background: var(--ivory-50);
+  border-bottom: 1px solid var(--line);
+}
+.collection-summary::-webkit-details-marker { display: none; }
+.collection-summary::before { content: "+"; color: var(--teal); font-size: 12px; }
+.collection-card[open] > .collection-summary::before { content: "−"; }
+.collection-summary .num { margin-left: auto; }
+.collection-body { padding-top: 10px; }
+.motif-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--paper);
+}
+.motif-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  flex-wrap: wrap;
+}
+.motif-summary::-webkit-details-marker { display: none; }
+.motif-summary::before { content: "+"; color: var(--teal); font-size: 12px; }
+.motif-card[open] > .motif-summary::before { content: "−"; }
+.motif-title { flex: 1; display: grid; gap: 2px; min-width: 160px; }
+.motif-summary .num { margin-left: auto; white-space: nowrap; }
+.motif-card > .tree-head, .motif-card > .tree-nodes { padding-left: 12px; padding-right: 12px; }
+.motif-card > .tree-nodes { padding-bottom: 10px; }
+
+/* ---------------------------------------------------------- stock top list */
+.stock-top { margin-bottom: 16px; }
+.stock-top-list { display: grid; gap: 9px; }
+.stock-top-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
+.stock-top-label { display: grid; gap: 1px; min-width: 0; }
+.stock-top-label strong { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stock-bar { grid-column: 1 / -1; height: 5px; background: var(--ivory-200); border-radius: 99px; overflow: hidden; }
+.stock-bar span { display: block; height: 100%; background: var(--teal); border-radius: inherit; }
+
 /* ------------------------------------------------------- stock availability */
 .group-title {
   font-size: 10px;

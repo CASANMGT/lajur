@@ -271,6 +271,7 @@ export function syncImportedStock(db, {
     by: user?.name ?? 'Sistem',
   };
   db.meta = db.meta ?? {};
+  db.meta.stockSyncHistory = [...(db.meta.stockSyncHistory ?? []), summary];
   db.meta.stockSync = summary;
   audit(db, user, 'sinkron_stok', 'dataset', 'main',
     `${summary.rolls} roll · ${summary.metres} m · ${summary.samples} sample · ${summary.archivedRolls} arsip`);

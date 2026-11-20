@@ -220,6 +220,25 @@ export function updateSampleStock(db, {
   return stock;
 }
 
+/** Soft-delete a buku sample stock row; distribution history remains valid. */
+export function deleteSampleStock(db, { id, user }) {
+  const stock = getSampleStock(db, id);
+  assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok buku sample tidak ditemukan.');
+  assert(stock.active !== false, 'SAMPLE_STOCK_DELETED', 'Buku sample ini sudah dihapus.');
+  stock.active = false;
+  stock.deletedAt = isoNow();
+  stock.deletedBy = user?.name ?? 'Sistem';
+  stock.qty = 0;
+  stock.updatedAt = isoNow();
+  stock.history = stock.history ?? [];
+  stock.history.unshift({
+    at: isoNow(), action: 'Hapus buku sample', qty: 0, by: user?.name ?? 'Sistem',
+    note: 'Stok dihapus dari katalog; riwayat sample pelanggan tetap tersimpan.',
+  });
+  audit(db, user, 'hapus_stok_sample', 'sampleStock', stock.id, 'Soft delete');
+  return stock;
+}
+
 /** Customer-level sample and purchase history. */
 export function sampleCustomerStats(db, customerId = null) {
   const customers = customerId

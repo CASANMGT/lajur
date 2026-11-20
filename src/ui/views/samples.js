@@ -1,11 +1,11 @@
 /** Sample & Deposit — dedicated customer-sample and deposit workspace. */
 
 import {
-  esc, icon, fmt, badge, toast, openModal, field, imageToDataUrl,
+  esc, icon, fmt, badge, toast, openModal, field, imageToDataUrl, confirmAction,
 } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
-  SAMPLE_MODE, createSample, depositBalance, linkSampleToInvoice, procureSampleStock,
+  SAMPLE_MODE, createSample, deleteSampleStock, depositBalance, linkSampleToInvoice, procureSampleStock,
   refundDeposit, sampleCollectionStats, sampleCustomerStats, updateSampleStock,
 } from '../../domain/crm.js';
 import { settingsOf } from '../../domain/settings.js';
@@ -29,7 +29,7 @@ export function render(ctx) {
   const collectionStats = sampleCollectionStats(db);
   const customerStats = sampleCustomerStats(db).filter((s) => s.total > 0)
     .sort((a, b) => b.total - a.total || String(b.lastDate).localeCompare(String(a.lastDate)));
-  const stocks = db.sampleStocks ?? [];
+  const stocks = (db.sampleStocks ?? []).filter((s) => s.active !== false);
   const filteredStocks = stocks.filter((s) => filter.stock === 'all'
     || (filter.stock === 'available' && s.qty > 0)
     || (filter.stock === 'unavailable' && s.qty <= 0));
@@ -77,7 +77,7 @@ export function render(ctx) {
             <td>${s.qty <= 0 ? badge('Habis', 'danger') : s.qty <= (s.minQty ?? 1) ? badge('Menipis', 'warn') : badge('Tersedia', 'ok')}</td>
             <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
               ${s.qty > 0 && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" type="button" data-give-stock="${s.id}">Beri buku sample</button>` : ''}
-              ${role === 'manager' ? `<button class="btn btn-sm" type="button" data-edit-stock="${s.id}">Edit</button>` : ''}
+              ${role === 'manager' ? `<button class="btn btn-sm" type="button" data-edit-stock="${s.id}">Edit</button><button class="btn btn-sm btn-danger" type="button" data-delete-stock="${s.id}">Hapus</button>` : ''}
               <button class="btn btn-sm" type="button" data-procurement="${s.id}">Riwayat</button>
             </div></td>
           </tr>`;
@@ -381,6 +381,20 @@ export function mount(ctx) {
   document.querySelectorAll('[data-edit-stock]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.editStock);
     if (stock) openEditStock(ctx, stock);
+  }));
+  document.querySelectorAll('[data-delete-stock]').forEach((btn) => btn.addEventListener('click', async () => {
+    const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.deleteStock);
+    if (!stock) return;
+    const collection = byId(ctx.db.collections, stock.collectionId);
+    const ok = await confirmAction({
+      title: `Hapus buku sample ${collection?.name ?? ''}?`,
+      message: 'Buku sample dihapus dari katalog stok. Riwayat distribusi ke pelanggan tetap tersimpan.',
+      confirmLabel: 'Hapus buku sample',
+      danger: true,
+    });
+    if (!ok) return;
+    ctx.store.update((db) => deleteSampleStock(db, { id: stock.id, user: ctx.user }));
+    toast('Buku sample dihapus dari katalog.', { tone: 'success' });
   }));
   document.querySelectorAll('[data-give-stock]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.giveStock);

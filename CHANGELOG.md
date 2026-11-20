@@ -2,6 +2,34 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.26.0] — 2026-11-20
+
+**Release name: Workspace Stok & Impor Excel.** Defaults to a collapsed collection list with stock-only drill-down, adds stock/motif analytics, cascading WA share, sample deletion, and dated Excel import with backup.
+
+### Added
+
+- **Default Koleksi view:** Stok & Roll opens on a collapsed collection list, only collections with available stock. Click a collection to see motifs; click a motif to see lots/rolls. The old list/tree views remain.
+- **Stock statistics:** total available rolls, collections with stock, active motifs, plus **Top koleksi** and **Top motif** bars.
+- **Motif details:** each motif shows colour name/code, width, swatch, roll count, available metres and the underlying lot/roll rows.
+- **Cascading WA share:** choose collection → motif; the modal shows available rolls/metres and builds a message only for that scope. Defaults to the collection with the most stock.
+- **Delete buku sample:** manager-only soft delete; the stock row disappears but distribution history stays valid.
+- **Dated Excel import:** manager can upload `.xlsx`, choose the stock date, preview SKU/roll/metre/sample counts, download a full database backup, then sync. The parser reads `NAMA WARNA` / `STOK_PER_ROLL` columns and handles the old file layout.
+- **Sync history:** each import appends to `meta.stockSyncHistory`; the latest sync drives the stock notice.
+
+### Changed
+
+- Default stock filter is now **Hanya ada stok**; reset restores that default.
+- The stock page notice shows the latest synced date/source and archived-roll count.
+- Documentation now explains the production database/backup recommendation: Vercel static + localStorage is demo-only; production is API + PostgreSQL with `pg_dump`/PITR and restore drills.
+
+### Verification
+
+- `node --test`: **84 passed**.
+- Browser QA: default Koleksi view collapsed; stats show 2,175 rolls / 35 collections / 257 motifs; collection→motif→lot drill-down works; WA collection→motif preview shows `ESPRIT · 1-1 — 6 roll · 663.7 m`; sample delete removes the row and preserves history; Excel upload preview reads 257 SKUs / 2,175 rolls / 144,590.62 m from the real file.
+- Version bumped to 2.26.0; schema 20 and backup v20 unchanged.
+
+---
+
 ## [2.25.0] — 2026-11-20
 
 **Release name: Sinkron Stok 13 Nov 2026.** Imports the actual 13 November 2026 Excel stock list through a manager-only, preview-and-confirm action.

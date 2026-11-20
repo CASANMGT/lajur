@@ -23,6 +23,7 @@ import { changeSellPrice, sellPriceHistory } from '../src/domain/pricing.js';
 import { invoicesWithoutDelivery } from '../src/domain/deliveries.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
 import { syncImportedStock } from '../src/domain/stock-sync.js';
+import { buildStockPlanFromRows } from '../src/domain/stock-plan.js';
 import { migrate } from '../src/data/store.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
 
@@ -922,4 +923,20 @@ test('bundled 13 Nov 2026 stock plan matches the confirmed totals', () => {
   assert.equal(plan.skus.reduce((total, sku) => total + sku.rolls.reduce((sum, group) => sum + group.count, 0), 0), 2175);
   assert.equal(Math.round(plan.skus.reduce((total, sku) => total + sku.rolls.reduce((sum, group) => sum + group.count * group.lengthM, 0), 0) * 100) / 100, 144590.62);
   assert.equal(plan.samples.reduce((total, sample) => total + sample.qty, 0), 40);
+});
+
+test('Excel stock rows produce a dated plan and skip fee/folder rows', () => {
+  const rows = [
+    ['NAMA WARNA', 'ESTIMASI_DTG', 'TTL_ROLL', 'TTL_SATUAN', 'STOK_PER_ROLL'],
+    ['TEST A1', '1', '', '100', '(2)50.00'],
+    ['TEST SAMPLE', '1', '', '20', '(1)20.00'],
+    ['BIAYA MATERAI', '1', '', '300', '(1)300.00'],
+    ['FOLDER TEST', '1', '', '50', '(1)50.00'],
+  ];
+  const plan = buildStockPlanFromRows(rows, { date: '2026-11-01', source: 'test.xlsx' });
+  assert.equal(plan.key, 'excel-2026-11-01');
+  assert.equal(plan.skus.length, 1);
+  assert.equal(plan.skus[0].rolls[0].count, 2);
+  assert.equal(plan.samples.length, 1);
+  assert.equal(plan.collections.length, 1);
 });
