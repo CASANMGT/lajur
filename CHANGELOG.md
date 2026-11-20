@@ -2,6 +2,22 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.28.1] — 2026-11-20
+
+**Release name: Perbaikan Restore Database.** Patch for the JSON upload path after a dated stock sync.
+
+### Fixed
+
+- `validateBackup` no longer rejects `sellPriceHistory` rows whose SKU or part was archived by a later stock sync. This made a full-dataset export impossible to upload back into the app.
+- Verified the 13 Nov 2026 dataset (2.203 rolls including archived rows, 20 customers) restores into the new `lavishome.vercel.app` origin.
+
+### Verification
+
+- `node --test`: **89 passed**.
+- Module import check: **58 modules**; render check passes.
+
+---
+
 ## [2.28.0] — 2026-11-20
 
 **Release name: Faktur per Roll & Sinkron Supabase.** Collection → motif → roll invoice entry with whole-roll defaults, surat jalan/tax actions from Penjualan, customer delivery maps with PIC, database download/upload, in-app changelog, stock sorting, and optional Supabase cloud sync.

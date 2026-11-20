@@ -5,6 +5,15 @@
 
 export const CHANGELOG = [
   {
+    version: '2.28.1',
+    date: '2026-11-20',
+    name: 'Perbaikan Restore Database',
+    items: [
+      'Restore database tidak lagi gagal ketika riwayat harga menunjuk SKU yang sudah diarsipkan oleh sinkron stok.',
+      'Dataset 13 Nov 2026 + 20 pelanggan dipulihkan ke domain lavishome.vercel.app.',
+    ],
+  },
+  {
     version: '2.28.0',
     date: '2026-11-20',
     name: 'Faktur per Roll & Sinkron Cloud',
