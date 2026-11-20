@@ -2,6 +2,25 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.35.0] — 2026-11-20
+
+**Release name: Tag A4 per Roll, Katalog & Motif.** A4 tag printing can now target rolls, catalogs or motifs and sort the sheet by the same keys.
+
+### Added
+
+- **Cakupan tag:** per roll (manual), per katalog/koleksi, per motif/warna, or all available rolls.
+- **Motif selector:** choosing a katalog filters the motif/colour list; per-motif prints only rolls for that SKU.
+- **Urutkan tag:** Katalog A–Z → motif → roll; Motif/warna A–Z → katalog → roll; Roll A–Z; Meter tersedia terbanyak; Lot A–Z.
+- **Live counts:** tag summary updates per scope (`6 roll · 1 halaman`, `13 roll · 2 halaman`, etc.).
+- **Print title:** includes the selected sort label.
+
+### Verification
+
+- `node --test`: **100 passed**; module check **60/60**; render check passes.
+- Browser QA: motif scope showed **6 roll / 1 page**; collection scope **13 roll / 2 pages**; picker reordered correctly for Roll, Katalog and Motif sorts.
+
+---
+
 ## [2.34.0] — 2026-11-20
 
 **Release name: Riwayat Pembayaran & Bukti Screenshot.** Every receipt is now visible in one ledger, with payer, time, kind, transfer number and proof screenshot.

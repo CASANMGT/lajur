@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.35.0',
+    date: '2026-11-20',
+    name: 'Tag A4 per Roll, Katalog & Motif',
+    items: [
+      'Cetak tag A4 bisa per roll, per katalog/koleksi, per motif/warna, atau semua roll.',
+      'Pilihan motif otomatis mengikuti katalog yang dipilih.',
+      'Urutkan tag: katalog, motif/warna, roll, meter tersedia, atau lot.',
+      'Ringkasan jumlah roll dan halaman A4 langsung diperbarui.',
+    ],
+  },
+  {
     version: '2.34.0',
     date: '2026-11-20',
     name: 'Riwayat Pembayaran & Bukti Screenshot',

@@ -718,18 +718,28 @@ function openAddStock(ctx) {
 function openPrintTags(ctx, roll = null) {
   const db = ctx.db;
   const collections = db.collections.filter((c) => (db.skus ?? []).some((s) => s.collectionId === c.id));
-  const orderRolls = (list) => [...list].sort((a, b) => {
+  const orderRolls = (list, sortBy = 'collection') => [...list].sort((a, b) => {
     if (roll) {
       if (a.id === roll.id) return -1;
       if (b.id === roll.id) return 1;
     }
     const skuA = byId(db.skus, a.skuId);
     const skuB = byId(db.skus, b.skuId);
-    return String(skuA?.collectionName ?? '').localeCompare(String(skuB?.collectionName ?? ''))
-      || String(skuA?.colourName || skuA?.colourCode || '').localeCompare(String(skuB?.colourName || skuB?.colourCode || ''))
-      || a.id.localeCompare(b.id);
+    const collectionA = String(skuA?.collectionName ?? '');
+    const collectionB = String(skuB?.collectionName ?? '');
+    const motifA = String(skuA?.colourName || skuA?.colourCode || skuA?.code || '');
+    const motifB = String(skuB?.colourName || skuB?.colourCode || skuB?.code || '');
+    if (sortBy === 'roll') return a.id.localeCompare(b.id);
+    if (sortBy === 'meters') return availableMm(b) - availableMm(a) || a.id.localeCompare(b.id);
+    if (sortBy === 'motif') return motifA.localeCompare(motifB) || collectionA.localeCompare(collectionB) || a.id.localeCompare(b.id);
+    if (sortBy === 'lot') return String(a.lot ?? '').localeCompare(String(b.lot ?? '')) || a.id.localeCompare(b.id);
+    return collectionA.localeCompare(collectionB) || motifA.localeCompare(motifB) || a.id.localeCompare(b.id);
   });
   const allRolls = orderRolls(db.rolls ?? []);
+  const motifsOf = (collectionId) => (db.skus ?? [])
+    .filter((s) => !collectionId || s.collectionId === collectionId)
+    .filter((s) => (db.rolls ?? []).some((r) => r.skuId === s.id))
+    .sort((a, b) => String(a.colourName || a.colourCode || a.code).localeCompare(String(b.colourName || b.colourCode || b.code)));
   const preselected = new Set(roll ? [roll.id] : []);
   const choices = allRolls.map((item) => {
     const sku = byId(db.skus, item.skuId);
@@ -737,7 +747,7 @@ function openPrintTags(ctx, roll = null) {
     const search = [
       item.id, item.barcode, item.lot, sku?.collectionName, sku?.motive, sku?.colourName, sku?.colourCode, sku?.code,
     ].map((value) => String(value ?? '').toLowerCase()).join(' ');
-    return `<label class="roll-pick" data-search="${esc(search)}">
+    return `<label class="roll-pick" data-search="${esc(search)}" data-roll="${esc(item.id)}" data-collection="${esc(sku?.collectionName ?? '')}" data-motif="${esc(sku?.colourName || sku?.colourCode || sku?.code || '')}" data-meters="${availableMm(item)}" data-lot="${esc(item.lot ?? '')}">
       <input type="checkbox" name="rollIds" value="${esc(item.id)}" ${preselected.has(item.id) ? 'checked' : ''} />
       <span class="roll-pick-main">
         <strong class="mono">${esc(item.id)}</strong>
@@ -754,11 +764,20 @@ function openPrintTags(ctx, roll = null) {
     wide: true,
     body: `<div class="form-grid">
       ${field('Cakupan', `<select class="select" name="scope">
-        <option value="selected">Roll terpilih</option>
-        <option value="collection">Semua roll dalam koleksi</option>
+        <option value="selected">Per roll (pilih manual)</option>
+        <option value="collection">Per katalog / koleksi</option>
+        <option value="motif">Per motif / warna</option>
         <option value="available">Semua roll tersedia</option>
       </select>`)}
-      ${field('Koleksi / motif', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan “semua roll dalam koleksi”.' })}
+      ${field('Katalog', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan katalog atau motif.' })}
+      ${field('Motif / warna', `<select class="select" name="motif">${motifsOf(collections[0]?.id).map((s) => `<option value="${s.id}">${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.code)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan per motif/warna.' })}
+      ${field('Urutkan tag', `<select class="select" name="sortBy">
+        <option value="collection">Katalog A–Z → motif → roll</option>
+        <option value="motif">Motif/warna A–Z → katalog → roll</option>
+        <option value="roll">Roll A–Z</option>
+        <option value="meters">Meter tersedia terbanyak</option>
+        <option value="lot">Lot A–Z</option>
+      </select>`, { hint: 'Urutan tag di lembar A4 dan daftar pilihan.' })}
       ${field('Ulangi tiap tag', `<input class="input" type="number" name="copies" min="1" max="40" value="1" />`, { hint: 'Jumlah salinan per roll. A4 menampung 8 tag.' })}
       ${field('PIC cetak', `<input class="input" name="pic" value="${esc(ctx.user?.name ?? '')}" placeholder="Nama PIC" />`)}
       ${field('Tanggal cetak', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
@@ -782,6 +801,7 @@ function openPrintTags(ctx, roll = null) {
       const summary = form.querySelector('[data-roll-summary]');
       const rows = Array.from(picker.querySelectorAll('.roll-pick'));
       const collectionField = form.collection.closest('.field');
+      const motifField = form.motif.closest('.field');
       const soldField = form.includeSold.closest('.field');
       const checked = () => Array.from(picker.querySelectorAll('input[name="rollIds"]:checked'));
       const collectionRolls = () => {
@@ -789,12 +809,32 @@ function openPrintTags(ctx, roll = null) {
         return (db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
           && (form.includeSold.checked || availableMm(item) > 0));
       };
+      const motifRolls = () => (db.rolls ?? []).filter((item) => item.skuId === form.motif.value
+        && (form.includeSold.checked || availableMm(item) > 0));
+      const refreshMotifs = () => {
+        const motifs = motifsOf(form.collection.value);
+        const previous = form.motif.value;
+        form.motif.innerHTML = motifs.map((s) => `<option value="${s.id}">${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.code)}</option>`).join('');
+        if (motifs.some((s) => s.id === previous)) form.motif.value = previous;
+      };
+      const sortPicker = () => {
+        const sortBy = form.sortBy.value;
+        const compare = (a, b) => {
+          if (sortBy === 'roll') return a.dataset.roll.localeCompare(b.dataset.roll);
+          if (sortBy === 'meters') return Number(b.dataset.meters) - Number(a.dataset.meters) || a.dataset.roll.localeCompare(b.dataset.roll);
+          if (sortBy === 'motif') return a.dataset.motif.localeCompare(b.dataset.motif) || a.dataset.collection.localeCompare(b.dataset.collection) || a.dataset.roll.localeCompare(b.dataset.roll);
+          if (sortBy === 'lot') return a.dataset.lot.localeCompare(b.dataset.lot) || a.dataset.roll.localeCompare(b.dataset.roll);
+          return a.dataset.collection.localeCompare(b.dataset.collection) || a.dataset.motif.localeCompare(b.dataset.motif) || a.dataset.roll.localeCompare(b.dataset.roll);
+        };
+        rows.sort(compare).forEach((row) => picker.appendChild(row));
+      };
       const refresh = () => {
         const scope = form.scope.value;
         const manual = scope === 'selected';
         picker.hidden = !manual;
         tools.hidden = !manual;
-        collectionField.style.display = scope === 'collection' ? '' : 'none';
+        collectionField.style.display = scope === 'collection' || scope === 'motif' ? '' : 'none';
+        motifField.style.display = scope === 'motif' ? '' : 'none';
         soldField.style.display = manual ? 'none' : '';
         const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));
         if (manual) {
@@ -803,7 +843,9 @@ function openPrintTags(ctx, roll = null) {
             ? `${count} roll dipilih × ${copies} salinan = ${count * copies} tag · ${Math.ceil((count * copies) / 8)} halaman A4.`
             : 'Belum ada roll dipilih. Centang roll di daftar atau pakai “Pilih terlihat”.';
         } else {
-          const count = scope === 'collection' ? collectionRolls().length : (db.rolls ?? []).filter((item) => availableMm(item) > 0).length;
+          const count = scope === 'collection' ? collectionRolls().length
+            : scope === 'motif' ? motifRolls().length
+              : (db.rolls ?? []).filter((item) => availableMm(item) > 0).length;
           summary.textContent = `${count} roll akan dicetak × ${copies} salinan = ${count * copies} tag · ${Math.ceil((count * copies) / 8)} halaman A4.`;
         }
       };
@@ -812,7 +854,9 @@ function openPrintTags(ctx, roll = null) {
         for (const row of rows) row.hidden = Boolean(query) && !row.dataset.search.includes(query);
       };
       form.scope.addEventListener('change', refresh);
-      form.collection.addEventListener('change', refresh);
+      form.collection.addEventListener('change', () => { refreshMotifs(); refresh(); });
+      form.motif.addEventListener('change', refresh);
+      form.sortBy.addEventListener('change', sortPicker);
       form.copies.addEventListener('input', refresh);
       form.includeSold.addEventListener('change', refresh);
       form.rollSearch.addEventListener('input', filterRows);
@@ -827,6 +871,8 @@ function openPrintTags(ctx, roll = null) {
         for (const row of rows) row.querySelector('input').checked = false;
         refresh();
       });
+      sortPicker();
+      refreshMotifs();
       refresh();
     },
     onSubmit(form, close) {
@@ -835,17 +881,21 @@ function openPrintTags(ctx, roll = null) {
       if (scope === 'selected') {
         const ids = Array.from(form.querySelectorAll('input[name="rollIds"]:checked')).map((input) => input.value);
         const byIdMap = new Map((db.rolls ?? []).map((item) => [item.id, item]));
-        rolls = orderRolls(ids.map((id) => byIdMap.get(id)).filter(Boolean));
+        rolls = orderRolls(ids.map((id) => byIdMap.get(id)).filter(Boolean), form.sortBy.value);
       } else if (scope === 'collection') {
         const skuIds = new Set((db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
         rolls = orderRolls((db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
-          && (form.includeSold.checked || availableMm(item) > 0)));
+          && (form.includeSold.checked || availableMm(item) > 0)), form.sortBy.value);
+      } else if (scope === 'motif') {
+        rolls = orderRolls((db.rolls ?? []).filter((item) => item.skuId === form.motif.value
+          && (form.includeSold.checked || availableMm(item) > 0)), form.sortBy.value);
       } else {
-        rolls = orderRolls((db.rolls ?? []).filter((item) => availableMm(item) > 0));
+        rolls = orderRolls((db.rolls ?? []).filter((item) => availableMm(item) > 0), form.sortBy.value);
       }
       if (!rolls.length) throw new Error('Pilih minimal satu roll untuk dicetak.');
       const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));
-      printDocument('Tag stok A4', printStockTagsHtml(db, rolls, {
+      const sortLabel = form.sortBy.selectedOptions[0]?.textContent ?? '';
+      printDocument(`Tag stok A4 · ${sortLabel}`, printStockTagsHtml(db, rolls, {
         copies,
         pic: String(form.pic?.value ?? '').trim(),
         date: form.date?.value || todayJakarta(),
