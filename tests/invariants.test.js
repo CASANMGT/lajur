@@ -4,7 +4,8 @@ import fs from 'node:fs';
 
 import { buildSeed } from '../src/domain/seed.js';
 import {
-  availableMm, createRoll, partQty, quarantineRoll, receiveAdhocStock, reserveRoll, stockSummary,
+  availableMm, createRoll, deliveryEstimate, lineEstimatedKg, partQty, quarantineRoll, receiveAdhocStock,
+  reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
 import { saveDriver, saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
 import { createInternalPurchase, createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
@@ -1078,4 +1079,39 @@ test('a new Bali PO can be created from Jakarta stock', () => {
   assert.equal(po.lines[0].qtyMm, 5000);
   assert.ok(po.lines[0].unitPrice < po.lines[0].listPrice);
   assert.equal(po.history[0].action, 'PO internal dibuat');
+});
+
+test('surat jalan estimates roll weight and gets lighter on cut pieces', () => {
+  const db = buildSeed();
+  const inv = db.invoices.find((invoice) => invoice.status === 'posted' && invoice.lines.some((l) => l.kind === 'fabric'));
+  const line = inv.lines.find((l) => l.kind === 'fabric');
+  const fullKg = lineEstimatedKg(db, line);
+  const cutKg = lineEstimatedKg(db, { ...line, qtyMm: line.qtyMm / 2 });
+  assert.ok(fullKg > 0);
+  assert.ok(cutKg < fullKg);
+  const estimate = deliveryEstimate(db, inv.lines);
+  assert.ok(estimate.rolls >= 1);
+  assert.ok(estimate.totalKg > 0);
+  const delivery = createDelivery(db, { invoiceId: inv.id, pic: 'Fauzi', courier: 'internal', user: MGR });
+  assert.ok(delivery.weightKg > 0);
+  assert.ok(delivery.rollCount >= 1);
+  assert.ok(delivery.lotCount >= 1);
+  assert.ok(delivery.lines.some((l) => l.rollId && l.lot && l.weightKg > 0));
+});
+
+test('payments can be deposit, installment and full with proof photo', () => {
+  const db = buildSeed();
+  const inv = db.invoices.find((invoice) => invoice.status === 'posted' && invoiceOutstanding(invoice) > 0);
+  const first = recordPayment(db, {
+    invoiceId: inv.id, amount: 100000, kind: 'deposit', reference: 'TRF-001',
+    proofImage: 'data:image/png;base64,proof', user: MGR,
+  });
+  assert.equal(first.kind, 'deposit');
+  assert.match(first.proofImage, /^data:image/);
+  assert.equal(first.reference, 'TRF-001');
+  const remaining = invoiceOutstanding(inv);
+  const final = recordPayment(db, { invoiceId: inv.id, kind: 'full', user: MGR });
+  assert.equal(final.kind, 'full');
+  assert.equal(final.amount, remaining);
+  assert.equal(invoiceOutstanding(inv), 0);
 });

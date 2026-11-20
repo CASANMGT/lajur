@@ -6,7 +6,7 @@ import {
 } from '../dom.js';
 import { MM_PER_M, byId, daysBetween, parseM, todayJakarta, weekdayName } from '../../domain/core.js';
 import {
-  INVOICE_STATUS, createCustomerReturn, createInternalPurchase, createInvoice, invoiceMargin, invoiceOutstanding,
+  INVOICE_STATUS, PAYMENT_KIND, createCustomerReturn, createInternalPurchase, createInvoice, invoiceMargin, invoiceOutstanding,
   invoiceStatusLabel, invoicesForCompany, issueTaxInvoice, postCustomerReturn, postInvoice, recordPayment, returnedQty,
   taxBreakdown,
 } from '../../domain/sales.js';
@@ -20,7 +20,7 @@ import { applyDepositToInvoice, customersForCompany, depositBalance } from '../.
 import { createSalesOrder } from '../../domain/orders.js';
 import { settingsOf } from '../../domain/settings.js';
 import { isAdvancedMode } from '../../domain/features.js';
-import { availableMm, partAvailable, sellableRolls, totalParts } from '../../domain/inventory.js';
+import { availableMm, deliveryEstimate, lineEstimatedKg, partAvailable, sellableRolls, totalParts } from '../../domain/inventory.js';
 import { scanAwbImage } from '../awb.js';
 import { enableArrivalNotifications, notifyArrival } from '../notify.js';
 import { courierMark, pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
@@ -206,11 +206,18 @@ function renderDetail(ctx) {
         ${advanced ? taxInvoiceCard(inv, tax, taxPreview, role) : ''}
 
         <section class="card">
-          <div class="card-head"><div><h2>Pembayaran</h2><p>Sebagian diterima; tidak ada aksi bank nyata di demo.</p></div></div>
+          <div class="card-head"><div><h2>Pembayaran</h2><p>Deposit, angsuran, atau pelunasan. Setiap penerimaan punya tanggal, no. transfer, dan bukti foto.</p></div></div>
           ${inv.payments?.length ? `<div class="table-wrap"><table class="data">
-            <thead><tr><th>ID</th><th>Tanggal</th><th>Metode</th><th>Referensi</th><th class="num">Nominal</th></tr></thead>
-            <tbody>${inv.payments.map((p) => `<tr><td class="mono">${esc(p.id)}</td><td>${esc(p.date)}</td><td>${esc(p.method)}</td><td>${esc(p.reference || '—')}</td><td class="num">${fmt.money(p.amount)}</td></tr>`).join('')}</tbody>
-          </table></div>` : `<div class="empty" style="padding:24px">${icon('wallet')}<strong>Belum ada pembayaran</strong><p>Terima pembayaran sebagian atau penuh.</p></div>`}
+            <thead><tr><th>ID / jenis</th><th>Tanggal</th><th>Metode</th><th>No. transfer / referensi</th><th>Bukti</th><th class="num">Nominal</th></tr></thead>
+            <tbody>${inv.payments.map((p) => `<tr>
+              <td class="mono">${esc(p.id)}<div>${badge(PAYMENT_KIND[p.kind]?.label ?? 'Angsuran', PAYMENT_KIND[p.kind]?.tone ?? 'muted')}</div></td>
+              <td>${esc(p.date)}</td>
+              <td>${esc(p.method)}</td>
+              <td>${esc(p.reference || '—')}</td>
+              <td>${p.proofImage ? `<img src="${esc(p.proofImage)}" alt="Bukti ${esc(p.id)}" class="thumb zoomable" data-zoom="${esc(p.proofImage)}" data-zoom-title="Bukti ${esc(p.id)}" role="button" tabindex="0" style="width:48px;height:48px;object-fit:cover" />` : '<span class="muted xs">—</span>'}</td>
+              <td class="num">${fmt.money(p.amount)}</td>
+            </tr>`).join('')}</tbody>
+          </table></div>` : `<div class="empty" style="padding:24px">${icon('wallet')}<strong>Belum ada pembayaran</strong><p>Terima deposit, angsuran, atau pelunasan.</p></div>`}
         </section>
 
         <section class="card card-pad">
@@ -300,7 +307,7 @@ function deliveryCard(inv, delivery, role) {
         <div class="row-between"><span class="small muted">Estimasi tiba</span><span class="small">${esc(delivery.eta || '—')}</span></div>
         ${delivery.awbImage ? `<div class="reward"><img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e4ded2" /></div>` : ''}
         <div class="row-between"><span class="small muted">Transport / armada</span><span class="small">${esc(delivery.transportName || '—')}</span></div>
-        <div class="row-between"><span class="small muted">Berat / koli</span><span class="small">${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</span></div>
+        <div class="row-between"><span class="small muted">Berat / roll / lot</span><span class="small">${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.rollCount ?? delivery.pieces ?? '—'} roll · ${delivery.lotCount ?? '—'} lot</span></div>
         ${delivery.courier === 'internal' ? `<div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '-')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>` : `<div class="row-between"><span class="small muted">Driver</span><span class="small">Ditentukan ekspedisi pihak ketiga</span></div>`}
         <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
         ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
@@ -663,28 +670,51 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice', optio
 
 function openPayment(ctx, inv) {
   const out = invoiceOutstanding(inv);
+  const formatAmount = (value) => Number(value || 0).toLocaleString('id-ID');
   openModal({
     title: 'Terima pembayaran',
-    description: `Sisa tagihan ${fmt.money(out)}.`,
+    description: `Sisa tagihan ${fmt.money(out)}. Pembayaran dapat dicicil beberapa kali.`,
     submitLabel: 'Catat pembayaran',
     body: `
-      ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="${String(out)}" />`, { hint: 'Tidak boleh melebihi sisa tagihan.' })}
+      ${field('Jenis pembayaran', `<select class="select" name="kind">${Object.entries(PAYMENT_KIND).map(([k, v]) => `<option value="${k}" ${k === 'installment' ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`, { hint: 'Pelunasan otomatis membayar seluruh sisa tagihan.' })}
+      ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="${formatAmount(out)}" />`, { hint: 'Boleh sebagian untuk deposit atau angsuran.' })}
       ${field('Metode', `<select class="select" name="method"><option value="transfer">Transfer bank</option><option value="tunai">Tunai</option><option value="qris">QRIS</option><option value="giro">Giro</option></select>`)}
-      ${field('Tanggal', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Referensi', `<input class="input" name="reference" placeholder="No. transfer / bukti" />`)}
+      ${field('No. transfer / referensi', `<input class="input" name="reference" placeholder="Contoh: TRF-20261120-001" />`)}
+      ${field('Tanggal bayar', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
+      ${field('Bukti transfer (foto)', `<input class="input" type="file" name="proof" accept="image/*" />`, { hint: 'Opsional. Foto bukti disimpan di catatan pembayaran.', full: true })}
+      ${field('Catatan', `<input class="input" name="note" placeholder="Keterangan penerimaan" />`, { full: true })}
     `,
-    onSubmit(form, close) {
-      const amount = Number(String(form.amount.value).replace(/\D/g, ''));
+    onMount(form) {
+      const syncKind = () => {
+        const full = form.kind.value === 'full';
+        form.amount.disabled = full;
+        if (full) form.amount.value = formatAmount(out);
+      };
+      form.kind.addEventListener('change', syncKind);
+      form.amount.addEventListener('input', () => {
+        const digits = String(form.amount.value).replace(/\D/g, '');
+        form.amount.value = digits ? Number(digits).toLocaleString('id-ID') : '';
+      });
+      syncKind();
+    },
+    async onSubmit(form, close) {
+      const kind = form.kind.value;
+      const amount = kind === 'full' ? out : Number(String(form.amount.value).replace(/\D/g, ''));
+      const proofFile = form.proof?.files?.[0];
+      const proofImage = proofFile ? await imageToDataUrl(proofFile, { maxBytes: 800_000 }) : '';
       ctx.store.update((db) => recordPayment(db, {
         invoiceId: inv.id,
         amount,
+        kind,
         method: form.method.value,
         reference: form.reference.value,
         date: form.date.value,
+        proofImage,
+        note: form.note.value,
         user: ctx.user,
       }));
       close();
-      toast('Pembayaran dicatat. Ini simulasi — tidak ada transaksi bank nyata.', { tone: 'success' });
+      toast(kind === 'full' ? 'Pelunasan dicatat. Faktur lunas.' : 'Pembayaran dicatat sebagai deposit/angsuran.', { tone: 'success' });
     },
   });
 }
@@ -817,7 +847,7 @@ function mapEmbed(address) {
   return `https://www.google.com/maps?q=${encodeURIComponent(address || 'Jakarta, Indonesia')}&output=embed`;
 }
 
-function deliveryFields(db, delivery, customer, user = null) {
+function deliveryFields(db, delivery, customer, user = null, invoice = null) {
   const drivers = (db.drivers ?? []).filter((d) => d.active !== false);
   const fleet = (db.fleetAssets ?? []).filter((a) => a.active !== false && (a.ownership ?? 'internal') === 'internal');
   const assignedFleet = (driverId) => fleetAssetsForDriver(db, driverId)[0] ?? null;
@@ -833,6 +863,12 @@ function deliveryFields(db, delivery, customer, user = null) {
     const members = picUsers.filter((u) => u.role === role);
     if (!members.length) return '';
     return `<optgroup label="${label}">${members.map((u) => `<option value="${u.id}" data-name="${esc(u.name)}" ${selectedPicId === u.id ? 'selected' : ''}>${esc(u.name)}${u.phone ? ` · ${esc(u.phone)}` : ''}</option>`).join('')}</optgroup>`;
+  }).join('');
+  const sourceLines = invoice?.lines ?? delivery?.lines ?? [];
+  const estimate = deliveryEstimate(db, sourceLines);
+  const estimateRows = sourceLines.filter((line) => line.kind !== 'service').map((line) => {
+    const qty = line.kind === 'fabric' ? fmt.m(line.qtyMm) : `${fmt.pcs(line.qtyPcs)} pcs`;
+    return `<tr><td class="mono xs">${esc(line.rollId ?? '—')}</td><td class="xs">${esc(line.lot || '—')}</td><td class="xs">${qty}</td><td class="num xs">${lineEstimatedKg(db, line).toLocaleString('id-ID', { maximumFractionDigits: 2 })} kg</td></tr>`;
   }).join('');
   return `
     ${field('Pelanggan / penerima', `<select class="select" name="recipientCustomerId">${customers.map((c) => `<option value="${c.id}" data-name="${esc(c.name)}" data-phone="${esc(c.phone || c.whatsapp || '')}" data-address="${esc(c.address || '')}" ${chosenCustomerId === c.id ? 'selected' : ''}>${esc(c.name)}${c.company && c.company !== c.name ? ` · ${esc(c.company)}` : ''}</option>`).join('')}</select>`, { hint: 'Pilih pelanggan; penerima dan alamat terisi otomatis dan masih bisa diubah.' })}
@@ -881,11 +917,19 @@ function deliveryFields(db, delivery, customer, user = null) {
         ${delivery?.awbImage ? `<button class="btn btn-sm btn-danger" type="button" data-awb-remove style="margin-top:8px">Hapus foto resi</button>` : ''}
       </div>
     </div>
-    ${field('Berat (kg)', `<input class="input" name="weightKg" inputmode="decimal" value="${delivery?.weightKg ?? 0}" />`)}
-    ${field('Jumlah koli', `<input class="input" name="pieces" inputmode="numeric" value="${delivery?.pieces ?? 1}" />`)}
+    ${field('Berat (kg)', `<input class="input" name="weightKg" inputmode="decimal" value="${delivery?.weightKg ?? estimate.totalKg}" />`, { hint: `Estimasi otomatis ${estimate.totalKg.toLocaleString('id-ID', { maximumFractionDigits: 2 })} kg dari roll/lot.` })}
+    ${field('Jumlah koli / roll', `<input class="input" name="pieces" inputmode="numeric" value="${delivery?.pieces ?? estimate.rolls ?? 1}" />`, { hint: `${estimate.rolls} roll · ${estimate.lots} lot.` })}
     ${field('Ongkir (Rp)', `<input class="input" name="shippingCost" inputmode="numeric" value="${delivery?.shippingCost ?? 0}" />`)}
     ${field('Asuransi (Rp)', `<input class="input" name="insurance" inputmode="numeric" value="${delivery?.insurance ?? 0}" />`)}
     ${field('COD (Rp)', `<input class="input" name="codAmount" inputmode="numeric" value="${delivery?.codAmount ?? 0}" />`)}
+    <div class="span-2 card card-pad" style="background:var(--ivory-50)">
+      <div class="row-between"><strong>Estimasi berat per roll / lot</strong><span class="small num">${estimate.totalKg.toLocaleString('id-ID', { maximumFractionDigits: 2 })} kg · ${estimate.rolls} roll · ${estimate.lots} lot</span></div>
+      <div class="table-wrap" style="margin-top:8px"><table class="data" style="font-size:12px">
+        <thead><tr><th>Roll</th><th>Lot</th><th>Qty</th><th class="num">Estimasi</th></tr></thead>
+        <tbody>${estimateRows || '<tr><td colspan="4" class="muted">Tidak ada baris kain.</td></tr>'}</tbody>
+      </table></div>
+      <p class="xs muted" style="margin-top:6px">Berat dihitung dari lebar kain × GSM. Potongan lebih pendek otomatis lebih ringan; berat final bisa berbeda saat ditimbang.</p>
+    </div>
     <div class="span-2" data-driver-schedule hidden></div>
     <div class="span-2">
       ${field('Alamat kirim', `<input class="input" name="address" list="delivery-addresses" value="${esc(address)}" placeholder="Ketik alamat, pilih saran" />`, { hint: 'Autocomplete dari alamat pelanggan dan pengiriman sebelumnya.' })}
@@ -1074,7 +1118,7 @@ function openCreateDelivery(ctx, inv) {
     description: 'Catat PIC, kurir/driver, kendaraan, dan alamat. Stok sudah keluar saat faktur terbit; surat jalan tidak mengurangi stok lagi.',
     wide: true,
     submitLabel: 'Buat surat jalan',
-    body: deliveryFields(ctx.db, null, customer, ctx.user),
+    body: deliveryFields(ctx.db, null, customer, ctx.user, inv),
     onMount(form) {
       if (form.picUserId && !form.picUserId.value) {
         const option = Array.from(form.picUserId.options).find((opt) => opt.value === ctx.user.id);
@@ -1139,7 +1183,7 @@ export function openEditDelivery(ctx, delivery) {
     description: 'PIC, pelanggan/penerima, estimasi tiba, driver, kurir, AWB, dan alamat dapat diubah selama surat jalan belum dikonfirmasi.',
     wide: true,
     submitLabel: 'Simpan',
-    body: deliveryFields(ctx.db, delivery, customer, ctx.user),
+    body: deliveryFields(ctx.db, delivery, customer, ctx.user, byId(ctx.db.invoices, delivery.invoiceId)),
     onMount(form) { bindDeliveryFields(form, ctx.db, delivery); },
     async onSubmit(form, close) {
       const courier = form.courier.value;

@@ -507,12 +507,22 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
 /* Payments                                                                   */
 /* -------------------------------------------------------------------------- */
 
-export function recordPayment(db, { invoiceId, amount, method = 'transfer', reference = '', date = todayJakarta(), user, note = '' }) {
+export const PAYMENT_KIND = {
+  deposit: { label: 'Deposit / uang muka', tone: 'info' },
+  installment: { label: 'Angsuran', tone: 'warn' },
+  full: { label: 'Pelunasan', tone: 'ok' },
+};
+
+export function recordPayment(db, {
+  invoiceId, amount, method = 'transfer', reference = '', date = todayJakarta(), user, note = '',
+  kind = 'installment', proofImage = '',
+}) {
   const inv = requireInvoice(db, invoiceId);
   assert(inv.status === 'posted', 'INVALID_STATUS', 'Pembayaran hanya untuk faktur terbit.');
-  const value = money(amount);
-  assert(value > 0, 'INVALID_AMOUNT', 'Nominal pembayaran harus lebih dari 0.');
   const outstanding = invoiceOutstanding(inv);
+  const paymentKind = ['deposit', 'installment', 'full'].includes(kind) ? kind : 'installment';
+  const value = paymentKind === 'full' ? outstanding : money(amount);
+  assert(value > 0, 'INVALID_AMOUNT', 'Nominal pembayaran harus lebih dari 0.');
   assert(value <= outstanding, 'OVERPAYMENT', `Pembayaran melebihi sisa tagihan (${outstanding}).`);
 
   const payment = {
@@ -520,9 +530,11 @@ export function recordPayment(db, { invoiceId, amount, method = 'transfer', refe
     invoiceId,
     customerId: inv.customerId,
     date,
+    kind: paymentKind,
     amount: value,
     method,
     reference,
+    proofImage: String(proofImage ?? ''),
     note,
     at: isoNow(),
     by: user?.name ?? 'Sistem',

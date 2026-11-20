@@ -217,6 +217,64 @@ export function totalParts(db, warehouseId = null) {
   return rows.reduce((acc, p) => acc + p.qty, 0);
 }
 
+/** Weight defaults by cloth type when the master has no GSM yet. */
+export function defaultWeightGsm(clothType = '', name = '') {
+  const text = `${clothType} ${name}`.toLowerCase();
+  if (text.includes('sheer')) return 80;
+  if (text.includes('dimout')) return 180;
+  if (text.includes('blackout')) return 250;
+  if (text.includes('rel') || text.includes('track') || text.includes('aksesori')) return 500;
+  if (text.includes('motor') || text.includes('otomasi')) return 1200;
+  return 200;
+}
+
+export function skuWeightGsm(db, skuId) {
+  const sku = byId(db.skus, skuId);
+  if (!sku) return 200;
+  const collection = byId(db.collections, sku.collectionId);
+  return Number(sku.weightGsm || collection?.weightGsm || defaultWeightGsm(sku.clothType, collection?.name));
+}
+
+/** Estimated kg per metre = width (m) × GSM / 1000. */
+export function skuKgPerM(db, skuId) {
+  const sku = byId(db.skus, skuId);
+  const collection = byId(db.collections, sku?.collectionId);
+  const widthCm = Number(sku?.widthCm || collection?.defaultWidthCm || 280);
+  return (widthCm / 100) * (skuWeightGsm(db, skuId) / 1000);
+}
+
+export function lineEstimatedKg(db, line) {
+  if (line.kind === 'fabric') return (Number(line.qtyMm) || 0) / 1000 * skuKgPerM(db, line.skuId ?? byId(db.rolls, line.rollId)?.skuId);
+  if (line.kind === 'part') {
+    const part = byId(db.parts, line.partId);
+    return (Number(line.qtyPcs) || 0) * Number(part?.weightKg ?? 0.4);
+  }
+  return 0;
+}
+
+/** Rolls, unique lots and estimated kg for a set of invoice or delivery lines. */
+export function deliveryEstimate(db, lines) {
+  let totalKg = 0;
+  let rolls = 0;
+  let pieces = 0;
+  const lots = new Set();
+  for (const line of lines ?? []) {
+    totalKg += lineEstimatedKg(db, line);
+    if (line.kind === 'fabric') {
+      rolls += 1;
+      if (line.lot) lots.add(String(line.lot));
+    } else if (line.kind === 'part') {
+      pieces += Number(line.qtyPcs) || 0;
+    }
+  }
+  return {
+    totalKg: Math.round(totalKg * 100) / 100,
+    rolls,
+    pieces,
+    lots: lots.size,
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /* Movements                                                                  */
 /* -------------------------------------------------------------------------- */

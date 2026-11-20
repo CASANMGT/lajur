@@ -64,9 +64,9 @@ export const MASTER = {
     { id: 'cat-motor', name: 'Motor & Otomasi' },
   ],
   collections: [
-    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', motive: 'Luna Plain', motivePrice: 125000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 25000, sampleDeposit: 50000, sampleMin: 2, description: 'Blackout tebal, jatuh vertikal rapi.' },
-    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', motive: 'Aria Sheer', motivePrice: 99000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 2, description: 'Sheer ringan untuk lapis kedua.' },
-    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', motive: 'Nova Dimout', motivePrice: 149000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 1, description: 'Dimout ekonomis untuk unit hunian.' },
+    { id: 'col-luna', name: 'Luna', categoryId: 'cat-blackout', clothType: 'Blackout', weightGsm: 250, motive: 'Luna Plain', motivePrice: 125000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 25000, sampleDeposit: 50000, sampleMin: 2, description: 'Blackout tebal, jatuh vertikal rapi.' },
+    { id: 'col-aria', name: 'Aria', categoryId: 'cat-sheer', clothType: 'Sheer', weightGsm: 80, motive: 'Aria Sheer', motivePrice: 99000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 2, description: 'Sheer ringan untuk lapis kedua.' },
+    { id: 'col-nova', name: 'Nova', categoryId: 'cat-dimout', clothType: 'Dimout', weightGsm: 180, motive: 'Nova Dimout', motivePrice: 149000, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 20000, sampleDeposit: 40000, sampleMin: 1, description: 'Dimout ekonomis untuk unit hunian.' },
     { id: 'col-rel', name: 'Rel & Track', categoryId: 'cat-part', clothType: 'Aksesori', motive: 'Rel', motivePrice: 0, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Rel aluminium dan aksesori.' },
     { id: 'col-motor', name: 'Motor & Otomasi', categoryId: 'cat-motor', clothType: 'Otomasi', motive: 'Motor', motivePrice: 0, defaultRollLengthM: 60, defaultWidthCm: 300, samplePrice: 0, sampleDeposit: 0, sampleMin: 0, description: 'Motor, remote, dan kontrol.' },
   ],

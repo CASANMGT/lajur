@@ -250,7 +250,7 @@ export function printDeliveryHtml(db, delivery) {
       <div><span>Faktur</span><strong>${esc(delivery.invoiceId)}</strong></div>
       <div><span>Estimasi tiba</span><strong>${esc(delivery.eta || '—')}</strong></div>
       ${deliveryTrackingUrl(delivery) ? `<div><span>Lacak paket</span><strong style="font-size:9px;word-break:break-all">${esc(deliveryTrackingUrl(delivery))}</strong></div>` : ''}
-      <div><span>Berat / koli</span><strong>${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</strong></div>
+      <div><span>Berat / roll / lot</span><strong>${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.rollCount ?? delivery.pieces ?? '—'} roll · ${delivery.lotCount ?? '—'} lot</strong></div>
       <div><span>Ongkir / asuransi</span><strong>${fmt.money(delivery.shippingCost || 0)} / ${fmt.money(delivery.insurance || 0)}</strong></div>
       <div><span>COD</span><strong>${delivery.codAmount ? fmt.money(delivery.codAmount) : '—'}</strong></div>
       <div><span>Transport / armada</span><strong>${esc(delivery.transportName || '—')}</strong></div>
@@ -258,10 +258,12 @@ export function printDeliveryHtml(db, delivery) {
       <div><span>Status</span><strong>${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</strong></div>
     </div>
     <table>
-      <thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead>
+      <thead><tr><th>Roll / Lot</th><th>Barang</th><th class="num">Qty</th><th class="num">Estimasi kg</th><th>Catatan</th></tr></thead>
       <tbody>${delivery.lines.map((l) => `<tr>
+        <td class="mono">${esc(l.rollId || '—')}<div class="note">${esc(l.lot || '—')}</div></td>
         <td>${esc(l.description)}</td>
         <td class="num">${l.kind === 'fabric' ? fmt.m(l.qtyMm) : `${fmt.pcs(l.qtyPcs)} pcs`}</td>
+        <td class="num">${l.weightKg ? `${Number(l.weightKg).toLocaleString('id-ID', { maximumFractionDigits: 2 })}` : '—'}</td>
         <td>${esc(l.note || '—')}</td>
       </tr>`).join('')}</tbody>
     </table>
@@ -320,8 +322,8 @@ export function printDeliveryCopiesHtml(db, delivery) {
       <div class="sj-box"><span class="sj-k">PENGIRIM</span><strong>${esc(byId(db.companies, byId(db.invoices, delivery.invoiceId)?.companyId)?.name ?? 'PT Lavishome Tekstil Nusantara')}</strong><div>Gudang ${esc(byId(db.warehouses, delivery.lines?.[0]?.warehouseId)?.name?.replace('Gudang ', '') ?? 'Jakarta / Bali')}</div><div>PIC: ${esc(delivery.pic)}</div></div>
       <div class="sj-box"><span class="sj-k">PENERIMA</span><strong>${esc(d.recipient)}</strong><div>${esc(d.recipientPhone)}</div><div>${esc(d.address)}</div></div>
     </div>
-    <table class="sj-lines"><thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td>${esc(line.description)}</td><td class="num">${deliveryQty(line)}</td><td>${esc(line.note || '—')}</td></tr>`).join('')}</tbody></table>
-    <div class="sj-meta">Faktur ${esc(delivery.invoiceId)} · ${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli · ${delivery.courier === 'internal' ? `${esc(delivery.driver || '—')}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}` : 'Driver ditentukan ekspedisi'} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
+    <table class="sj-lines"><thead><tr><th>Roll / Lot</th><th>Barang</th><th class="num">Qty</th><th class="num">Est. kg</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td class="mono">${esc(line.rollId || '—')}<br>${esc(line.lot || '—')}</td><td>${esc(line.description)}</td><td class="num">${deliveryQty(line)}</td><td class="num">${line.weightKg ? Number(line.weightKg).toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '—'}</td><td>${esc(line.note || '—')}</td></tr>`).join('')}</tbody></table>
+    <div class="sj-meta">Faktur ${esc(delivery.invoiceId)} · ${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.rollCount ?? delivery.pieces ?? '—'} roll · ${delivery.lotCount ?? '—'} lot · ${delivery.courier === 'internal' ? `${esc(delivery.driver || '—')}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}` : 'Driver ditentukan ekspedisi'} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
     <div class="sj-foot">
       <div class="sj-sign">PIC pengiriman<strong>${esc(delivery.pic)}</strong></div>
       <div class="sj-sign">${delivery.courier === 'internal' ? 'Driver (internal)' : 'Driver ekspedisi'}<strong>${esc(delivery.courier === 'internal' ? (delivery.driver || '&nbsp;') : '&nbsp;')}</strong></div>
@@ -400,10 +402,10 @@ export function printDeliveryDotMatrixHtml(db, delivery) {
       <div class="dm-box"><span>Pengirim</span>PT Lavishome Tekstil Nusantara<br>Gudang Jakarta / Bali<br>PIC: ${esc(delivery.pic)}</div>
       <div class="dm-box"><span>Penerima</span>${esc(d.recipient)}<br>${esc(d.recipientPhone)}<br>${esc(d.address)}</div>
     </div>
-    <table class="dm-lines"><thead><tr><th>Barang</th><th>Qty</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td>${esc(line.description)}</td><td>${deliveryQty(line)}</td><td>${esc(line.note || '-')}</td></tr>`).join('')}</tbody></table>
+    <table class="dm-lines"><thead><tr><th>Roll / Lot</th><th>Barang</th><th>Qty</th><th>Est. kg</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td>${esc(line.rollId || '-')}<br>${esc(line.lot || '-')}</td><td>${esc(line.description)}</td><td>${deliveryQty(line)}</td><td>${line.weightKg ? Number(line.weightKg).toLocaleString('id-ID', { maximumFractionDigits: 2 }) : '-'}</td><td>${esc(line.note || '-')}</td></tr>`).join('')}</tbody></table>
     <div class="dm-meta">
       <div>Faktur: ${esc(delivery.invoiceId)}</div><div>Status: ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
-      <div>Berat / koli: ${delivery.weightKg ? `${delivery.weightKg} kg` : '-'} / ${delivery.pieces || '-'}</div><div>ETA: ${esc(delivery.eta || '-')}</div>
+      <div>Berat / roll / lot: ${delivery.weightKg ? `${delivery.weightKg} kg` : '-'} / ${delivery.rollCount ?? delivery.pieces ?? '-'} / ${delivery.lotCount ?? '-'}</div><div>ETA: ${esc(delivery.eta || '-')}</div>
       <div>Ongkir: ${fmt.money(delivery.shippingCost || 0)}</div><div>Asuransi: ${fmt.money(delivery.insurance || 0)}</div>
       ${delivery.courier === 'internal' ? `<div>Driver: ${esc(delivery.driver || '-')}</div><div>Kendaraan: ${esc(delivery.plateNumber || '-')}</div>` : '<div>Driver: ditentukan ekspedisi</div><div>Kurir: lihat header</div>'}
     </div>

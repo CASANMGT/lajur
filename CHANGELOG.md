@@ -2,6 +2,26 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.33.0] — 2026-11-20
+
+**Release name: Berat Roll & Pembayaran Bertahap.** Surat jalan now estimates kg per roll/lot from the invoice, and payments support deposit/installment/full with proof photo.
+
+### Added
+
+- **Estimated roll weight:** width × GSM per metre. Blackout defaults 250 GSM, dimout 180, sheer 80; master `weightGsm` wins when present.
+- **Per-roll/lot weight:** delivery lines store `rollId`, `lot`, `weightKg`, `rollCount` and unique lot count. Cut lines use the cut metres, so they weigh less.
+- **Surat jalan auto-fill:** creating a surat jalan from an invoice prefills total kg, roll count and lot count; the estimate table lists each roll/lot. A4 3-copy and dot-matrix prints include Roll/Lot and Est. kg columns and totals.
+- **Payment kinds:** deposit/uang muka, installment/angsuran, full/pelunasan. Full automatically pays the entire remaining balance.
+- **Payment proof:** each payment stores date, kind, method, transfer number/reference, note and optional proof photo. Amounts display Indonesian thousand separators.
+- **Payment history:** invoice payment table shows kind badge, transfer reference, proof thumbnail and amount.
+
+### Verification
+
+- `node --test`: **100 passed**; module check **60/60**; render check passes.
+- Browser QA: `INV-0003` surat jalan prefilled **19 kg · 1 roll · 1 lot**, with RL-0006 18 m ≈ 12,6 kg and parts 6,4 kg; deposit Rp 100.000 then full Rp 1.282.000 settled the invoice.
+
+---
+
 ## [2.32.1] — 2026-11-20
 
 **Release name: Harga Internal Manual & PO Bali.** Handles imported stock where master sell prices are still zero.

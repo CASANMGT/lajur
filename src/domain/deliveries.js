@@ -11,6 +11,7 @@ import {
 } from './core.js';
 import { requireInvoice } from './sales.js';
 import { fleetAssetOfDriver } from './master.js';
+import { deliveryEstimate, lineEstimatedKg } from './inventory.js';
 
 export const DELIVERY_STATUS = {
   draft: { label: 'Dibuat', tone: 'muted' },
@@ -223,15 +224,23 @@ export function createDelivery(db, {
   assert(byId(db.customers, recipientId), 'CUSTOMER_NOT_FOUND', 'Pelanggan penerima tidak ditemukan.');
   const lines = invoice.lines
     .filter((line) => line.kind !== 'service')
-    .map((line) => ({
-      invoiceLineId: line.id,
-      description: line.description,
-      kind: line.kind,
-      qtyMm: line.qtyMm,
-      qtyPcs: line.qtyPcs,
-      note: line.note ?? '',
-    }));
+    .map((line) => {
+      const row = {
+        invoiceLineId: line.id,
+        description: line.description,
+        kind: line.kind,
+        qtyMm: line.qtyMm,
+        qtyPcs: line.qtyPcs,
+        rollId: line.rollId ?? null,
+        lot: line.lot ?? '',
+        rollCount: line.kind === 'fabric' ? 1 : 0,
+        note: line.note ?? '',
+      };
+      row.weightKg = Math.round(lineEstimatedKg(db, { ...line, ...row }) * 100) / 100;
+      return row;
+    });
   assert(lines.length > 0, 'EMPTY_LINES', 'Faktur ini tidak memiliki barang untuk dikirim.');
+  const estimate = deliveryEstimate(db, lines);
 
   const delivery = {
     id: nextId(db, 'delivery', 'SJ', 4),
@@ -261,8 +270,11 @@ export function createDelivery(db, {
     recipientName: String(recipientName ?? '').trim() || customer?.name || invoice.customerName,
     recipientPhone: String(recipientPhone ?? '').trim() || customer?.phone || '',
     service: nextService,
-    weightKg: Math.max(0, Number(weightKg) || 0),
-    pieces: Math.max(0, Math.round(Number(pieces) || 0)),
+    weightKg: Math.max(0, Number(weightKg) || estimate.totalKg),
+    estimatedWeightKg: estimate.totalKg,
+    rollCount: estimate.rolls,
+    lotCount: estimate.lots,
+    pieces: Math.max(0, Math.round(Number(pieces) || 0)) || estimate.rolls || 1,
     shippingCost: Math.max(0, Number(shippingCost) || 0),
     insurance: Math.max(0, Number(insurance) || 0),
     codAmount: Math.max(0, Number(codAmount) || 0),
@@ -346,7 +358,10 @@ export function updateDelivery(db, {
     recipientName: String(recipientName ?? delivery.recipientName ?? '').trim(),
     recipientPhone: String(recipientPhone ?? delivery.recipientPhone ?? '').trim(),
     service: nextService,
-    weightKg: Math.max(0, Number(weightKg ?? delivery.weightKg) || 0),
+    weightKg: Math.max(0, Number(weightKg ?? delivery.weightKg) || deliveryEstimate(db, delivery.lines).totalKg),
+    estimatedWeightKg: delivery.estimatedWeightKg ?? deliveryEstimate(db, delivery.lines).totalKg,
+    rollCount: delivery.rollCount ?? deliveryEstimate(db, delivery.lines).rolls,
+    lotCount: delivery.lotCount ?? deliveryEstimate(db, delivery.lines).lots,
     pieces: Math.max(0, Math.round(Number(pieces ?? delivery.pieces) || 0)),
     shippingCost: Math.max(0, Number(shippingCost ?? delivery.shippingCost) || 0),
     insurance: Math.max(0, Number(insurance ?? delivery.insurance) || 0),

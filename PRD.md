@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.32.1
+# PRD - Lavishome v2.33.0
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.32.1 (schema 21)
+**Version:** 2.33.0 (schema 21)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.32.1: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
+Role scope in v2.33.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -547,6 +547,8 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-101 | Third-party expeditions never store/display a driver. Driver and vehicle fields are cleared and the surat jalan notes say the driver is determined by the expedition. Internal fleet selections still snapshot driver, phone and company vehicle. |
 | BR-102 | Bali initiates an internal PO to Jakarta from Jakarta stock. The internal price is the sell price minus `internalDiscountPct` (default 10%), always below outside-sale pricing. The PO tracks requested → shipped → received. Seller approves/ships; shipping creates and posts the internal invoice and moves stock. Buyer confirms receipt. |
 | BR-103 | Internal sample requests are free or paid, never deposit. The requesting PT sees status/history; the owning PT approves and stock moves to the requester's warehouse. |
+| BR-104 | Surat jalan estimates weight per roll/lot from width × GSM. A cut line uses its cut metres, so it is lighter than the whole roll. The delivery stores roll count, unique lot count and per-line estimated kg; the printed surat jalan shows them and the total. |
+| BR-105 | Payments can be recorded multiple times as deposit, installment or full. Full pays the entire remaining balance. Each payment stores date, kind, method, transfer number/reference, note and optional proof photo. Amounts use Indonesian thousand separators for readability. |
 | BR-94 | Stock sorting applies to collections, motifs, roll rows and mobile cards. Options are most available metres, name A–Z and name Z–A; the default is most metres. |
 
 ---
@@ -555,7 +557,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.32.1 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.33.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -747,10 +749,13 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-134 | Bali can see Jakarta stock, create a PO internal, and see internal price cheaper than list price | Pass |
 | AC-135 | Jakarta approves/ships the PO; invoice posts and stock moves to Bali; Bali confirms receipt | Pass |
 | AC-136 | Sample requests show tracking history and no deposit | Pass |
+| AC-137 | Surat jalan auto-fills estimated kg, roll count and lot count from the invoice; cut pieces are lighter | Pass |
+| AC-138 | Every roll/lot line on surat jalan shows estimated kg and totals in print | Pass |
+| AC-139 | Payments can be deposit/installment/full with transfer number and proof photo | Pass |
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 
-Test evidence: `node --test` → 98/98 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
+Test evidence: `node --test` → 100/100 passing; browser route sweep → 22/22 Simple routes and 28/28 Advanced routes with WIP + Pesanan enabled, zero console errors; viewport checks at 320/390/768 show overflow 0 and 16 px inputs; the mobile sidebar scrolls independently; task create/start/complete and ticket printing verified; PDF generated from the print preview. Lighthouse accessibility 100 on login, dashboard, tasks, production, stock hierarchy, purchasing, invoice detail with tax/delivery, sales-order detail, master, settings and simulation.
 
 ---
 
@@ -793,7 +798,7 @@ A runnable **reference API** now lives in `server/` (Node built-ins, scrypt PIN,
 
 | Phase | Scope | Exit criteria |
 |-------|-------|---------------|
-| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir, A4 QR tag sheets, editable surat jalan with ETA/AWB photo/courier services, many-to-many driver–vehicle links, availability-sorted stock hierarchy, multi-roll A4 picker, PIC role dropdown, AWB photo decoding, courier tracking links and arrival notifications, JNE Code128 scan hardening, courier brand marks, active surat jalan editing, number-focused AWB extraction, A4 3-copy and dot-matrix surat jalan print, internal courier mode with manual driver, courier-specific AWB/link fields, AWB photo removal, weekday display, sample-book photos, tag-print priority, manager-confirmed 13 Nov 2026 Excel stock sync, collapsed stock-only collection drill-down, top collection/motif analytics, cascading WA share, sample deletion, dated Excel upload with backup and sync history, WA multi-collection/motif selection, resi-only copy, third-party cek resi, QR tag URL/PIC/date, customer Excel import, collection→motif→roll invoice entry with whole-roll default, surat jalan/tax shortcuts from Penjualan, customer delivery map/PIC, database download/upload, in-app changelog, stock sort by name/metres, optional Neon shared dataset sync via /api/cloud, two PT companies with customer isolation/sharing, internal sales Jakarta→Bali, Bali internal purchases, sample requests free/paid without deposit, Bali-initiated PO internal with cheaper pricing and tracking, driver master without login accounts | 98/98 tests, a11y 100 |
+| P0 (done) | Demo, invariants, PRD, design system, PIN login, warehouse master, tasks, import shipments, settings, roles, driver accounts/transport/fleet assets, Simple/Advanced mode, roll/part hierarchy, image preview, sample books, catalog, guide, optional WIP/Pesanan, sales orders, invoice discount, faktur pajak, surat jalan/PIC/driver/courier/AWB/map, print+PDF, supplier price book, FX snapshots, production, payroll, capacity, PG schema/store, optional NPWP, internal fleet assignment, third-party delivery mode, Lavishome rebrand, buku sample stock/edit/warehouse, public QR stock scan page, motif/base pricing, WA stock share, sell-price review, transfer ongkir, A4 QR tag sheets, editable surat jalan with ETA/AWB photo/courier services, many-to-many driver–vehicle links, availability-sorted stock hierarchy, multi-roll A4 picker, PIC role dropdown, AWB photo decoding, courier tracking links and arrival notifications, JNE Code128 scan hardening, courier brand marks, active surat jalan editing, number-focused AWB extraction, A4 3-copy and dot-matrix surat jalan print, internal courier mode with manual driver, courier-specific AWB/link fields, AWB photo removal, weekday display, sample-book photos, tag-print priority, manager-confirmed 13 Nov 2026 Excel stock sync, collapsed stock-only collection drill-down, top collection/motif analytics, cascading WA share, sample deletion, dated Excel upload with backup and sync history, WA multi-collection/motif selection, resi-only copy, third-party cek resi, QR tag URL/PIC/date, customer Excel import, collection→motif→roll invoice entry with whole-roll default, surat jalan/tax shortcuts from Penjualan, customer delivery map/PIC, database download/upload, in-app changelog, stock sort by name/metres, optional Neon shared dataset sync via /api/cloud, two PT companies with customer isolation/sharing, internal sales Jakarta→Bali, Bali internal purchases, sample requests free/paid without deposit, Bali-initiated PO internal with cheaper pricing and tracking, driver master without login accounts, estimated roll/lot weight on surat jalan, multi-kind payments with proof photo | 100/100 tests, a11y 100 |
 | P1 | Server + Postgres, auth, RBAC, immutable posting, audit, backups — JSONB store and PG schema done in v2.12; wire UI and row-level posting remain | Concurrency and duplicate-submit tests pass |
 | P2 | GR/IR separation, supplier invoices, partial project fulfilment, attachments, barcode | Reconciliation report matches |
 | P3 | Accounting integration, warehouse attribution policy, forecasting, notifications | Month-end close reconciled |

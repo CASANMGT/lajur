@@ -222,6 +222,10 @@ export function migrate(db) {
     if (!collection.motive) collection.motive = collection.clothType ?? collection.name;
     if (!collection.defaultRollLengthM) collection.defaultRollLengthM = 60;
     if (!collection.defaultWidthCm) collection.defaultWidthCm = 300;
+    if (!collection.weightGsm) {
+      const text = `${collection.clothType ?? ''} ${collection.name ?? ''}`.toLowerCase();
+      collection.weightGsm = text.includes('sheer') ? 80 : text.includes('dimout') ? 180 : text.includes('blackout') ? 250 : 200;
+    }
     const defaults = sampleDefaults[collection.id] ?? { samplePrice: 0, sampleDeposit: 0, sampleMin: 1 };
     if (collection.samplePrice === undefined) collection.samplePrice = defaults.samplePrice;
     if (collection.sampleDeposit === undefined) collection.sampleDeposit = defaults.sampleDeposit;

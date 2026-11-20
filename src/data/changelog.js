@@ -5,6 +5,18 @@
 
 export const CHANGELOG = [
   {
+    version: '2.33.0',
+    date: '2026-11-20',
+    name: 'Berat Roll & Pembayaran Bertahap',
+    items: [
+      'Surat jalan otomatis menghitung estimasi kg per roll/lot dari lebar × GSM.',
+      'Potongan lebih pendek otomatis lebih ringan; total kg, roll, dan lot masuk surat jalan.',
+      'Cetak A4 3-copy dan dot-matrix menampilkan Roll/Lot dan estimasi kg per baris.',
+      'Pembayaran bisa deposit, angsuran, atau pelunasan; pelunasan otomatis membayar sisa.',
+      'Setiap pembayaran menyimpan no. transfer, tanggal, catatan, dan foto bukti.',
+    ],
+  },
+  {
     version: '2.32.1',
     date: '2026-11-20',
     name: 'Harga Internal Manual & PO Bali',
