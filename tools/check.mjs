@@ -5,7 +5,7 @@ const modules = [
   '../src/domain/crm.js', '../src/domain/opname.js', '../src/domain/reports.js',
   '../src/domain/seed.js', '../src/domain/master.js', '../src/domain/pricing.js', '../src/domain/features.js', '../src/version.js',
   '../src/domain/tasks.js', '../src/domain/shipments.js', '../src/domain/attachments.js', '../src/domain/deliveries.js',
-  '../src/domain/stock-sync.js', '../src/domain/stock-plan.js', '../src/ui/excel.js',
+  '../src/domain/stock-sync.js', '../src/domain/stock-plan.js', '../src/domain/customer-plan.js', '../src/ui/excel.js',
   '../src/data/store.js', '../src/data/backup.js', '../src/data/auth.js',
   '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js', '../src/ui/awb.js', '../src/ui/notify.js',
   '../src/ui/views/common.js', '../src/ui/views/print.js', '../src/ui/views/dashboard.js',

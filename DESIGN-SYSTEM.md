@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.26.0
+# Design System - Lavishome v2.27.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -281,7 +281,10 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **A4 tag sheet:** the tag dialog lists all rolls with a search field and checkboxes, plus bulk scopes (collection or all available), repeat copies and include-sold. Show a live summary: selected rolls × copies = tags and A4 pages. Print plain (no letterhead/signatures) at `@page A4 margin 8mm`, two columns × four rows, 62mm card height, page-break-inside avoid. The QR points at `#/scan/:id`.
 - **Stock hierarchy:** default to a **collapsed collection list** containing only collections with available stock. Click collection → motif/colour → lot/roll. Show motif colour name/code, width, swatch, roll count and available metres. Keep the older tree/list views behind chips.
 - **Stock analytics:** always show available roll count, collections with stock and active motif count. Add **Top koleksi** and **Top motif** bars ranked by available metres, not physical metres.
-- **WA share:** require a collection first, then a motif/colour; show available rolls/metres for that exact scope and build the WhatsApp message from that scope. Default to the collection with the most available stock.
+- **WA share:** multi-select collections and motifs. Empty motif selection means all motifs in the selected collections. Show combined rolls/metres and build the message from the selected scope. Default to the collection with the most available stock.
+- **Resi actions:** copy-resi writes only the tracking number; copy-link is a separate action. Add **Cek resi** to open `cekresi.com/?noresi=...` as an independent third-party check. Automatic API polling needs a provider key/proxy.
+- **QR tag footer:** print the public scan URL under the QR, plus manual **PIC cetak** and **Tanggal cetak**.
+- **Customer import:** preview count and duplicates before import; normalize phones; skip duplicates by phone/name.
 - **Excel stock sync:** manager-only. Show the plan source/date, SKU/roll/metre/sample counts, warehouse, lot, exclusions and the old-roll archive warning. Require a confirmation checkbox before applying. After sync, show a persistent **sudah disinkronkan** notice with counts and archived-roll count. Never delete old rolls; mark them void and keep invoice/movement references valid.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.

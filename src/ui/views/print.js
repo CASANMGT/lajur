@@ -55,7 +55,7 @@ export function printLabelHtml(roll, sku, wh) {
     </div>`;
 }
 
-export function printStockTagsHtml(db, rolls, { copies = 1 } = {}) {
+export function printStockTagsHtml(db, rolls, { copies = 1, pic = '', date = '' } = {}) {
   const origin = typeof window !== 'undefined' && window.location?.origin && !window.location.origin.startsWith('file:')
     ? window.location.origin
     : '';
@@ -67,7 +67,7 @@ export function printStockTagsHtml(db, rolls, { copies = 1 } = {}) {
     const qrValue = origin ? `${origin}/#/scan/${roll.id}` : barcode;
     for (let copy = 0; copy < Math.max(1, Number(copies) || 1); copy += 1) {
       cards.push(`<div class="stock-tag-card">
-        <div class="stock-tag-qr">${qrSvg(qrValue, { size: 104 })}<div class="stock-tag-code">${esc(barcode)}</div></div>
+        <div class="stock-tag-qr">${qrSvg(qrValue, { size: 104 })}<div class="stock-tag-code">${esc(barcode)}</div><div class="stock-tag-url">${esc(qrValue)}</div></div>
         <div class="stock-tag-info">
           <div class="stock-tag-brand">lavishome <span>TAG STOK</span></div>
           <div class="stock-tag-id">${esc(roll.id)}</div>
@@ -78,6 +78,7 @@ export function printStockTagsHtml(db, rolls, { copies = 1 } = {}) {
             <span>Sisa<strong>${fmt.m(roll.currentMm)}</strong></span>
             <span>Lokasi<strong>${esc(wh?.code ?? '—')} / ${esc(roll.bin || '—')}</strong></span>
           </div>
+          <div class="stock-tag-foot"><span>PIC ${esc(pic || '—')}</span><span>${esc(date || '—')}</span></div>
         </div>
       </div>`);
     }
@@ -88,7 +89,8 @@ export function printStockTagsHtml(db, rolls, { copies = 1 } = {}) {
     .stock-tag-qr { width: 31mm; flex: none; text-align: center; }
     .stock-tag-qr svg { width: 28mm !important; height: 28mm !important; }
     .stock-tag-code { font-family: ui-monospace, monospace; font-size: 7pt; margin-top: 1mm; letter-spacing: .06em; }
-    .stock-tag-info { flex: 1; min-width: 0; }
+    .stock-tag-url { font-family: ui-monospace, monospace; font-size: 5.2pt; line-height: 1.2; color: #62727c; margin-top: .5mm; word-break: break-all; }
+    .stock-tag-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
     .stock-tag-brand { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; font-size: 11pt; }
     .stock-tag-brand span { font-size: 6.5pt; letter-spacing: .12em; color: #62727c; }
     .stock-tag-id { font-family: ui-monospace, monospace; font-size: 13pt; font-weight: 800; margin-top: 1mm; }
@@ -97,6 +99,7 @@ export function printStockTagsHtml(db, rolls, { copies = 1 } = {}) {
     .stock-tag-grid { margin-top: 2mm; display: grid; gap: 1mm; }
     .stock-tag-grid span { font-size: 6.5pt; color: #62727c; display: flex; justify-content: space-between; gap: 2mm; }
     .stock-tag-grid strong { color: #172b3a; font-size: 8pt; }
+    .stock-tag-foot { margin-top: auto; padding-top: 1mm; border-top: 1px solid #e4ded2; display: flex; justify-content: space-between; gap: 2mm; font-size: 6pt; color: #62727c; }
   </style>
   <div class="tag-sheet">${cards.join('')}</div>`;
 }

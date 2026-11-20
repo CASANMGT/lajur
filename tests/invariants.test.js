@@ -24,6 +24,7 @@ import { invoicesWithoutDelivery } from '../src/domain/deliveries.js';
 import { exportBackup, importBackup, validateBackup } from '../src/data/backup.js';
 import { syncImportedStock } from '../src/domain/stock-sync.js';
 import { buildStockPlanFromRows } from '../src/domain/stock-plan.js';
+import { buildCustomerPlanFromRows, importCustomerPlan } from '../src/domain/customer-plan.js';
 import { migrate } from '../src/data/store.js';
 import { buildSeed as seedAgain } from '../src/domain/seed.js';
 
@@ -939,4 +940,22 @@ test('Excel stock rows produce a dated plan and skip fee/folder rows', () => {
   assert.equal(plan.skus[0].rolls[0].count, 2);
   assert.equal(plan.samples.length, 1);
   assert.equal(plan.collections.length, 1);
+});
+
+test('customer Excel import normalizes phones and skips duplicates', () => {
+  const db = buildSeed();
+  const rows = [
+    ['INDEX KONTAK', 'KODE KONTAK', 'NAMA LENGKAP KONTAK', 'PANGGILAN KONTAK', 'NO. TELP. UTAMA', 'ALAMAT PENGIRIMAN', 'KOTA ALAMAT PENGIRIMAN', 'KONTAK AKTIF'],
+    ['CTCS-1', 'NEW', 'TOKO BARU', 'BUDI', '8.124642717E9', 'Jl. Baru 1', 'BANDUNG', '1'],
+    ['CTCS-2', 'DUP', 'HOTEL ARUNIKA', 'SITI', '0812-1000-2001', 'Jl. Sudirman 210', 'JAKARTA', '1'],
+  ];
+  const plan = buildCustomerPlanFromRows(rows, { date: '2026-11-20', source: 'customer.xlsx' });
+  assert.equal(plan.customers.length, 2);
+  assert.equal(plan.customers[0].phone, '08124642717');
+  const result = importCustomerPlan(db, { plan, user: MGR });
+  assert.equal(result.created, 1);
+  assert.equal(result.skipped, 1);
+  const created = db.customers.find((customer) => customer.name === 'TOKO BARU');
+  assert.equal(created.city, 'BANDUNG');
+  assert.equal(created.contactName, 'BUDI');
 });

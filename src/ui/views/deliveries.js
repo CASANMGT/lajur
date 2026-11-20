@@ -3,8 +3,8 @@
 import { esc, icon, fmt, badge, toast, confirmAction, openModal, field, copyText } from '../dom.js';
 import { byId, todayJakarta, weekdayName } from '../../domain/core.js';
 import {
-  COURIERS, DELIVERY_STATUS, confirmDelivery, deliveryTrackingUrl, dispatchDelivery,
-  invoicesWithoutDelivery, markDelivered, trackingLabel, trackingShareText,
+  COURIERS, DELIVERY_STATUS, cekResiUrl, confirmDelivery, deliveryTrackingUrl, dispatchDelivery,
+  invoicesWithoutDelivery, markDelivered, trackingLabel,
 } from '../../domain/deliveries.js';
 import { VEHICLE_TYPES } from '../../domain/master.js';
 import { courierMark, pageHead, statCard, can } from './common.js';
@@ -83,11 +83,11 @@ export function render(ctx) {
           <td><strong class="small">${esc(d.customerName)}</strong><div class="xs muted">PIC ${esc(d.pic)} · ${esc(d.recipientName || '—')}</div></td>
           <td>${esc(weekdayName(d.date))}${d.eta ? `<div class="xs muted">ETA ${esc(d.eta)}</div>` : ''}</td>
           <td><strong class="small">${esc(d.driver || '—')}</strong><div class="xs muted">${esc(d.vehicleName || VEHICLE_TYPES[d.vehicleType]?.label || d.vehicleType || '—')}${d.plateNumber ? ` · ${esc(d.plateNumber)}` : ''}</div><div class="xs muted">${esc(d.transportName || '—')}</div></td>
-          <td class="small">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.service || 'REG')}${d.trackingRef ? `<div class="row" style="gap:4px"><span class="xs muted mono">${esc(d.trackingRef)}</span><button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}" title="Salin link lacak">${icon('copy')}</button></div>` : d.courier === 'internal' ? `<div class="xs muted mono">No. SJ ${esc(d.id)}</div>` : ''}<div class="xs muted">${d.weightKg ? `${d.weightKg} kg` : '—'} · ${d.pieces || '—'} koli</div></td>
+          <td class="small">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.service || 'REG')}${d.trackingRef ? `<div class="row" style="gap:4px"><span class="xs muted mono">${esc(d.trackingRef)}</span><button class="btn btn-sm btn-ghost" type="button" data-copy-resi="${d.id}" title="Salin no. resi">${icon('copy')}</button>${cekResiUrl(d) ? `<a class="btn btn-sm btn-ghost" href="${esc(cekResiUrl(d))}" target="_blank" rel="noopener">Cek resi</a>` : ''}</div>` : d.courier === 'internal' ? `<div class="xs muted mono">No. SJ ${esc(d.id)}</div>` : ''}<div class="xs muted">${d.weightKg ? `${d.weightKg} kg` : '—'} · ${d.pieces || '—'} koli</div></td>
           <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}${d.receivedBy ? `<div class="xs muted">oleh ${esc(d.receivedBy)}</div>` : ''}</td>
           <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">${icon('printer')} Surat jalan</button>
-            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a>` : ''}
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener" title="${esc(trackingLabel(d))}">${icon('link')} Lacak</a><button class="btn btn-sm btn-ghost" type="button" data-copy-link="${d.id}">${icon('copy')} Salin link</button>` : ''}
             ${d.status !== 'confirmed' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -100,10 +100,10 @@ export function render(ctx) {
           <div class="top"><span class="id mono">${esc(d.id)}</span>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}</div>
           <div class="small strong">${esc(d.customerName)}</div>
           <div class="xs muted">Hari ${esc(weekdayName(d.date))} · ${esc(d.driver || '—')} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? '')} ${esc(d.plateNumber || '')}</div>
-          <div class="xs muted">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}${d.trackingRef ? ` · <span class="mono">${esc(d.trackingRef)}</span> <button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}">${icon('copy')}</button>` : ''}</div>
+          <div class="xs muted">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}${d.trackingRef ? ` · <span class="mono">${esc(d.trackingRef)}</span> <button class="btn btn-sm btn-ghost" type="button" data-copy-resi="${d.id}" title="Salin no. resi">${icon('copy')}</button>` : ''}</div>
           <div class="row" style="margin-top:4px;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">Cetak</button>
-            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a>${!d.trackingRef ? `<button class="btn btn-sm btn-ghost" type="button" data-copy-tracking="${d.id}">${icon('copy')} Salin</button>` : ''}` : ''}
+            ${deliveryTrackingUrl(d) ? `<a class="btn btn-sm" href="${esc(deliveryTrackingUrl(d))}" target="_blank" rel="noopener">${icon('link')} Lacak</a><button class="btn btn-sm btn-ghost" type="button" data-copy-link="${d.id}">${icon('copy')} Salin link</button>` : ''}
             ${d.status !== 'confirmed' && ['manager', 'sales'].includes(role) ? `<button class="btn btn-sm" data-edit-delivery="${d.id}">Edit</button>` : ''}
             ${d.status === 'draft' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-dispatch="${d.id}">Kirim</button>` : ''}
             ${d.status === 'dispatched' && role !== 'operator' ? `<button class="btn btn-sm btn-primary" data-arrive="${d.id}">Tiba</button>` : ''}
@@ -165,16 +165,30 @@ export function mount(ctx) {
       toast(err.message, { tone: 'error' });
     }
   });
-  document.querySelectorAll('[data-copy-tracking]').forEach((btn) => btn.addEventListener('click', async () => {
-    const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.copyTracking);
-    const text = trackingShareText(delivery);
+  document.querySelectorAll('[data-copy-resi]').forEach((btn) => btn.addEventListener('click', async () => {
+    const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.copyResi);
+    const resi = String(delivery?.trackingRef ?? '').trim();
+    if (!resi) {
+      toast('Belum ada nomor resi untuk disalin.', { tone: 'error' });
+      return;
+    }
+    try {
+      await copyText(resi);
+      toast('Nomor resi disalin.', { tone: 'success' });
+    } catch (err) {
+      toast(err.message, { tone: 'error' });
+    }
+  }));
+  document.querySelectorAll('[data-copy-link]').forEach((btn) => btn.addEventListener('click', async () => {
+    const delivery = (ctx.db.deliveries ?? []).find((d) => d.id === btn.dataset.copyLink);
+    const text = deliveryTrackingUrl(delivery);
     if (!text) {
       toast('Belum ada link lacak untuk surat jalan ini.', { tone: 'error' });
       return;
     }
     try {
       await copyText(text);
-      toast('Link lacak disalin. Tempel ke WhatsApp atau browser.', { tone: 'success' });
+      toast('Link lacak disalin.', { tone: 'success' });
     } catch (err) {
       toast(err.message, { tone: 'error' });
     }

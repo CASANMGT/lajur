@@ -722,6 +722,8 @@ function openPrintTags(ctx, roll = null) {
       </select>`)}
       ${field('Koleksi / motif', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan “semua roll dalam koleksi”.' })}
       ${field('Ulangi tiap tag', `<input class="input" type="number" name="copies" min="1" max="40" value="1" />`, { hint: 'Jumlah salinan per roll. A4 menampung 8 tag.' })}
+      ${field('PIC cetak', `<input class="input" name="pic" value="${esc(ctx.user?.name ?? '')}" placeholder="Nama PIC" />`)}
+      ${field('Tanggal cetak', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
       ${field('Roll terjual/habis', `<label class="checkline"><input type="checkbox" name="includeSold" /> Sertakan roll yang sudah habis/terjual</label>`, { full: true })}
       <div class="span-2">
         <div class="field">
@@ -805,7 +807,11 @@ function openPrintTags(ctx, roll = null) {
       }
       if (!rolls.length) throw new Error('Pilih minimal satu roll untuk dicetak.');
       const copies = Math.max(1, Math.min(40, Number(form.copies.value) || 1));
-      printDocument('Tag stok A4', printStockTagsHtml(db, rolls, { copies }), { plain: true });
+      printDocument('Tag stok A4', printStockTagsHtml(db, rolls, {
+        copies,
+        pic: String(form.pic?.value ?? '').trim(),
+        date: form.date?.value || todayJakarta(),
+      }), { plain: true });
       close();
       toast(`${rolls.length} roll × ${copies} salinan disiapkan · ${Math.ceil((rolls.length * copies) / 8)} halaman A4.`, { tone: 'success' });
     },
@@ -985,15 +991,20 @@ export function openStockShare(ctx, { customerId = null } = {}) {
     return;
   }
   const initialCollection = collectionNames[0];
-  const motifsFor = (collectionName) => lines
-    .filter((line) => line.collectionName === collectionName)
-    .sort((a, b) => b.availableMm - a.availableMm || a.colourName.localeCompare(b.colourName));
-  const buildMessage = (customer, collectionName, motifId = '') => {
-    const collectionLines = lines.filter((line) => line.collectionName === collectionName);
-    const visible = collectionLines.filter((line) => !motifId || line.skuId === motifId);
-    const scope = motifId
-      ? `${collectionName} · ${collectionLines.find((line) => line.skuId === motifId)?.colourName ?? ''}`
-      : `${collectionName} · semua motif`;
+  const selectedValues = (select) => Array.from(select?.selectedOptions ?? []).map((option) => option.value).filter(Boolean);
+  const motifsFor = (names) => lines
+    .filter((line) => !names.length || names.includes(line.collectionName))
+    .sort((a, b) => a.collectionName.localeCompare(b.collectionName) || b.availableMm - a.availableMm || a.colourName.localeCompare(b.colourName));
+  const buildMessage = (customer, collectionNamesSelected, motifIds = []) => {
+    const visible = lines.filter((line) => (
+      (!collectionNamesSelected.length || collectionNamesSelected.includes(line.collectionName))
+      && (!motifIds.length || motifIds.includes(line.skuId))
+    ));
+    const scope = motifIds.length
+      ? `${motifIds.length} motif${collectionNamesSelected.length ? ` · ${collectionNamesSelected.join(', ')}` : ''}`
+      : collectionNamesSelected.length
+        ? `${collectionNamesSelected.join(', ')} · semua motif`
+        : 'semua koleksi';
     if (!visible.length) return `Halo ${customer?.name ?? 'Bapak/Ibu'}, stok ${scope} sedang tidak tersedia. Kami akan menghubungi kembali setelah restock.`;
     return [
       `Halo ${customer?.name ?? 'Bapak/Ibu'}, berikut stok ${scope} yang tersedia${warehouseId ? ` di ${warehouseOf(db, warehouseId)?.name ?? warehouseId}` : ''}:`,
@@ -1005,11 +1016,11 @@ export function openStockShare(ctx, { customerId = null } = {}) {
   };
   const initial = customers.find((c) => c.id === customerId) ?? customers[0];
   const users = customers.map((c) => `<option value="${c.id}" data-wa="${esc(c.whatsapp || c.phone || '')}" ${c.id === initial.id ? 'selected' : ''}>${esc(c.name)}${c.company ? ` - ${esc(c.company)}` : ''} · WA ${esc(c.whatsapp || c.phone || '—')}</option>`).join('');
-  const collectionOptions = collectionNames.map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join('');
+  const collectionOptions = collectionNames.map((name) => `<option value="${esc(name)}" ${name === initialCollection ? 'selected' : ''}>${esc(name)}</option>`).join('');
   const openModalBody = `<div class="form-grid">
       ${field('Pelanggan', `<select class="select" name="customer">${users}</select>`, { full: true })}
-      ${field('Koleksi', `<select class="select" name="collection">${collectionOptions}</select>`, { hint: 'Pilih koleksi terlebih dahulu.' })}
-      ${field('Motif / warna', `<select class="select" name="motif"></select>`, { hint: 'Pilih motif untuk melihat jumlah roll yang tersedia.' })}
+      ${field('Koleksi', `<select class="select" name="collection" multiple size="6">${collectionOptions}</select>`, { hint: 'Bisa pilih beberapa koleksi (Ctrl/Cmd + klik).' })}
+      ${field('Motif / warna', `<select class="select" name="motif" multiple size="8"></select>`, { hint: 'Bisa pilih beberapa motif. Kosongkan untuk semua motif dari koleksi terpilih.' })}
       <div class="span-2" data-stock-summary></div>
       ${field('Pesan stok', `<textarea class="textarea" name="message" rows="11"></textarea>`, { full: true, hint: 'Bisa diedit sebelum dikirim.' })}
       <div class="span-2 row" style="margin-top:10px">
@@ -1027,39 +1038,39 @@ export function openStockShare(ctx, { customerId = null } = {}) {
       const customer = () => customers.find((c) => c.id === form.customer.value) ?? initial;
       const phone = (c) => String(c.whatsapp || c.phone || '').replace(/\D/g, '').replace(/^0/, '62');
       const summaryBox = form.querySelector('[data-stock-summary]');
-      const motifOptions = (collectionName, selected = '') => {
-        const motifs = motifsFor(collectionName);
-        return `<option value="">Semua motif</option>${motifs.map((line) => `<option value="${esc(line.skuId)}" ${selected === line.skuId ? 'selected' : ''}>${esc(line.colourName || '—')} · ${esc(line.widthCm)} cm · ${(line.availableMm / MM_PER_M).toLocaleString('id-ID')} m</option>`).join('')}`;
-      };
+      const motifOptions = (names, selected = []) => motifsFor(names).map((line) => `<option value="${esc(line.skuId)}" ${selected.includes(line.skuId) ? 'selected' : ''}>${esc(line.collectionName)} · ${esc(line.colourName || '—')} · ${esc(line.widthCm)} cm · ${(line.availableMm / MM_PER_M).toLocaleString('id-ID')} m</option>`).join('');
+      const currentCollections = () => selectedValues(form.collection);
+      const currentMotifs = () => selectedValues(form.motif);
       const updateSummary = () => {
-        const collectionName = form.collection.value;
-        const motifId = form.motif.value;
-        const collectionLines = lines.filter((line) => line.collectionName === collectionName);
-        const visible = collectionLines.filter((line) => !motifId || line.skuId === motifId);
+        const names = currentCollections();
+        const motifIds = currentMotifs();
+        const visible = lines.filter((line) => (
+          (!names.length || names.includes(line.collectionName))
+          && (!motifIds.length || motifIds.includes(line.skuId))
+        ));
         const metres = visible.reduce((a, line) => a + line.availableMm, 0);
         const rolls = visible.reduce((a, line) => a + line.rolls.length, 0);
-        const label = motifId
-          ? `${collectionName} · ${collectionLines.find((line) => line.skuId === motifId)?.colourName ?? ''}`
-          : collectionName;
+        const label = motifIds.length
+          ? `${names.length ? `${names.join(', ')} · ` : ''}${motifIds.length} motif dipilih`
+          : names.length ? `${names.join(', ')} · semua motif` : 'Semua koleksi';
         summaryBox.innerHTML = `<div class="notice notice-teal">${icon('box')}<div><strong>${esc(label)}</strong> — ${rolls} roll · ${(metres / MM_PER_M).toLocaleString('id-ID')} m tersedia.</div></div>`;
       };
       const update = () => {
         const c = customer();
-        const collectionName = form.collection.value;
-        form.message.value = buildMessage(c, collectionName, form.motif.value);
+        form.message.value = buildMessage(c, currentCollections(), currentMotifs());
         form.querySelector('[data-open-wa]').href = phone(c)
           ? `https://wa.me/${phone(c)}?text=${encodeURIComponent(form.message.value)}`
           : '#';
         updateSummary();
       };
       const syncMotifs = () => {
-        const previous = form.motif.value;
-        form.motif.innerHTML = motifOptions(form.collection.value, previous);
-        if (![...form.motif.options].some((opt) => opt.value === previous)) form.motif.value = '';
+        const previous = currentMotifs();
+        form.motif.innerHTML = motifOptions(currentCollections(), previous);
+        const available = new Set([...form.motif.options].map((option) => option.value));
+        for (const option of form.motif.options) option.selected = previous.includes(option.value) && available.has(option.value);
         update();
       };
-      form.collection.value = initialCollection;
-      form.motif.innerHTML = motifOptions(initialCollection);
+      form.motif.innerHTML = motifOptions(currentCollections());
       form.customer.addEventListener('change', update);
       form.collection.addEventListener('change', syncMotifs);
       form.motif.addEventListener('change', update);

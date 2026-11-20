@@ -2,6 +2,32 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.27.0] — 2026-11-20
+
+**Release name: WA Multi-Stok & Impor Customer.** Multi-select WhatsApp stock scopes, resi-only copy, third-party cek resi, QR tag URL/PIC/date, and customer Excel import.
+
+### Added
+
+- **WA multi-select:** choose several collections and several motifs (Ctrl/Cmd + click). The preview and message can cover one motif, many motifs, whole collections, or all selected scopes.
+- **Resi-only copy:** the copy button beside the resi now copies only the tracking number. A separate **Salin link** copies the tracking URL.
+- **Third-party cek resi:** a **Cek resi** link opens `cekresi.com` with the resi prefilled, for a second check independent of the courier page.
+- **QR tag URL/PIC/date:** every printed tag now includes the public `#/scan/:id` URL and manual **PIC cetak** + **Tanggal cetak** fields.
+- **Customer Excel import:** Customers → **Impor Excel**, with header detection (`NAMA LENGKAP KONTAK`), phone normalization, duplicate skipping by name/phone, preview and confirmation.
+- **Customer import data:** all 15 rows from `customer test data.xlsx` imported into the local customer base.
+
+### Changed
+
+- Customer records now keep `contactName`, `externalCode`, `source` and `importedAt` from Excel.
+- No API key is required for the cekresi.com page link. Automatic status polling through a courier API still needs a provider key or server proxy.
+
+### Verification
+
+- `node --test`: **85 passed**.
+- Browser QA: two collections + two motifs selected in WA preview; resi copy yielded exactly `541680005420019`; cek resi URL prefilled; QR tag contained scan URL, PIC and date; customer file previewed 15 customers and imported 15 (0 duplicates).
+- Version bumped to 2.27.0; schema 20 and backup v20 unchanged.
+
+---
+
 ## [2.26.0] — 2026-11-20
 
 **Release name: Workspace Stok & Impor Excel.** Defaults to a collapsed collection list with stock-only drill-down, adds stock/motif analytics, cascading WA share, sample deletion, and dated Excel import with backup.

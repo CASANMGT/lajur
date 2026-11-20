@@ -111,6 +111,13 @@ export function trackingLabel(delivery) {
   return TRACKING_PAGES[delivery?.courier]?.label ?? '';
 }
 
+/** Third-party Indonesian all-courier tracker with the resi prefilled. */
+export function cekResiUrl(delivery) {
+  const ref = String(delivery?.trackingRef ?? '').trim();
+  if (!ref) return '';
+  return `https://cekresi.com/?noresi=${encodeURIComponent(ref)}`;
+}
+
 /** Copy/paste text for WhatsApp or the courier tracking page. */
 export function trackingShareText(delivery) {
   const url = deliveryTrackingUrl(delivery);

@@ -12,6 +12,8 @@ import { invoiceOutstanding, invoiceStatusLabel } from '../../domain/sales.js';
 import { openStockShare } from './inventory.js';
 import { PROJECT_STATUS } from '../../domain/projects.js';
 import { settingsOf } from '../../domain/settings.js';
+import { buildCustomerPlanFromRows, importCustomerPlan } from '../../domain/customer-plan.js';
+import { readExcelRows } from '../excel.js';
 import { pageHead, statCard, can } from './common.js';
 
 export function render(ctx) {
@@ -33,7 +35,7 @@ export function render(ctx) {
       eyebrow: 'CRM',
       title: 'Pelanggan',
       sub: 'Profil, proyek, buku sample, deposit, piutang, dan riwayat aktivitas dalam satu tempat.',
-      actions: `${can(role, 'customer.create') ? `<button class="btn btn-primary" type="button" data-act="new-customer">${icon('plus')} Pelanggan baru</button>` : ''}`,
+      actions: `${can(role, 'customer.create') ? `<button class="btn btn-primary" type="button" data-act="new-customer">${icon('plus')} Pelanggan baru</button><button class="btn" type="button" data-act="import-customers">${icon('upload')} Impor Excel</button>` : ''}`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
       ${statCard({ label: 'Total pelanggan', value: String(db.customers.length), meta: `${pipeline.length} dalam pipeline`, iconName: 'users' })}
@@ -435,6 +437,89 @@ export function openCreate(ctx) {
   });
 }
 
+function openCustomerImport(ctx) {
+  let rows = null;
+  let plan = null;
+  openModal({
+    title: 'Impor pelanggan dari Excel',
+    description: 'Upload file customer, pilih tanggal import, baca, lalu simpan. Pelanggan duplikat (nama/telepon) dilewati.',
+    submitLabel: 'Impor pelanggan',
+    wide: true,
+    body: `<div class="form-grid">
+      ${field('Tanggal import', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
+      ${field('File Excel', `<input class="input" type="file" name="file" accept=".xlsx,.xls" />`, { hint: 'Header wajib: NAMA LENGKAP KONTAK. Maksimal 10 MB.' })}
+      <div class="span-2 row" style="margin:4px 0"><button class="btn btn-sm" type="button" data-read-customers>${icon('upload')} Baca Excel</button></div>
+      <div class="span-2" data-customer-status></div>
+      <div class="span-2" data-customer-summary></div>
+      <label class="checkline span-2"><input type="checkbox" name="confirm" /> Saya sudah memeriksa pratinjau pelanggan.</label>
+    </div>`,
+    onMount(form) {
+      const status = form.querySelector('[data-customer-status]');
+      const summary = form.querySelector('[data-customer-summary]');
+      const show = (html, tone = 'info') => {
+        status.className = `notice notice-${tone}`;
+        status.innerHTML = `${icon(tone === 'warn' ? 'alert' : tone === 'teal' ? 'checkCircle' : 'upload')}<div>${html}</div>`;
+      };
+      const draw = () => {
+        if (!plan) {
+          summary.innerHTML = '';
+          return;
+        }
+        const duplicates = plan.customers.filter((item) => ctx.db.customers.some((customer) => (
+          (item.phone && String(customer.phone ?? '').replace(/\D/g, '') === item.phone)
+          || String(customer.name).trim().toLowerCase() === item.name.toLowerCase()
+        ))).length;
+        summary.innerHTML = `<div class="grid grid-3" style="margin:8px 0">
+          ${statCard({ label: 'Pelanggan', value: String(plan.customers.length), meta: `${plan.customers.length - duplicates} baru` })}
+          ${statCard({ label: 'Duplikat', value: String(duplicates), meta: 'Akan dilewati' })}
+          ${statCard({ label: 'Sumber', value: 'Excel', meta: esc(plan.source) })}
+        </div>
+        <div class="xs muted">Contoh: ${plan.customers.slice(0, 5).map((item) => esc(item.name)).join(' · ')}</div>`;
+      };
+      const read = async () => {
+        const file = form.file.files?.[0];
+        if (!file) {
+          show('Pilih file Excel terlebih dahulu.', 'warn');
+          return;
+        }
+        show('Membaca file pelanggan…', 'info');
+        try {
+          rows = await readExcelRows(file);
+          plan = buildCustomerPlanFromRows(rows, { date: form.date.value, source: file.name });
+          draw();
+          show(`File terbaca: ${plan.customers.length} pelanggan siap diimpor.`, 'teal');
+        } catch (err) {
+          rows = null;
+          plan = null;
+          draw();
+          show(`Gagal membaca Excel: ${esc(err.message)}`, 'warn');
+        }
+      };
+      form.file.addEventListener('change', read);
+      form.date.addEventListener('change', () => {
+        if (!rows) return;
+        try {
+          plan = buildCustomerPlanFromRows(rows, { date: form.date.value, source: form.file.files?.[0]?.name ?? 'Upload Excel' });
+          draw();
+        } catch (err) {
+          plan = null;
+          draw();
+          show(esc(err.message), 'warn');
+        }
+      });
+      form.querySelector('[data-read-customers]').addEventListener('click', read);
+      show('Pilih file Excel lalu klik “Baca Excel”.', 'info');
+    },
+    onSubmit(form, close) {
+      if (!plan) throw new Error('Baca file Excel dan periksa pratinjau terlebih dahulu.');
+      if (!form.confirm.checked) throw new Error('Centang konfirmasi sebelum impor.');
+      const result = ctx.store.update((db) => importCustomerPlan(db, { plan, user: ctx.user }));
+      close();
+      toast(`Impor pelanggan selesai: ${result.created} baru · ${result.skipped} duplikat dilewati.`, { tone: 'success' });
+    },
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 
 export function mount(ctx) {
@@ -461,6 +546,7 @@ export function mount(ctx) {
   }
 
   document.querySelector('[data-act="new-customer"]')?.addEventListener('click', () => openCreate(ctx));
+  document.querySelector('[data-act="import-customers"]')?.addEventListener('click', () => openCustomerImport(ctx));
   document.querySelectorAll('tr[data-href]').forEach((tr) => tr.addEventListener('click', () => {
     window.location.hash = tr.dataset.href.replace('#', '');
   }));
