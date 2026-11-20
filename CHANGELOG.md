@@ -2,6 +2,23 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.29.1] — 2026-11-20
+
+**Release name: Sinkron Neon Region Singapura.** Deployment region pinned to Singapore so the API runs beside a Singapore Neon database.
+
+### Changed
+
+- `vercel.json` pins the `/api/cloud` function to **`sin1` (Singapore)**.
+- Setup docs and Settings now require a Neon project in **AWS `ap-southeast-1` (Singapore)**.
+- `.env.example` shows a Singapore pooled Neon host.
+
+### Verification
+
+- `node --test`: **92 passed**; module check **59/59**; render check passes.
+- Vercel deployment reports the function build in `sin1`.
+
+---
+
 ## [2.29.0] — 2026-11-20
 
 **Release name: Sinkron Neon & Domain Lavishome.** The shared dataset backend moved from a browser-side Supabase RPC to a Vercel Function backed by Neon Postgres.

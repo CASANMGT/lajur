@@ -5,6 +5,16 @@
 
 export const CHANGELOG = [
   {
+    version: '2.29.1',
+    date: '2026-11-20',
+    name: 'Sinkron Neon Region Singapura',
+    items: [
+      'Function /api/cloud dipasang di region Vercel sin1 (Singapura).',
+      'Project Neon disarankan di AWS ap-southeast-1 (Singapore) agar latency rendah.',
+      'DATABASE_URL dan LAJUR_SYNC_KEY tetap hanya di environment Vercel.',
+    ],
+  },
+  {
     version: '2.29.0',
     date: '2026-11-20',
     name: 'Sinkron Neon & Domain Lavishome',

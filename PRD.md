@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.29.0
+# PRD - Lavishome v2.29.1
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.29.0 (schema 20)
+**Version:** 2.29.1 (schema 20)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.29.0: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
+Role scope in v2.29.1: **operator** can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** can reach summary, tasks, read-only stock, invoices, sales orders (Advanced + enabled), deliveries, catalog, projects, customers, samples and simulation (Advanced); **driver** can reach summary, tasks, deliveries and guide only; **manager** can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Operators never see PO prices, supplier bills or the supplier master.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -538,6 +538,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-91 | Invoice fabric lines select collection → motif/colour → roll, default to whole roll, and only allow cut mode when the roll has no active reservation. |
 | BR-92 | The customer profile stores a delivery map address and PIC penerimaan. The map is an embedded Google Maps query, not a stored coordinate. |
 | BR-93 | Cloud sync is optional. The whole main dataset is revisioned in one Neon Postgres JSONB row through `/api/cloud`; conflicts are last-write-wins. This is shared back-office sync, not per-action transactional concurrency. |
+| BR-95 | The `/api/cloud` function is pinned to Vercel region `sin1` (Singapore). The Neon project should use AWS `ap-southeast-1` (Singapore); the connection string and sync key live only in Vercel environment variables. |
 | BR-94 | Stock sorting applies to collections, motifs, roll rows and mobile cards. Options are most available metres, name A–Z and name Z–A; the default is most metres. |
 
 ---
@@ -546,7 +547,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.29.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.29.1 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -728,6 +729,7 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-124 | Neon cloud sync saves and pulls the shared dataset with a revision guard | Pass (code path; needs DATABASE_URL + LAJUR_SYNC_KEY) |
 | AC-125 | Sidebar, Stock page and Settings open the in-app changelog | Pass |
 | AC-126 | Stock sort switches between most metres and A–Z/Z–A | Pass |
+| AC-127 | The cloud API deploys to Singapore (`sin1`) and reads `DATABASE_URL`/`LAJUR_SYNC_KEY` from Vercel env | Pass (region verified after deploy) |
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 

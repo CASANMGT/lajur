@@ -178,7 +178,7 @@ function renderData(ctx) {
       <div class="row-between" style="align-items:flex-start">
         <div>
           <h2>Sinkronisasi cloud (Neon)</h2>
-          <p class="small muted" style="margin-top:6px">Satu dataset bersama untuk semua perangkat. API <span class="mono">/api/cloud</span> menyimpan dokumen JSONB di Neon. Jalankan <span class="mono">db/neon.sql</span>, lalu set <span class="mono">DATABASE_URL</span> dan <span class="mono">LAJUR_SYNC_KEY</span> di Vercel.</p>
+          <p class="small muted" style="margin-top:6px">Satu dataset bersama untuk semua perangkat. API <span class="mono">/api/cloud</span> berjalan di region <strong>Singapura (sin1)</strong> dan menyimpan dokumen JSONB di Neon. Buat project Neon di <strong>AWS ap-southeast-1 (Singapore)</strong>, jalankan <span class="mono">db/neon.sql</span>, lalu set <span class="mono">DATABASE_URL</span> dan <span class="mono">LAJUR_SYNC_KEY</span> di Vercel.</p>
         </div>
         ${badge(`${toneLabel}${status.revision ? ` · rev ${status.revision}` : ''}`, tone)}
       </div>
