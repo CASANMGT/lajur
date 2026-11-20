@@ -2,6 +2,28 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.30.0] — 2026-11-20
+
+**Release name: Neon Terhubung & Build Pipeline.** The app is linked to the Neon project and the API is verified against it.
+
+### Added
+
+- Linked Neon project **Lavishome** (`cold-frog-43511102`), production branch, region **AWS `ap-southeast-1` (Singapore)**.
+- `neon.ts` branch policy and `.neon` project link (`.neon` stays git-ignored).
+- `@vercel/functions` `attachDatabasePool()` so Vercel Fluid compute releases idle Postgres clients.
+- `npm run build` (tests + module check + render check) and `npm start`.
+- Local dev server now serves `/api/cloud` and loads `.env.local`.
+- CI now runs `npm ci && npm run build`.
+
+### Verified
+
+- `neon deploy`: branch matches policy; 5 Neon variables pulled into `.env.local`.
+- Local API: `GET /api/cloud` returned revision 0 before seeding.
+- Full dataset push: `POST` returned `{"revision":1}`; `GET` returned **2.203 rolls / 20 customers / 2026-11-13**.
+- Vercel production: `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `LAJUR_SYNC_KEY` set; `/api/cloud` runs in `sin1`.
+
+---
+
 ## [2.29.1] — 2026-11-20
 
 **Release name: Sinkron Neon Region Singapura.** Deployment region pinned to Singapore so the API runs beside a Singapore Neon database.

@@ -13,6 +13,7 @@
 
 import { gzipSync, gunzipSync } from 'node:zlib';
 import crypto from 'node:crypto';
+import { attachDatabasePool } from '@vercel/functions';
 
 const WORKSPACE_RE = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const MAX_DECOMPRESSED_BYTES = 60 * 1024 * 1024;
@@ -160,6 +161,8 @@ async function getPool() {
       ? { rejectUnauthorized: false }
       : undefined,
   });
+  // Vercel Fluid compute: release idle clients before the function suspends.
+  attachDatabasePool(pool);
   return pool;
 }
 

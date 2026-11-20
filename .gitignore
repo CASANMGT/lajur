@@ -9,3 +9,4 @@ server/data/
 .env.*.local
 
 .vercel
+.neon

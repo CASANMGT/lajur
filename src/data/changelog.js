@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.30.0',
+    date: '2026-11-20',
+    name: 'Neon Terhubung & Build Pipeline',
+    items: [
+      'Project Neon Lavishome (Singapore) terhubung ke branch production.',
+      'API /api/cloud memakai node-postgres + attachDatabasePool untuk Vercel Fluid compute.',
+      'Dataset 2.203 roll dan 20 pelanggan sudah masuk ke Neon.',
+      'npm run build menjalankan tes, cek modul, dan render check.',
+    ],
+  },
+  {
     version: '2.29.1',
     date: '2026-11-20',
     name: 'Sinkron Neon Region Singapura',

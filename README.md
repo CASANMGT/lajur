@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-92%2F92-brightgreen) ![Version](https://img.shields.io/badge/version-2.29.1-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-92%2F92-brightgreen) ![Version](https://img.shields.io/badge/version-2.30.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,7 +60,7 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`, `v2.28.1`, `v2.29.0`, `v2.29.1`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`, `v2.28.1`, `v2.29.0`, `v2.29.1`, `v2.30.0`.
 - `CHANGELOG.md` records every release and review fix.
 - `.github/workflows/ci.yml` runs the 92 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
@@ -101,6 +101,14 @@ The shared path is **Vercel Function → Neon Postgres**. The browser never hold
 3. Redeploy. `api/cloud.js` creates `lajur_cloud` automatically; `db/neon.sql` is the same schema if you prefer to run it manually.
 4. Open Lavishome → **Pengaturan → Data → Sinkronisasi cloud (Neon)**. Leave **URL API** empty for the same domain, set workspace `lavishome`, and enter `LAJUR_SYNC_KEY`.
 5. **Simpan & uji** pulls the cloud copy on first use; if the workspace is empty it pushes the current browser dataset. Other devices with the same workspace + key pull it on start.
+
+This repository is currently linked to Neon project **Lavishome** (`cold-frog-43511102`), production branch, region **AWS `ap-southeast-1`**. Local commands:
+
+```bash
+neon deploy          # apply neon.ts, pull DATABASE_URL* into .env.local
+npm run build        # tests + module + render checks
+npm start            # static app + /api/cloud on http://127.0.0.1:8787
+```
 
 The API stores the versioned document in JSONB with an optimistic revision guard. Request/response bodies are gzip-compressed so the ~3.7 MB dataset stays under Vercel's 4.5 MB function limit. This is shared back-office sync (last-write-wins for the whole document), **not** per-action transactional concurrency. For simultaneous editors, split the domain into row-level tables and per-action transactions, or use `server/server.mjs` with PostgreSQL.
 

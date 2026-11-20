@@ -15,8 +15,38 @@ const types = {
   '.woff2': 'font/woff2',
 };
 
-const server = http.createServer((req, res) => {
+// Minimal .env loader for local development. Vercel injects env vars itself.
+function loadEnv(file) {
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
+    const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)\s*$/);
+    if (!match || process.env[match[1]] !== undefined) continue;
+    let value = match[2].trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    process.env[match[1]] = value;
+  }
+}
+loadEnv(path.join(root, '.env.local'));
+loadEnv(path.join(root, '.env'));
+
+let apiHandler = null;
+
+const server = http.createServer(async (req, res) => {
   const urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
+
+  if (urlPath === '/api/cloud') {
+    try {
+      apiHandler ??= (await import('../api/cloud.js')).default;
+      await apiHandler(req, res);
+    } catch (err) {
+      res.writeHead(500, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
   let filePath = path.join(root, urlPath === '/' ? 'index.html' : urlPath);
   if (!filePath.startsWith(root)) {
     res.writeHead(403).end('Forbidden');

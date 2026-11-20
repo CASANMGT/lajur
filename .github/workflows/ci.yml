@@ -14,9 +14,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Domain invariants
-        run: node --test
-      - name: Module imports
-        run: node tools/check.mjs
-      - name: Server-side render
-        run: node tools/render-check.mjs
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Build and verify
+        run: npm run build

@@ -1,11 +1,13 @@
 {
   "name": "lajur",
-  "version": "2.29.1",
+  "version": "2.30.0",
   "private": true,
   "type": "module",
   "description": "Lajur — sistem inventori dan operasi bisnis gorden (demo interaktif).",
   "scripts": {
     "dev": "node tools/serve.mjs",
+    "start": "node tools/serve.mjs",
+    "build": "node --test && node tools/check.mjs && node tools/render-check.mjs",
     "server": "node server/server.mjs",
     "test": "node --test",
     "check": "node tools/check.mjs"
@@ -14,6 +16,9 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@neon/config": "^1.14.5",
+    "@neon/env": "^2.1.8",
+    "@vercel/functions": "^3.11.3",
     "pg": "^8.13.1",
     "qrcode-generator": "^1.4.4"
   }
