@@ -2,6 +2,25 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.39.0] — 2026-11-21
+
+**Release name: Opname per Koleksi, Motif & Scan QR.** Stock opname is now sorted by collection → motif → roll, with live ada/meter status and mobile QR scanning.
+
+### Added
+
+- **Opname sorting:** session lines are stored sorted by collection, then motif/colour, then roll A–Z.
+- **Filters:** Koleksi and Motif/warna selects narrow the count list.
+- **Live status:** each row shows **Belum dicek / Tidak ada / Ada · X m** as the operator types.
+- **QR scan:** Scan QR opens the rear camera (BarcodeDetector), with manual roll ID and QR photo fallback. A found roll focuses its meter input and highlights the row.
+- **Payment page simplification:** the “Metode pembayaran” summary card is removed from the main Pembayaran list; bank/method remains on each receipt row.
+
+### Verification
+
+- `node --test`: **101 passed**; module check **62/62**; render check passes.
+- Browser QA: OPN-002 lines began `Aria/Greige` then `Luna`; manual QR `RL-0013` focused the row; `8,5` changed status to **Ada · 8,5 m**.
+
+---
+
 ## [2.38.0] — 2026-11-20
 
 **Release name: Pembayaran Sebagian & Logo Bank.** Partial payments now show the remaining balance live, with Indonesian bank marks, transfer numbers and method stats.

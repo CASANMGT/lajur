@@ -47,16 +47,23 @@ export function startOpname(db, { warehouseId, user, note = '' }) {
     startedDate: todayJakarta(),
     countedBy: user?.name ?? 'Sistem',
     note,
-    lines: rolls.map((r) => ({
-      rollId: r.id,
-      skuId: r.skuId,
-      lot: r.lot,
-      expectedMm: r.currentMm,
-      reservedMm: r.reservedMm || 0,
-      unitCost: r.costPerM,
-      countedMm: null,
-      note: '',
-    })),
+    lines: rolls.map((r) => {
+      const sku = byId(db.skus, r.skuId);
+      return {
+        rollId: r.id,
+        skuId: r.skuId,
+        collectionName: sku?.collectionName ?? '',
+        motifName: sku?.colourName || sku?.colourCode || sku?.code || '',
+        lot: r.lot,
+        expectedMm: r.currentMm,
+        reservedMm: r.reservedMm || 0,
+        unitCost: r.costPerM,
+        countedMm: null,
+        note: '',
+      };
+    }).sort((a, b) => String(a.collectionName).localeCompare(String(b.collectionName))
+      || String(a.motifName).localeCompare(String(b.motifName))
+      || String(a.rollId).localeCompare(String(b.rollId))),
     submittedAt: null,
     postedAt: null,
     postedBy: null,

@@ -65,23 +65,6 @@ export function render(ctx) {
     return String(b.invoice.date).localeCompare(String(a.invoice.date));
   });
   const receipts = paymentRows(ctx);
-  const methodMap = new Map();
-  for (const { payment } of receipts) {
-    const key = payment.bank || payment.method || 'other';
-    const bank = payment.bank ? bankById(payment.bank) : null;
-    const row = methodMap.get(key) ?? {
-      key,
-      label: bank?.name ?? String(payment.method || 'Lainnya').toUpperCase(),
-      bank,
-      method: payment.method,
-      count: 0,
-      amount: 0,
-    };
-    row.count += 1;
-    row.amount += Number(payment.amount || 0);
-    methodMap.set(key, row);
-  }
-  const methods = [...methodMap.values()].sort((a, b) => b.amount - a.amount);
 
   return `
     ${pageHead({
@@ -97,11 +80,6 @@ export function render(ctx) {
       ${statCard({ label: 'Total sisa', value: fmt.money(totalOutstanding), meta: `dari ${fmt.money(totalBilled)}`, tone: totalOutstanding ? 'warn' : 'ok' })}
       ${statCard({ label: 'Terkumpul', value: fmt.money(totalPaid), meta: `${receipts.length} penerimaan` })}
     </div>
-    ${methods.length ? `<section class="card card-pad" style="margin-bottom:16px">
-      <div class="row-between"><div><h2>Metode pembayaran</h2><p class="xs muted">Bank dan metode yang sudah dipakai, beserta jumlah penerimaan.</p></div><span class="badge no-dot">${methods.length} metode</span></div>
-      <div class="row" style="margin-top:12px;gap:10px;flex-wrap:wrap">${methods.map((row) => `<div class="row" style="gap:7px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:var(--ivory-50)">${row.bank ? bankMarkHtml(row.bank, { small: true }) : ''}<span class="small"><strong>${esc(row.label)}</strong> · ${row.count}×<div class="xs muted">${fmt.money(row.amount)}</div></span></div>`).join('')}</div>
-    </section>` : ''}
-
     <div class="row-between" style="margin-bottom:12px;gap:12px;flex-wrap:wrap">
       <div class="row" style="flex-wrap:wrap">
         ${[['all', `Semua (${counts.all})`], ['unpaid', `Belum bayar (${counts.unpaid})`], ['partial', `Belum lunas (${counts.partial})`], ['paid', `Lunas (${counts.paid})`]].map(([key, label]) => `<button class="chip" type="button" data-pay-filter="${key}" aria-pressed="${state.filter === key}">${esc(label)}</button>`).join('')}

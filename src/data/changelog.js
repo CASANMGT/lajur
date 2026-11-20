@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.39.0',
+    date: '2026-11-21',
+    name: 'Opname per Koleksi, Motif & Scan QR',
+    items: [
+      'Stock opname diurutkan koleksi → motif/warna → roll A–Z.',
+      'Filter koleksi dan motif, status langsung: belum dicek, tidak ada, atau ada X meter.',
+      'Tombol Scan QR membuka kamera belakang; bisa juga ketik roll atau upload foto QR.',
+      'Kartu Metode pembayaran dihapus dari daftar utama Pembayaran.',
+    ],
+  },
+  {
     version: '2.38.0',
     date: '2026-11-20',
     name: 'Pembayaran Sebagian & Logo Bank',

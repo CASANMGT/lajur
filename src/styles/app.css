@@ -2061,6 +2061,13 @@ tr.group-row .xs { margin-left: 8px; }
 }
 
 /* ------------------------------------------------------------ delivery map */
+.scan-hit {
+  outline: 3px solid var(--copper-500, #b8753b);
+  outline-offset: 2px;
+  background: #fff6e8 !important;
+  transition: background 0.25s ease, outline-color 0.25s ease;
+}
+
 .bank-mark {
   display: inline-flex;
   align-items: center;

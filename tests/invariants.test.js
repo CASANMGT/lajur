@@ -47,6 +47,14 @@ function expectError(fn, code) {
 
 const rollOf = (db, id) => db.rolls.find((r) => r.id === id);
 
+test('stock opname lines sort by collection, motif then roll', () => {
+  const db = buildSeed();
+  const session = startOpname(db, { warehouseId: 'wh-jkt', user: OP });
+  const keys = session.lines.map((line) => `${line.collectionName}|${line.motifName}|${line.rollId}`);
+  const sorted = [...keys].sort((a, b) => a.localeCompare(b));
+  assert.deepEqual(keys, sorted);
+});
+
 test('opening stock keeps every Luna roll as its own length', () => {
   const db = buildSeed();
   const luna1 = db.rolls

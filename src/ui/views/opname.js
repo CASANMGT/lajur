@@ -8,6 +8,7 @@ import {
 } from '../../domain/opname.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { printOpnameHtml } from './print.js';
+import { scanAwbImage } from '../awb.js';
 
 export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
@@ -80,14 +81,32 @@ function renderDetail(ctx) {
   const counting = s.status === 'counting';
   const posted = s.status === 'posted';
 
-  const rows = s.lines.map((line) => {
+  const sortedLines = [...s.lines].sort((a, b) => {
+    const skuA = byId(db.skus, a.skuId);
+    const skuB = byId(db.skus, b.skuId);
+    const collectionA = String(a.collectionName ?? skuA?.collectionName ?? '');
+    const collectionB = String(b.collectionName ?? skuB?.collectionName ?? '');
+    const motifA = String(a.motifName ?? skuA?.colourName ?? skuA?.colourCode ?? '');
+    const motifB = String(b.motifName ?? skuB?.colourName ?? skuB?.colourCode ?? '');
+    return collectionA.localeCompare(collectionB) || motifA.localeCompare(motifB) || String(a.rollId).localeCompare(String(b.rollId));
+  });
+  const collections = [...new Set(sortedLines.map((line) => line.collectionName ?? byId(db.skus, line.skuId)?.collectionName ?? '').filter(Boolean))].sort();
+  const rows = sortedLines.map((line) => {
     const roll = db.rolls.find((r) => r.id === line.rollId);
     const sku = byId(db.skus, line.skuId);
+    const collectionName = line.collectionName ?? sku?.collectionName ?? '';
+    const motifName = line.motifName ?? sku?.colourName ?? sku?.colourCode ?? '';
     const variance = line.countedMm === null ? null : line.countedMm - line.expectedMm;
-    return `<tr>
+    const status = line.countedMm === null
+      ? badge('Belum dicek', 'muted')
+      : line.countedMm <= 0
+        ? badge('Tidak ada', 'danger')
+        : badge(`Ada · ${fmt.m(line.countedMm)}`, 'ok');
+    return `<tr data-opname-row data-collection="${esc(collectionName)}" data-motif="${esc(motifName)}">
       <td><span class="mono strong">${esc(line.rollId)}</span><div class="xs muted">${esc(line.lot)}</div></td>
-      <td>${esc(sku?.collectionName)} ${esc(sku?.colourName || sku?.colourCode)}<div class="xs muted">${esc(sku?.code)}</div></td>
-      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="—" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? '—' : fmt.m(line.countedMm)}</td>`}
+      <td>${esc(collectionName)} · ${esc(motifName)}<div class="xs muted">${esc(sku?.code)}${roll?.bin ? ` · Rak ${esc(roll.bin)}` : ''}</div></td>
+      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="0" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? '—' : fmt.m(line.countedMm)}</td>`}
+      <td data-opname-status>${status}</td>
       ${reviewing || posted ? `<td class="num muted">${fmt.m(line.expectedMm)}</td><td class="num ${variance ? 'strong' : ''}">${variance === null ? '—' : fmt.m(variance, { signed: true })}</td>` : ''}
     </tr>`;
   }).join('');
@@ -100,7 +119,7 @@ function renderDetail(ctx) {
         <p class="sub">${esc(wh?.name)} · mulai ${esc(s.startedDate)} · dihitung ${esc(s.countedBy)}</p>
       </div>
       <div class="page-actions">
-        ${counting && can(role, 'opname.count') ? `<button class="btn" type="button" data-act="save">${icon('download')} Simpan draf</button><button class="btn btn-primary" type="button" data-act="submit">${icon('arrow')} Ajukan review</button>` : ''}
+        ${counting && can(role, 'opname.count') ? `<button class="btn" type="button" data-act="scan">${icon('scan')} Scan QR</button><button class="btn" type="button" data-act="save">${icon('download')} Simpan draf</button><button class="btn btn-primary" type="button" data-act="submit">${icon('arrow')} Ajukan review</button>` : ''}
         ${reviewing && can(role, 'opname.approve') ? `<button class="btn btn-primary" type="button" data-act="approve">${icon('check')} Setujui & posting</button><button class="btn" type="button" data-act="recount">${icon('refresh')} Hitung ulang</button>` : ''}
         ${['counting', 'review'].includes(s.status) ? `<button class="btn btn-ghost" type="button" data-act="cancel">Batalkan sesi</button>` : ''}
         ${posted ? `<button class="btn" type="button" data-act="print">${icon('printer')} Berita acara</button>` : ''}
@@ -122,9 +141,18 @@ function renderDetail(ctx) {
         <div><h2>${counting ? 'Hitung fisik (buta)' : 'Hasil hitung'}</h2><p>${counting ? 'Masukkan panjang aktual sesuai hitungan fisik di rak.' : 'Bandingkan dengan saldo sistem dan nilai selisih.'}</p></div>
         <span class="badge no-dot">${esc(wh?.code)}</span>
       </div>
+      <div class="filterbar" style="padding:0 0 12px">
+        <div class="field"><label for="opname-collection">Koleksi</label>
+          <select class="select" id="opname-collection"><option value="">Semua koleksi</option>${collections.map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label for="opname-motif">Motif / warna</label>
+          <select class="select" id="opname-motif"><option value="">Semua motif</option>${[...new Set(sortedLines.map((line) => line.motifName ?? byId(db.skus, line.skuId)?.colourName ?? byId(db.skus, line.skuId)?.colourCode ?? '').filter(Boolean))].sort().map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join('')}</select>
+        </div>
+        <span class="small muted" data-opname-count>${sortedLines.length} roll</span>
+      </div>
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th>Roll / lot</th><th>Produk</th><th class="num">Hitungan</th>${reviewing || posted ? '<th class="num">Sistem</th><th class="num">Selisih</th>' : ''}</tr></thead>
+          <thead><tr><th>Roll / lot</th><th>Koleksi · motif</th><th class="num">Hitungan</th><th>Status</th>${reviewing || posted ? '<th class="num">Sistem</th><th class="num">Selisih</th>' : ''}</tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -173,6 +201,97 @@ export function openStart(ctx) {
   });
 }
 
+function openQrScan(ctx, session, onFound) {
+  let stopCamera = () => {};
+  openModal({
+    title: 'Scan QR roll',
+    description: 'Arahkan kamera ke QR tag roll. Setelah ditemukan, masukkan panjang fisik dalam meter.',
+    submitLabel: 'Tutup',
+    wide: true,
+    body: `<div class="stack">
+      <video data-qr-video autoplay muted playsinline style="width:100%;max-height:320px;border-radius:10px;background:#172b3a;object-fit:cover"></video>
+      <p class="small" data-qr-status>Meminta izin kamera…</p>
+      ${field('Atau ketik roll ID', `<div class="row"><input class="input" name="manual" placeholder="RL-0029" /><button class="btn" type="button" data-scan-manual>${icon('scan')} Cari</button></div>`)}
+      ${field('Atau upload foto QR', `<input class="input" type="file" name="qrFile" accept="image/*" />`, { hint: 'Berguna bila kamera tidak tersedia.' })}
+      <div class="notice notice-info">${icon('alert')}<div>QR tag berisi URL <span class="mono">#/scan/ROLL-ID</span>. Roll yang tidak ada di sesi ini akan ditolak.</div></div>
+    </div>`,
+    onMount(form, close) {
+      const video = form.querySelector('[data-qr-video]');
+      const status = form.querySelector('[data-qr-status]');
+      const handle = (raw) => {
+        const text = String(raw ?? '').trim();
+        if (!text) return;
+        const id = text.match(/\/scan\/([^/?#]+)/)?.[1] ?? text.toUpperCase();
+        const line = session.lines.find((row) => row.rollId.toUpperCase() === id.toUpperCase());
+        if (!line) {
+          status.textContent = `Roll ${id} tidak ada di sesi opname ini.`;
+          status.className = 'small danger';
+          return;
+        }
+        stopCamera();
+        close();
+        onFound(line);
+      };
+      form.querySelector('[data-scan-manual]')?.addEventListener('click', () => handle(form.manual.value));
+      form.manual?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); handle(form.manual.value); }
+      });
+      form.qrFile?.addEventListener('change', async () => {
+        const file = form.qrFile.files?.[0];
+        if (!file) return;
+        status.textContent = 'Membaca QR…';
+        try {
+          const result = await scanAwbImage(file);
+          handle(result.text || result.trackingRef);
+        } catch (err) {
+          status.textContent = err.message;
+          status.className = 'small danger';
+        }
+      });
+      if (!navigator.mediaDevices?.getUserMedia) {
+        status.textContent = 'Kamera tidak tersedia di browser ini. Gunakan input manual atau upload foto QR.';
+        status.className = 'small warn';
+        return;
+      }
+      if (typeof window.BarcodeDetector !== 'function') {
+        status.textContent = 'Browser ini belum mendukung pemindaian kamera. Gunakan input manual atau upload foto QR.';
+        status.className = 'small warn';
+        return;
+      }
+      let stream;
+      let raf = 0;
+      let detector;
+      (async () => {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+          video.srcObject = stream;
+          await video.play();
+          detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          status.textContent = 'Arahkan kamera ke QR tag roll…';
+          const tick = async () => {
+            try {
+              const codes = await detector.detect(video);
+              if (codes.length) { handle(codes[0].rawValue); return; }
+            } catch { /* keep scanning */ }
+            raf = requestAnimationFrame(tick);
+          };
+          tick();
+        } catch (err) {
+          status.textContent = `Kamera tidak dapat dibuka: ${err.message}. Gunakan input manual atau upload foto QR.`;
+          status.className = 'small warn';
+        }
+      })();
+      stopCamera = () => {
+        cancelAnimationFrame(raf);
+        if (stream) stream.getTracks().forEach((track) => track.stop());
+        if (video) video.srcObject = null;
+      };
+    },
+    onClose() { stopCamera(); },
+    onSubmit(form, close) { close(); },
+  });
+}
+
 function collectCounts() {
   return [...document.querySelectorAll('[data-count]')].map((input) => ({
     rollId: input.dataset.count,
@@ -194,6 +313,57 @@ export function mount(ctx) {
   if (ctx.route.id) {
     const s = getSession(ctx.db, ctx.route.id);
     if (!s) return;
+    const rows = Array.from(document.querySelectorAll('[data-opname-row]'));
+    const collectionSel = document.getElementById('opname-collection');
+    const motifSel = document.getElementById('opname-motif');
+    const countEl = document.querySelector('[data-opname-count]');
+    const refreshFilter = () => {
+      const collection = collectionSel?.value ?? '';
+      const motif = motifSel?.value ?? '';
+      let visible = 0;
+      for (const row of rows) {
+        const show = (!collection || row.dataset.collection === collection) && (!motif || row.dataset.motif === motif);
+        row.hidden = !show;
+        if (show) visible += 1;
+      }
+      if (countEl) countEl.textContent = `${visible} roll`;
+    };
+    const rebuildMotifs = () => {
+      if (!motifSel) return;
+      const collection = collectionSel?.value ?? '';
+      const names = [...new Set(rows.filter((row) => !collection || row.dataset.collection === collection).map((row) => row.dataset.motif).filter(Boolean))].sort();
+      const previous = motifSel.value;
+      motifSel.innerHTML = `<option value="">Semua motif</option>${names.map((name) => `<option value="${esc(name)}">${esc(name)}</option>`).join('')}`;
+      if (names.includes(previous)) motifSel.value = previous;
+      refreshFilter();
+    };
+    collectionSel?.addEventListener('change', rebuildMotifs);
+    motifSel?.addEventListener('change', refreshFilter);
+    document.querySelectorAll('[data-count]').forEach((input) => input.addEventListener('input', () => {
+      const cell = input.closest('tr')?.querySelector('[data-opname-status]');
+      if (!cell) return;
+      const raw = input.value.trim();
+      if (!raw) { cell.innerHTML = badge('Belum dicek', 'muted'); return; }
+      const mm = parseM(raw);
+      cell.innerHTML = mm <= 0 ? badge('Tidak ada', 'danger') : badge(`Ada · ${fmt.m(mm)}`, 'ok');
+    }));
+    document.querySelector('[data-act="scan"]')?.addEventListener('click', () => {
+      openQrScan(ctx, s, (line) => {
+        if (collectionSel) { collectionSel.value = line.collectionName ?? ''; rebuildMotifs(); }
+        if (motifSel) { motifSel.value = line.motifName ?? ''; refreshFilter(); }
+        setTimeout(() => {
+          const input = document.querySelector(`[data-count="${line.rollId}"]`);
+          if (input) {
+            input.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            input.focus();
+            input.select();
+            input.classList.add('scan-hit');
+            setTimeout(() => input.classList.remove('scan-hit'), 1800);
+          }
+          toast(`Roll ${line.rollId} ditemukan · lot ${line.lot}. Masukkan panjang fisik.`, { tone: 'success' });
+        }, 80);
+      });
+    });
     document.querySelector('[data-act="save"]')?.addEventListener('click', () => {
       try { save(ctx, s); } catch (err) { toast(err.message, { tone: 'error' }); }
     });
