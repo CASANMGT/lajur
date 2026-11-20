@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.33.0
+# PRD - Lavishome v2.34.0
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.33.0 (schema 21)
+**Version:** 2.34.0 (schema 21)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.33.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
+Role scope in v2.34.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -549,6 +549,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-103 | Internal sample requests are free or paid, never deposit. The requesting PT sees status/history; the owning PT approves and stock moves to the requester's warehouse. |
 | BR-104 | Surat jalan estimates weight per roll/lot from width × GSM. A cut line uses its cut metres, so it is lighter than the whole roll. The delivery stores roll count, unique lot count and per-line estimated kg; the printed surat jalan shows them and the total. |
 | BR-105 | Payments can be recorded multiple times as deposit, installment or full. Full pays the entire remaining balance. Each payment stores date, kind, method, transfer number/reference, note and optional proof photo. Amounts use Indonesian thousand separators for readability. |
+| BR-106 | A company-scoped payment ledger lists every receipt with payer, invoice, date/time, kind, method, transfer number, amount and proof screenshot. Proof can be selected from a file or pasted from the clipboard (Ctrl+V); clicking opens the full screenshot. |
 | BR-94 | Stock sorting applies to collections, motifs, roll rows and mobile cards. Options are most available metres, name A–Z and name Z–A; the default is most metres. |
 
 ---
@@ -557,7 +558,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.33.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.34.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -752,6 +753,8 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-137 | Surat jalan auto-fills estimated kg, roll count and lot count from the invoice; cut pieces are lighter | Pass |
 | AC-138 | Every roll/lot line on surat jalan shows estimated kg and totals in print | Pass |
 | AC-139 | Payments can be deposit/installment/full with transfer number and proof photo | Pass |
+| AC-140 | Payment ledger lists payer, invoice, date/time, kind, method, transfer no., amount and proof screenshot | Pass |
+| AC-141 | Proof can be pasted from clipboard and opened full-size | Pass |
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 

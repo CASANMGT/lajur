@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.33.0
+# Design System - Lavishome v2.34.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -296,7 +296,8 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Sample requests:** each stock row shows **Minta sample** when it belongs to another PT. Pricing is a clear gratis/berbayar choice, always without deposit. The owning PT approves from the requests table, which shows the status history.
 - **PO internal:** Bali starts the PO from Jakarta stock. Each row shows roll, available metres, mode and the internal price with the list price struck through. The summary shows list total, internal total and savings. Status is requested → shipped → received; Jakarta approves/ships and Bali confirms receipt.
 - **Weight on surat jalan:** show a read-only estimate table before the address: roll, lot, qty and estimated kg per line, then total kg / rolls / lots. The weight field is prefilled but editable. Cut rows are lighter automatically.
-- **Payments:** the modal starts with kind (deposit/installment/full), amount with thousand separators, method, transfer number, date, proof photo and note. Full locks the amount to the outstanding. The invoice payment table shows kind, reference, proof thumbnail and amount.
+- **Payments:** the modal starts with kind (deposit/installment/full), amount with thousand separators, method, transfer number, date, proof photo and note. Full locks the amount to the outstanding. Proof accepts a file or a pasted screenshot (Ctrl+V) with preview. The invoice payment table shows kind, reference, proof thumbnail and amount.
+- **Payment ledger:** Sales → **Riwayat pembayaran** opens a wide, company-scoped list sorted newest first: payer, invoice, date/time, kind badge, method + transfer number + recorded-by, proof thumbnail, amount. Clicking a thumbnail opens the full screenshot.
 - **Excel stock sync:** manager-only. Show the plan source/date, SKU/roll/metre/sample counts, warehouse, lot, exclusions and the old-roll archive warning. Require a confirmation checkbox before applying. After sync, show a persistent **sudah disinkronkan** notice with counts and archived-roll count. Never delete old rolls; mark them void and keep invoice/movement references valid.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.

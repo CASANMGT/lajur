@@ -5,6 +5,16 @@
 
 export const CHANGELOG = [
   {
+    version: '2.34.0',
+    date: '2026-11-20',
+    name: 'Riwayat Pembayaran & Bukti Screenshot',
+    items: [
+      'Tombol Riwayat pembayaran menampilkan semua penerimaan: siapa, kapan, jenis, metode, no. transfer, nominal.',
+      'Bukti pembayaran bisa upload file atau tempel screenshot dengan Ctrl+V.',
+      'Klik bukti untuk melihat screenshot penuh dari invoice atau ledger.',
+    ],
+  },
+  {
     version: '2.33.0',
     date: '2026-11-20',
     name: 'Berat Roll & Pembayaran Bertahap',

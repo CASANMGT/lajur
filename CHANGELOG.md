@@ -2,6 +2,24 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.34.0] — 2026-11-20
+
+**Release name: Riwayat Pembayaran & Bukti Screenshot.** Every receipt is now visible in one ledger, with payer, time, kind, transfer number and proof screenshot.
+
+### Added
+
+- **Riwayat pembayaran:** Sales action opens a company-scoped ledger sorted newest first. Columns: date/time, payer/invoice, kind, method + transfer number + recorder, proof thumbnail, amount.
+- **Proof screenshot:** payment form accepts an image file or a pasted screenshot (Ctrl+V) with live preview. The image is stored with the payment and opens full-size from the invoice table or ledger.
+- **Ledger totals:** count of receipts, total received and number with proof.
+- **Readable amounts:** payment input and ledger use Indonesian thousand separators.
+
+### Verification
+
+- `node --test`: **100 passed**; module check **60/60**; render check passes.
+- Browser QA: ledger showed 5 receipts across INV-0001/0002/0003 with kind badges (deposit, angsuran, pelunasan) and payer names.
+
+---
+
 ## [2.33.0] — 2026-11-20
 
 **Release name: Berat Roll & Pembayaran Bertahap.** Surat jalan now estimates kg per roll/lot from the invoice, and payments support deposit/installment/full with proof photo.

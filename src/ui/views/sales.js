@@ -59,6 +59,7 @@ export function render(ctx) {
       sub: 'Kain dipotong dari roll tertentu; spare part memakai pcs. Stok keluar satu kali saat faktur diterbitkan.',
       actions: `${advanced && settingsOf(db).salesOrderEnabled ? `<a class="btn" href="#/pesanan">${icon('clipboard')} Pesanan</a>` : ''}
         ${advanced ? `<a class="btn" href="#/pengiriman">${icon('truck')} Surat jalan</a>` : ''}
+        <button class="btn" type="button" data-act="payment-ledger">${icon('wallet')} Riwayat pembayaran</button>
         ${can(role, 'invoice.create') && (db.companies ?? []).some((c) => c.id !== ctx.companyId && c.active !== false)
           ? `<button class="btn" type="button" data-act="internal-sale">${icon('transfer')} Jual ke PT lain</button>` : ''}
         ${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
@@ -668,6 +669,47 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice', optio
 /* Payments, returns, deposits                                                */
 /* -------------------------------------------------------------------------- */
 
+function openPaymentLedger(ctx) {
+  const { db } = ctx;
+  const invoiceIds = new Set((db.invoices ?? [])
+    .filter((inv) => (inv.companyId ?? 'co-jkt') === ctx.companyId || inv.internalCompanyId === ctx.companyId)
+    .map((inv) => inv.id));
+  const rows = [];
+  for (const inv of db.invoices ?? []) {
+    if (!invoiceIds.has(inv.id)) continue;
+    for (const payment of inv.payments ?? []) rows.push({ payment, invoice: inv });
+  }
+  for (const payment of db.payments ?? []) {
+    if (!invoiceIds.has(payment.invoiceId)) continue;
+    if (!rows.some((row) => row.payment.id === payment.id)) {
+      rows.push({ payment, invoice: byId(db.invoices, payment.invoiceId) });
+    }
+  }
+  rows.sort((a, b) => String(b.payment.at ?? b.payment.date).localeCompare(String(a.payment.at ?? a.payment.date)));
+  const total = rows.reduce((sum, row) => sum + Number(row.payment.amount || 0), 0);
+  const withProof = rows.filter((row) => row.payment.proofImage).length;
+  openModal({
+    title: 'Riwayat pembayaran',
+    description: `${rows.length} penerimaan · ${fmt.money(total)} · ${withProof} bukti foto. Klik bukti untuk memperbesar.`,
+    wide: true,
+    cancelLabel: 'Tutup',
+    submitLabel: 'Selesai',
+    body: `<div class="table-wrap"><table class="data">
+      <thead><tr><th>Tanggal</th><th>Pelanggan / faktur</th><th>Jenis</th><th>Metode / no. transfer</th><th>Bukti</th><th class="num">Nominal</th></tr></thead>
+      <tbody>${rows.map(({ payment, invoice }) => `<tr>
+        <td class="small">${esc(payment.date)}<div class="xs muted">${esc(payment.at ? new Date(payment.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '')}</div></td>
+        <td><strong class="small">${esc(invoice?.customerName ?? payment.customerId ?? '—')}</strong><div class="xs muted mono">${esc(payment.invoiceId)}</div></td>
+        <td>${badge(PAYMENT_KIND[payment.kind]?.label ?? 'Angsuran', PAYMENT_KIND[payment.kind]?.tone ?? 'muted')}</td>
+        <td class="small">${esc(payment.method || '—')}<div class="xs muted">${esc(payment.reference || 'tanpa no. transfer')}</div><div class="xs muted">${esc(payment.by || '')}</div></td>
+        <td>${payment.proofImage ? `<img src="${esc(payment.proofImage)}" alt="Bukti ${esc(payment.id)}" class="thumb zoomable" data-zoom="${esc(payment.proofImage)}" data-zoom-title="Bukti ${esc(payment.id)} · ${esc(invoice?.customerName ?? '')}" role="button" tabindex="0" style="width:56px;height:56px;object-fit:cover" />` : '<span class="xs muted">Belum ada bukti</span>'}</td>
+        <td class="num strong">${fmt.money(payment.amount)}</td>
+      </tr>`).join('') || `<tr><td colspan="6"><div class="empty">${icon('wallet')}<strong>Belum ada pembayaran</strong><p>Pembayaran muncul di sini setelah dicatat dari faktur.</p></div></td></tr>`}</tbody>
+    </table></div>
+    <div class="notice notice-info" style="margin-top:12px">${icon('alert')}<div>Bukti foto disimpan bersama pembayaran. Gunakan Ctrl+V di form pembayaran untuk menempel screenshot dari clipboard.</div></div>`,
+    onSubmit(form, close) { close(); },
+  });
+}
+
 function openPayment(ctx, inv) {
   const out = invoiceOutstanding(inv);
   const formatAmount = (value) => Number(value || 0).toLocaleString('id-ID');
@@ -681,7 +723,8 @@ function openPayment(ctx, inv) {
       ${field('Metode', `<select class="select" name="method"><option value="transfer">Transfer bank</option><option value="tunai">Tunai</option><option value="qris">QRIS</option><option value="giro">Giro</option></select>`)}
       ${field('No. transfer / referensi', `<input class="input" name="reference" placeholder="Contoh: TRF-20261120-001" />`)}
       ${field('Tanggal bayar', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
-      ${field('Bukti transfer (foto)', `<input class="input" type="file" name="proof" accept="image/*" />`, { hint: 'Opsional. Foto bukti disimpan di catatan pembayaran.', full: true })}
+      ${field('Bukti transfer (foto)', `<input class="input" type="file" name="proof" accept="image/*" />`, { hint: 'Pilih file, atau tempel screenshot dengan Ctrl+V.', full: true })}
+      <div class="span-2" data-proof-preview hidden style="margin-bottom:10px"><img alt="Pratinjau bukti pembayaran" style="max-width:100%;max-height:220px;object-fit:contain;border:1px solid var(--line);border-radius:8px;background:#fff" /></div>
       ${field('Catatan', `<input class="input" name="note" placeholder="Keterangan penerimaan" />`, { full: true })}
     `,
     onMount(form) {
@@ -694,6 +737,26 @@ function openPayment(ctx, inv) {
       form.amount.addEventListener('input', () => {
         const digits = String(form.amount.value).replace(/\D/g, '');
         form.amount.value = digits ? Number(digits).toLocaleString('id-ID') : '';
+      });
+      const preview = form.querySelector('[data-proof-preview]');
+      const previewImg = preview?.querySelector('img');
+      const showFile = (file) => {
+        if (!file || !preview || !previewImg) return;
+        const reader = new FileReader();
+        reader.onload = () => { previewImg.src = String(reader.result); preview.hidden = false; };
+        reader.readAsDataURL(file);
+      };
+      form.proof?.addEventListener('change', () => showFile(form.proof.files?.[0]));
+      form.addEventListener('paste', (event) => {
+        const item = [...(event.clipboardData?.items ?? [])].find((entry) => entry.type.startsWith('image/'));
+        if (!item) return;
+        const file = item.getAsFile();
+        if (!file || !form.proof) return;
+        event.preventDefault();
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        form.proof.files = transfer.files;
+        showFile(file);
       });
       syncKind();
     },
@@ -1359,6 +1422,7 @@ export function mount(ctx) {
     window.location.hash = tr.dataset.href.replace('#', '');
   }));
   document.querySelector('[data-act="new-invoice"]')?.addEventListener('click', () => openInvoice(ctx));
+  document.querySelector('[data-act="payment-ledger"]')?.addEventListener('click', () => openPaymentLedger(ctx));
   document.querySelector('[data-act="internal-sale"]')?.addEventListener('click', () => {
     const other = (ctx.db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
     if (!other) return;
