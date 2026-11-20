@@ -11,7 +11,7 @@ All notable changes to Lajur. Dates use Asia/Jakarta.
 - **Faktur per roll:** pick **Koleksi → Motif/warna → Roll**. Each roll shows its available metres. The default mode is **Roll utuh**; **Potong** is available when the roll has no reservation.
 - **Penjualan quick actions:** the invoice list links to **Surat jalan**; the invoice detail can create/print a surat jalan and issue/print a faktur pajak from the top action bar.
 - **Customer delivery map:** the customer profile shows a Google Maps embed of the delivery address, plus the **PIC penerimaan** name and external customer code. PIC is editable in the customer form.
-- **Database download/upload:** Settings → Data downloads the full JSON dataset (`Unduh database`) and restores it (`Unggah database`).
+- **Database download/upload:** Settings → Data downloads the full JSON dataset (`Unduh database`) and restores it (`Unggah database`). Restore now tolerates price-history rows whose SKU was archived by a later stock sync.
 - **Supabase cloud sync:** `db/supabase.sql` creates a workspace table and two RPC functions. Settings → Data stores the project URL, publishable key, workspace and workspace secret; data is pulled on start and pushed after each change with optimistic revision checks.
 - **In-app changelog:** the sidebar version button, Stock page, and Settings → Data open **Riwayat versi**.
 - **Stock sorting:** sort collections/motifs by **Meter tersedia terbanyak**, **Nama A–Z**, or **Nama Z–A**. The roll list follows the same order.
@@ -24,7 +24,7 @@ All notable changes to Lajur. Dates use Asia/Jakarta.
 
 ### Verification
 
-- `node --test`: **88 passed** (3 new cloud-config/revision/RPC tests).
+- `node --test`: **89 passed** (3 cloud-config/revision/RPC tests + 1 archived-SKU backup test).
 - Module import check: **58 modules**; render check passes.
 - Browser QA: collection/motif/roll cascade with whole-roll default; sort A–Z reorders the collection list; customer map iframe and PIC render; settings cloud card renders with all four actions; changelog modal shows v2.28.0; zero console errors.
 

@@ -472,6 +472,19 @@ test('backup validates references and refuses a broken restore', () => {
   assert.throws(() => importBackup(broken));
 });
 
+test('backup restore tolerates price history for archived SKUs', () => {
+  const db = buildSeed();
+  db.sellPriceHistory = [
+    ...(db.sellPriceHistory ?? []),
+    { id: 'SPH-ARCHIVED', itemType: 'sku', itemId: 'sku-dari-stok-lama', oldPrice: 100, newPrice: 120, at: '2026-11-13T00:00:00.000Z', by: 'Henry Martin' },
+  ];
+  const backup = exportBackup(db);
+  const result = validateBackup(backup);
+  assert.equal(result.valid, true, result.errors.join(' '));
+  const restored = importBackup(backup);
+  assert.equal(restored.sellPriceHistory.at(-1).id, 'SPH-ARCHIVED');
+});
+
 test('warehouse master keeps IDs stable, rejects duplicates, guards deactivation', () => {
   const db = buildSeed();
   expectError(() => saveWarehouse(db, { code: 'JKT', name: 'Duplikat', binPrefix: 'Z', user: MGR }), 'DUPLICATE_CODE');

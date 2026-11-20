@@ -118,10 +118,9 @@ export function validateBackup(payload) {
     if (stock.warehouseId) need(warehouses, stock.warehouseId, 'Gudang', `Stok sample ${stock.id}`);
     if (stock.sourceRollId) need(rollIds, stock.sourceRollId, 'Roll', `Stok sample ${stock.id}`);
   }
-  for (const history of db.sellPriceHistory ?? []) {
-    const set = history.itemType === 'sku' ? skus : parts;
-    need(set, history.itemId, history.itemType === 'sku' ? 'SKU' : 'Part', `Riwayat harga ${history.id}`);
-  }
+  // Price history is immutable. A dated stock sync may archive the SKU or
+  // part it points to, so a missing target is expected and must not block a
+  // restore of otherwise valid operational data.
   for (const s of db.samples) {
     need(customers, s.customerId, 'Pelanggan', `Sample ${s.id}`);
     if (s.rollId) need(rollIds, s.rollId, 'Roll', `Sample ${s.id}`);
