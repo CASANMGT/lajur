@@ -1,13 +1,7 @@
 /**
- * Optional Supabase cloud sync.
- *
- * The browser talks to two SECURITY DEFINER RPC functions only:
- *   lajur_cloud_pull(workspace, key)
- *   lajur_cloud_push(workspace, key, base_revision, data, actor)
- *
- * The anon key is public by design; the workspace secret is the write
- * credential and is kept in this browser's localStorage. Run db/supabase.sql
- * once in the Supabase SQL editor before enabling sync.
+ * Optional shared-dataset sync through the Vercel `/api/cloud` function and
+ * Neon Postgres. The browser only holds the workspace sync key; DATABASE_URL
+ * stays in Vercel environment variables.
  */
 
 const CONFIG_KEY = 'lajur.v2.cloud';
@@ -15,7 +9,7 @@ const REVISION_KEY = 'lajur.v2.cloud.revision';
 const DIRTY_KEY = 'lajur.v2.cloud.dirty';
 
 export const CLOUD_ERROR = {
-  CONFIG: 'Belum dikonfigurasi. Isi URL proyek, anon key, workspace dan kunci workspace.',
+  CONFIG: 'Belum dikonfigurasi. Isi kunci sinkronisasi dan workspace.',
 };
 
 function readJson(key, fallback) {
@@ -33,24 +27,24 @@ export function readCloudConfig() {
   const url = String(raw.url || '').trim().replace(/\/+$/, '');
   return {
     url,
-    anonKey: String(raw.anonKey || '').trim(),
+    key: String(raw.key ?? raw.secret ?? '').trim(),
     workspace: String(raw.workspace || '').trim(),
-    secret: String(raw.secret || '').trim(),
     auto: raw.auto !== false,
   };
 }
 
 export function cloudConfigured(config = readCloudConfig()) {
-  return Boolean(config?.url && config.anonKey && config.workspace && config.secret);
+  return Boolean(config?.key && config.workspace);
 }
 
 export function saveCloudConfig(patch) {
   const next = { ...(readCloudConfig() ?? {}), ...patch };
   next.url = String(next.url || '').trim().replace(/\/+$/, '');
-  next.anonKey = String(next.anonKey || '').trim();
+  next.key = String(next.key ?? '').trim();
   next.workspace = String(next.workspace || '').trim();
-  next.secret = String(next.secret || '').trim();
   next.auto = next.auto !== false;
+  delete next.secret;
+  delete next.anonKey;
   localStorage.setItem(CONFIG_KEY, JSON.stringify(next));
   return next;
 }
@@ -80,21 +74,39 @@ export function setLocalCloudRevision(revision) {
   localStorage.setItem(REVISION_KEY, String(Number(revision) || 0));
 }
 
-async function rpc(name, payload, config = readCloudConfig()) {
+function endpoint(config) {
+  return `${config.url || ''}/api/cloud?workspace=${encodeURIComponent(config.workspace)}`;
+}
+
+async function encodeBody(json) {
+  if (typeof CompressionStream === 'undefined') return { body: json, encoding: null };
+  const stream = new Blob([json]).stream().pipeThrough(new CompressionStream('gzip'));
+  const body = await new Response(stream).arrayBuffer();
+  return { body, encoding: 'gzip' };
+}
+
+async function request(method, { payload = null, config = readCloudConfig() } = {}) {
   if (!cloudConfigured(config)) throw new Error(CLOUD_ERROR.CONFIG);
   const controller = new AbortController();
-  const timer = window.setTimeout(() => controller.abort(), 25_000);
+  const timer = window.setTimeout(() => controller.abort(), 30_000);
+  const headers = {
+    'x-lajur-key': config.key,
+    accept: 'application/json',
+  };
+  let body;
+  if (payload) {
+    const encoded = await encodeBody(JSON.stringify(payload));
+    body = encoded.body;
+    headers['content-type'] = 'application/json';
+    if (encoded.encoding) headers['content-encoding'] = encoded.encoding;
+  }
+
   let response;
   try {
-    response = await fetch(`${config.url}/rest/v1/rpc/${name}`, {
-      method: 'POST',
-      headers: {
-        apikey: config.anonKey,
-        authorization: `Bearer ${config.anonKey}`,
-        'content-type': 'application/json',
-        accept: 'application/json',
-      },
-      body: JSON.stringify(payload),
+    response = await fetch(endpoint(config), {
+      method,
+      headers,
+      body,
       signal: controller.signal,
     });
   } catch (err) {
@@ -104,27 +116,24 @@ async function rpc(name, payload, config = readCloudConfig()) {
   }
 
   const text = await response.text();
-  let body = null;
+  let result = null;
   try {
-    body = text ? JSON.parse(text) : null;
+    result = text ? JSON.parse(text) : null;
   } catch {
-    body = text;
+    result = text;
   }
   if (!response.ok) {
-    const message = body?.message || body?.error || text || `HTTP ${response.status}`;
+    const message = result?.error || result?.message || text || `HTTP ${response.status}`;
     const error = new Error(String(message));
-    error.code = body?.code;
+    error.code = result?.code;
     error.status = response.status;
     throw error;
   }
-  return body;
+  return result;
 }
 
 export async function cloudPull(config = readCloudConfig()) {
-  const result = await rpc('lajur_cloud_pull', {
-    p_workspace: config.workspace,
-    p_key: config.secret,
-  }, config);
+  const result = await request('GET', { config });
   return {
     revision: Number(result?.revision) || 0,
     data: result?.data ?? null,
@@ -134,17 +143,13 @@ export async function cloudPull(config = readCloudConfig()) {
 }
 
 export async function cloudPush(data, { baseRevision = 0, actor = '', config = readCloudConfig() } = {}) {
-  const result = await rpc('lajur_cloud_push', {
-    p_workspace: config.workspace,
-    p_key: config.secret,
-    p_base_revision: Number(baseRevision) || 0,
-    p_data: data,
-    p_actor: actor,
-  }, config);
+  const result = await request('POST', {
+    config,
+    payload: { baseRevision: Number(baseRevision) || 0, data, actor },
+  });
   return Number(result?.revision) || 0;
 }
 
 export async function testCloud(config = readCloudConfig()) {
-  const result = await cloudPull(config);
-  return result;
+  return cloudPull(config);
 }

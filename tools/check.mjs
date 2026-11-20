@@ -1,5 +1,6 @@
 /** Static import check: every module must parse and resolve in Node. */
 const modules = [
+  '../api/cloud.js',
   '../src/domain/core.js', '../src/domain/inventory.js', '../src/domain/transfers.js',
   '../src/domain/sales.js', '../src/domain/purchasing.js', '../src/domain/projects.js',
   '../src/domain/crm.js', '../src/domain/opname.js', '../src/domain/reports.js',

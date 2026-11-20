@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-89%2F89-brightgreen) ![Version](https://img.shields.io/badge/version-2.28.1-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-92%2F92-brightgreen) ![Version](https://img.shields.io/badge/version-2.29.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`, `v2.28.1`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`, `v2.28.1`, `v2.29.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 89 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 92 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -85,22 +85,24 @@ The static Vercel demo intentionally remains browser-local; the UI is not yet wi
 ### Production database & backup (recommended)
 
 - **Do not use Vercel static `/ localStorage` as the production stock database.** It is per-browser, has no shared concurrency, and cannot support multiple staff or devices.
-- **Recommended production topology:** Vercel (or any static host) for the UI, `server/server.mjs` on a Node host (Render/Fly/VM) for the API, and **PostgreSQL** (Supabase/Neon/RDS/Cloud SQL) for the database.
+- **Recommended production topology:** Vercel for the UI and the built-in `/api/cloud` function, with **Neon Postgres** for one shared document. For simultaneous editors, use `server/server.mjs` on Render/Fly/VM with row-level PostgreSQL tables and per-action transactions.
 - **Seed data is only for first-run/demo.** Do not update production stock by editing `src/domain/seed.js` or by re-syncing an Excel in one browser. The Excel import should go through the API and a PostgreSQL transaction so every user sees the same stock.
 - **Backups:** daily `pg_dump` plus provider point-in-time recovery/WAL, stored offsite; run a restore drill monthly. Keep the app-level JSON backup for portability, but it is not a replacement for database backups.
 - **Excel sync:** upload the dated Excel → preview → archive old rolls → import new rolls → commit in one transaction. Keep `meta.stockSyncHistory`/audit rows for the date and source.
 
-### Supabase shared dataset (optional, built in)
+### Neon shared dataset (optional, built in)
 
-For a shared dataset without running your own Node API:
+The shared path is **Vercel Function → Neon Postgres**. The browser never holds the database connection string.
 
-1. Create a Supabase project.
-2. Open **SQL Editor**, paste `db/supabase.sql`, replace `GANTI-KUNCI-INI` with a long random workspace secret, and run it.
-3. Open Lavishome → **Pengaturan → Data → Sinkronisasi Supabase**: fill the project URL, the anon/publishable key, workspace `lavishome`, and the same secret.
-4. **Simpan & uji** pulls the cloud copy on first use; if the workspace is empty it pushes the current browser dataset.
-5. Other devices that enter the same four values pull the shared dataset on start.
+1. Create a Neon project and copy the pooled connection string (`postgresql://...`).
+2. In Vercel → Project → **Settings → Environment Variables**, add:
+   - `DATABASE_URL` = the Neon connection string
+   - `LAJUR_SYNC_KEY` = a long random key (12+ characters)
+3. Redeploy. `api/cloud.js` creates `lajur_cloud` automatically; `db/neon.sql` is the same schema if you prefer to run it manually.
+4. Open Lavishome → **Pengaturan → Data → Sinkronisasi cloud (Neon)**. Leave **URL API** empty for the same domain, set workspace `lavishome`, and enter `LAJUR_SYNC_KEY`.
+5. **Simpan & uji** pulls the cloud copy on first use; if the workspace is empty it pushes the current browser dataset. Other devices with the same workspace + key pull it on start.
 
-How it works: the browser calls two `SECURITY DEFINER` RPC functions (`lajur_cloud_pull` / `lajur_cloud_push`). The table has RLS with no policies, so the public anon key cannot read or write it directly. Writes are optimistic (revision guard) and the whole document is last-write-wins. That is enough for one shared back office, but it is **not** a substitute for per-action server transactions when several staff edit simultaneously. For that, use `server/server.mjs` with PostgreSQL or split the domain into row-level tables.
+The API stores the versioned document in JSONB with an optimistic revision guard. Request/response bodies are gzip-compressed so the ~3.7 MB dataset stays under Vercel's 4.5 MB function limit. This is shared back-office sync (last-write-wins for the whole document), **not** per-action transactional concurrency. For simultaneous editors, split the domain into row-level tables and per-action transactions, or use `server/server.mjs` with PostgreSQL.
 
 The JSON **Unduh database** / **Unggah database** buttons in the same tab remain the portable backup path.
 
@@ -118,6 +120,8 @@ Lajur/
 ├── GAP-ANALYSIS.md           requirement-by-requirement status
 ├── CHANGELOG.md
 ├── .github/workflows/ci.yml  tests on every push and PR
+├── api/cloud.js               Vercel Function ↔ Neon shared dataset
+├── db/neon.sql                lajur_cloud schema for Neon
 ├── server/                    reference shared API (auth/RBAC/transactions)
 ├── assets/                    mark + favicon + part illustrations
 ├── src/
@@ -147,6 +151,9 @@ Lajur/
 │   │   ├── store.js          main/sim persistence, migration, clone-commit
 │   │   ├── backup.js         export/restore with reference validation
 │   │   ├── auth.js           PIN hashing, sessions, lockout
+│   │   ├── cloud.js          Neon API client, sync key, revision/dirty state
+│   │   ├── cloud-sync.js     pull on start, debounced push after writes
+│   │   ├── changelog.js      in-app release history
 │   │   └── simulation.js     guided 60 → 10 → 50 cycle
 │   ├── ui/
 │   │   ├── dom.js            escaping, icons, modal, toast, print
@@ -261,8 +268,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **89 passed, 0 failed** (87 domain/UI + 2 auth) |
-| Module import check | **58/58 modules** |
+| `node --test` | **92 passed, 0 failed** (90 domain/UI/API + 2 auth) |
+| Module import check | **59/59 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -429,7 +436,7 @@ node tools/render-check.mjs
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
 - Versioned release (`v2.28.0`), changelog and GitHub Actions CI.
-- Collection → motif → roll invoicing with whole-roll default, customer map/PIC, stock sorting, database download/upload, in-app changelog, and optional Supabase shared-dataset sync.
+- Collection → motif → roll invoicing with whole-roll default, customer map/PIC, stock sorting, database download/upload, in-app changelog, and optional Neon shared-dataset sync via `/api/cloud`.
 
 ### Partial
 

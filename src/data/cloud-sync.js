@@ -79,7 +79,7 @@ async function pushNow({ force = false } = {}) {
 export async function pullNow({ silent = false, preferRemote = false } = {}) {
   const config = readCloudConfig();
   if (!cloudConfigured(config)) {
-    publish({ state: 'off', message: 'Isi konfigurasi Supabase terlebih dahulu.' });
+    publish({ state: 'off', message: 'Isi kunci sinkronisasi cloud terlebih dahulu.' });
     return null;
   }
   publish({ state: 'syncing', message: silent ? 'Memeriksa cloud…' : 'Menarik data dari cloud…' });

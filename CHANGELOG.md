@@ -2,6 +2,36 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.29.0] — 2026-11-20
+
+**Release name: Sinkron Neon & Domain Lavishome.** The shared dataset backend moved from a browser-side Supabase RPC to a Vercel Function backed by Neon Postgres.
+
+### Added
+
+- **`api/cloud.js`:** GET/POST `/api/cloud?workspace=lavishome` with `x-lajur-key`, optimistic revision guard, transaction per push, and automatic `lajur_cloud` table creation.
+- **Neon setup:** `db/neon.sql`, plus Vercel environment variables `DATABASE_URL` and `LAJUR_SYNC_KEY`.
+- **Gzip transport:** the dataset is gzip-compressed in both directions so the current ~3.7 MB document stays under Vercel's 4.5 MB function limit.
+- **Pure handler tests:** request authorization, workspace validation, GET/POST, and 409 revision conflicts.
+
+### Changed
+
+- Settings → Data now asks for workspace + sync key (and an optional API URL), not a Supabase project URL/anon key.
+- Shell footer shows **Tersinkron ke cloud Neon** when sync is configured.
+- Production domain is **https://lavishome.vercel.app**; `lajur-lake.vercel.app` remains an alias.
+- The live domain was seeded with the 13 Nov 2026 dataset: **2.203 rolls, 144.590,62 m, 20 customers**.
+
+### Removed
+
+- `db/supabase.sql` and the direct browser-to-Supabase RPC path.
+
+### Verification
+
+- `node --test`: **92 passed** (89 + 3 API handler tests).
+- Module import check: **59 modules**; render check passes.
+- Deploy: Vercel production + `lavishome.vercel.app` domain; live browser shows v2.29.0, 2.203 rolls, 20 customers, zero console errors.
+
+---
+
 ## [2.28.1] — 2026-11-20
 
 **Release name: Perbaikan Restore Database.** Patch for the JSON upload path after a dated stock sync.

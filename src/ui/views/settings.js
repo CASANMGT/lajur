@@ -150,7 +150,7 @@ function renderAudit(ctx) {
 }
 
 function renderData(ctx) {
-  const config = readCloudConfig() ?? { url: '', anonKey: '', workspace: 'lavishome', secret: '', auto: true };
+  const config = readCloudConfig() ?? { url: '', key: '', workspace: 'lavishome', auto: true };
   const status = cloudStatus();
   const tone = status.state === 'ok' ? 'ok' : status.state === 'error' ? 'danger' : status.state === 'syncing' ? 'info' : 'muted';
   const toneLabel = { ok: 'Tersinkron', error: 'Gagal', syncing: 'Menyinkronkan', off: 'Nonaktif', muted: 'Nonaktif' }[status.state] ?? 'Nonaktif';
@@ -177,16 +177,15 @@ function renderData(ctx) {
     <section class="card card-pad" style="grid-column:1/-1">
       <div class="row-between" style="align-items:flex-start">
         <div>
-          <h2>Sinkronisasi Supabase</h2>
-          <p class="small muted" style="margin-top:6px">Satu dataset bersama untuk semua perangkat. Jalankan <span class="mono">db/supabase.sql</span> sekali di SQL Editor Supabase, lalu isi konfigurasi di bawah.</p>
+          <h2>Sinkronisasi cloud (Neon)</h2>
+          <p class="small muted" style="margin-top:6px">Satu dataset bersama untuk semua perangkat. API <span class="mono">/api/cloud</span> menyimpan dokumen JSONB di Neon. Jalankan <span class="mono">db/neon.sql</span>, lalu set <span class="mono">DATABASE_URL</span> dan <span class="mono">LAJUR_SYNC_KEY</span> di Vercel.</p>
         </div>
         ${badge(`${toneLabel}${status.revision ? ` · rev ${status.revision}` : ''}`, tone)}
       </div>
       <div class="form-grid" style="margin-top:12px">
-        ${field('Project URL', `<input class="input" name="cloudUrl" value="${esc(config.url)}" placeholder="https://xxxx.supabase.co" autocomplete="off" />`)}
-        ${field('Anon / publishable key', `<input class="input" name="cloudAnon" value="${esc(config.anonKey)}" placeholder="sb_publishable_… atau eyJ…" autocomplete="off" />`)}
+        ${field('URL API (opsional)', `<input class="input" name="cloudUrl" value="${esc(config.url)}" placeholder="Kosongkan untuk /api/cloud di domain ini" autocomplete="off" />`, { hint: 'Isi hanya jika API berada di domain lain, misalnya https://api.contoh.com.' })}
         ${field('Workspace', `<input class="input" name="cloudWorkspace" value="${esc(config.workspace || 'lavishome')}" placeholder="lavishome" />`, { hint: 'Nama ruang data, misalnya lavishome.' })}
-        ${field('Kunci workspace', `<input class="input" type="password" name="cloudSecret" value="${esc(config.secret)}" placeholder="Minimal 12 karakter" autocomplete="new-password" />`, { hint: 'Rahasia tulis. Simpan di password manager; jangan dibagikan.' })}
+        ${field('Kunci sinkronisasi', `<input class="input" type="password" name="cloudKey" value="${esc(config.key)}" placeholder="Sama dengan LAJUR_SYNC_KEY" autocomplete="new-password" />`, { hint: 'Minimal 12 karakter. Simpan di password manager; jangan dibagikan.' })}
         <label class="checkline" style="grid-column:1/-1"><input type="checkbox" name="cloudAuto" ${config.auto !== false ? 'checked' : ''} /> Sinkron otomatis setelah setiap perubahan</label>
       </div>
       <div class="row" style="margin-top:12px;flex-wrap:wrap">
@@ -196,7 +195,7 @@ function renderData(ctx) {
         <button class="btn btn-danger" type="button" data-act="cloud-off">Matikan</button>
       </div>
       <p class="small" data-cloud-status style="margin-top:10px">${esc(status.message)}${status.at ? ` · ${esc(new Date(status.at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }))}` : ''}</p>
-      <div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div><strong>Baca sebelum produksi.</strong> Sinkronisasi ini mengganti seluruh dokumen dataset (last-write-wins). Untuk operasi multi-pengguna serentak, gunakan API server + row-level tables dan transaksi per aksi. Anon key boleh publik; kunci workspace adalah kredensial tulis.</div></div>
+      <div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div><strong>Baca sebelum produksi.</strong> Sinkronisasi ini mengganti seluruh dokumen dataset (last-write-wins). Untuk operasi multi-pengguna serentak, pecah domain menjadi row-level tables dan transaksi per aksi. <span class="mono">DATABASE_URL</span> tidak pernah dikirim ke browser; hanya kunci sinkronisasi.</div></div>
     </section>
   </div>`;
 }
@@ -343,23 +342,18 @@ export function mount(ctx) {
   const cloudField = (name) => document.querySelector(`[name="${name}"]`);
   document.querySelector('[data-act="cloud-save"]')?.addEventListener('click', async () => {
     const url = cloudField('cloudUrl')?.value.trim().replace(/\/+$/, '') ?? '';
-    const anonKey = cloudField('cloudAnon')?.value.trim() ?? '';
     const workspace = cloudField('cloudWorkspace')?.value.trim() || 'lavishome';
-    const secret = cloudField('cloudSecret')?.value.trim() ?? '';
+    const key = cloudField('cloudKey')?.value.trim() ?? '';
     const auto = Boolean(cloudField('cloudAuto')?.checked);
-    if (!/^https?:\/\//.test(url)) {
-      toast('Project URL harus diawali https://', { tone: 'error' });
+    if (url && !/^https?:\/\//.test(url)) {
+      toast('URL API harus diawali https://, atau kosongkan.', { tone: 'error' });
       return;
     }
-    if (anonKey.length < 20) {
-      toast('Anon / publishable key terlihat terlalu pendek.', { tone: 'error' });
+    if (key.length < 12) {
+      toast('Kunci sinkronisasi minimal 12 karakter (sama dengan LAJUR_SYNC_KEY).', { tone: 'error' });
       return;
     }
-    if (secret.length < 12) {
-      toast('Kunci workspace minimal 12 karakter.', { tone: 'error' });
-      return;
-    }
-    saveCloudConfig({ url, anonKey, workspace, secret, auto });
+    saveCloudConfig({ url, workspace, key, auto });
     await startCloudSync();
     const status = cloudStatus();
     toast(status.message, { tone: status.state === 'ok' ? 'success' : 'error' });
@@ -391,7 +385,7 @@ export function mount(ctx) {
   document.querySelector('[data-act="cloud-off"]')?.addEventListener('click', async () => {
     const ok = await confirmAction({
       title: 'Matikan sinkronisasi cloud?',
-      message: 'Data lokal tetap ada; koneksi Supabase dan kunci workspace di perangkat ini dihapus.',
+      message: 'Data lokal tetap ada; kunci sinkronisasi cloud di perangkat ini dihapus.',
       confirmLabel: 'Matikan',
       tone: 'danger',
     });

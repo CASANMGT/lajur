@@ -149,7 +149,7 @@ export function renderShell(ctx, contentHtml) {
         ${navHtml}
         <div class="sidebar-foot">
           <strong>${esc(db.meta.company)}</strong>
-          <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : cloudConfigured(readCloudConfig()) ? 'Tersinkron ke Supabase.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
+          <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : cloudConfigured(readCloudConfig()) ? 'Tersinkron ke cloud Neon.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
           <button class="version-link" type="button" data-action="open-changelog" title="Lihat riwayat versi">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])} · Mode ${esc(modeLabel(db))}</button>
         </div>
       </aside>

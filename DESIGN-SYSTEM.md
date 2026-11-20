@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.28.1
+# Design System - Lavishome v2.29.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*

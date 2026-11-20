@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.29.0',
+    date: '2026-11-20',
+    name: 'Sinkron Neon & Domain Lavishome',
+    items: [
+      'Sinkronisasi cloud memakai Neon Postgres melalui /api/cloud di Vercel.',
+      'DATABASE_URL dan LAJUR_SYNC_KEY disimpan sebagai environment variable Vercel, bukan di browser.',
+      'Body dataset dikompresi gzip agar muat di batas 4,5 MB Vercel.',
+      'Domain produksi pindah ke lavishome.vercel.app dengan data 13 Nov 2026 dan 20 pelanggan.',
+    ],
+  },
+  {
     version: '2.28.1',
     date: '2026-11-20',
     name: 'Perbaikan Restore Database',
@@ -21,7 +32,7 @@ export const CHANGELOG = [
       'Faktur memilih koleksi → motif/warna → roll, dan default ke roll utuh.',
       'Tombol surat jalan dan faktur pajak tersedia dari halaman Penjualan.',
       'Peta lokasi pengiriman dan PIC penerimaan di profil pelanggan.',
-      'Unduh/unggah database dan sinkronisasi Supabase antar perangkat.',
+      'Unduh/unggah database dan sinkronisasi cloud antar perangkat (kemudian dipindah ke Neon di v2.29.0).',
       'Urutkan stok menurut nama atau meter tersedia terbanyak.',
     ],
   },

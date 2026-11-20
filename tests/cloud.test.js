@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { handleCloud } from '../api/cloud.js';
+
 function installBrowserStubs() {
   const store = new Map();
   globalThis.localStorage = {
@@ -9,28 +11,28 @@ function installBrowserStubs() {
     removeItem: (key) => { store.delete(key); },
   };
   globalThis.window = globalThis;
+  globalThis.CompressionStream = undefined;
   return store;
 }
 
-test('cloud config normalizes the URL and validates required fields', async () => {
+test('cloud config normalizes the API URL and sync key', async () => {
   installBrowserStubs();
   const cloud = await import('../src/data/cloud.js');
   assert.equal(cloud.cloudConfigured(), false);
 
   const saved = cloud.saveCloudConfig({
-    url: 'https://demo.supabase.co/',
-    anonKey: 'sb_publishable_demo_key_123456',
+    url: 'https://app.example.com/',
     workspace: ' lavishome ',
-    secret: 'a-long-workspace-secret',
+    key: 'a-long-sync-key',
   });
-  assert.equal(saved.url, 'https://demo.supabase.co');
+  assert.equal(saved.url, 'https://app.example.com');
   assert.equal(saved.workspace, 'lavishome');
   assert.equal(saved.auto, true);
   assert.equal(cloud.cloudConfigured(saved), true);
 
   const read = cloud.readCloudConfig();
-  assert.equal(read.url, 'https://demo.supabase.co');
-  assert.equal(read.secret, 'a-long-workspace-secret');
+  assert.equal(read.url, 'https://app.example.com');
+  assert.equal(read.key, 'a-long-sync-key');
   assert.equal(cloud.isCloudDirty(), false);
   cloud.setCloudDirty(true);
   assert.equal(cloud.isCloudDirty(), true);
@@ -45,24 +47,22 @@ test('cloud revision is stored locally and reset when cloud is disabled', async 
   cloud.setLocalCloudRevision(12);
   assert.equal(cloud.getLocalCloudRevision(), 12);
   cloud.saveCloudConfig({
-    url: 'https://demo.supabase.co',
-    anonKey: 'sb_publishable_demo_key_123456',
+    url: '',
     workspace: 'lavishome',
-    secret: 'a-long-workspace-secret',
+    key: 'a-long-sync-key',
   });
   cloud.clearCloudConfig();
   assert.equal(cloud.readCloudConfig(), null);
   assert.equal(cloud.getLocalCloudRevision(), 0);
 });
 
-test('cloud push calls the Supabase RPC with the workspace secret and base revision', async () => {
+test('cloud push calls /api/cloud with the sync key and base revision', async () => {
   installBrowserStubs();
   const cloud = await import('../src/data/cloud.js');
   const config = {
-    url: 'https://demo.supabase.co',
-    anonKey: 'sb_publishable_demo_key_123456',
+    url: 'https://app.example.com',
     workspace: 'lavishome',
-    secret: 'a-long-workspace-secret',
+    key: 'a-long-sync-key',
     auto: true,
   };
   let captured = null;
@@ -73,11 +73,62 @@ test('cloud push calls the Supabase RPC with the workspace secret and base revis
 
   const revision = await cloud.cloudPush({ meta: { version: 20 } }, { baseRevision: 4, actor: 'manager', config });
   assert.equal(revision, 5);
-  assert.equal(captured.url, 'https://demo.supabase.co/rest/v1/rpc/lajur_cloud_push');
-  assert.equal(captured.options.headers.apikey, config.anonKey);
+  assert.equal(captured.url, 'https://app.example.com/api/cloud?workspace=lavishome');
+  assert.equal(captured.options.method, 'POST');
+  assert.equal(captured.options.headers['x-lajur-key'], config.key);
   const body = JSON.parse(captured.options.body);
-  assert.equal(body.p_workspace, 'lavishome');
-  assert.equal(body.p_key, 'a-long-workspace-secret');
-  assert.equal(body.p_base_revision, 4);
-  assert.deepEqual(body.p_data, { meta: { version: 20 } });
+  assert.equal(body.baseRevision, 4);
+  assert.equal(body.actor, 'manager');
+  assert.deepEqual(body.data, { meta: { version: 20 } });
+});
+
+test('cloud pull reads the shared revision over GET', async () => {
+  installBrowserStubs();
+  const cloud = await import('../src/data/cloud.js');
+  const config = { url: '', workspace: 'lavishome', key: 'a-long-sync-key', auto: true };
+  globalThis.fetch = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => JSON.stringify({ revision: 9, data: { meta: { version: 20 } } }),
+  });
+  const result = await cloud.cloudPull(config);
+  assert.equal(result.revision, 9);
+  assert.deepEqual(result.data, { meta: { version: 20 } });
+});
+
+test('API rejects a missing or wrong sync key before touching the database', async () => {
+  const db = {
+    get: async () => { throw new Error('must not read'); },
+    push: async () => { throw new Error('must not write'); },
+  };
+  const missing = await handleCloud({ method: 'GET', workspace: 'lavishome', key: '', db, syncKey: '' });
+  assert.equal(missing.status, 503);
+  const wrong = await handleCloud({ method: 'GET', workspace: 'lavishome', key: 'wrong-key', db, syncKey: 'correct-key' });
+  assert.equal(wrong.status, 401);
+});
+
+test('API returns the shared dataset and validates pushes', async () => {
+  const db = {
+    get: async () => ({ revision: 3, data: { rolls: 1 }, updatedAt: null, updatedBy: null }),
+    push: async (workspace, baseRevision, data, actor) => ({
+      status: 200,
+      body: { revision: baseRevision + 1, workspace, actor, rolls: data.rolls },
+    }),
+  };
+  const common = { workspace: 'lavishome', key: 'correct-key', db, syncKey: 'correct-key' };
+
+  const read = await handleCloud({ ...common, method: 'GET' });
+  assert.equal(read.status, 200);
+  assert.equal(read.body.revision, 3);
+
+  const invalid = await handleCloud({ ...common, method: 'POST', baseRevision: 3, data: [] });
+  assert.equal(invalid.status, 422);
+
+  const written = await handleCloud({ ...common, method: 'POST', baseRevision: 3, data: { rolls: 2 }, actor: 'manager' });
+  assert.equal(written.status, 200);
+  assert.equal(written.body.revision, 4);
+  assert.equal(written.body.rolls, 2);
+
+  const badWorkspace = await handleCloud({ ...common, workspace: '../etc', method: 'GET' });
+  assert.equal(badWorkspace.status, 400);
 });

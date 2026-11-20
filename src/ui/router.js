@@ -199,7 +199,7 @@ export function go(hash) {
 export async function start() {
   store.init();
   await ensureAccounts(store.db.users);
-  // Pull the shared dataset in the background when Supabase is configured.
+  // Pull the shared dataset in the background when cloud sync is configured.
   // A successful pull emits and re-renders through the normal store path.
   startCloudSync();
   if (!window.location.hash) window.location.hash = '#/ringkasan';
