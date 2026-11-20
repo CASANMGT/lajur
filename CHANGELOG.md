@@ -2,6 +2,24 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.30.1] — 2026-11-20
+
+**Release name: Build Statis Vercel & Neon.** Fixes the Vercel deploy after adding `npm run build`.
+
+### Fixed
+
+- `npm run build` now writes `public/` (`tools/build.mjs`) so Vercel has an output directory.
+- `public/` is git-ignored; the build copies `index.html`, `assets/` and `src/`.
+- Vercel deploy now uses the built static output while keeping `api/cloud.js` as a function.
+
+### Verification
+
+- Local `npm run build`: **92 passed**, **59 modules**, all views render, `public/` created.
+- Neon API: POST returned revision 1; GET returned 2.203 rolls / 20 customers.
+- Production: `/api/cloud` returns data with the sync key; app served at v2.30.1.
+
+---
+
 ## [2.30.0] — 2026-11-20
 
 **Release name: Neon Terhubung & Build Pipeline.** The app is linked to the Neon project and the API is verified against it.

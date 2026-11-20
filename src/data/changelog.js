@@ -5,6 +5,16 @@
 
 export const CHANGELOG = [
   {
+    version: '2.30.1',
+    date: '2026-11-20',
+    name: 'Build Statis Vercel & Neon',
+    items: [
+      'npm run build sekarang membuat folder public/ untuk Vercel.',
+      'API /api/cloud tetap berjalan sebagai Vercel Function.',
+      'Deploy production kembali normal dengan data Neon.',
+    ],
+  },
+  {
     version: '2.30.0',
     date: '2026-11-20',
     name: 'Neon Terhubung & Build Pipeline',
