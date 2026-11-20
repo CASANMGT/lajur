@@ -14,6 +14,7 @@ import * as inventory from './views/inventory.js';
 import * as transfers from './views/transfers.js';
 import * as purchasing from './views/purchasing.js';
 import * as sales from './views/sales.js';
+import * as payments from './views/payments.js';
 import * as projects from './views/projects.js';
 import * as customers from './views/customers.js';
 import * as opname from './views/opname.js';
@@ -39,6 +40,7 @@ const VIEWS = {
   pembelian: purchasing,
   pengiriman: deliveries,
   penjualan: sales,
+  pembayaran: payments,
   pesanan: orders,
   proyek: projects,
   pelanggan: customers,

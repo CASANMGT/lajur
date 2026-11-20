@@ -1,6 +1,6 @@
 /** Single source of truth for release and schema versions. */
 
-export const APP_VERSION = '2.35.0';
+export const APP_VERSION = '2.36.0';
 export const SCHEMA_VERSION = 21;
 export const RELEASE_DATE = '2026-11-20';
-export const RELEASE_NAME = 'Tag A4 per Roll, Katalog & Motif';
+export const RELEASE_NAME = 'Pembayaran, Piutang & Edit Penerimaan';

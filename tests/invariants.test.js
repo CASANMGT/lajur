@@ -8,7 +8,7 @@ import {
   reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
 import { saveDriver, saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
-import { createInternalPurchase, createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
+import { createInternalPurchase, createInvoice, createCustomerReturn, deletePayment, postInvoice, recordPayment, invoiceOutstanding, updatePayment } from '../src/domain/sales.js';
 import { createInternalPO, internalPriceOf, receiveInternalPO, shipInternalPO } from '../src/domain/internal-po.js';
 import { createDelivery } from '../src/domain/deliveries.js';
 import { printDeliveryHtml, printLabelHtml } from '../src/ui/views/print.js';
@@ -1109,9 +1109,19 @@ test('payments can be deposit, installment and full with proof photo', () => {
   assert.equal(first.kind, 'deposit');
   assert.match(first.proofImage, /^data:image/);
   assert.equal(first.reference, 'TRF-001');
+  updatePayment(db, { id: first.id, patch: { amount: 120000, kind: 'installment', reference: 'TRF-EDIT' }, user: MGR });
+  assert.equal(first.amount, 120000);
+  assert.equal(first.kind, 'installment');
+  assert.equal(first.reference, 'TRF-EDIT');
+  assert.equal(inv.payments.find((p) => p.id === first.id).amount, 120000);
+
   const remaining = invoiceOutstanding(inv);
   const final = recordPayment(db, { invoiceId: inv.id, kind: 'full', user: MGR });
   assert.equal(final.kind, 'full');
   assert.equal(final.amount, remaining);
   assert.equal(invoiceOutstanding(inv), 0);
+
+  deletePayment(db, { id: final.id, user: MGR });
+  assert.ok(!inv.payments.some((p) => p.id === final.id));
+  assert.ok(invoiceOutstanding(inv) > 0);
 });

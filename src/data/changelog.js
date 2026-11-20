@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.36.0',
+    date: '2026-11-20',
+    name: 'Pembayaran, Piutang & Edit Penerimaan',
+    items: [
+      'Menu Pembayaran menampilkan siapa yang belum bayar, belum lunas, dan lunas.',
+      'Statistik kecil di atas: jumlah status, total sisa, total tagihan, dan terkumpul.',
+      'Filter status dan urutkan berdasarkan tanggal, sisa terbesar, atau nama.',
+      'Riwayat penerimaan per tanggal bisa diedit nominal/jenis/no. transfer/bukti atau dihapus.',
+    ],
+  },
+  {
     version: '2.35.0',
     date: '2026-11-20',
     name: 'Tag A4 per Roll, Katalog & Motif',

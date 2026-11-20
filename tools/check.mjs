@@ -12,7 +12,7 @@ const modules = [
   '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js', '../src/ui/awb.js', '../src/ui/notify.js',
   '../src/ui/views/common.js', '../src/ui/views/print.js', '../src/ui/views/dashboard.js',
   '../src/ui/views/inventory.js', '../src/ui/views/transfers.js', '../src/ui/views/purchasing.js',
-  '../src/ui/views/sales.js', '../src/ui/views/projects.js', '../src/ui/views/customers.js',
+  '../src/ui/views/sales.js', '../src/ui/views/payments.js', '../src/ui/views/projects.js', '../src/ui/views/customers.js',
   '../src/ui/views/opname.js', '../src/ui/views/reports.js', '../src/ui/views/master.js',
   '../src/ui/views/simulation.js', '../src/ui/views/login.js',
   '../src/ui/views/tasks.js', '../src/ui/views/samples.js',

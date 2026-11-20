@@ -29,6 +29,7 @@ export const NAV = [
     group: 'Komersial',
     items: [
       { id: 'penjualan', label: 'Penjualan', icon: 'receipt' },
+      { id: 'pembayaran', label: 'Pembayaran', icon: 'wallet' },
       { id: 'pengiriman', label: 'Pengiriman / Surat Jalan', icon: 'ship' },
       { id: 'pesanan', label: 'Pesanan', icon: 'clipboard' },
       { id: 'proyek', label: 'Proyek', icon: 'layers' },
@@ -52,7 +53,7 @@ export const NAV = [
 const ACCESS = {
   manager: null,
   operator: new Set(['ringkasan', 'tugas', 'produksi', 'stok', 'transfer', 'pembelian', 'opname', 'panduan', 'simulasi']),
-  sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pesanan', 'pengiriman', 'proyek', 'pelanggan', 'sampel', 'katalog', 'panduan', 'simulasi']),
+  sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pembayaran', 'pesanan', 'pengiriman', 'proyek', 'pelanggan', 'sampel', 'katalog', 'panduan', 'simulasi']),
 };
 
 export function canAccess(role, view) {
@@ -70,6 +71,7 @@ export const ROUTE_META = {
   pembelian: { title: 'Pembelian', sub: 'PO pemasok, penerimaan, dan utang' },
   pengiriman: { title: 'Pengiriman', sub: 'Surat jalan, driver, kurir, dan konfirmasi penerimaan' },
   penjualan: { title: 'Penjualan', sub: 'Faktur, pembayaran, dan retur' },
+  pembayaran: { title: 'Pembayaran', sub: 'Piutang, status bayar, dan riwayat penerimaan' },
   pesanan: { title: 'Pesanan Penjualan', sub: 'Pesanan sebelum menjadi faktur — stok belum keluar' },
   proyek: { title: 'Proyek', sub: 'Reservasi material sampai serah terima' },
   pelanggan: { title: 'Pelanggan', sub: 'CRM, buku sample, deposit, dan riwayat' },

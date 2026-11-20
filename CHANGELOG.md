@@ -2,6 +2,27 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.36.0] — 2026-11-20
+
+**Release name: Pembayaran, Piutang & Edit Penerimaan.** A dedicated payment page tracks unpaid/partial/paid invoices, with editable receipt history.
+
+### Added
+
+- **Pembayaran page** in the sidebar after Penjualan.
+- **Invoice tracking:** customer, invoice/date, due date, total, paid, outstanding, status and last payment.
+- **Status filters:** Semua, Belum bayar, Belum lunas, Lunas.
+- **Sorting:** newest/oldest invoice date, largest outstanding, customer A–Z.
+- **Small stats:** counts for each status, total outstanding, total billed and total collected.
+- **Editable receipts:** edit amount, kind, method, transfer number, date, note or proof; delete a receipt and restore the outstanding balance.
+- **Payment history by date** with proof thumbnails.
+
+### Verification
+
+- `node --test`: **100 passed**; module check **61/61**; render check passes.
+- Browser QA: page showed 2 unpaid, 1 partial, 2 paid, Rp 9.742.000 outstanding from Rp 14.412.000; partial filter and outgoing sort worked; `PAY-0005` amount/ref edited successfully.
+
+---
+
 ## [2.35.0] — 2026-11-20
 
 **Release name: Tag A4 per Roll, Katalog & Motif.** A4 tag printing can now target rolls, catalogs or motifs and sort the sheet by the same keys.

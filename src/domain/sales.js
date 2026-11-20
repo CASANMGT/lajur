@@ -545,6 +545,47 @@ export function recordPayment(db, {
   return payment;
 }
 
+export function updatePayment(db, { id, patch = {}, user }) {
+  const payment = (db.payments ?? []).find((p) => p.id === id)
+    ?? (db.invoices ?? []).flatMap((inv) => inv.payments ?? []).find((p) => p.id === id);
+  assert(payment, 'PAYMENT_NOT_FOUND', 'Pembayaran tidak ditemukan.');
+  const inv = requireInvoice(db, payment.invoiceId);
+  assert(inv.status === 'posted', 'INVALID_STATUS', 'Pembayaran hanya untuk faktur terbit.');
+  const paidOthers = invoicePaid(inv) - Number(payment.amount || 0);
+  const max = Math.max(0, inv.total - (inv.depositApplied ?? 0) - (inv.credited ?? 0) - paidOthers);
+  const amount = patch.amount === undefined ? payment.amount : money(patch.amount);
+  assert(amount > 0, 'INVALID_AMOUNT', 'Nominal pembayaran harus lebih dari 0.');
+  assert(amount <= max, 'OVERPAYMENT', `Pembayaran melebihi sisa tagihan (${max}).`);
+  const fields = {
+    amount,
+    kind: ['deposit', 'installment', 'full'].includes(patch.kind) ? patch.kind : payment.kind,
+    method: patch.method ?? payment.method,
+    reference: patch.reference ?? payment.reference,
+    date: patch.date ?? payment.date,
+    note: patch.note ?? payment.note,
+    proofImage: patch.proofImage === undefined ? payment.proofImage : String(patch.proofImage ?? ''),
+    updatedAt: isoNow(),
+    updatedBy: user?.name ?? 'Sistem',
+  };
+  Object.assign(payment, fields);
+  const linked = (inv.payments ?? []).find((p) => p.id === id);
+  if (linked && linked !== payment) Object.assign(linked, fields);
+  const global = (db.payments ?? []).find((p) => p.id === id);
+  if (global && global !== payment) Object.assign(global, fields);
+  audit(db, user, 'ubah_pembayaran', 'payment', id, `${amount}`);
+  return payment;
+}
+
+export function deletePayment(db, { id, user }) {
+  const inv = (db.invoices ?? []).find((invoice) => (invoice.payments ?? []).some((p) => p.id === id));
+  assert(inv, 'PAYMENT_NOT_FOUND', 'Pembayaran tidak ditemukan.');
+  assert(inv.status === 'posted', 'INVALID_STATUS', 'Pembayaran hanya untuk faktur terbit.');
+  inv.payments = (inv.payments ?? []).filter((p) => p.id !== id);
+  db.payments = (db.payments ?? []).filter((p) => p.id !== id);
+  audit(db, user, 'hapus_pembayaran', 'payment', id, inv.id);
+  return inv;
+}
+
 export function invoiceMargin(invoice) {
   const cost = invoice.lines.reduce((acc, l) => {
     const qty = l.kind === 'fabric' ? l.qtyMm / MM_PER_M : l.qtyPcs;
