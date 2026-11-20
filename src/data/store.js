@@ -59,6 +59,9 @@ function persist(dataset = state.dataset) {
   } catch (err) {
     storage.lastError = err;
   }
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('lajur:persist', { detail: { dataset } }));
+  }
 }
 
 /** Forward-compatible migration for datasets created before v2.1. */

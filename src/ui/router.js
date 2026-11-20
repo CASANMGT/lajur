@@ -2,6 +2,7 @@
 
 import store, { storage } from '../data/store.js';
 import { ROLE_HOME, ensureAccounts, sessionUser } from '../data/auth.js';
+import { startCloudSync } from '../data/cloud-sync.js';
 import { dashboardMetrics } from '../domain/reports.js';
 import { invoiceOutstanding } from '../domain/sales.js';
 import { renderShell, mountShell, ROUTE_META, canAccess } from './shell.js';
@@ -198,6 +199,9 @@ export function go(hash) {
 export async function start() {
   store.init();
   await ensureAccounts(store.db.users);
+  // Pull the shared dataset in the background when Supabase is configured.
+  // A successful pull emits and re-renders through the normal store path.
+  startCloudSync();
   if (!window.location.hash) window.location.hash = '#/ringkasan';
   const user = sessionUser(store.db.users);
   if (user) store.setUi({ role: user.role }, { rerender: false });

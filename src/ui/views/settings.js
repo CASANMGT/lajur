@@ -7,7 +7,10 @@ import { byId, uid, todayJakarta } from '../../domain/core.js';
 import { auditTrail, saveUser } from '../../domain/master.js';
 import { saveSettings, settingsOf } from '../../domain/settings.js';
 import { adminSetPin, changePin, createAccount, pinStatus } from '../../data/auth.js';
+import { clearCloudConfig, readCloudConfig, saveCloudConfig } from '../../data/cloud.js';
+import { cloudStatus, pullNow, startCloudSync, syncNow } from '../../data/cloud-sync.js';
 import { pageHead } from './common.js';
+import { openChangelog } from '../changelog.js';
 
 let tab = 'akun';
 
@@ -147,13 +150,18 @@ function renderAudit(ctx) {
 }
 
 function renderData(ctx) {
+  const config = readCloudConfig() ?? { url: '', anonKey: '', workspace: 'lavishome', secret: '', auto: true };
+  const status = cloudStatus();
+  const tone = status.state === 'ok' ? 'ok' : status.state === 'error' ? 'danger' : status.state === 'syncing' ? 'info' : 'muted';
+  const toneLabel = { ok: 'Tersinkron', error: 'Gagal', syncing: 'Menyinkronkan', off: 'Nonaktif', muted: 'Nonaktif' }[status.state] ?? 'Nonaktif';
   return `<div class="grid grid-2">
     <section class="card card-pad">
-      <h2>Cadangan & pemulihan</h2>
-      <p class="small muted" style="margin-top:6px">Ekspor seluruh dataset aktif ke JSON. Restore memvalidasi referensi sebelum mengganti data.</p>
-      <div class="row" style="margin-top:12px">
-        <button class="btn" type="button" data-act="export-json">${icon('download')} Ekspor JSON</button>
-        <label class="btn" style="cursor:pointer">${icon('upload')} Impor JSON<input type="file" accept="application/json,.json" data-import hidden /></label>
+      <h2>Unduh & unggah database</h2>
+      <p class="small muted" style="margin-top:6px">Unduh seluruh dataset aktif ke JSON, atau unggah kembali. Restore memvalidasi referensi sebelum mengganti data.</p>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="btn" type="button" data-act="export-json">${icon('download')} Unduh database</button>
+        <label class="btn" style="cursor:pointer">${icon('upload')} Unggah database<input type="file" accept="application/json,.json" data-import hidden /></label>
+        <button class="btn" type="button" data-act="open-changelog">${icon('listCheck')} Riwayat versi</button>
       </div>
       <div class="notice notice-info" style="margin-top:12px">${icon('alert')}<div>File JSON memuat data operasional dan pengaturan, tetapi <strong>tidak</strong> memuat hash PIN.</div></div>
     </section>
@@ -164,7 +172,31 @@ function renderData(ctx) {
         <button class="btn btn-danger" type="button" data-act="reset-main">Reset data utama</button>
         <button class="btn btn-danger" type="button" data-act="reset-sim">Reset simulasi</button>
       </div>
-      <div class="notice notice-warn" style="margin-top:12px">${icon('alert')}<div>Reset tidak mengubah PIN akun. Gunakan reset PIN per pengguna bila perlu.</div></div>
+      <div class="notice notice-warn" style="margin-top:12px">${icon('alert')}<div>Reset tidak mengubah PIN akun. Gunakan reset PIN per pengguna bila perlu. Jika cloud aktif, reset akan ikut tersinkron.</div></div>
+    </section>
+    <section class="card card-pad" style="grid-column:1/-1">
+      <div class="row-between" style="align-items:flex-start">
+        <div>
+          <h2>Sinkronisasi Supabase</h2>
+          <p class="small muted" style="margin-top:6px">Satu dataset bersama untuk semua perangkat. Jalankan <span class="mono">db/supabase.sql</span> sekali di SQL Editor Supabase, lalu isi konfigurasi di bawah.</p>
+        </div>
+        ${badge(`${toneLabel}${status.revision ? ` · rev ${status.revision}` : ''}`, tone)}
+      </div>
+      <div class="form-grid" style="margin-top:12px">
+        ${field('Project URL', `<input class="input" name="cloudUrl" value="${esc(config.url)}" placeholder="https://xxxx.supabase.co" autocomplete="off" />`)}
+        ${field('Anon / publishable key', `<input class="input" name="cloudAnon" value="${esc(config.anonKey)}" placeholder="sb_publishable_… atau eyJ…" autocomplete="off" />`)}
+        ${field('Workspace', `<input class="input" name="cloudWorkspace" value="${esc(config.workspace || 'lavishome')}" placeholder="lavishome" />`, { hint: 'Nama ruang data, misalnya lavishome.' })}
+        ${field('Kunci workspace', `<input class="input" type="password" name="cloudSecret" value="${esc(config.secret)}" placeholder="Minimal 12 karakter" autocomplete="new-password" />`, { hint: 'Rahasia tulis. Simpan di password manager; jangan dibagikan.' })}
+        <label class="checkline" style="grid-column:1/-1"><input type="checkbox" name="cloudAuto" ${config.auto !== false ? 'checked' : ''} /> Sinkron otomatis setelah setiap perubahan</label>
+      </div>
+      <div class="row" style="margin-top:12px;flex-wrap:wrap">
+        <button class="btn btn-primary" type="button" data-act="cloud-save">${icon('check')} Simpan & uji</button>
+        <button class="btn" type="button" data-act="cloud-pull">${icon('download')} Tarik dari cloud</button>
+        <button class="btn" type="button" data-act="cloud-push">${icon('upload')} Dorong ke cloud</button>
+        <button class="btn btn-danger" type="button" data-act="cloud-off">Matikan</button>
+      </div>
+      <p class="small" data-cloud-status style="margin-top:10px">${esc(status.message)}${status.at ? ` · ${esc(new Date(status.at).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta' }))}` : ''}</p>
+      <div class="notice notice-warn" style="margin-top:10px">${icon('alert')}<div><strong>Baca sebelum produksi.</strong> Sinkronisasi ini mengganti seluruh dokumen dataset (last-write-wins). Untuk operasi multi-pengguna serentak, gunakan API server + row-level tables dan transaksi per aksi. Anon key boleh publik; kunci workspace adalah kredensial tulis.</div></div>
     </section>
   </div>`;
 }
@@ -304,5 +336,68 @@ export function mount(ctx) {
     if (!ok) return;
     ctx.store.resetSimulation();
     toast('Simulasi direset.', { tone: 'success' });
+  });
+
+  document.querySelector('[data-act="open-changelog"]')?.addEventListener('click', () => openChangelog());
+
+  const cloudField = (name) => document.querySelector(`[name="${name}"]`);
+  document.querySelector('[data-act="cloud-save"]')?.addEventListener('click', async () => {
+    const url = cloudField('cloudUrl')?.value.trim().replace(/\/+$/, '') ?? '';
+    const anonKey = cloudField('cloudAnon')?.value.trim() ?? '';
+    const workspace = cloudField('cloudWorkspace')?.value.trim() || 'lavishome';
+    const secret = cloudField('cloudSecret')?.value.trim() ?? '';
+    const auto = Boolean(cloudField('cloudAuto')?.checked);
+    if (!/^https?:\/\//.test(url)) {
+      toast('Project URL harus diawali https://', { tone: 'error' });
+      return;
+    }
+    if (anonKey.length < 20) {
+      toast('Anon / publishable key terlihat terlalu pendek.', { tone: 'error' });
+      return;
+    }
+    if (secret.length < 12) {
+      toast('Kunci workspace minimal 12 karakter.', { tone: 'error' });
+      return;
+    }
+    saveCloudConfig({ url, anonKey, workspace, secret, auto });
+    await startCloudSync();
+    const status = cloudStatus();
+    toast(status.message, { tone: status.state === 'ok' ? 'success' : 'error' });
+    ctx.store.emit();
+  });
+
+  document.querySelector('[data-act="cloud-pull"]')?.addEventListener('click', async () => {
+    const ok = await confirmAction({
+      title: 'Tarik data dari cloud?',
+      message: 'Data lokal yang belum tersinkron akan diganti oleh salinan cloud terbaru.',
+      confirmLabel: 'Tarik',
+    });
+    if (!ok) return;
+    const remote = await pullNow({ preferRemote: true });
+    const status = cloudStatus();
+    toast(remote ? `Data cloud ditarik · revisi ${remote.revision}.` : status.message, {
+      tone: remote ? 'success' : 'error',
+    });
+    ctx.store.emit();
+  });
+
+  document.querySelector('[data-act="cloud-push"]')?.addEventListener('click', async () => {
+    await syncNow();
+    const status = cloudStatus();
+    toast(status.message, { tone: status.state === 'ok' ? 'success' : 'error' });
+    ctx.store.emit();
+  });
+
+  document.querySelector('[data-act="cloud-off"]')?.addEventListener('click', async () => {
+    const ok = await confirmAction({
+      title: 'Matikan sinkronisasi cloud?',
+      message: 'Data lokal tetap ada; koneksi Supabase dan kunci workspace di perangkat ini dihapus.',
+      confirmLabel: 'Matikan',
+      tone: 'danger',
+    });
+    if (!ok) return;
+    clearCloudConfig();
+    toast('Sinkronisasi cloud dimatikan di perangkat ini.', { tone: 'success' });
+    ctx.store.emit();
   });
 }

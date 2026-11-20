@@ -14,9 +14,42 @@ import { buildStockPlanFromRows } from '../../domain/stock-plan.js';
 import { exportBackup } from '../../data/backup.js';
 import { readExcelRows } from '../excel.js';
 import { printStockTagsHtml } from './print.js';
+import { openChangelog } from '../changelog.js';
 
-const filters = { q: '', collection: '', status: 'all', available: true };
+const filters = { q: '', collection: '', status: 'all', available: true, sort: 'meters' };
 let stockView = 'collections';
+
+const SORT_OPTIONS = [
+  ['meters', 'Meter tersedia terbanyak'],
+  ['nameAsc', 'Nama A–Z'],
+  ['nameDesc', 'Nama Z–A'],
+];
+
+function sortGroups(groups) {
+  const copy = [...groups];
+  if (filters.sort === 'nameAsc') copy.sort((a, b) => a.name.localeCompare(b.name, 'id'));
+  else if (filters.sort === 'nameDesc') copy.sort((a, b) => b.name.localeCompare(a.name, 'id'));
+  else copy.sort((a, b) => b.availableMm - a.availableMm || a.name.localeCompare(b.name, 'id'));
+  if (filters.sort === 'meters') return copy;
+  return copy.map((group) => ({
+    ...group,
+    skus: [...group.skus].sort((a, b) => {
+      const nameA = String(a.sku?.colourName || a.sku?.colourCode || a.sku?.code || '');
+      const nameB = String(b.sku?.colourName || b.sku?.colourCode || b.sku?.code || '');
+      return filters.sort === 'nameDesc' ? nameB.localeCompare(nameA, 'id') : nameA.localeCompare(nameB, 'id');
+    }),
+  }));
+}
+
+function compareRolls(db, a, b) {
+  if (filters.sort === 'meters') return byAvailability(a, b);
+  const label = (roll) => {
+    const s = byId(db.skus, roll.skuId);
+    return `${s?.collectionName || ''} ${s?.colourName || s?.colourCode || ''} ${roll.id}`;
+  };
+  const cmp = label(a).localeCompare(label(b), 'id');
+  return filters.sort === 'nameDesc' ? -cmp : cmp;
+}
 
 const CLOSED_ROLL = new Set(['sold', 'consumed', 'void']);
 const isClosedRoll = (roll) => CLOSED_ROLL.has(roll.status);
@@ -58,7 +91,7 @@ function rowsHtml(ctx) {
   const { db, ui } = ctx;
   const list = db.rolls
     .filter((r) => matches(db, r, { whId: ui.warehouseId }))
-    .sort(byAvailability);
+    .sort((a, b) => compareRolls(db, a, b));
 
   if (!list.length) {
     return `<tr><td colspan="7"><div class="empty">${icon('search')}<strong>Tidak ada roll</strong><p>Ubah kata kunci atau filter gudang.</p></div></td></tr>`;
@@ -125,7 +158,7 @@ function treeRows(nodes, db) {
 function hierarchyInner(ctx) {
   const { db, ui } = ctx;
   const filtered = db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId }));
-  const groups = rollHierarchy(db, { rolls: filtered });
+  const groups = sortGroups(rollHierarchy(db, { rolls: filtered }));
   if (!groups.length) {
     return `<div class="empty">${icon('search')}<strong>Tidak ada roll</strong><p>Ubah kata kunci atau filter gudang.</p></div>`;
   }
@@ -168,9 +201,9 @@ function hierarchyInner(ctx) {
 function collectionsInner(ctx) {
   const { db, ui } = ctx;
   const filtered = db.rolls.filter((r) => matches(db, r, { whId: ui.warehouseId }));
-  const groups = rollHierarchy(db, { rolls: filtered })
+  const groups = sortGroups(rollHierarchy(db, { rolls: filtered })
     .map((group) => ({ ...group, skus: group.skus.filter((s) => s.availableMm > 0) }))
-    .filter((group) => group.skus.length > 0 && group.availableMm > 0);
+    .filter((group) => group.skus.length > 0 && group.availableMm > 0));
   if (!groups.length) {
     return `<div class="empty">${icon('search')}<strong>Tidak ada koleksi dengan stok</strong><p>Ubah kata kunci atau filter status.</p></div>`;
   }
@@ -245,7 +278,7 @@ function cardsHtml(ctx) {
   const { db, ui } = ctx;
   const list = db.rolls
     .filter((r) => matches(db, r, { whId: ui.warehouseId }))
-    .sort(byAvailability);
+    .sort((a, b) => compareRolls(db, a, b));
   if (!list.length) return `<div class="empty">${icon('search')}<strong>Tidak ada roll</strong><p>Ubah kata kunci atau filter gudang.</p></div>`;
   const available = list.filter((r) => !isClosedRoll(r));
   const sold = list.filter(isClosedRoll);
@@ -324,7 +357,7 @@ export function render(ctx) {
       sub: 'Setiap panjang adalah roll fisik. Saldo tersedia = fisik − reservasi, dan transit tidak dihitung di gudang mana pun.',
       actions: `${can(role, 'stock.add') ? `<button class="btn btn-primary" type="button" data-act="add-stock">${icon('plus')} Tambah stok manual</button>` : ''}
         <a class="btn" href="#/pembelian">${icon('truck')} Terima PO</a>
-        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="print-tags">${icon('printer')} Tag A4</button><button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button>` : ''}
+        ${can(role, 'stock.view') ? `<button class="btn" type="button" data-act="print-tags">${icon('printer')} Tag A4</button><button class="btn" type="button" data-act="share-stock">${icon('phone')} Info stok WA</button><button class="btn" type="button" data-action="export">${icon('download')} CSV</button><button class="btn" type="button" data-act="changelog">${icon('listCheck')} Riwayat versi</button>` : ''}
         ${canSync ? `<button class="btn" type="button" data-act="sync-stock">${icon('upload')} Sinkron stok 13 Nov</button>` : ''}
         ${role === 'manager' ? `<button class="btn" type="button" data-act="import-stock">${icon('upload')} Impor Excel</button>` : ''}`,
     })}
@@ -353,6 +386,11 @@ export function render(ctx) {
           <option value="quarantine" ${filters.status === 'quarantine' ? 'selected' : ''}>Karantina</option>
           <option value="transit" ${filters.status === 'transit' ? 'selected' : ''}>Transit</option>
           <option value="sold" ${filters.status === 'sold' ? 'selected' : ''}>Terjual / terpakai</option>
+        </select>
+      </div>
+      <div class="field"><label for="f-sort">Urutkan</label>
+        <select class="select" id="f-sort">
+          ${SORT_OPTIONS.map(([key, label]) => `<option value="${key}" ${filters.sort === key ? 'selected' : ''}>${esc(label)}</option>`).join('')}
         </select>
       </div>
       <label class="checkline" style="min-height:42px"><input type="checkbox" id="f-available" ${filters.available ? 'checked' : ''} /> Hanya ada stok</label>
@@ -1164,13 +1202,18 @@ export function mount(ctx) {
   document.getElementById('f-collection')?.addEventListener('change', (e) => { filters.collection = e.target.value; rerenderList(); });
   document.getElementById('f-status')?.addEventListener('change', (e) => { filters.status = e.target.value; rerenderList(); });
   document.getElementById('f-available')?.addEventListener('change', (e) => { filters.available = e.target.checked; rerenderList(); });
+  document.getElementById('f-sort')?.addEventListener('change', (e) => {
+    filters.sort = e.target.value;
+    ctx.store.emit();
+  });
   document.querySelector('[data-action="reset-filter"]')?.addEventListener('click', () => {
-    Object.assign(filters, { q: '', collection: '', status: 'all', available: true });
+    Object.assign(filters, { q: '', collection: '', status: 'all', available: true, sort: 'meters' });
     window.location.hash = '#/stok';
     // Force a full view re-render via store emit.
     ctx.store.emit();
   });
   document.querySelector('[data-act="print-tags"]')?.addEventListener('click', () => openPrintTags(ctx));
+  document.querySelector('[data-act="changelog"]')?.addEventListener('click', () => openChangelog());
   document.querySelector('[data-act="share-stock"]')?.addEventListener('click', () => openStockShare(ctx));
   document.querySelectorAll('[data-act="sync-stock"]').forEach((button) => button.addEventListener('click', () => openStockSync(ctx)));
   document.querySelectorAll('[data-act="import-stock"]').forEach((button) => button.addEventListener('click', () => openStockImport(ctx)));

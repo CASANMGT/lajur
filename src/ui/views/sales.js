@@ -56,6 +56,7 @@ export function render(ctx) {
       title: 'Faktur & pembayaran',
       sub: 'Kain dipotong dari roll tertentu; spare part memakai pcs. Stok keluar satu kali saat faktur diterbitkan.',
       actions: `${advanced && settingsOf(db).salesOrderEnabled ? `<a class="btn" href="#/pesanan">${icon('clipboard')} Pesanan</a>` : ''}
+        ${advanced ? `<a class="btn" href="#/pengiriman">${icon('truck')} Surat jalan</a>` : ''}
         ${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
     })}
     ${roleHint(role, 'invoice.create', 'Membuat faktur adalah wewenang sales/CS atau manajer.')}
@@ -146,7 +147,11 @@ function renderDetail(ctx) {
   if (inv.status === 'posted' && out > 0 && can(role, 'invoice.pay')) actions.push(`<button class="btn btn-primary" data-act="pay">${icon('wallet')} Terima pembayaran</button>`);
   if (inv.status === 'posted' && out > 0 && applicableDeposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
   if (inv.status === 'posted' && can(role, 'return.create')) actions.push(`<button class="btn" data-act="return">${icon('refresh')} Retur</button>`);
-  actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak</button>`);
+  if (inv.status === 'posted' && !delivery && can(role, 'invoice.create')) actions.push(`<button class="btn" data-act="new-delivery">${icon('truck')} Buat surat jalan</button>`);
+  if (delivery) actions.push(`<button class="btn" data-act="print-delivery">${icon('printer')} Surat jalan</button>`);
+  if (tax) actions.push(`<button class="btn" data-act="print-tax">${icon('receipt')} Faktur pajak</button>`);
+  else if (inv.status === 'posted' && advanced && can(role, 'invoice.create')) actions.push(`<button class="btn" data-act="issue-tax">${icon('receipt')} Faktur pajak</button>`);
+  actions.push(`<button class="btn" data-act="print">${icon('printer')} Cetak faktur</button>`);
 
   return `
     <div class="page-head">
@@ -325,24 +330,48 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
     .sort((a, b) => a.id.localeCompare(b.id));
   const sku = presetRollId ? byId(db.skus, db.rolls.find((r) => r.id === presetRollId)?.skuId) : null;
 
-  const rollOptions = rolls.map((r) => {
-    const s = byId(db.skus, r.skuId);
-    const whole = (r.reservedMm || 0) === 0;
-    return `<option value="${r.id}" data-price="${s?.sellPrice ?? 0}" data-current="${r.currentMm}" data-avail="${availableMm(r)}" data-reserved="${r.reservedMm || 0}" ${presetRollId === r.id ? 'selected' : ''}>${esc(r.id)} · ${esc(s?.code)} · ${esc(r.lot)} · ${fmt.m(availableMm(r))} tersedia</option>`;
-  }).join('');
+  const fabricCollections = [...new Set(rolls.map((r) => byId(db.skus, r.skuId)?.collectionId).filter(Boolean))]
+    .map((id) => byId(db.collections, id))
+    .filter(Boolean)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const motifsForCollection = (collectionId) => db.skus
+    .filter((s) => s.collectionId === collectionId && rolls.some((r) => r.skuId === s.id))
+    .sort((a, b) => String(a.colourName || a.colourCode).localeCompare(String(b.colourName || b.colourCode)));
+  const rollOptionsFor = (skuId, selectedRollId = '') => rolls
+    .filter((r) => r.skuId === skuId)
+    .map((r) => {
+      const s = byId(db.skus, r.skuId);
+      return `<option value="${r.id}" data-price="${s?.sellPrice ?? 0}" data-current="${r.currentMm}" data-avail="${availableMm(r)}" data-reserved="${r.reservedMm || 0}" ${selectedRollId === r.id ? 'selected' : ''}>${esc(r.id)} · ${esc(r.lot)} · ${fmt.m(availableMm(r))} tersedia</option>`;
+    }).join('');
+  const collectionOptions = (selectedId) => fabricCollections
+    .map((c) => `<option value="${c.id}" ${selectedId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+  const motifOptions = (collectionId, selectedId) => motifsForCollection(collectionId)
+    .map((s) => `<option value="${s.id}" ${selectedId === s.id ? 'selected' : ''}>${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.widthCm)} cm</option>`).join('');
+  const defaultFabricRoll = presetRoll ?? rolls[0] ?? null;
+  const defaultFabricSku = defaultFabricRoll ? byId(db.skus, defaultFabricRoll.skuId) : null;
+  const defaultFabricCollection = defaultFabricSku?.collectionId ?? fabricCollections[0]?.id ?? '';
 
   const partOptions = db.parts
     .filter((p) => partAvailable(db, p.id, defaultWh) > 0)
     .map((p) => `<option value="${p.id}" data-price="${p.sellPrice}" data-avail="${partAvailable(db, p.id, defaultWh)}">${esc(p.sku)} · ${esc(p.name)} · ${fmt.pcs(partAvailable(db, p.id, defaultWh))} pcs</option>`)
     .join('');
 
-  const fabricRow = (selected = '') => `<div class="alloc-row" data-fab style="grid-template-columns:1.5fr .7fr .6fr .8fr 34px">
-    <select class="select fab-roll" aria-label="Roll kain">${rollOptions}</select>
-    <select class="select fab-mode" aria-label="Mode"><option value="cut">Potong</option><option value="whole">Roll utuh</option></select>
-    <input class="input fab-qty" inputmode="decimal" placeholder="meter" aria-label="Panjang" />
-    <input class="input fab-price" inputmode="numeric" placeholder="harga/m" aria-label="Harga per meter" />
-    <button class="icon-btn" type="button" data-remove aria-label="Hapus baris">${icon('x')}</button>
-  </div>`;
+  const fabricRow = (selectedRollId = '') => {
+    const selected = rolls.find((r) => r.id === selectedRollId) ?? defaultFabricRoll;
+    const sku = selected ? byId(db.skus, selected.skuId) : defaultFabricSku;
+    const collectionId = sku?.collectionId ?? defaultFabricCollection;
+    const reserved = Number(selected?.reservedMm || 0);
+    const whole = reserved === 0;
+    return `<div class="alloc-row" data-fab style="grid-template-columns:1.05fr 1.05fr 1.3fr .8fr .7fr .8fr 34px">
+      <select class="select fab-collection" aria-label="Koleksi">${collectionOptions(collectionId)}</select>
+      <select class="select fab-motif" aria-label="Motif / warna">${motifOptions(collectionId, sku?.id)}</select>
+      <select class="select fab-roll" aria-label="Roll kain">${selected ? rollOptionsFor(sku?.id, selected.id) : ''}</select>
+      <select class="select fab-mode" aria-label="Mode"><option value="whole" ${whole ? 'selected' : ''} ${whole ? '' : 'disabled'}>Roll utuh</option><option value="cut" ${whole ? '' : 'selected'}>Potong</option></select>
+      <input class="input fab-qty" inputmode="decimal" placeholder="meter" aria-label="Panjang" value="${whole && selected ? (selected.currentMm / 1000).toLocaleString('id-ID') : ''}" ${whole ? 'disabled' : ''} />
+      <input class="input fab-price" inputmode="numeric" placeholder="harga/m" aria-label="Harga per meter" value="${sku?.sellPrice ?? ''}" />
+      <button class="icon-btn" type="button" data-remove aria-label="Hapus baris">${icon('x')}</button>
+    </div>`;
+  };
 
   const partRow = () => `<div class="alloc-row" data-part style="grid-template-columns:1.6fr .6fr .8fr 34px">
     <select class="select part-id" aria-label="Spare part">${partOptions}</select>
@@ -374,6 +403,9 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
         ${field('Catatan', `<input class="input" name="notes" placeholder="Referensi proyek / instruksi" />`, { full: true })}
       </div>
       <div class="section-title" style="margin:18px 0 6px"><h3>Kain</h3><span class="xs muted">${rolls.length} roll tersedia di gudang ini</span></div>
+      <div class="xs muted" style="display:grid;grid-template-columns:1.05fr 1.05fr 1.3fr .8fr .7fr .8fr 34px;gap:8px;margin-bottom:4px">
+        <span>Koleksi</span><span>Motif / warna</span><span>Roll</span><span>Mode</span><span>Meter</span><span>Harga/m</span><span></span>
+      </div>
       <div id="fab-rows">${rolls.length ? fabricRow() : `<p class="small muted">Tidak ada roll tersedia untuk gudang ini.</p>`}</div>
       <button class="btn btn-sm" type="button" data-add-fab ${rolls.length ? '' : 'disabled'}>${icon('plus')} Tambah kain</button>
       <div class="section-title" style="margin:18px 0 6px"><h3>Spare part</h3><span class="xs muted">Satuan pcs</span></div>
@@ -424,16 +456,55 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
         if (product && price && !price.value) price.value = product.selectedOptions[0]?.dataset.price ?? '';
       };
 
+      const syncFabricMode = (row) => {
+        const rollSel = row.querySelector('.fab-roll');
+        const modeSel = row.querySelector('.fab-mode');
+        if (!rollSel || !modeSel) return;
+        const opt = rollSel.selectedOptions[0];
+        const wholeOpt = modeSel.querySelector('option[value="whole"]');
+        const canWhole = Number(opt?.dataset.reserved || 0) === 0;
+        wholeOpt.disabled = !canWhole;
+        if (!canWhole && modeSel.value === 'whole') modeSel.value = 'cut';
+        const whole = modeSel.value === 'whole';
+        const qty = row.querySelector('.fab-qty');
+        if (qty) {
+          qty.disabled = whole;
+          if (whole && opt) qty.value = (Number(opt.dataset.current || 0) / 1000).toLocaleString('id-ID');
+          else if (whole === false) qty.value = '';
+        }
+        row.dataset.wasWhole = whole ? '1' : '0';
+      };
+
       const bindRow = (row) => {
         row.querySelectorAll('input, select').forEach((el) => el.addEventListener('input', recalc));
-        row.querySelector('.fab-mode')?.addEventListener('change', () => {
-          const whole = row.querySelector('.fab-mode').value === 'whole';
-          row.querySelector('.fab-qty').disabled = whole;
+        row.querySelector('.fab-collection')?.addEventListener('change', (event) => {
+          const motifSel = row.querySelector('.fab-motif');
+          const motifList = motifsForCollection(event.target.value);
+          motifSel.innerHTML = motifList.map((s) => `<option value="${s.id}">${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.widthCm)} cm</option>`).join('');
+          const rollSel = row.querySelector('.fab-roll');
+          rollSel.innerHTML = motifList[0] ? rollOptionsFor(motifList[0].id) : '';
+          row.querySelector('.fab-price').value = motifList[0]?.sellPrice ?? '';
+          syncFabricMode(row);
           recalc();
         });
-        row.querySelector('.fab-roll, .part-id')?.addEventListener('change', () => {
-          const product = row.querySelector('.fab-roll, .part-id');
-          row.querySelector('.fab-price, .part-price').value = product.selectedOptions[0]?.dataset.price ?? '';
+        row.querySelector('.fab-motif')?.addEventListener('change', (event) => {
+          const rollSel = row.querySelector('.fab-roll');
+          rollSel.innerHTML = rollOptionsFor(event.target.value);
+          row.querySelector('.fab-price').value = row.querySelector('.fab-roll').selectedOptions[0]?.dataset.price ?? '';
+          syncFabricMode(row);
+          recalc();
+        });
+        row.querySelector('.fab-roll')?.addEventListener('change', () => {
+          row.querySelector('.fab-price').value = row.querySelector('.fab-roll').selectedOptions[0]?.dataset.price ?? '';
+          syncFabricMode(row);
+          recalc();
+        });
+        row.querySelector('.fab-mode')?.addEventListener('change', () => {
+          syncFabricMode(row);
+          recalc();
+        });
+        row.querySelector('.part-id')?.addEventListener('change', () => {
+          row.querySelector('.part-price').value = row.querySelector('.part-id').selectedOptions[0]?.dataset.price ?? '';
           recalc();
         });
         row.querySelector('[data-remove]')?.addEventListener('click', () => { row.remove(); recalc(); });

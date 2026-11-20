@@ -99,7 +99,7 @@ function renderDetail(ctx) {
       <div>
         <a class="small strong" href="#/pelanggan">← Semua pelanggan</a>
         <div class="row" style="margin-top:6px"><h1>${esc(c.name)}</h1>${badge(CRM_STAGE[c.stage]?.label ?? c.stage, CRM_STAGE[c.stage]?.tone ?? 'muted')}</div>
-        <p class="sub">${esc(c.company || '')} ${c.city ? `· ${esc(c.city)}` : ''} · PIC sales ${esc(byId(db.users, c.salespersonId)?.name ?? '—')}</p>
+        <p class="sub">${esc(c.company || '')} ${c.city ? `· ${esc(c.city)}` : ''} · PIC sales ${esc(byId(db.users, c.salespersonId)?.name ?? '—')}${c.contactName ? ` · PIC terima ${esc(c.contactName)}` : ''}</p>
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
@@ -190,6 +190,8 @@ function renderDetail(ctx) {
           </div>
           <hr class="divider" />
           <div class="stack-sm">
+            <div class="row-between"><span class="small muted">PIC penerimaan</span><span class="small">${esc(c.contactName || '—')}</span></div>
+            <div class="row-between"><span class="small muted">Kode pelanggan</span><span class="small mono">${esc(c.externalCode || '—')}</span></div>
             <div class="row-between"><span class="small muted">NPWP</span><span class="small mono">${esc(c.npwp || '-')}</span></div>
           <div class="row-between"><span class="small muted">Telepon</span><span class="small">${esc(c.phone || '-')}</span></div>
             <div class="row-between"><span class="small muted">WhatsApp</span><span class="small">${esc(c.whatsapp || c.phone || '—')}</span></div>
@@ -200,6 +202,15 @@ function renderDetail(ctx) {
             <div class="row-between"><span class="small muted">Follow-up</span><span class="small">${esc(c.followUpDate || '—')}</span></div>
           </div>
           ${c.notes ? `<hr class="divider" /><p class="small muted">${esc(c.notes)}</p>` : ''}
+        </section>
+
+        <section class="card card-pad">
+          <div class="row-between">
+            <div><h2>Lokasi pengiriman</h2><p class="xs muted">${esc(c.address || 'Alamat belum diisi')}${c.city ? ` · ${esc(c.city)}` : ''}</p></div>
+            ${c.address ? `<a class="btn btn-sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.address)}" target="_blank" rel="noopener">${icon('pin')} Buka Maps</a>` : ''}
+          </div>
+          ${c.address ? `<iframe class="customer-map" title="Peta lokasi pengiriman ${esc(c.name)}" loading="lazy" src="https://www.google.com/maps?q=${encodeURIComponent(c.address)}&output=embed"></iframe>` : '<p class="small muted" style="margin-top:10px">Tambahkan alamat untuk menampilkan peta.</p>'}
+          <div class="row-between" style="margin-top:10px"><span class="small muted">PIC penerimaan</span><span class="small strong">${esc(c.contactName || '—')}</span></div>
         </section>
 
         <section class="card card-pad">
@@ -226,6 +237,7 @@ function openEdit(ctx, c) {
     body: `<div class="form-grid">
       ${field('Nama', `<input class="input" name="name" value="${esc(c.name)}" required />`)}
       ${field('Perusahaan', `<input class="input" name="company" value="${esc(c.company)}" />`)}
+      ${field('PIC penerimaan', `<input class="input" name="contactName" value="${esc(c.contactName ?? '')}" placeholder="Nama PIC di lokasi pengiriman" />`, { hint: 'Dipakai di surat jalan dan konfirmasi terima.' })}
       ${field('NPWP (opsional)', `<input class="input" name="npwp" value="${esc(c.npwp ?? '')}" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Dipakai untuk faktur pajak. Boleh dikosongkan.' })}
       ${field('Telepon', `<input class="input" name="phone" value="${esc(c.phone)}" />`)}
       ${field('Nomor WhatsApp', `<input class="input" name="whatsapp" value="${esc(c.whatsapp ?? c.phone ?? '')}" placeholder="08xx-xxxx-xxxx" />`)}
@@ -244,6 +256,7 @@ function openEdit(ctx, c) {
         patch: {
           name: form.name.value.trim(),
           company: form.company.value,
+          contactName: form.contactName.value,
           npwp: form.npwp.value,
           phone: form.phone.value,
           whatsapp: form.whatsapp.value,
@@ -405,6 +418,7 @@ export function openCreate(ctx) {
     body: `<div class="form-grid">
       ${field('Nama', `<input class="input" name="name" required />`)}
       ${field('Perusahaan', `<input class="input" name="company" />`)}
+      ${field('PIC penerimaan', `<input class="input" name="contactName" placeholder="Nama PIC di lokasi pengiriman" />`)}
       ${field('NPWP (opsional)', `<input class="input" name="npwp" placeholder="00.000.000.0-000.000" maxlength="24" />`, { hint: 'Dipakai untuk faktur pajak. Boleh dikosongkan.' })}
       ${field('Telepon', `<input class="input" name="phone" />`)}
       ${field('Nomor WhatsApp', `<input class="input" name="whatsapp" placeholder="08xx-xxxx-xxxx" />`)}
@@ -419,6 +433,7 @@ export function openCreate(ctx) {
       const customer = ctx.store.update((db) => createCustomer(db, {
         name: form.name.value,
         company: form.company.value,
+        contactName: form.contactName.value,
         npwp: form.npwp.value,
         phone: form.phone.value,
         whatsapp: form.whatsapp.value || form.phone.value,

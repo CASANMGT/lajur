@@ -9,6 +9,8 @@ import { changePin, logout, sessionRemainingMs } from '../data/auth.js';
 import { APP_VERSION } from '../version.js';
 import { saveSettings, settingsOf } from '../domain/settings.js';
 import { ADVANCED_VIEWS, isAdvancedMode, modeLabel } from '../domain/features.js';
+import { openChangelog } from './changelog.js';
+import { cloudConfigured, readCloudConfig } from '../data/cloud.js';
 
 export const NAV = [
   {
@@ -20,7 +22,6 @@ export const NAV = [
       { id: 'stok', label: 'Stok & Roll', icon: 'box' },
       { id: 'transfer', label: 'Permintaan Gudang', icon: 'transfer' },
       { id: 'pembelian', label: 'Pembelian', icon: 'truck' },
-      { id: 'pengiriman', label: 'Pengiriman', icon: 'ship' },
       { id: 'opname', label: 'Stock Opname', icon: 'clipboard' },
     ],
   },
@@ -28,6 +29,7 @@ export const NAV = [
     group: 'Komersial',
     items: [
       { id: 'penjualan', label: 'Penjualan', icon: 'receipt' },
+      { id: 'pengiriman', label: 'Pengiriman / Surat Jalan', icon: 'ship' },
       { id: 'pesanan', label: 'Pesanan', icon: 'clipboard' },
       { id: 'proyek', label: 'Proyek', icon: 'layers' },
       { id: 'pelanggan', label: 'Pelanggan', icon: 'users' },
@@ -147,8 +149,8 @@ export function renderShell(ctx, contentHtml) {
         ${navHtml}
         <div class="sidebar-foot">
           <strong>${esc(db.meta.company)}</strong>
-          <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
-          <p class="xs" style="margin-top:6px">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])} · Mode ${esc(modeLabel(db))}</p>
+          <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : cloudConfigured(readCloudConfig()) ? 'Tersinkron ke Supabase.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
+          <button class="version-link" type="button" data-action="open-changelog" title="Lihat riwayat versi">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])} · Mode ${esc(modeLabel(db))}</button>
         </div>
       </aside>
 
@@ -279,6 +281,7 @@ export function mountShell(ctx) {
     { tone: 'success' });
   }));
   document.querySelectorAll('[data-action="account"]').forEach((btn) => btn.addEventListener('click', () => openAccount(ctx)));
+  document.querySelectorAll('[data-action="open-changelog"]').forEach((btn) => btn.addEventListener('click', () => openChangelog()));
   document.querySelectorAll('[data-action="open-sim"]').forEach((btn) =>
     btn.addEventListener('click', () => {
       if (ctx.dataset === 'sim') window.location.hash = '#/simulasi';

@@ -3,12 +3,12 @@
 **Inventory and business management for curtain fabric — traced to the last metre.**
 *Setiap roll, tercatat.*
 
-**Live demo:** https://lajur-lake.vercel.app
+**Live app:** https://lavishome.vercel.app (alias: https://lajur-lake.vercel.app)
 **Source:** https://github.com/CASANMGT/lajur
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-85%2F85-brightgreen) ![Version](https://img.shields.io/badge/version-2.27.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-88%2F88-brightgreen) ![Version](https://img.shields.io/badge/version-2.28.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -38,7 +38,7 @@ The repository is linked to Vercel (`lajur` project) and deploys `main` automati
 npx vercel --prod
 ```
 
-Or import the GitHub repository in Vercel with framework preset **Other**, build command empty, output directory `.`. The current production alias is **https://lajur-lake.vercel.app**.
+Or import the GitHub repository in Vercel with framework preset **Other**, build command empty, output directory `.`. The production alias is **https://lavishome.vercel.app**; the original **https://lajur-lake.vercel.app** stays attached.
 
 ### Sign in (demo)
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 85 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 88 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -89,6 +89,20 @@ The static Vercel demo intentionally remains browser-local; the UI is not yet wi
 - **Seed data is only for first-run/demo.** Do not update production stock by editing `src/domain/seed.js` or by re-syncing an Excel in one browser. The Excel import should go through the API and a PostgreSQL transaction so every user sees the same stock.
 - **Backups:** daily `pg_dump` plus provider point-in-time recovery/WAL, stored offsite; run a restore drill monthly. Keep the app-level JSON backup for portability, but it is not a replacement for database backups.
 - **Excel sync:** upload the dated Excel → preview → archive old rolls → import new rolls → commit in one transaction. Keep `meta.stockSyncHistory`/audit rows for the date and source.
+
+### Supabase shared dataset (optional, built in)
+
+For a shared dataset without running your own Node API:
+
+1. Create a Supabase project.
+2. Open **SQL Editor**, paste `db/supabase.sql`, replace `GANTI-KUNCI-INI` with a long random workspace secret, and run it.
+3. Open Lavishome → **Pengaturan → Data → Sinkronisasi Supabase**: fill the project URL, the anon/publishable key, workspace `lavishome`, and the same secret.
+4. **Simpan & uji** pulls the cloud copy on first use; if the workspace is empty it pushes the current browser dataset.
+5. Other devices that enter the same four values pull the shared dataset on start.
+
+How it works: the browser calls two `SECURITY DEFINER` RPC functions (`lajur_cloud_pull` / `lajur_cloud_push`). The table has RLS with no policies, so the public anon key cannot read or write it directly. Writes are optimistic (revision guard) and the whole document is last-write-wins. That is enough for one shared back office, but it is **not** a substitute for per-action server transactions when several staff edit simultaneously. For that, use `server/server.mjs` with PostgreSQL or split the domain into row-level tables.
+
+The JSON **Unduh database** / **Unggah database** buttons in the same tab remain the portable backup path.
 
 ---
 
@@ -247,8 +261,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **85 passed, 0 failed** (83 domain/UI + 2 auth) |
-| Module import check | **54/54 modules** |
+| `node --test` | **88 passed, 0 failed** (86 domain/UI + 2 auth) |
+| Module import check | **58/58 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -414,7 +428,8 @@ node tools/render-check.mjs
 - Reports and role-specific dashboards.
 - Separate simulation dataset with guided cycle, reset and return.
 - JSON backup/export/restore with referential validation and schema migration.
-- Versioned release (`v2.27.0`), changelog and GitHub Actions CI.
+- Versioned release (`v2.28.0`), changelog and GitHub Actions CI.
+- Collection → motif → roll invoicing with whole-roll default, customer map/PIC, stock sorting, database download/upload, in-app changelog, and optional Supabase shared-dataset sync.
 
 ### Partial
 

@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.27.0
+# Design System - Lavishome v2.28.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -285,6 +285,11 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Resi actions:** copy-resi writes only the tracking number; copy-link is a separate action. Add **Cek resi** to open `cekresi.com/?noresi=...` as an independent third-party check. Automatic API polling needs a provider key/proxy.
 - **QR tag footer:** print the public scan URL under the QR, plus manual **PIC cetak** and **Tanggal cetak**.
 - **Customer import:** preview count and duplicates before import; normalize phones; skip duplicates by phone/name.
+- **Invoice roll picker:** collection → motif/colour → roll in one row, then mode, metres and price. Whole roll is the default and the metres field is read-only. Cut mode is disabled while the roll has an active reservation. Show the roll's available metres in each option.
+- **Delivery map & PIC:** customer profile shows a lazy Google Maps iframe of the delivery address, a Maps link, and the PIC penerimaan. The edit form exposes PIC as a first-class field.
+- **Stock sorting:** one select in the filter bar controls collections, motifs, roll rows and mobile cards: most available metres (default), name A–Z, name Z–A. Sorting must not change the stock-only filter.
+- **Cloud sync:** configuration is a compact form in Settings → Data with an explicit status badge and four actions (save/test, pull, push, off). The anon key is public; the workspace secret is a password field. Warn that the whole-document sync is last-write-wins.
+- **Changelog:** one shared modal, reachable from the sidebar version button, Stock actions and Settings → Data. Newest release first, plain item lists, no nested tabs.
 - **Excel stock sync:** manager-only. Show the plan source/date, SKU/roll/metre/sample counts, warehouse, lot, exclusions and the old-roll archive warning. Require a confirmation checkbox before applying. After sync, show a persistent **sudah disinkronkan** notice with counts and archived-roll count. Never delete old rolls; mark them void and keep invoice/movement references valid.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.

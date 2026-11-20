@@ -2,6 +2,34 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.28.0] — 2026-11-20
+
+**Release name: Faktur per Roll & Sinkron Supabase.** Collection → motif → roll invoice entry with whole-roll defaults, surat jalan/tax actions from Penjualan, customer delivery maps with PIC, database download/upload, in-app changelog, stock sorting, and optional Supabase cloud sync.
+
+### Added
+
+- **Faktur per roll:** pick **Koleksi → Motif/warna → Roll**. Each roll shows its available metres. The default mode is **Roll utuh**; **Potong** is available when the roll has no reservation.
+- **Penjualan quick actions:** the invoice list links to **Surat jalan**; the invoice detail can create/print a surat jalan and issue/print a faktur pajak from the top action bar.
+- **Customer delivery map:** the customer profile shows a Google Maps embed of the delivery address, plus the **PIC penerimaan** name and external customer code. PIC is editable in the customer form.
+- **Database download/upload:** Settings → Data downloads the full JSON dataset (`Unduh database`) and restores it (`Unggah database`).
+- **Supabase cloud sync:** `db/supabase.sql` creates a workspace table and two RPC functions. Settings → Data stores the project URL, publishable key, workspace and workspace secret; data is pulled on start and pushed after each change with optimistic revision checks.
+- **In-app changelog:** the sidebar version button, Stock page, and Settings → Data open **Riwayat versi**.
+- **Stock sorting:** sort collections/motifs by **Meter tersedia terbanyak**, **Nama A–Z**, or **Nama Z–A**. The roll list follows the same order.
+
+### Changed
+
+- The sidebar groups **Pengiriman / Surat Jalan** directly after **Penjualan**.
+- Customer records keep `contactName`, `externalCode` and `source` from the Excel import and manual edits.
+- The visible app URL is **https://lavishome.vercel.app** (the existing deployment keeps `lajur-lake.vercel.app` as an alias).
+
+### Verification
+
+- `node --test`: **88 passed** (3 new cloud-config/revision/RPC tests).
+- Module import check: **58 modules**; render check passes.
+- Browser QA: collection/motif/roll cascade with whole-roll default; sort A–Z reorders the collection list; customer map iframe and PIC render; settings cloud card renders with all four actions; changelog modal shows v2.28.0; zero console errors.
+
+---
+
 ## [2.27.0] — 2026-11-20
 
 **Release name: WA Multi-Stok & Impor Customer.** Multi-select WhatsApp stock scopes, resi-only copy, third-party cek resi, QR tag URL/PIC/date, and customer Excel import.
