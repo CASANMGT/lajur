@@ -178,6 +178,7 @@ export function createSampleRequest(db, { stockId, qty, pricing = 'free', amount
     qty: cleanQty,
     pricing: pricing === 'paid' ? 'paid' : 'free',
     amount: Math.max(0, Math.round(Number(amount) || 0)),
+    depositRequired: false,
     fromCompanyId: sourceCompanyId,
     toCompanyId: targetCompanyId,
     fromWarehouseId: stock.warehouseId,

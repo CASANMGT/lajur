@@ -23,6 +23,7 @@ import { completeTask, createTask, startTask } from './tasks.js';
 import { confirmOrder, createSalesOrder } from './orders.js';
 import { createProductionOrder, cutOrder, qcPiece, releaseOrder, sewPiece } from './production.js';
 import { confirmDelivery, createDelivery, dispatchDelivery, markDelivered } from './deliveries.js';
+import { createInternalPO } from './internal-po.js';
 
 export const COMPANIES = [
   {
@@ -129,6 +130,7 @@ function skeleton(dataset) {
     sampleRequests: [],
     deposits: [],
     transfers: [],
+    internalPOs: [],
     purchaseOrders: [],
     goodsReceipts: [],
     supplierInvoices: [],
@@ -275,6 +277,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   db.sequences.driver = db.drivers.length;
   db.sequences.transport = db.transportCompanies.length;
   db.sequences.fleetAsset = db.fleetAssets.length;
+  db.sequences.internalPO = 0;
 
   const sampleSeeds = [
     ['col-luna', 6, 2, 25000, 50000, 15000, 'SUP-001', 'wh-jkt'],
@@ -808,6 +811,19 @@ export function buildSeed({ dataset = 'main' } = {}) {
   c1.stage = 'negosiasi';
   c3.stage = 'pelanggan';
   c4.stage = 'sample';
+
+  /* ------------------------------------- example Bali → Jakarta internal PO */
+  const ipoRoll = db.rolls.find((r) => r.warehouseId === 'wh-jkt'
+    && r.status === 'available' && !r.transit && (r.reservedMm || 0) === 0 && r.currentMm > 0);
+  if (ipoRoll) {
+    createInternalPO(db, {
+      buyerCompanyId: 'co-bali',
+      sellerCompanyId: 'co-jkt',
+      lines: [{ kind: 'fabric', rollId: ipoRoll.id, mode: 'whole' }],
+      notes: 'Contoh PO internal Bali ke Jakarta — harga internal lebih murah dari penjualan luar.',
+      user: bali,
+    });
+  }
 
   db.meta.today = todayJakarta();
   db.meta.seedRefs = {

@@ -8,6 +8,7 @@ import {
 } from '../src/domain/inventory.js';
 import { saveDriver, saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
 import { createInternalPurchase, createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
+import { createInternalPO, internalPriceOf, receiveInternalPO, shipInternalPO } from '../src/domain/internal-po.js';
 import { createDelivery } from '../src/domain/deliveries.js';
 import { printDeliveryHtml, printLabelHtml } from '../src/ui/views/print.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
@@ -1034,4 +1035,47 @@ test('Bali can request sample stock free or paid and the source PT approves it',
   assert.equal(target.companyId, 'co-bali');
   assert.equal(target.qty, 2);
   assert.equal(request.status, 'approved');
+  assert.equal(request.depositRequired, false);
+});
+
+test('Bali-initiated internal PO uses cheaper internal pricing and tracks shipment', () => {
+  const db = buildSeed();
+  const example = db.internalPOs[0];
+  assert.equal(example.buyerCompanyId, 'co-bali');
+  assert.equal(example.sellerCompanyId, 'co-jkt');
+  assert.equal(example.status, 'requested');
+  const line = example.lines[0];
+  assert.equal(line.unitPrice, internalPriceOf(db, line.listPrice));
+  assert.ok(line.unitPrice < line.listPrice);
+
+  const shipped = shipInternalPO(db, { id: example.id, user: MGR, trackingRef: 'IPO-TRACK-1' });
+  assert.equal(shipped.status, 'shipped');
+  assert.ok(shipped.invoiceId);
+  assert.equal(shipped.trackingRef, 'IPO-TRACK-1');
+  const roll = rollOf(db, line.rollId);
+  assert.equal(roll.warehouseId, 'wh-bali');
+  const invoice = db.invoices.find((inv) => inv.id === shipped.invoiceId);
+  assert.equal(invoice.internalCompanyId, 'co-bali');
+  assert.equal(invoice.internalPOId, example.id);
+
+  receiveInternalPO(db, { id: example.id, user: BALI, note: 'Diterima di Bali' });
+  assert.equal(example.status, 'received');
+  assert.equal(example.history.at(-1).action, 'Diterima');
+});
+
+test('a new Bali PO can be created from Jakarta stock', () => {
+  const db = buildSeed();
+  const roll = db.rolls.find((r) => r.warehouseId === 'wh-jkt' && r.status === 'available' && (r.reservedMm || 0) === 0 && r.id !== db.internalPOs[0]?.lines?.[0]?.rollId);
+  const po = createInternalPO(db, {
+    buyerCompanyId: 'co-bali',
+    sellerCompanyId: 'co-jkt',
+    lines: [{ kind: 'fabric', rollId: roll.id, mode: 'cut', qtyMm: 5000 }],
+    notes: 'Kebutuhan showroom Bali',
+    user: BALI,
+  });
+  assert.equal(po.status, 'requested');
+  assert.equal(po.buyerCompanyId, 'co-bali');
+  assert.equal(po.lines[0].qtyMm, 5000);
+  assert.ok(po.lines[0].unitPrice < po.lines[0].listPrice);
+  assert.equal(po.history[0].action, 'PO internal dibuat');
 });

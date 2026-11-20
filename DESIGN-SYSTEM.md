@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.31.0
+# Design System - Lavishome v2.32.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -293,7 +293,8 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Two PTs:** the sidebar footer, login card and user table show the PT and job title. Customer lists are scoped to the logged-in PT; shared customers carry a cross-PT marker. Do not expose the other PT's private customer names in dropdowns or counts.
 - **Internal sales:** Jakarta uses **Jual ke PT lain** in Penjualan. The modal shows only the internal buyer customer and source-PT rolls. Posting moves stock to the buyer warehouse; the buyer sees the same document under Pembelian → Pembelian internal and cannot post it.
 - **Driver master:** driver records are name + phone + company vehicle. No driver login account. In surat jalan, internal fleet shows driver/vehicle; third-party hides those fields and writes the expedition note.
-- **Sample requests:** each stock row shows **Minta sample** when it belongs to another PT. Pricing is a clear gratis/berbayar choice. The owning PT approves from the requests table.
+- **Sample requests:** each stock row shows **Minta sample** when it belongs to another PT. Pricing is a clear gratis/berbayar choice, always without deposit. The owning PT approves from the requests table, which shows the status history.
+- **PO internal:** Bali starts the PO from Jakarta stock. Each row shows roll, available metres, mode and the internal price with the list price struck through. The summary shows list total, internal total and savings. Status is requested → shipped → received; Jakarta approves/ships and Bali confirms receipt.
 - **Excel stock sync:** manager-only. Show the plan source/date, SKU/roll/metre/sample counts, warehouse, lot, exclusions and the old-roll archive warning. Require a confirmation checkbox before applying. After sync, show a persistent **sudah disinkronkan** notice with counts and archived-roll count. Never delete old rolls; mark them void and keep invoice/movement references valid.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
 - **Price review:** selling price is read-only in the product/part edit form. Use the dedicated price editor. Show last update and age; if ≥90 days, require an explicit checkbox before saving. Always show the change history.

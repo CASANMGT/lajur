@@ -177,9 +177,11 @@ export function migrate(db) {
   }
   for (const asset of db.fleetAssets ?? []) asset.companyId = asset.companyId ?? 'co-jkt';
   if (!Array.isArray(db.sampleRequests)) db.sampleRequests = [];
+  if (!Array.isArray(db.internalPOs)) db.internalPOs = [];
   db.sequences = db.sequences ?? {};
   db.sequences.sampleRequest = Math.max(Number(db.sequences.sampleRequest) || 0, db.sampleRequests.length);
-  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleStocks', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'sellPriceHistory', 'fxRates']) {
+  db.sequences.internalPO = Math.max(Number(db.sequences.internalPO) || 0, db.internalPOs.length);
+  for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleStocks', 'sampleBooks', 'sampleRequests', 'internalPOs', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'sellPriceHistory', 'fxRates']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }
   if (!db.fxRates.length) {

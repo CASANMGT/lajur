@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
   productionEnabled: false,
   operatorCanSeeCosts: false,
   sampleDepositRequired: false,
+  internalDiscountPct: 10,
 };
 
 export function settingsOf(db) {

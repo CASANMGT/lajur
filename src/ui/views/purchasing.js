@@ -4,6 +4,7 @@ import {
   esc, icon, fmt, badge, toast, openModal, field, printDocument,
 } from '../dom.js';
 import { byId, daysBetween, parseM, todayJakarta } from '../../domain/core.js';
+import { availableMm } from '../../domain/inventory.js';
 import {
   PO_STATUS, approvePO, createPO, createSupplierReturn, paySupplierInvoice, payablesAging, poLineOpen,
   receivePO, saveSupplier, supplierPerformance,
@@ -18,7 +19,10 @@ import { auditTrail } from '../../domain/master.js';
 import { isAdvancedMode } from '../../domain/features.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { latestFxRate, latestSupplierPrice } from '../../domain/pricing.js';
-import { openInvoice } from './sales.js';
+import {
+  IPO_STATUS, cancelInternalPO, createInternalPO, internalPOsForCompany, internalPriceOf,
+  receiveInternalPO, shipInternalPO,
+} from '../../domain/internal-po.js';
 import { printPoHtml } from './print.js';
 
 let tab = 'po';
@@ -123,31 +127,50 @@ function renderReceiptTab(ctx) {
 
 function renderInternalPurchases(ctx) {
   const { db, role } = ctx;
+  const pos = internalPOsForCompany(db, ctx.companyId).sort((a, b) => (a.date < b.date ? 1 : -1));
   const purchases = db.invoices
-    .filter((inv) => inv.internalCompanyId === ctx.companyId)
+    .filter((inv) => inv.internalCompanyId === ctx.companyId && !inv.internalPOId)
     .sort((a, b) => (a.date < b.date ? 1 : -1));
   const source = (db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
-  return `<div class="notice notice-info" style="margin-bottom:12px">${icon('transfer')}<div><strong>Pembelian antar-PT.</strong> Buat permintaan ke PT penjual. Setelah PT penjual menerbitkan faktur internal, stok berpindah ke gudang PT ini. Bukan transfer gudang biasa.</div></div>
+  return `<div class="notice notice-info" style="margin-bottom:12px">${icon('transfer')}<div><strong>Contoh alur PO internal.</strong> Bali membuka stok Jakarta → masukkan roll ke PO → harga internal otomatis lebih murah dari penjualan luar → Jakarta menyetujui & mengirim → Bali menerima. Tidak ada deposit; ini transaksi antar-PT.</div></div>
     <div class="row" style="margin-bottom:12px">
-      ${can(role, 'invoice.create') && source ? `<button class="btn btn-primary" type="button" data-act="new-internal-purchase">${icon('plus')} Buat pembelian internal</button>` : ''}
-      <span class="small muted">${purchases.length} dokumen</span>
+      ${can(role, 'invoice.create') && source ? `<button class="btn btn-primary" type="button" data-act="new-internal-po">${icon('plus')} Buat PO internal</button>` : ''}
+      <span class="small muted">${pos.length} PO internal · ${purchases.length} faktur internal lama</span>
     </div>
-    <section class="card">
+    <section class="card" style="margin-bottom:16px">
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Faktur internal</th><th>PT penjual</th><th>Tanggal</th><th class="num">Total</th><th>Status</th><th>Baris</th></tr></thead>
+        <thead><tr><th>PO internal</th><th>Arah</th><th>Tanggal</th><th class="num">Total internal</th><th>Status</th><th>Baris</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${pos.map((po) => {
+          const buyer = byId(db.companies, po.buyerCompanyId);
+          const seller = byId(db.companies, po.sellerCompanyId);
+          const isBuyer = po.buyerCompanyId === ctx.companyId;
+          const isSeller = po.sellerCompanyId === ctx.companyId;
+          return `<tr>
+            <td class="mono strong">${esc(po.id)}<div class="xs muted">${esc(po.requestedByName || '')}</div>${po.invoiceId ? `<a class="xs" href="#/penjualan/${po.invoiceId}">${esc(po.invoiceId)}</a>` : ''}</td>
+            <td class="small">${esc(buyer?.code ?? '')} ← ${esc(seller?.code ?? '')}<div class="xs muted">${esc(buyer?.name ?? '')}</div></td>
+            <td>${esc(po.date)}<div class="xs muted">ETA ${esc(po.expectedDate || '—')}</div></td>
+            <td class="num">${fmt.money(po.total)}<div class="xs muted">hemat ${Number(po.discountPct) || 0}%</div></td>
+            <td>${badge(IPO_STATUS[po.status]?.label ?? po.status, IPO_STATUS[po.status]?.tone ?? 'muted')}${po.trackingRef ? `<div class="xs muted mono">${esc(po.trackingRef)}</div>` : ''}</td>
+            <td class="num">${po.lines.length}</td>
+            <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
+              ${isSeller && po.status === 'requested' ? `<button class="btn btn-sm btn-primary" data-ship-ipo="${po.id}">Setujui & kirim</button>` : ''}
+              ${isBuyer && po.status === 'shipped' ? `<button class="btn btn-sm btn-primary" data-receive-ipo="${po.id}">Konfirmasi terima</button>` : ''}
+              ${isBuyer && po.status === 'requested' ? `<button class="btn btn-sm btn-danger" data-cancel-ipo="${po.id}">Batal</button>` : ''}
+            </div></td>
+          </tr>`;
+        }).join('') || `<tr><td colspan="7"><div class="empty">${icon('transfer')}<strong>Belum ada PO internal</strong><p>Bali dapat membuat PO dari stok Jakarta dengan harga internal.</p></div></td></tr>`}</tbody>
+      </table></div>
+    </section>
+    ${purchases.length ? `<section class="card">
+      <div class="card-head"><div><h2>Faktur internal lama</h2><p>Dokumen sebelum PO internal dilacak.</p></div><span class="badge no-dot">${purchases.length}</span></div>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Faktur</th><th>PT penjual</th><th>Tanggal</th><th class="num">Total</th><th>Status</th></tr></thead>
         <tbody>${purchases.map((inv) => {
           const seller = byId(db.companies, inv.companyId);
-          return `<tr data-href="#/penjualan/${inv.id}" tabindex="0" role="link">
-            <td class="mono strong">${esc(inv.id)}</td>
-            <td>${esc(seller?.name ?? inv.companyId ?? '—')}</td>
-            <td>${esc(inv.date)}<div class="xs muted">due ${esc(inv.dueDate)}</div></td>
-            <td class="num">${fmt.money(inv.total)}</td>
-            <td>${badge(inv.status === 'posted' ? 'Diterima' : inv.status === 'draft' ? 'Menunggu PT penjual' : inv.status, inv.status === 'posted' ? 'ok' : 'warn')}</td>
-            <td class="num">${inv.lines.length}</td>
-          </tr>`;
-        }).join('') || `<tr><td colspan="6"><div class="empty">${icon('transfer')}<strong>Belum ada pembelian internal</strong><p>Buat permintaan pembelian dari PT lain.</p></div></td></tr>`}</tbody>
+          return `<tr data-href="#/penjualan/${inv.id}" tabindex="0" role="link"><td class="mono strong">${esc(inv.id)}</td><td>${esc(seller?.name ?? '—')}</td><td>${esc(inv.date)}</td><td class="num">${fmt.money(inv.total)}</td><td>${badge(inv.status === 'posted' ? 'Diterima' : 'Menunggu PT penjual', inv.status === 'posted' ? 'ok' : 'warn')}</td></tr>`;
+        }).join('')}</tbody>
       </table></div>
-    </section>`;
+    </section>` : ''}`;
 }
 
 function renderShipmentTab(ctx) {
@@ -364,6 +387,125 @@ function renderPoDetail(ctx) {
 /* -------------------------------------------------------------------------- */
 /* Actions                                                                    */
 /* -------------------------------------------------------------------------- */
+
+function openInternalPO(ctx) {
+  const { db } = ctx;
+  const source = (db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
+  if (!source) return;
+  const warehouseIds = new Set((db.warehouses ?? [])
+    .filter((w) => (w.companyId ?? 'co-jkt') === source.id && w.active !== false)
+    .map((w) => w.id));
+  const rolls = db.rolls
+    .filter((r) => r.status === 'available' && !r.transit && availableMm(r) > 0 && warehouseIds.has(r.warehouseId))
+    .sort((a, b) => a.id.localeCompare(b.id));
+  const pct = Number(settingsOf(db).internalDiscountPct) || 0;
+  const priceOf = (roll) => {
+    const sku = byId(db.skus, roll.skuId);
+    const list = Number(sku?.sellPrice || 0);
+    return { list, internal: internalPriceOf(db, list) };
+  };
+  const defaultRoll = rolls.find((r) => (r.reservedMm || 0) === 0) ?? rolls[0];
+  const row = (selectedId = '') => {
+    const roll = rolls.find((r) => r.id === selectedId) ?? defaultRoll;
+    const price = roll ? priceOf(roll) : { list: 0, internal: 0 };
+    const whole = Number(roll?.reservedMm || 0) === 0;
+    return `<div class="alloc-row" data-ipo-row style="grid-template-columns:1.6fr .75fr .7fr .9fr 34px">
+      <select class="select ipo-roll" aria-label="Roll">${rolls.map((r) => {
+        const p = priceOf(r);
+        return `<option value="${r.id}" data-list="${p.list}" data-internal="${p.internal}" data-current="${r.currentMm}" data-reserved="${r.reservedMm || 0}" ${r.id === roll?.id ? 'selected' : ''}>${esc(r.id)} · ${esc(byId(db.skus, r.skuId)?.collectionName ?? '')} · ${fmt.m(availableMm(r))}</option>`;
+      }).join('')}</select>
+      <select class="select ipo-mode" aria-label="Mode"><option value="whole" ${whole ? 'selected' : ''} ${whole ? '' : 'disabled'}>Roll utuh</option><option value="cut" ${whole ? '' : 'selected'}>Potong</option></select>
+      <input class="input ipo-qty" inputmode="decimal" aria-label="Meter" value="${whole && roll ? (roll.currentMm / 1000).toLocaleString('id-ID') : ''}" ${whole ? 'disabled' : ''} />
+      <div class="small num"><strong class="ipo-price">${fmt.money(price.internal)}</strong><div class="xs muted"><s>${fmt.money(price.list)}</s></div></div>
+      <button class="icon-btn" type="button" data-remove aria-label="Hapus">${icon('x')}</button>
+    </div>`;
+  };
+
+  openModal({
+    title: `PO internal dari ${source.name}`,
+    description: `Harga internal ${pct}% lebih murah dari harga jual luar. Tanpa deposit. Jakarta menyetujui dan mengirim; Bali menerima.`,
+    wide: true,
+    submitLabel: 'Kirim PO internal',
+    body: `
+      ${field('PT penjual', `<input class="input" value="${esc(source.name)}" disabled />`)}
+      ${field('Perkiraan tiba', `<input class="input" type="date" name="expectedDate" value="${todayJakarta()}" />`)}
+      <div class="span-2 xs muted" style="display:grid;grid-template-columns:1.6fr .75fr .7fr .9fr 34px;gap:8px;margin:14px 0 4px">
+        <span>Roll Jakarta</span><span>Mode</span><span>Meter</span><span>Harga internal</span><span></span>
+      </div>
+      <div class="span-2" id="ipo-rows">${rolls.length ? row() : '<p class="small muted">Tidak ada stok Jakarta yang tersedia.</p>'}</div>
+      <div class="span-2 row" style="margin-top:8px"><button class="btn btn-sm" type="button" data-add-ipo ${rolls.length ? '' : 'disabled'}>${icon('plus')} Tambah roll</button></div>
+      ${field('Catatan', `<input class="input" name="notes" placeholder="Kebutuhan Bali / instruksi kirim" />`, { full: true })}
+      <div class="span-2 card card-pad" style="background:var(--ivory-50)"><div class="row-between"><span>Total harga jual luar</span><strong class="num" id="ipo-list">Rp 0</strong></div><div class="row-between"><span>Total harga internal</span><strong class="num" id="ipo-total">Rp 0</strong></div><div class="row-between"><span>Hemat</span><strong class="num" id="ipo-save">Rp 0</strong></div></div>
+      <div class="span-2 notice notice-info">${icon('transfer')}<div>Setelah PO dikirim, Jakarta melihat tombol <strong>Setujui & kirim</strong>. Faktur internal terbit, stok berpindah ke gudang Bali, lalu Bali mengonfirmasi terima.</div></div>`,
+    onMount(form) {
+      const rows = form.querySelector('#ipo-rows');
+      const recalc = () => {
+        let list = 0;
+        let internal = 0;
+        form.querySelectorAll('[data-ipo-row]').forEach((r) => {
+          const opt = r.querySelector('.ipo-roll').selectedOptions[0];
+          const mode = r.querySelector('.ipo-mode').value;
+          const qty = mode === 'whole' ? Number(opt?.dataset.current || 0) : Number(String(r.querySelector('.ipo-qty').value).replace(',', '.')) * 1000 || 0;
+          const internalPrice = Number(opt?.dataset.internal || 0);
+          const listPrice = Number(opt?.dataset.list || 0);
+          internal += internalPrice * (qty / 1000);
+          list += listPrice * (qty / 1000);
+          r.querySelector('.ipo-price').textContent = fmt.money(internalPrice);
+        });
+        form.querySelector('#ipo-list').textContent = fmt.money(list);
+        form.querySelector('#ipo-total').textContent = fmt.money(internal);
+        form.querySelector('#ipo-save').textContent = fmt.money(list - internal);
+      };
+      const bind = (r) => {
+        r.querySelectorAll('select,input').forEach((el) => el.addEventListener('input', recalc));
+        r.querySelector('.ipo-roll')?.addEventListener('change', recalc);
+        r.querySelector('.ipo-mode')?.addEventListener('change', () => {
+          const whole = r.querySelector('.ipo-mode').value === 'whole';
+          r.querySelector('.ipo-qty').disabled = whole;
+          if (whole) {
+            const opt = r.querySelector('.ipo-roll').selectedOptions[0];
+            r.querySelector('.ipo-qty').value = (Number(opt?.dataset.current || 0) / 1000).toLocaleString('id-ID');
+          } else r.querySelector('.ipo-qty').value = '';
+          recalc();
+        });
+        r.querySelector('[data-remove]')?.addEventListener('click', () => { r.remove(); recalc(); });
+      };
+      form.querySelectorAll('[data-ipo-row]').forEach(bind);
+      form.querySelector('[data-add-ipo]')?.addEventListener('click', () => {
+        rows.insertAdjacentHTML('beforeend', row());
+        bind(rows.lastElementChild);
+        recalc();
+      });
+      recalc();
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        try {
+          const lines = [];
+          form.querySelectorAll('[data-ipo-row]').forEach((r) => {
+            const rollId = r.querySelector('.ipo-roll').value;
+            const mode = r.querySelector('.ipo-mode').value;
+            const qtyMm = mode === 'whole' ? null : Number(String(r.querySelector('.ipo-qty').value).replace(',', '.')) * 1000;
+            if (mode === 'whole' || qtyMm > 0) lines.push({ kind: 'fabric', rollId, mode, qtyMm: qtyMm ?? 0 });
+          });
+          if (!lines.length) throw new Error('Tambahkan minimal satu roll.');
+          ctx.store.update((db) => createInternalPO(db, {
+            buyerCompanyId: ctx.companyId,
+            sellerCompanyId: source.id,
+            lines,
+            expectedDate: form.expectedDate.value,
+            notes: form.notes.value,
+            user: ctx.user,
+          }));
+          close();
+          toast('PO internal dikirim ke Jakarta. Lacak statusnya di Pembelian internal.', { tone: 'success' });
+        } catch (err) {
+          const box = document.querySelector('[data-modal-error]');
+          if (box) { box.innerHTML = `${icon('alert')}<div><strong>${esc(err.message)}</strong></div>`; box.hidden = false; }
+        }
+      });
+    },
+  });
+}
 
 export function openCreatePo(ctx) {
   const { db } = ctx;
@@ -851,11 +993,25 @@ export function mount(ctx) {
     ctx.store.emit();
   }));
   document.querySelector('[data-act="new-po"]')?.addEventListener('click', () => openCreatePo(ctx));
-  document.querySelector('[data-act="new-internal-purchase"]')?.addEventListener('click', () => {
-    const source = (ctx.db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
-    if (!source) return;
-    openInvoice(ctx, null, 'invoice', { internalCompanyId: ctx.companyId, sellerCompanyId: source.id });
-  });
+  document.querySelector('[data-act="new-internal-po"]')?.addEventListener('click', () => openInternalPO(ctx));
+  document.querySelectorAll('[data-ship-ipo]').forEach((btn) => btn.addEventListener('click', () => {
+    try {
+      ctx.store.update((db) => shipInternalPO(db, { id: btn.dataset.shipIpo, user: ctx.user }));
+      toast('PO internal disetujui. Faktur internal terbit dan stok berpindah ke PT pembeli.', { tone: 'success' });
+    } catch (err) { toast(err.message, { tone: 'error' }); }
+  }));
+  document.querySelectorAll('[data-receive-ipo]').forEach((btn) => btn.addEventListener('click', () => {
+    try {
+      ctx.store.update((db) => receiveInternalPO(db, { id: btn.dataset.receiveIpo, user: ctx.user }));
+      toast('Penerimaan PO internal dikonfirmasi.', { tone: 'success' });
+    } catch (err) { toast(err.message, { tone: 'error' }); }
+  }));
+  document.querySelectorAll('[data-cancel-ipo]').forEach((btn) => btn.addEventListener('click', () => {
+    try {
+      ctx.store.update((db) => cancelInternalPO(db, { id: btn.dataset.cancelIpo, user: ctx.user }));
+      toast('PO internal dibatalkan.', { tone: 'success' });
+    } catch (err) { toast(err.message, { tone: 'error' }); }
+  }));
   document.querySelectorAll('tr[data-href]').forEach((tr) => tr.addEventListener('click', () => {
     window.location.hash = tr.dataset.href.replace('#', '');
   }));

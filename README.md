@@ -8,7 +8,7 @@
 
 Lavishome (formerly Lajur) is an Indonesian-language ERP demo for a curtain company with **one company and two warehouses: Jakarta and Bali**. It treats every fabric length as a distinct physical roll, keeps reservations and transit separate from stock on hand, and connects inventory to sales, projects, samples, deposits, purchasing and stock opname.
 
-![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-96%2F96-brightgreen) ![Version](https://img.shields.io/badge/version-2.31.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
+![No build step](https://img.shields.io/badge/build-none-brightgreen) ![Tests](https://img.shields.io/badge/tests-98%2F98-brightgreen) ![Version](https://img.shields.io/badge/version-2.32.0-blue) ![A11y](https://img.shields.io/badge/lighthouse%20a11y-100-brightgreen) ![License](https://img.shields.io/badge/demo-only-orange)
 
 ---
 
@@ -60,9 +60,9 @@ Change the PIN from the avatar menu (top right) → **Ganti PIN**. The demo PIN 
 ### Versioning
 
 - Semver in `package.json` and `src/version.js` (`APP_VERSION`), schema in `SCHEMA_VERSION`.
-- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`, `v2.28.1`, `v2.29.0`, `v2.29.1`, `v2.30.0`, `v2.30.1`, `v2.31.0`.
+- Git tags: `v2.0.0`, `v2.1.0`, `v2.2.0`, `v2.3.0`, `v2.4.0`, `v2.5.0`, `v2.6.0`, `v2.7.0`, `v2.8.0`, `v2.8.1`, `v2.9.0`, `v2.10.0`, `v2.11.0`, `v2.12.0`, `v2.13.0`, `v2.14.0`, `v2.15.0`, `v2.16.0`, `v2.16.1`, `v2.17.0`, `v2.17.1`, `v2.18.0`, `v2.19.0`, `v2.20.0`, `v2.21.0`, `v2.22.0`, `v2.22.1`, `v2.22.2`, `v2.23.0`, `v2.24.0`, `v2.25.0`, `v2.26.0`, `v2.27.0`, `v2.28.0`, `v2.28.1`, `v2.29.0`, `v2.29.1`, `v2.30.0`, `v2.30.1`, `v2.31.0`, `v2.32.0`.
 - `CHANGELOG.md` records every release and review fix.
-- `.github/workflows/ci.yml` runs the 96 tests, module check and render check on every push/PR.
+- `.github/workflows/ci.yml` runs the 98 tests, module check and render check on every push/PR.
 - Backups carry a format version; datasets are migrated forward on load (`store.migrate`).
 
 ### Shared backend (reference)
@@ -276,8 +276,8 @@ Log in as each account to see the difference. Hiding a button is still not serve
 
 | Check | Result |
 |-------|--------|
-| `node --test` | **96 passed, 0 failed** (94 domain/UI/API + 2 auth) |
-| Module import check | **59/59 modules** |
+| `node --test` | **98 passed, 0 failed** (96 domain/UI/API + 2 auth) |
+| Module import check | **60/60 modules** |
 | Server-side render of all views | **26/26 render, no exceptions** (incl. login and 3 roles) |
 | Browser route sweep | **22/22 simple routes (incl. Master Data, Pengiriman, Katalog, Panduan)** and **28/28 advanced routes with WIP + Pesanan enabled**, zero console errors |
 | Task operations | create → start → complete with note/proof; stock unchanged |
@@ -445,7 +445,7 @@ node tools/render-check.mjs
 - JSON backup/export/restore with referential validation and schema migration.
 - Versioned release (`v2.28.0`), changelog and GitHub Actions CI.
 - Collection → motif → roll invoicing with whole-roll default, customer map/PIC, stock sorting, database download/upload, in-app changelog, and optional Neon shared-dataset sync via `/api/cloud`.
-- Two PTs (Jakarta/Bali) with scoped customers, internal sales/purchases, free/paid sample requests, driver master without login accounts, and third-party surat jalan note handling.
+- Two PTs (Jakarta/Bali) with scoped customers, internal sales/purchases, Bali-initiated PO internal with cheaper internal pricing and shipment tracking, free/paid sample requests without deposit, driver master without login accounts, and third-party surat jalan note handling.
 
 ### Partial
 

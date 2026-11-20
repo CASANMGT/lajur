@@ -105,8 +105,8 @@ export function render(ctx) {
             <td class="small">${esc(to?.name ?? r.toCompanyId)}</td>
             <td class="small">${esc(collection?.name ?? r.collectionId)}</td>
             <td class="num">${r.qty} pcs</td>
-            <td class="small">${r.pricing === 'paid' ? fmt.money(r.amount) : 'Gratis'}</td>
-            <td>${badge(r.status === 'approved' ? 'Disetujui' : r.status === 'rejected' ? 'Ditolak' : 'Menunggu', r.status === 'approved' ? 'ok' : r.status === 'rejected' ? 'danger' : 'warn')}</td>
+            <td class="small">${r.pricing === 'paid' ? fmt.money(r.amount) : 'Gratis'}<div class="xs muted">tanpa deposit</div></td>
+            <td>${badge(r.status === 'approved' ? 'Disetujui' : r.status === 'rejected' ? 'Ditolak' : 'Menunggu', r.status === 'approved' ? 'ok' : r.status === 'rejected' ? 'danger' : 'warn')}<div class="xs muted">${esc(r.history?.at(-1)?.action ?? '')}</div></td>
             <td class="right">${r.status === 'requested' && r.fromCompanyId === ctx.companyId && role === 'manager' ? `<div class="row" style="justify-content:flex-end"><button class="btn btn-sm btn-primary" data-approve-sample="${r.id}">Setujui</button><button class="btn btn-sm btn-danger" data-reject-sample="${r.id}">Tolak</button></div>` : ''}</td>
           </tr>`;
         }).join('') || `<tr><td colspan="8"><div class="empty">${icon('transfer')}<strong>Belum ada permintaan sample</strong><p>Gunakan tombol Minta sample pada stok PT lain.</p></div></td></tr>`}</tbody>
@@ -352,7 +352,7 @@ function openSampleRequest(ctx, stock) {
   const source = byId(ctx.db.companies, stock.companyId ?? warehouseOf(ctx.db, stock.warehouseId)?.companyId);
   openModal({
     title: `Minta sample ${collection?.name ?? ''}`,
-    description: `Stok ${source?.name ?? 'PT lain'} akan dikirim ke gudang PT Anda setelah disetujui.`,
+    description: `Stok ${source?.name ?? 'PT lain'} akan dikirim ke gudang PT Anda setelah disetujui. Tanpa deposit — ini permintaan sample antar-PT.`,
     submitLabel: 'Kirim permintaan',
     body: `
       ${field('Jumlah (pcs)', `<input class="input" name="qty" inputmode="numeric" value="1" />`, { hint: `Tersedia ${stock.qty} pcs.` })}

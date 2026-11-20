@@ -5,6 +5,18 @@
 
 export const CHANGELOG = [
   {
+    version: '2.32.0',
+    date: '2026-11-20',
+    name: 'PO Internal Bali & Harga Internal',
+    items: [
+      'Bali bisa membuat PO internal dari stok Jakarta langsung dari halaman Pembelian internal.',
+      'Harga internal otomatis 10% lebih murah dari harga jual luar; total hemat terlihat.',
+      'Tracking PO: diminta → dikirim → diterima, dengan faktur internal dan roll yang berpindah.',
+      'Contoh PO Bali ← Jakarta tersedia di data demo.',
+      'Permintaan sample antar-PT menampilkan riwayat dan tanpa deposit.',
+    ],
+  },
+  {
     version: '2.31.0',
     date: '2026-11-20',
     name: 'Dua PT, Internal Sales & Driver Master',

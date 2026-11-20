@@ -50,6 +50,7 @@ export function render(ctx) {
   const month = todayJakarta().slice(0, 7);
   const monthTotal = posted.filter((i) => i.date.slice(0, 7) === month).reduce((a, i) => a + i.total, 0);
   const schedule = advanced ? deliverySchedule(db, { limit: 10 }) : [];
+  const incomingPOs = (db.internalPOs ?? []).filter((po) => po.sellerCompanyId === ctx.companyId && po.status === 'requested');
 
   return `
     ${pageHead({
@@ -76,6 +77,7 @@ export function render(ctx) {
       }</button>`).join('')}
     </div>
 
+    ${incomingPOs.length ? `<div class="notice notice-info" style="margin-bottom:14px">${icon('transfer')}<div><strong>${incomingPOs.length} PO internal dari PT lain menunggu.</strong> Bali mengirim permintaan pembelian dari stok Jakarta. <a class="strong" href="#/pembelian?tab=internal">Buka Pembelian internal</a> untuk menyetujui & mengirim.</div></div>` : ''}
     ${schedule.length ? `<div class="section-title"><h2>Jadwal surat jalan</h2><span class="small muted">Driver, tanggal, dan status pengiriman</span></div>
     <section class="card" style="margin-bottom:16px">
       <div class="table-wrap"><table class="data">

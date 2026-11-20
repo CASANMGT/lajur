@@ -2,6 +2,27 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.32.0] — 2026-11-20
+
+**Release name: PO Internal Bali & Harga Internal.** Bali now initiates its own PO to Jakarta from Jakarta stock, at a cheaper internal price, with full shipment tracking.
+
+### Added
+
+- **Bali-initiated PO internal:** Pembelian → Pembelian internal → **Buat PO internal**. Bali sees Jakarta rolls, available metres, list price and the cheaper internal price.
+- **Internal pricing:** `internalDiscountPct` defaults to **10%** below the normal sell price. The UI shows list total, internal total and savings.
+- **Tracking:** `requested → shipped → received`, with history, tracking reference, linked internal invoice, ETA and confirmer.
+- **Example mockup:** fresh seed includes `IPO-0001` (Bali ← Jakarta) at Rp 6.750.000 vs Rp 7.500.000 list, plus an explainer card in Pembelian internal.
+- **Seller action:** Jakarta sees pending PO internal in Penjualan and approves/ships from Pembelian internal. Shipping creates and posts the internal invoice and moves stock to Bali.
+- **Buyer action:** Bali confirms receipt after shipment.
+- **Sample tracking/no deposit:** request rows show history and “tanpa deposit”; internal samples are free/paid only.
+
+### Verification
+
+- `node --test`: **98 passed**; module check **60/60**; render check passes.
+- Browser QA: Bali created `IPO-0002` for 60 m at Rp 6.750.000 (list Rp 7.500.000); Jakarta shipped it (`INV-0005`, roll moved to `wh-bali`); Bali confirmed receipt; history `Dibuat → Disetujui & dikirim → Diterima`.
+
+---
+
 ## [2.31.0] — 2026-11-20
 
 **Release name: Dua PT, Internal Sales & Driver Master.** Jakarta and Bali are now separate PTs with scoped customers, internal sales/purchases, sample requests, and driver master data without login accounts.
