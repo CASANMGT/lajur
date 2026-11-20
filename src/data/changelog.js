@@ -5,6 +5,16 @@
 
 export const CHANGELOG = [
   {
+    version: '2.37.0',
+    date: '2026-11-20',
+    name: 'Tag A4 Multi-Katalog & Multi-Warna',
+    items: [
+      'Katalog dan motif/warna bisa dipilih lebih dari satu dengan Ctrl/Cmd + klik.',
+      'Preview menghitung gabungan roll dan halaman A4 dari semua pilihan.',
+      'Urutan tag tetap mengikuti pilihan sorting.',
+    ],
+  },
+  {
     version: '2.36.0',
     date: '2026-11-20',
     name: 'Pembayaran, Piutang & Edit Penerimaan',

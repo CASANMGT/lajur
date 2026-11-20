@@ -736,10 +736,13 @@ function openPrintTags(ctx, roll = null) {
     return collectionA.localeCompare(collectionB) || motifA.localeCompare(motifB) || a.id.localeCompare(b.id);
   });
   const allRolls = orderRolls(db.rolls ?? []);
-  const motifsOf = (collectionId) => (db.skus ?? [])
-    .filter((s) => !collectionId || s.collectionId === collectionId)
-    .filter((s) => (db.rolls ?? []).some((r) => r.skuId === s.id))
-    .sort((a, b) => String(a.colourName || a.colourCode || a.code).localeCompare(String(b.colourName || b.colourCode || b.code)));
+  const motifsOf = (collectionIds) => {
+    const ids = new Set(Array.isArray(collectionIds) ? collectionIds : (collectionIds ? [collectionIds] : []));
+    return (db.skus ?? [])
+      .filter((s) => !ids.size || ids.has(s.collectionId))
+      .filter((s) => (db.rolls ?? []).some((r) => r.skuId === s.id))
+      .sort((a, b) => String(a.colourName || a.colourCode || a.code).localeCompare(String(b.colourName || b.colourCode || b.code)));
+  };
   const preselected = new Set(roll ? [roll.id] : []);
   const choices = allRolls.map((item) => {
     const sku = byId(db.skus, item.skuId);
@@ -769,8 +772,8 @@ function openPrintTags(ctx, roll = null) {
         <option value="motif">Per motif / warna</option>
         <option value="available">Semua roll tersedia</option>
       </select>`)}
-      ${field('Katalog', `<select class="select" name="collection">${collections.map((c) => `<option value="${c.id}">${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan katalog atau motif.' })}
-      ${field('Motif / warna', `<select class="select" name="motif">${motifsOf(collections[0]?.id).map((s) => `<option value="${s.id}">${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.code)}</option>`).join('')}</select>`, { hint: 'Dipakai untuk cakupan per motif/warna.' })}
+      ${field('Katalog (bisa banyak)', `<select class="select" name="collection" multiple size="6">${collections.map((c, index) => `<option value="${c.id}" ${index === 0 ? 'selected' : ''}>${esc(c.name)} · ${esc(c.motive || c.clothType)}</option>`).join('')}</select>`, { hint: 'Ctrl/Cmd + klik untuk memilih beberapa katalog.' })}
+      ${field('Motif / warna (bisa banyak)', `<select class="select" name="motif" multiple size="6">${motifsOf(collections[0]?.id).map((s, index) => `<option value="${s.id}" ${index === 0 ? 'selected' : ''}>${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.code)}</option>`).join('')}</select>`, { hint: 'Ctrl/Cmd + klik untuk memilih beberapa motif/warna.' })}
       ${field('Urutkan tag', `<select class="select" name="sortBy">
         <option value="collection">Katalog A–Z → motif → roll</option>
         <option value="motif">Motif/warna A–Z → katalog → roll</option>
@@ -803,19 +806,24 @@ function openPrintTags(ctx, roll = null) {
       const collectionField = form.collection.closest('.field');
       const motifField = form.motif.closest('.field');
       const soldField = form.includeSold.closest('.field');
+      const selectedValues = (el) => Array.from(el.selectedOptions).map((option) => option.value);
       const checked = () => Array.from(picker.querySelectorAll('input[name="rollIds"]:checked'));
       const collectionRolls = () => {
-        const skuIds = new Set((db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
+        const collectionIds = new Set(selectedValues(form.collection));
+        const skuIds = new Set((db.skus ?? []).filter((s) => collectionIds.has(s.collectionId)).map((s) => s.id));
         return (db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
           && (form.includeSold.checked || availableMm(item) > 0));
       };
-      const motifRolls = () => (db.rolls ?? []).filter((item) => item.skuId === form.motif.value
-        && (form.includeSold.checked || availableMm(item) > 0));
+      const motifRolls = () => {
+        const skuIds = new Set(selectedValues(form.motif));
+        return (db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
+          && (form.includeSold.checked || availableMm(item) > 0));
+      };
       const refreshMotifs = () => {
-        const motifs = motifsOf(form.collection.value);
-        const previous = form.motif.value;
-        form.motif.innerHTML = motifs.map((s) => `<option value="${s.id}">${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.code)}</option>`).join('');
-        if (motifs.some((s) => s.id === previous)) form.motif.value = previous;
+        const previous = new Set(selectedValues(form.motif));
+        const motifs = motifsOf(selectedValues(form.collection));
+        form.motif.innerHTML = motifs.map((s) => `<option value="${s.id}" ${previous.has(s.id) ? 'selected' : ''}>${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.code)}</option>`).join('');
+        if (!form.motif.selectedOptions.length && form.motif.options.length) form.motif.options[0].selected = true;
       };
       const sortPicker = () => {
         const sortBy = form.sortBy.value;
@@ -883,11 +891,13 @@ function openPrintTags(ctx, roll = null) {
         const byIdMap = new Map((db.rolls ?? []).map((item) => [item.id, item]));
         rolls = orderRolls(ids.map((id) => byIdMap.get(id)).filter(Boolean), form.sortBy.value);
       } else if (scope === 'collection') {
-        const skuIds = new Set((db.skus ?? []).filter((s) => s.collectionId === form.collection.value).map((s) => s.id));
+        const collectionIds = new Set(Array.from(form.collection.selectedOptions).map((option) => option.value));
+        const skuIds = new Set((db.skus ?? []).filter((s) => collectionIds.has(s.collectionId)).map((s) => s.id));
         rolls = orderRolls((db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
           && (form.includeSold.checked || availableMm(item) > 0)), form.sortBy.value);
       } else if (scope === 'motif') {
-        rolls = orderRolls((db.rolls ?? []).filter((item) => item.skuId === form.motif.value
+        const skuIds = new Set(Array.from(form.motif.selectedOptions).map((option) => option.value));
+        rolls = orderRolls((db.rolls ?? []).filter((item) => skuIds.has(item.skuId)
           && (form.includeSold.checked || availableMm(item) > 0)), form.sortBy.value);
       } else {
         rolls = orderRolls((db.rolls ?? []).filter((item) => availableMm(item) > 0), form.sortBy.value);

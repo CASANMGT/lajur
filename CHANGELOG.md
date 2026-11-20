@@ -2,6 +2,24 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.37.0] — 2026-11-20
+
+**Release name: Tag A4 Multi-Katalog & Multi-Warna.** Several catalogs and several motif/colours can be printed in one A4 run.
+
+### Added
+
+- **Multi-select catalog:** Ctrl/Cmd + click in the Katalog list selects multiple catalogs.
+- **Multi-select motif/colour:** Ctrl/Cmd + click selects multiple motifs; the list follows the selected catalogs.
+- **Union preview:** the tag summary counts all rolls from the selected catalogs/motifs and the A4 page count.
+- Sorting still applies across the full multi-selection.
+
+### Verification
+
+- `node --test`: **100 passed**; module check **61/61**; render check passes.
+- Browser QA: Luna + Aria with 2 motifs produced **9 roll / 2 pages**; multi-catalog collection scope produced **19 roll / 3 pages**.
+
+---
+
 ## [2.36.0] — 2026-11-20
 
 **Release name: Pembayaran, Piutang & Edit Penerimaan.** A dedicated payment page tracks unpaid/partial/paid invoices, with editable receipt history.

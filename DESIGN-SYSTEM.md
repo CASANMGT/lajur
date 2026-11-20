@@ -1,4 +1,4 @@
-# Design System - Lavishome v2.36.0
+# Design System - Lavishome v2.37.0
 
 **Source of truth:** `src/styles/tokens.css` and `src/styles/app.css`
 **Brand reference:** *Lavishome - Brand Platform v1.0, 07 Nov 2026*
@@ -298,7 +298,7 @@ Texture, rolls and racks, organised aisles. Patterns only in brand areas, never 
 - **Weight on surat jalan:** show a read-only estimate table before the address: roll, lot, qty and estimated kg per line, then total kg / rolls / lots. The weight field is prefilled but editable. Cut rows are lighter automatically.
 - **Payments:** the modal starts with kind (deposit/installment/full), amount with thousand separators, method, transfer number, date, proof photo and note. Full locks the amount to the outstanding. Proof accepts a file or a pasted screenshot (Ctrl+V) with preview. The invoice payment table shows kind, reference, proof thumbnail and amount.
 - **Payment ledger:** Sales → **Riwayat pembayaran** opens a wide, company-scoped list sorted newest first: payer, invoice, date/time, kind badge, method + transfer number + recorded-by, proof thumbnail, amount. Clicking a thumbnail opens the full screenshot.
-- **A4 tag printing:** scope is per roll, per katalog, per motif/colour or all available. The motif select follows the chosen catalog. Sort options are katalog → motif → roll, motif → katalog → roll, roll, most metres and lot. Show the resulting roll/page count before printing.
+- **A4 tag printing:** scope is per roll, per katalog, per motif/colour or all available. Both Katalog and Motif/colour are multi-select (Ctrl/Cmd + click); the motif list follows the selected catalogs. Sort options are katalog → motif → roll, motif → katalog → roll, roll, most metres and lot. Show the union roll/page count before printing.
 - **Pembayaran page:** five compact stats (unpaid, partial, paid, outstanding, collected), status chips, sort select, invoice table with payer/date/total/paid/outstanding/last payment, then receipt history. Receipt edit keeps the original proof unless a new file is chosen; delete restores outstanding.
 - **Excel stock sync:** manager-only. Show the plan source/date, SKU/roll/metre/sample counts, warehouse, lot, exclusions and the old-roll archive warning. Require a confirmation checkbox before applying. After sync, show a persistent **sudah disinkronkan** notice with counts and archived-roll count. Never delete old rolls; mark them void and keep invoice/movement references valid.
 - **WA stock:** offer the action from customer detail and Stock. The message uses only available metres, colour, width and selling price. Provide “Salin pesan” and an explicit `wa.me` link; never send automatically.
