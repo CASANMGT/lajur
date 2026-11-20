@@ -7,7 +7,7 @@ import {
   availableMm, createRoll, partQty, quarantineRoll, receiveAdhocStock, reserveRoll, stockSummary,
 } from '../src/domain/inventory.js';
 import { saveDriver, saveFleetAsset, saveWarehouse, renameCollection } from '../src/domain/master.js';
-import { createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
+import { createInternalPurchase, createInvoice, createCustomerReturn, postInvoice, recordPayment, invoiceOutstanding } from '../src/domain/sales.js';
 import { createDelivery } from '../src/domain/deliveries.js';
 import { printDeliveryHtml, printLabelHtml } from '../src/ui/views/print.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
@@ -15,9 +15,9 @@ import { createPO, receivePO } from '../src/domain/purchasing.js';
 import { approveOpname, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
 import {
-  applyDepositToInvoice, createSample, createSampleBook, createCustomer,
-  giveSampleBook, procureSampleStock, refundDeposit, sampleCollectionStats, sampleCustomerStats,
-  updateSampleStock,
+  applyDepositToInvoice, createSample, createSampleBook, createCustomer, createSampleRequest,
+  customersForCompany, decideSampleRequest, giveSampleBook, procureSampleStock, refundDeposit,
+  sampleCollectionStats, sampleCustomerStats, updateSampleStock,
 } from '../src/domain/crm.js';
 import { changeSellPrice, sellPriceHistory } from '../src/domain/pricing.js';
 import { invoicesWithoutDelivery } from '../src/domain/deliveries.js';
@@ -30,7 +30,8 @@ import { buildSeed as seedAgain } from '../src/domain/seed.js';
 
 const OP = { id: 'u-op', name: 'Rani', role: 'operator' };
 const SALES = { id: 'u-sales', name: 'Dimas', role: 'sales' };
-const MGR = { id: 'u-mgr', name: 'Arif', role: 'manager' };
+const MGR = { id: 'u-mgr', name: 'Arif', role: 'manager', companyId: 'co-jkt' };
+const BALI = { id: 'u-bali', name: 'Nicolas', role: 'manager', companyId: 'co-bali' };
 
 function expectError(fn, code) {
   try {
@@ -565,7 +566,7 @@ test('legacy datasets migrate forward without losing warehouses', () => {
     audit: [],
   };
   const migrated = migrate(legacy);
-  assert.equal(migrated.meta.version, 20);
+  assert.equal(migrated.meta.version, 21);
   assert.equal(migrated.warehouses[0].active, true);
   assert.deepEqual(migrated.goodsReceipts, []);
   assert.deepEqual(migrated.fleetAssets, []);
@@ -577,7 +578,7 @@ test('v2.11 datasets gain the demo fleet and J&T/JNE during migration', () => {
   db.fleetAssets = [];
   db.transportCompanies = db.transportCompanies.filter((t) => !['jnt', 'jne'].includes(t.code));
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 20);
+  assert.equal(migrated.meta.version, 21);
   assert.equal(migrated.transportCompanies.length, 6);
   assert.equal(migrated.fleetAssets.length, 3);
   assert.equal(migrated.sequences.fleetAsset, 3);
@@ -593,7 +594,7 @@ test('v2.13 deliveries gain a transport snapshot during migration', () => {
   delete delivery.transportId;
   delete delivery.transportName;
   const migrated = migrate(db);
-  assert.equal(migrated.meta.version, 20);
+  assert.equal(migrated.meta.version, 21);
   assert.equal(migrated.deliveries[0].transportId, 'TRP-006');
   assert.equal(migrated.deliveries[0].transportName, 'JNE Express');
 });
@@ -971,4 +972,66 @@ test('customer Excel import normalizes phones and skips duplicates', () => {
   const created = db.customers.find((customer) => customer.name === 'TOKO BARU');
   assert.equal(created.city, 'BANDUNG');
   assert.equal(created.contactName, 'BUDI');
+});
+
+test('seed has two PTs, four named accounts and no driver logins', () => {
+  const db = buildSeed();
+  assert.deepEqual(db.companies.map((c) => c.id), ['co-jkt', 'co-bali']);
+  const byName = (name) => db.users.find((u) => u.name === name);
+  assert.equal(byName('Henry Martin').role, 'manager');
+  assert.equal(byName('Henry Martin').companyId, 'co-jkt');
+  assert.equal(byName('Henny').role, 'sales');
+  assert.equal(byName('Henny').jobTitle, 'Sales / Owner');
+  assert.equal(byName('Fauzi').role, 'operator');
+  assert.equal(byName('Nicolas').companyId, 'co-bali');
+  assert.equal(db.users.filter((u) => u.role === 'driver').length, 0);
+  assert.ok(db.drivers.every((d) => d.userId === null));
+});
+
+test('customers are scoped per PT and similar customers become shared', () => {
+  const db = buildSeed();
+  const baliOnly = createCustomer(db, { name: 'Bali Only Client', companyId: 'co-bali' }, BALI);
+  assert.equal(customersForCompany(db, 'co-bali').some((c) => c.id === baliOnly.id), true);
+  assert.equal(customersForCompany(db, 'co-jkt').some((c) => c.id === baliOnly.id), false);
+
+  const jakarta = createCustomer(db, { name: 'Bali Only Client', companyId: 'co-jkt' }, MGR);
+  assert.equal(baliOnly.shared, true);
+  assert.equal(jakarta.shared, true);
+  assert.equal(customersForCompany(db, 'co-jkt').some((c) => c.id === baliOnly.id), true);
+});
+
+test('internal sale moves stock to the buyer PT instead of selling it out', () => {
+  const db = buildSeed();
+  const roll = rollOf(db, 'RL-0001');
+  assert.equal(roll.warehouseId, 'wh-jkt');
+  const invoice = createInternalPurchase(db, {
+    buyerCompanyId: 'co-bali',
+    sourceCompanyId: 'co-jkt',
+    lines: [{ kind: 'fabric', rollId: roll.id, mode: 'whole', unitPrice: 125000 }],
+    user: MGR,
+  });
+  postInvoice(db, { id: invoice.id, user: MGR });
+  assert.equal(invoice.status, 'posted');
+  assert.equal(invoice.companyId, 'co-jkt');
+  assert.equal(invoice.internalCompanyId, 'co-bali');
+  assert.equal(roll.warehouseId, 'wh-bali');
+  assert.equal(roll.status, 'available');
+  assert.ok(db.movements.some((m) => m.type === 'internal_sale' && m.ref === invoice.id));
+});
+
+test('Bali can request sample stock free or paid and the source PT approves it', () => {
+  const db = buildSeed();
+  const source = db.sampleStocks.find((s) => s.collectionId === 'col-luna' && s.warehouseId === 'wh-jkt');
+  const before = source.qty;
+  const request = createSampleRequest(db, { stockId: source.id, qty: 2, pricing: 'paid', amount: 50000, user: BALI });
+  assert.equal(request.status, 'requested');
+  assert.equal(request.fromCompanyId, 'co-jkt');
+  assert.equal(request.toCompanyId, 'co-bali');
+  decideSampleRequest(db, { id: request.id, approve: true, user: MGR });
+  assert.equal(source.qty, before - 2);
+  const target = db.sampleStocks.find((s) => s.collectionId === 'col-luna' && s.warehouseId === 'wh-bali');
+  assert.ok(target);
+  assert.equal(target.companyId, 'co-bali');
+  assert.equal(target.qty, 2);
+  assert.equal(request.status, 'approved');
 });

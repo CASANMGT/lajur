@@ -29,12 +29,48 @@ export function requireCustomer(db, id) {
   return c;
 }
 
+function customerPhone(value) {
+  return String(value ?? '').replace(/\D/g, '').replace(/^62/, '0');
+}
+
+function customerName(value) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function linkSimilarCustomers(db, customer) {
+  if (!customer || customer.internal) return;
+  for (const other of db.customers) {
+    if (other.id === customer.id || other.internal) continue;
+    if ((other.companyId ?? 'co-jkt') === (customer.companyId ?? 'co-jkt')) continue;
+    const samePhone = customerPhone(customer.phone) && customerPhone(customer.phone) === customerPhone(other.phone);
+    const sameName = customerName(customer.name) === customerName(other.name);
+    if (!samePhone && !sameName) continue;
+    customer.shared = true;
+    other.shared = true;
+    customer.sharedWith = [...new Set([...(customer.sharedWith ?? []), other.id])];
+    other.sharedWith = [...new Set([...(other.sharedWith ?? []), customer.id])];
+  }
+}
+
+/** Customers a company may see: its own plus customers explicitly shared across PT. */
+export function customersForCompany(db, companyId) {
+  if (!companyId) return [...db.customers];
+  return db.customers.filter((customer) => (
+    (customer.companyId ?? 'co-jkt') === companyId || customer.shared === true || customer.internal === true
+  ));
+}
+
 export function createCustomer(db, input, user) {
   assert(input.name?.trim(), 'NAME_REQUIRED', 'Nama pelanggan wajib diisi.');
   const customer = {
     id: nextId(db, 'customer', 'CUS', 4),
     name: input.name.trim(),
     company: input.company ?? '',
+    companyId: input.companyId ?? user?.companyId ?? 'co-jkt',
+    linkedCompanyId: input.linkedCompanyId ?? null,
+    internal: Boolean(input.internal),
+    shared: Boolean(input.shared),
+    sharedWith: [],
     contactName: String(input.contactName ?? '').trim(),
     externalCode: String(input.externalCode ?? '').trim(),
     source: input.source ?? '',
@@ -53,6 +89,7 @@ export function createCustomer(db, input, user) {
     activities: [],
   };
   db.customers.push(customer);
+  linkSimilarCustomers(db, customer);
   audit(db, user, 'buat_pelanggan', 'customer', customer.id, customer.name);
   return customer;
 }
@@ -121,6 +158,87 @@ export function sampleStockForCollection(db, collectionId) {
   return (db.sampleStocks ?? []).find((s) => s.collectionId === collectionId) ?? null;
 }
 
+/** Bali can request sample stock held by another PT, free or paid. */
+export function createSampleRequest(db, { stockId, qty, pricing = 'free', amount = 0, note = '', user }) {
+  const stock = getSampleStock(db, stockId);
+  assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok buku sample tidak ditemukan.');
+  const targetCompanyId = user?.companyId ?? 'co-bali';
+  const sourceCompanyId = stock.companyId ?? byId(db.warehouses, stock.warehouseId)?.companyId ?? 'co-jkt';
+  assert(sourceCompanyId !== targetCompanyId, 'SAME_COMPANY', 'Stok sample ini sudah berada di PT Anda.');
+  const targetWarehouse = (db.warehouses ?? []).find((w) => (w.companyId ?? 'co-jkt') === targetCompanyId && w.active !== false);
+  assert(targetWarehouse, 'WAREHOUSE_NOT_FOUND', 'Gudang tujuan PT Anda belum tersedia.');
+  const cleanQty = Math.max(0, Math.round(Number(qty) || 0));
+  assert(cleanQty > 0, 'INVALID_QTY', 'Jumlah sample harus lebih dari 0.');
+  assert(cleanQty <= stock.qty, 'INSUFFICIENT_SAMPLE', `Stok sample tersedia ${stock.qty} pcs.`);
+  const request = {
+    id: nextId(db, 'sampleRequest', 'SMR', 4),
+    date: todayJakarta(),
+    stockId,
+    collectionId: stock.collectionId,
+    qty: cleanQty,
+    pricing: pricing === 'paid' ? 'paid' : 'free',
+    amount: Math.max(0, Math.round(Number(amount) || 0)),
+    fromCompanyId: sourceCompanyId,
+    toCompanyId: targetCompanyId,
+    fromWarehouseId: stock.warehouseId,
+    toWarehouseId: targetWarehouse.id,
+    requestedBy: user?.id ?? null,
+    requestedByName: user?.name ?? 'Sistem',
+    status: 'requested',
+    note: String(note ?? ''),
+    history: [{ at: isoNow(), action: 'requested', by: user?.name ?? 'Sistem', note: String(note ?? '') }],
+  };
+  db.sampleRequests = db.sampleRequests ?? [];
+  db.sampleRequests.unshift(request);
+  audit(db, user, 'minta_sample', 'sampleRequest', request.id, `${cleanQty} pcs · ${request.pricing}`);
+  return request;
+}
+
+export function decideSampleRequest(db, { id, approve = true, note = '', user }) {
+  const request = (db.sampleRequests ?? []).find((r) => r.id === id);
+  assert(request, 'SAMPLE_REQUEST_NOT_FOUND', 'Permintaan sample tidak ditemukan.');
+  assert(request.status === 'requested', 'INVALID_STATUS', 'Permintaan ini sudah diputuskan.');
+  const stock = getSampleStock(db, request.stockId);
+  assert(stock, 'SAMPLE_STOCK_NOT_FOUND', 'Stok sample sumber tidak ditemukan.');
+  if (approve) {
+    assert(stock.qty >= request.qty, 'INSUFFICIENT_SAMPLE', 'Stok sample sumber sudah berkurang.');
+    stock.qty -= request.qty;
+    let target = (db.sampleStocks ?? []).find((s) => (
+      s.collectionId === request.collectionId
+      && (s.warehouseId === request.toWarehouseId || (s.companyId ?? 'co-jkt') === request.toCompanyId)
+      && s.active !== false
+    ));
+    if (target) {
+      target.qty += request.qty;
+    } else {
+      const collection = byId(db.collections, request.collectionId);
+      target = {
+        id: nextId(db, 'sampleStock', 'SS', 4),
+        collectionId: request.collectionId,
+        companyId: request.toCompanyId,
+        warehouseId: request.toWarehouseId,
+        location: byId(db.warehouses, request.toWarehouseId)?.name ?? '',
+        qty: request.qty,
+        minQty: collection?.sampleMin ?? 1,
+        samplePrice: collection?.samplePrice ?? 0,
+        sampleDeposit: collection?.sampleDeposit ?? 0,
+        active: true,
+        procurements: [],
+        notes: `Transfer sample dari ${request.fromCompanyId}.`,
+      };
+      db.sampleStocks.push(target);
+    }
+    request.status = 'approved';
+  } else {
+    request.status = 'rejected';
+  }
+  request.decidedAt = isoNow();
+  request.decidedBy = user?.name ?? 'Sistem';
+  request.history.push({ at: request.decidedAt, action: request.status, by: request.decidedBy, note: String(note ?? '') });
+  audit(db, user, approve ? 'setujui_sample' : 'tolak_sample', 'sampleRequest', request.id, request.status);
+  return request;
+}
+
 /**
  * Sample stock is procured from the factory in bulk, per collection. It is
  * never cut from a sellable roll. Quantity is counted in sample pieces, while
@@ -150,6 +268,7 @@ export function procureSampleStock(db, {
       sampleDeposit: collection.sampleDeposit ?? 0,
       unitCost: 0,
       warehouseId: warehouseId || 'wh-jkt',
+      companyId: byId(db.warehouses, warehouseId || 'wh-jkt')?.companyId ?? 'co-jkt',
       location: String(location ?? '').trim() || byId(db.warehouses, warehouseId)?.name || 'Gudang Pusat Jakarta',
       procurements: [],
       updatedAt: isoNow(),
@@ -210,6 +329,7 @@ export function updateSampleStock(db, {
     minQty: nextMin,
     photo: removePhoto ? '' : (photo ? String(photo) : (stock.photo ?? '')),
     warehouseId: warehouseId || stock.warehouseId || 'wh-jkt',
+    companyId: byId(db.warehouses, warehouseId || stock.warehouseId || 'wh-jkt')?.companyId ?? stock.companyId ?? 'co-jkt',
     location: String(location ?? '').trim() || byId(db.warehouses, warehouseId || stock.warehouseId)?.name || stock.location,
     updatedAt: isoNow(),
   });

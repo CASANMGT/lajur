@@ -201,15 +201,16 @@ export function createDelivery(db, {
   if (requestedPicUserId) assert(picUser, 'USER_NOT_FOUND', 'Akun PIC tidak ditemukan.');
   const cleanPic = String(picUser?.name ?? pic ?? '').trim();
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
-  const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
-  if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const nextCourier = String(courier ?? 'internal').trim() || 'internal';
+  const internal = nextCourier === 'internal';
+  const driverMaster = internal && driverId ? byId(db.drivers ?? [], driverId) : null;
+  if (internal && driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const nextService = String(service ?? '').trim() || servicesForCourier(nextCourier)[0];
   assert(servicesForCourier(nextCourier).includes(nextService), 'INVALID_SERVICE',
     `Layanan ${nextService} tidak tersedia untuk ${COURIERS[nextCourier]?.label ?? nextCourier}.`);
   const explicitFleet = fleetAssetId ? (db.fleetAssets ?? []).find((a) => a.id === fleetAssetId) : null;
   if (fleetAssetId) assert(explicitFleet, 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
-  const fleet = nextCourier === 'internal'
+  const fleet = internal
     ? (explicitFleet ?? fleetForDriver(db, driverMaster?.id))
     : null;
   const transport = resolveTransport(db, {
@@ -245,13 +246,13 @@ export function createDelivery(db, {
     courier: nextCourier,
     transportId: transport?.id ?? null,
     transportName: transport?.name ?? '',
-    fleetAssetId: fleet?.id ?? null,
-    vehicleName: fleet?.name ?? '',
-    driverId: driverMaster?.id ?? null,
-    driver: driverMaster?.name ?? String(driver ?? '').trim(),
-    driverPhone: driverMaster?.phone ?? String(driverPhone ?? '').trim(),
-    vehicleType: fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? '').trim(),
-    plateNumber: fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber || vehicle || '').trim(),
+    fleetAssetId: internal ? (fleet?.id ?? null) : null,
+    vehicleName: internal ? (fleet?.name ?? '') : '',
+    driverId: internal ? (driverMaster?.id ?? null) : null,
+    driver: internal ? (driverMaster?.name ?? String(driver ?? '').trim()) : '',
+    driverPhone: internal ? (driverMaster?.phone ?? String(driverPhone ?? '').trim()) : '',
+    vehicleType: internal ? (fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? '').trim()) : '',
+    plateNumber: internal ? (fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber || vehicle || '').trim()) : '',
     trackingRef: String(trackingRef ?? '').trim(),
     trackingUrl: normalizeTrackingUrl(trackingUrl),
     awbImage: String(awbImage ?? ''),
@@ -266,7 +267,9 @@ export function createDelivery(db, {
     insurance: Math.max(0, Number(insurance) || 0),
     codAmount: Math.max(0, Number(codAmount) || 0),
     instructions: String(instructions ?? '').trim(),
-    notes: String(notes ?? '').trim(),
+    notes: internal
+      ? String(notes ?? '').trim()
+      : [String(notes ?? '').trim(), 'Driver ditentukan oleh ekspedisi pihak ketiga.'].filter(Boolean).join(' · '),
     status: 'draft',
     lines,
     receivedBy: '',
@@ -302,15 +305,16 @@ export function updateDelivery(db, {
   assert(cleanPic.length >= 2, 'PIC_REQUIRED', 'Nama PIC pengiriman wajib diisi.');
   const recipientId = String(recipientCustomerId ?? delivery.recipientCustomerId ?? delivery.customerId ?? '').trim();
   if (recipientId) assert(byId(db.customers, recipientId), 'CUSTOMER_NOT_FOUND', 'Pelanggan penerima tidak ditemukan.');
-  const driverMaster = driverId ? byId(db.drivers ?? [], driverId) : null;
-  if (driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const nextCourier = String(courier ?? delivery.courier ?? 'internal').trim() || 'internal';
+  const internal = nextCourier === 'internal';
+  const driverMaster = internal && driverId ? byId(db.drivers ?? [], driverId) : null;
+  if (internal && driverId) assert(driverMaster, 'DRIVER_NOT_FOUND', 'Driver tidak ditemukan di master.');
   const nextService = String(service ?? '').trim() || servicesForCourier(nextCourier)[0];
   assert(servicesForCourier(nextCourier).includes(nextService), 'INVALID_SERVICE',
     `Layanan ${nextService} tidak tersedia untuk ${COURIERS[nextCourier]?.label ?? nextCourier}.`);
   const explicitFleet = fleetAssetId ? (db.fleetAssets ?? []).find((a) => a.id === fleetAssetId) : null;
   if (fleetAssetId) assert(explicitFleet, 'FLEET_NOT_FOUND', 'Kendaraan internal tidak ditemukan.');
-  const fleet = nextCourier === 'internal'
+  const fleet = internal
     ? (explicitFleet ?? fleetForDriver(db, driverMaster?.id))
     : null;
   const transport = resolveTransport(db, {
@@ -327,13 +331,13 @@ export function updateDelivery(db, {
     courier: nextCourier,
     transportId: transport?.id ?? null,
     transportName: transport?.name ?? '',
-    fleetAssetId: fleet?.id ?? null,
-    vehicleName: fleet?.name ?? '',
-    driverId: driverMaster?.id ?? null,
-    driver: driverMaster?.name ?? String(driver ?? delivery.driver ?? '').trim(),
-    driverPhone: driverMaster?.phone ?? String(driverPhone ?? delivery.driverPhone ?? '').trim(),
-    vehicleType: fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? delivery.vehicleType ?? '').trim(),
-    plateNumber: fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber ?? delivery.plateNumber ?? '').trim(),
+    fleetAssetId: internal ? (fleet?.id ?? null) : null,
+    vehicleName: internal ? (fleet?.name ?? '') : '',
+    driverId: internal ? (driverMaster?.id ?? null) : null,
+    driver: internal ? (driverMaster?.name ?? String(driver ?? delivery.driver ?? '').trim()) : '',
+    driverPhone: internal ? (driverMaster?.phone ?? String(driverPhone ?? delivery.driverPhone ?? '').trim()) : '',
+    vehicleType: internal ? (fleet?.type ?? driverMaster?.vehicleType ?? String(vehicleType ?? delivery.vehicleType ?? '').trim()) : '',
+    plateNumber: internal ? (fleet?.code ?? driverMaster?.plateNumber ?? String(plateNumber ?? delivery.plateNumber ?? '').trim()) : '',
     trackingRef: String(trackingRef ?? delivery.trackingRef ?? '').trim(),
     trackingUrl: normalizeTrackingUrl(trackingUrl ?? delivery.trackingUrl ?? ''),
     awbImage: String(awbImage ?? delivery.awbImage ?? ''),
@@ -348,7 +352,9 @@ export function updateDelivery(db, {
     insurance: Math.max(0, Number(insurance ?? delivery.insurance) || 0),
     codAmount: Math.max(0, Number(codAmount ?? delivery.codAmount) || 0),
     instructions: String(instructions ?? delivery.instructions ?? '').trim(),
-    notes: String(notes ?? delivery.notes).trim(),
+    notes: internal
+      ? String(notes ?? delivery.notes).trim()
+      : [String(notes ?? delivery.notes).trim(), 'Driver ditentukan oleh ekspedisi pihak ketiga.'].filter(Boolean).join(' · '),
     updatedAt: isoNow(),
   });
   pushHistory(delivery, 'Surat jalan diubah', user, `PIC ${cleanPic}`);

@@ -14,7 +14,7 @@ import { openChangelog } from '../changelog.js';
 
 let tab = 'akun';
 
-const ROLE_LABEL = { manager: 'Manajer', operator: 'Operator', sales: 'Sales/CS', driver: 'Driver / Transport' };
+const ROLE_LABEL = { manager: 'Manajer / Owner', operator: 'Operation', sales: 'Sales / Owner' };
 const ROLE_TONE = { manager: 'navy', operator: 'teal', sales: 'copper', driver: 'info' };
 
 export function render(ctx) {
@@ -72,11 +72,12 @@ function renderUsers(ctx) {
     </div>
     <section class="card">
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Nama</th><th>Peran</th><th>Status</th><th>PIN</th><th>Dibuat</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Nama</th><th>PT</th><th>Peran</th><th>Status</th><th>PIN</th><th>Dibuat</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${db.users.map((u) => {
           const pin = pinStatus(u.id);
           return `<tr>
             <td><strong>${esc(u.name)}</strong><div class="xs muted mono">${esc(u.id)}</div></td>
+            <td class="small">${esc((db.companies ?? []).find((c) => c.id === (u.companyId ?? 'co-jkt'))?.code ?? 'JKT')}<div class="xs muted">${esc(u.jobTitle ?? '')}</div></td>
             <td>${badge(ROLE_LABEL[u.role] ?? u.role, ROLE_TONE[u.role] ?? 'muted')}</td>
             <td>${u.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
             <td>${pin.defaultPin ? badge('PIN demo', 'warn') : badge('PIN diatur', 'muted')}</td>
@@ -213,6 +214,8 @@ function openUser(ctx, existing = null) {
     body: `<div class="form-grid">
       ${field('Nama lengkap', `<input class="input" name="name" value="${esc(existing?.name ?? '')}" required />`)}
       ${field('Peran', `<select class="select" name="role">${Object.entries(ROLE_LABEL).map(([k, v]) => `<option value="${k}" ${existing?.role === k ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>`)}
+      ${field('PT', `<select class="select" name="companyId">${(ctx.db.companies ?? []).map((c) => `<option value="${c.id}" ${(existing?.companyId ?? ctx.companyId) === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}</select>`)}
+      ${field('Jabatan', `<input class="input" name="jobTitle" value="${esc(existing?.jobTitle ?? '')}" placeholder="Admin / Owner, Sales, Operation" />`)}
       ${editing ? `<label class="checkline"><input type="checkbox" name="active" ${existing.active !== false ? 'checked' : ''} ${existing.id === ctx.user.id ? 'disabled' : ''} /> Akun aktif</label>` : field('PIN awal (4-6 angka)', `<input class="input" type="password" inputmode="numeric" maxlength="6" name="pin" required />`)}
     </div>
     ${editing ? `<p class="xs muted" style="margin-top:10px">PIN tidak diubah di sini. Gunakan “Reset PIN”.</p>` : ''}`,
@@ -220,8 +223,10 @@ function openUser(ctx, existing = null) {
       const name = form.name.value.trim();
       const role = form.role.value;
       const active = editing ? (form.active ? form.active.checked : true) : true;
+      const companyId = form.companyId?.value || ctx.companyId;
+      const jobTitle = String(form.jobTitle?.value ?? '').trim();
       if (editing) {
-        ctx.store.update((db) => saveUser(db, { id: existing.id, name, role, active, user: ctx.user }));
+        ctx.store.update((db) => saveUser(db, { id: existing.id, name, role, active, companyId, jobTitle, user: ctx.user }));
         close();
         toast('Pengguna diperbarui.', { tone: 'success' });
         return;
@@ -230,7 +235,7 @@ function openUser(ctx, existing = null) {
       if (!/^\d{4,6}$/.test(pin)) throw new Error('PIN awal harus 4-6 angka.');
       const id = uid('u');
       await createAccount(id, pin, { defaultPin: false });
-      ctx.store.update((db) => saveUser(db, { id, name, role, active: true, user: ctx.user }));
+      ctx.store.update((db) => saveUser(db, { id, name, role, active: true, companyId, jobTitle, user: ctx.user }));
       close();
       toast('Pengguna dibuat. Sampaikan PIN awal secara langsung.', { tone: 'success' });
     },

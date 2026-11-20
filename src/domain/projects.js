@@ -37,8 +37,10 @@ export function requireProject(db, id) {
 export function createProject(db, { customerId, name, location, targetDate, notes = '', instructions = '', requirements = [], user }) {
   assert(byId(db.customers, customerId), 'CUSTOMER_NOT_FOUND', 'Pelanggan tidak ditemukan.');
   assert(name && name.trim(), 'NAME_REQUIRED', 'Nama proyek wajib diisi.');
+  const customer = byId(db.customers, customerId);
   const project = {
     id: nextId(db, 'project', 'PRJ', 3),
+    companyId: customer.companyId ?? user?.companyId ?? 'co-jkt',
     customerId,
     name: name.trim(),
     location: location ?? '',

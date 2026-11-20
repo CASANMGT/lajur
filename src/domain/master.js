@@ -189,9 +189,9 @@ export function createCollection(db, {
 /* Users                                                                      */
 /* -------------------------------------------------------------------------- */
 
-const ROLES = new Set(['manager', 'operator', 'sales', 'driver']);
+const ROLES = new Set(['manager', 'operator', 'sales']);
 
-export function saveUser(db, { id = null, name, role, active = true, user }) {
+export function saveUser(db, { id = null, name, role, active = true, companyId = 'co-jkt', jobTitle = '', user }) {
   const clean = String(name ?? '').trim();
   assert(clean.length >= 2, 'INVALID_NAME', 'Nama pengguna minimal 2 karakter.');
   assert(ROLES.has(role), 'INVALID_ROLE', 'Peran pengguna tidak dikenal.');
@@ -199,10 +199,16 @@ export function saveUser(db, { id = null, name, role, active = true, user }) {
     const existing = byId(db.users, id);
     if (existing) {
       if (existing.role === 'manager' && (role !== 'manager' || active === false)) {
-        const managers = db.users.filter((u) => u.role === 'manager' && u.active !== false && u.id !== id);
-        assert(managers.length > 0, 'LAST_MANAGER', 'Minimal satu manajer aktif harus tersisa.');
+        const company = existing.companyId ?? 'co-jkt';
+        const managers = db.users.filter((u) => (
+          u.role === 'manager'
+          && u.active !== false
+          && u.id !== id
+          && (u.companyId ?? 'co-jkt') === company
+        ));
+        assert(managers.length > 0, 'LAST_MANAGER', 'Minimal satu manajer aktif harus tersisa di PT ini.');
       }
-      Object.assign(existing, { name: clean, role, active, updatedAt: isoNow() });
+      Object.assign(existing, { name: clean, role, active, companyId, jobTitle: String(jobTitle ?? '').trim(), updatedAt: isoNow() });
       audit(db, user, active ? 'ubah_pengguna' : 'nonaktifkan_pengguna', 'user', id, `${clean} · ${role}`);
       return existing;
     }
@@ -212,6 +218,8 @@ export function saveUser(db, { id = null, name, role, active = true, user }) {
     name: clean,
     role,
     active,
+    companyId,
+    jobTitle: String(jobTitle ?? '').trim(),
     createdAt: isoNow(),
   };
   db.users.push(created);
@@ -545,7 +553,7 @@ export function driverOf(db, id) {
 
 export function saveDriver(db, {
   id = null, name, phone = '', vehicleType = 'motor', plateNumber = '', transportId = null,
-  fleetAssetId = null, fleetAssetIds = null, active = true, notes = '', user,
+  fleetAssetId = null, fleetAssetIds = null, active = true, notes = '', companyId = null, user,
 }) {
   const cleanName = String(name ?? '').trim();
   assert(cleanName.length >= 2, 'INVALID_NAME', 'Nama driver minimal 2 karakter.');
@@ -581,9 +589,11 @@ export function saveDriver(db, {
   const patch = {
     name: cleanName,
     phone: String(phone ?? '').trim(),
+    companyId: companyId ?? user?.companyId ?? 'co-jkt',
     vehicleType,
     plateNumber: plate,
     transportId: transport?.id ?? null,
+    userId: null,
     active,
     notes: String(notes ?? '').trim(),
     updatedAt: isoNow(),

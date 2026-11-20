@@ -250,18 +250,23 @@ export function exceptionFeed(db, today = todayJakarta()) {
   return items;
 }
 
-export function dashboardMetrics(db, { warehouseId = null } = {}) {
+export function dashboardMetrics(db, { warehouseId = null, companyId = null } = {}) {
   const value = inventoryValue(db, warehouseId);
   const whStock = warehouseId
     ? stockByWarehouse(db).find((w) => w.warehouse.id === warehouseId)
     : null;
-  const ar = receivablesAging(db);
+  const ar = receivablesAging(db, todayJakarta(), companyId);
   const ap = payablesAging(db);
   const thisMonth = todayJakarta().slice(0, 7);
-  const monthInvoices = postedInvoices(db).filter((i) => i.date.slice(0, 7) === thisMonth);
+  const inCompany = (invoice) => !companyId
+    || (invoice.companyId ?? 'co-jkt') === companyId
+    || invoice.internalCompanyId === companyId;
+  const monthInvoices = postedInvoices(db).filter((i) => inCompany(i) && i.date.slice(0, 7) === thisMonth);
   const sales = salesSummary(db, monthInvoices);
-  const allSales = salesSummary(db);
-  const depositsOpen = db.deposits.reduce((acc, d) => acc + depositBalance(d), 0);
+  const allSales = salesSummary(db, postedInvoices(db).filter(inCompany));
+  const depositsOpen = db.deposits
+    .filter((d) => !companyId || (db.customers.find((c) => c.id === d.customerId)?.companyId ?? 'co-jkt') === companyId)
+    .reduce((acc, d) => acc + depositBalance(d), 0);
   return {
     inventory: value,
     stock: whStock ?? {

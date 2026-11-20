@@ -81,13 +81,15 @@ export function importCustomerPlan(db, { plan, user } = {}) {
   assert(plan?.key && Array.isArray(plan.customers), 'INVALID_CUSTOMER_PLAN', 'Rencana pelanggan tidak valid.');
   let created = 0;
   let skipped = 0;
+  const companyId = user?.companyId ?? 'co-jkt';
   for (const item of plan.customers) {
     const name = String(item.name ?? '').trim();
     if (!name) continue;
     const phone = normalizeCustomerPhone(item.phone);
     const duplicate = db.customers.some((customer) => (
-      (phone && normalizeCustomerPhone(customer.phone) === phone)
-      || String(customer.name).trim().toLowerCase() === name.toLowerCase()
+      (customer.companyId ?? 'co-jkt') === companyId
+      && ((phone && normalizeCustomerPhone(customer.phone) === phone)
+        || String(customer.name).trim().toLowerCase() === name.toLowerCase())
     ));
     if (duplicate) {
       skipped += 1;
@@ -96,6 +98,7 @@ export function importCustomerPlan(db, { plan, user } = {}) {
     const customer = createCustomer(db, {
       name,
       company: item.company || name,
+      companyId,
       phone,
       whatsapp: item.whatsapp || phone,
       email: item.email || '',

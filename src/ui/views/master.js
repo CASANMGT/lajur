@@ -116,15 +116,15 @@ function renderDrivers(ctx) {
       ${role === 'manager' ? `<div class="row"><button class="btn btn-primary" type="button" data-act="new-driver">${icon('plus')} Driver</button><button class="btn" type="button" data-act="new-transport">${icon('plus')} Transport</button><button class="btn" type="button" data-act="new-fleet">${icon('plus')} Kendaraan</button></div>` : ''}
     </div>
     <section class="card" style="margin-bottom:16px">
-      <div class="card-head"><div><h2>Driver internal</h2><p>Akun, telepon, dan kendaraan dinas yang ditugaskan.</p></div><span class="badge no-dot">${drivers.length}</span></div>
+      <div class="card-head"><div><h2>Driver internal</h2><p>Master nama, telepon, dan kendaraan perusahaan. Driver tidak punya akun login; pilih di surat jalan.</p></div><span class="badge no-dot">${drivers.length}</span></div>
       <div class="table-wrap"><table class="data">
-        <thead><tr><th>Driver</th><th>Akun</th><th>Telepon</th><th>Kendaraan dinas</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <thead><tr><th>Driver</th><th>PT</th><th>Telepon</th><th>Kendaraan perusahaan</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
         <tbody>${drivers.map((d) => {
-          const user = byId(db.users, d.userId);
+          const company = byId(db.companies, d.companyId ?? 'co-jkt');
           const assigned = fleetAssetsForDriver(db, d.id);
           return `<tr>
             <td><strong>${esc(d.name)}</strong><div class="xs muted">${esc(d.id)}</div></td>
-            <td class="small">${user ? `${esc(user.name)}<div class="xs muted">${esc(user.role)}</div>` : '<span class="muted">Belum tertaut</span>'}</td>
+            <td class="small">${esc(company?.name ?? 'PT Lavishome Jakarta')}</td>
             <td>${esc(d.phone || '—')}</td>
             <td>${assigned.length ? assigned.map((a) => `<div class="small"><strong>${esc(a.name)}</strong> <span class="xs muted mono">${esc(a.code)}</span></div>`).join('') : badge('Belum ditugaskan', 'danger')}</td>
             <td>${d.active === false ? badge('Nonaktif', 'danger') : badge('Aktif', 'ok')}</td>
@@ -582,6 +582,7 @@ function openDriver(ctx, driver = null) {
     onSubmit(form, close) {
       ctx.store.update((db) => saveDriver(db, {
         id: driver?.id ?? null,
+        companyId: ctx.companyId,
         name: form.name.value,
         phone: form.phone.value,
         fleetAssetIds: Array.from(form.fleetAssets.selectedOptions).map((option) => option.value),

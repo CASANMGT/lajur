@@ -24,19 +24,36 @@ import { confirmOrder, createSalesOrder } from './orders.js';
 import { createProductionOrder, cutOrder, qcPiece, releaseOrder, sewPiece } from './production.js';
 import { confirmDelivery, createDelivery, dispatchDelivery, markDelivered } from './deliveries.js';
 
+export const COMPANIES = [
+  {
+    id: 'co-jkt',
+    code: 'LVS',
+    name: 'PT Lavishome Tekstil Nusantara',
+    shortName: 'Lavishome Jakarta',
+    city: 'Jakarta',
+    active: true,
+  },
+  {
+    id: 'co-bali',
+    code: 'LVB',
+    name: 'PT Lavishome Bali',
+    shortName: 'Lavishome Bali',
+    city: 'Bali',
+    active: true,
+  },
+];
+
 export const USERS = {
-  operator: { id: 'u-op', name: 'Henny', role: 'operator' },
-  sales: { id: 'u-sales', name: 'Belinda', role: 'sales' },
-  manager: { id: 'u-mgr', name: 'Henry Martin', role: 'manager' },
-  driverAsep: { id: 'u-drv1', name: 'Asep', role: 'driver' },
-  driverRudi: { id: 'u-drv2', name: 'Rudi', role: 'driver' },
-  driverSlamet: { id: 'u-drv3', name: 'Slamet', role: 'driver' },
+  operator: { id: 'u-op', name: 'Fauzi', role: 'operator', companyId: 'co-jkt', jobTitle: 'Operation' },
+  sales: { id: 'u-sales', name: 'Henny', role: 'sales', companyId: 'co-jkt', jobTitle: 'Sales / Owner' },
+  manager: { id: 'u-mgr', name: 'Henry Martin', role: 'manager', companyId: 'co-jkt', jobTitle: 'Admin / Owner' },
+  bali: { id: 'u-bali', name: 'Nicolas', role: 'manager', companyId: 'co-bali', jobTitle: 'Owner Bali' },
 };
 
 export const MASTER = {
   warehouses: [
-    { id: 'wh-jkt', code: 'JKT', name: 'Gudang Pusat Jakarta', binPrefix: 'A', active: true, address: 'Jl. Industri Raya 12, Cakung, Jakarta Timur', phone: '021-555-0101' },
-    { id: 'wh-bali', code: 'DPS', name: 'Gudang Bali', binPrefix: 'B', active: true, address: 'Jl. By Pass Ngurah Rai 88, Denpasar, Bali', phone: '0361-555-0202' },
+    { id: 'wh-jkt', code: 'JKT', name: 'Gudang Pusat Jakarta', companyId: 'co-jkt', binPrefix: 'A', active: true, address: 'Jl. Industri Raya 12, Cakung, Jakarta Timur', phone: '021-555-0101' },
+    { id: 'wh-bali', code: 'DPS', name: 'Gudang Bali', companyId: 'co-bali', binPrefix: 'B', active: true, address: 'Jl. By Pass Ngurah Rai 88, Denpasar, Bali', phone: '0361-555-0202' },
   ],
   categories: [
     { id: 'cat-blackout', name: 'Blackout' },
@@ -85,6 +102,7 @@ function skeleton(dataset) {
       currency: 'IDR',
       timezone: 'Asia/Jakarta',
     },
+    companies: COMPANIES.map((c) => ({ ...c })),
     users: Object.values(USERS).map((u) => ({ ...u, active: true })),
     warehouses: MASTER.warehouses.map((w) => ({ ...w })),
     categories: MASTER.categories.map((c) => ({ ...c })),
@@ -108,6 +126,7 @@ function skeleton(dataset) {
     samples: [],
     sampleStocks: [],
     sampleBooks: [],
+    sampleRequests: [],
     deposits: [],
     transfers: [],
     purchaseOrders: [],
@@ -183,6 +202,7 @@ export function buildSeed({ dataset = 'main' } = {}) {
   const op = USERS.operator;
   const sales = USERS.sales;
   const mgr = USERS.manager;
+  const bali = USERS.bali;
 
   /* ---------------------------------------------------------------- master */
   db.suppliers.push(
@@ -205,15 +225,15 @@ export function buildSeed({ dataset = 'main' } = {}) {
   );
 
   db.drivers.push(
-    { id: 'DRV-001', userId: 'u-drv1', transportId: 'TRP-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
-    { id: 'DRV-002', userId: 'u-drv2', transportId: 'TRP-001', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
-    { id: 'DRV-003', userId: 'u-drv3', transportId: 'TRP-001', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
+    { id: 'DRV-001', userId: null, companyId: 'co-jkt', transportId: 'TRP-001', name: 'Asep', phone: '0812-1111-2001', vehicleType: 'motor', plateNumber: 'B 1234 CD', active: true, notes: 'Driver motor untuk area Jakarta.' },
+    { id: 'DRV-002', userId: null, companyId: 'co-jkt', transportId: 'TRP-001', name: 'Rudi', phone: '0813-2222-3002', vehicleType: 'mobil', plateNumber: 'B 9876 EF', active: true, notes: 'Mobil boks kecil.' },
+    { id: 'DRV-003', userId: null, companyId: 'co-jkt', transportId: 'TRP-001', name: 'Slamet', phone: '0821-3333-4003', vehicleType: 'truk', plateNumber: 'B 5566 GH', active: true, notes: 'Truk engkel untuk roll panjang.' },
   );
 
   db.fleetAssets.push(
-    { id: 'FLT-001', code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-001', driverIds: ['DRV-001', 'DRV-002'], capacityKg: 50, taxExpiry: '2027-03-31', active: true, notes: 'Motor operasional Jakarta.' },
-    { id: 'FLT-002', code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-002', driverIds: ['DRV-002', 'DRV-001', 'DRV-003'], capacityKg: 800, taxExpiry: '2027-01-31', active: true, notes: 'Mobil boks kecil.' },
-    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'internal', transportId: 'TRP-001', driverId: 'DRV-003', driverIds: ['DRV-003', 'DRV-002'], capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk engkel untuk roll panjang.' },
+    { id: 'FLT-001', code: 'B 1234 CD', name: 'Honda Vario 160', type: 'motor', ownership: 'internal', companyId: 'co-jkt', transportId: 'TRP-001', driverId: 'DRV-001', driverIds: ['DRV-001', 'DRV-002'], capacityKg: 50, taxExpiry: '2027-03-31', active: true, notes: 'Motor operasional Jakarta.' },
+    { id: 'FLT-002', code: 'B 9876 EF', name: 'Toyota Hilux Pickup', type: 'mobil', ownership: 'internal', companyId: 'co-jkt', transportId: 'TRP-001', driverId: 'DRV-002', driverIds: ['DRV-002', 'DRV-001', 'DRV-003'], capacityKg: 800, taxExpiry: '2027-01-31', active: true, notes: 'Mobil boks kecil.' },
+    { id: 'FLT-003', code: 'B 5566 GH', name: 'Isuzu Elf', type: 'truk', ownership: 'internal', companyId: 'co-jkt', transportId: 'TRP-001', driverId: 'DRV-003', driverIds: ['DRV-003', 'DRV-002'], capacityKg: 2500, taxExpiry: '2026-12-31', active: true, notes: 'Truk engkel untuk roll panjang.' },
   );
 
   db.supplierPrices.push(
@@ -312,6 +332,10 @@ export function buildSeed({ dataset = 'main' } = {}) {
   const c3 = createCustomer(db, { name: 'Graha Nusantara', company: 'PT Graha Nusantara', npwp: '02.345.678.9-012.000', phone: '021-3000-4003', whatsapp: '0812-9000-4003', email: 'facility@grahanusantara.co.id', address: 'Jl. Gatot Subroto 55', city: 'Jakarta', stage: 'pelanggan', nextAction: 'Kirim sample Aria-02', followUpDate: '2026-11-12' }, sales);
   const c4 = createCustomer(db, { name: 'Klinik Sehat Bersama', company: 'Yayasan Sehat Bersama', phone: '0821-4000-5004', whatsapp: '0821-4000-5004', email: 'admin@sehatbersama.id', address: 'Jl. Raya Bogor 77', city: 'Depok', stage: 'sample', nextAction: 'Tunggu keputusan sample Nova', followUpDate: '2026-11-14' }, sales);
   const c5 = createCustomer(db, { name: 'Butik Melati', company: 'Butik Melati', phone: '0857-5000-6005', whatsapp: '0857-5000-6005', email: 'hello@butikmelati.id', address: 'Jl. Braga 20', city: 'Bandung', stage: 'dormant', nextAction: 'Reaktivasi Q1 2027', followUpDate: '2027-01-15', notes: 'Terakhir beli Februari 2026.' }, sales);
+  const internalBali = createCustomer(db, { name: 'PT Lavishome Bali (Internal)', company: 'PT Lavishome Bali', companyId: 'co-jkt', linkedCompanyId: 'co-bali', internal: true, phone: '0361-555-0202', whatsapp: '0361-555-0202', address: 'Jl. By Pass Ngurah Rai 88, Denpasar, Bali', city: 'Denpasar', stage: 'pelanggan', notes: 'Pelanggan internal untuk penjualan Jakarta → Bali.' }, sales);
+  internalBali.id = 'CUS-INT-BALI';
+  const internalJakarta = createCustomer(db, { name: 'PT Lavishome Tekstil Nusantara (Internal)', company: 'PT Lavishome Tekstil Nusantara', companyId: 'co-bali', linkedCompanyId: 'co-jkt', internal: true, phone: '021-555-0101', whatsapp: '021-555-0101', address: 'Jl. Industri Raya 12, Cakung, Jakarta Timur', city: 'Jakarta', stage: 'pelanggan', notes: 'Pemasok internal untuk pembelian Bali ← Jakarta.' }, bali);
+  internalJakarta.id = 'CUS-INT-JKT';
 
   /* ----------------------------------------------------------- parts stock */
   addParts(db, 'part-rel-3', 'wh-jkt', 40);

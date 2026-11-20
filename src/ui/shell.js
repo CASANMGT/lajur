@@ -53,12 +53,12 @@ const ACCESS = {
   manager: null,
   operator: new Set(['ringkasan', 'tugas', 'produksi', 'stok', 'transfer', 'pembelian', 'opname', 'panduan', 'simulasi']),
   sales: new Set(['ringkasan', 'tugas', 'stok', 'penjualan', 'pesanan', 'pengiriman', 'proyek', 'pelanggan', 'sampel', 'katalog', 'panduan', 'simulasi']),
-  driver: new Set(['ringkasan', 'tugas', 'pengiriman', 'panduan']),
 };
 
 export function canAccess(role, view) {
+  if (role === 'manager') return true;
   const set = ACCESS[role];
-  return set === null || set === undefined ? true : set.has(view);
+  return Boolean(set?.has(view));
 }
 
 export const ROUTE_META = {
@@ -102,6 +102,8 @@ export function countsFor(db, { role = null, userId = null } = {}) {
 
 export function renderShell(ctx, contentHtml) {
   const { db, ui, role, user, dataset, simulation } = ctx;
+  const company = (db.companies ?? []).find((c) => c.id === ctx.companyId);
+  const roleLabel = user?.jobTitle || ROLE_LABEL[role] || role;
   const prefs = settingsOf(db);
   const advanced = isAdvancedMode(db);
   const counts = countsFor(db, { role, userId: user?.id });
@@ -148,9 +150,9 @@ export function renderShell(ctx, contentHtml) {
         </a>
         ${navHtml}
         <div class="sidebar-foot">
-          <strong>${esc(db.meta.company)}</strong>
+          <strong>${esc(company?.name ?? db.meta.company)}</strong>
           <p>${dataset === 'sim' ? 'Dataset simulasi — aman untuk dicoba.' : cloudConfigured(readCloudConfig()) ? 'Tersinkron ke cloud Neon.' : 'Demo lokal. Data tersimpan di perangkat ini.'}</p>
-          <button class="version-link" type="button" data-action="open-changelog" title="Lihat riwayat versi">v${esc(APP_VERSION)} · ${esc(ROLE_LABEL[role])} · Mode ${esc(modeLabel(db))}</button>
+          <button class="version-link" type="button" data-action="open-changelog" title="Lihat riwayat versi">v${esc(APP_VERSION)} · ${esc(roleLabel)} · Mode ${esc(modeLabel(db))}</button>
         </div>
       </aside>
 
@@ -170,7 +172,7 @@ export function renderShell(ctx, contentHtml) {
               ${icon('pin')}
               <label class="sr-only" for="warehouse-select">Gudang aktif</label>
               <select id="warehouse-select" data-action="warehouse-select">
-                ${activeWarehouses(db).map((w) => `<option value="${w.id}" ${ui.warehouseId === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name.replace('Gudang ', ''))}</option>`).join('')}
+                ${activeWarehouses(db).map((w) => `<option value="${w.id}" ${ui.warehouseId === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name.replace('Gudang ', ''))} · ${esc((db.companies ?? []).find((c) => c.id === w.companyId)?.code ?? '')}</option>`).join('')}
                 <option value="all" ${ui.warehouseId === 'all' ? 'selected' : ''}>Semua gudang</option>
               </select>
             </div>
@@ -210,7 +212,8 @@ function openAccount(ctx) {
     body: `
       <div class="account-meta">
         <div class="row-between"><span>Nama</span><strong>${esc(user.name)}</strong></div>
-        <div class="row-between"><span>Peran</span><strong>${esc(ROLE_LABEL[user.role])}</strong></div>
+        <div class="row-between"><span>Peran</span><strong>${esc(user.jobTitle || ROLE_LABEL[user.role])}</strong></div>
+        <div class="row-between"><span>PT</span><strong>${esc((ctx.db.companies ?? []).find((c) => c.id === user.companyId)?.name ?? '—')}</strong></div>
         <div class="row-between"><span>Sesi berakhir</span><span>${mins} menit lagi</span></div>
       </div>
       <hr class="divider" />

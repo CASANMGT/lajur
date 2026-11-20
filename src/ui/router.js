@@ -65,11 +65,15 @@ function ctxFor(route, user = sessionUser(store.state.db.users)) {
   const state = store.state;
   const role = user.role;
   const db = store.db;
+  const companyId = user.companyId ?? (db.warehouses ?? []).find((w) => w.id === state.ui.warehouseId)?.companyId ?? 'co-jkt';
+  const company = (db.companies ?? []).find((c) => c.id === companyId) ?? null;
   return {
     db,
     ui: state.ui,
     role,
     user,
+    companyId,
+    company,
     dataset: state.dataset,
     route,
     store,
@@ -77,7 +81,7 @@ function ctxFor(route, user = sessionUser(store.state.db.users)) {
       outstanding: invoiceOutstanding,
     },
     get metrics() {
-      return dashboardMetrics(db, { warehouseId: state.ui.warehouseId });
+      return dashboardMetrics(db, { warehouseId: state.ui.warehouseId, companyId: user.companyId ?? null });
     },
     openSimulationPrompt: () => simulation.openSimulationPrompt(ctxFor(route, user)),
   };
@@ -112,7 +116,8 @@ export function renderApp() {
       login.mount({
         users: store.db.users,
         onAuthenticated: (u) => {
-          store.setUi({ role: u.role }, { rerender: false });
+          const companyWarehouse = store.db.warehouses.find((w) => w.companyId === (u.companyId ?? 'co-jkt') && w.active !== false);
+          store.setUi({ role: u.role, warehouseId: companyWarehouse?.id ?? store.ui.warehouseId }, { rerender: false });
           const home = ROLE_HOME[u.role] ?? '#/ringkasan';
           // Keep a scanned roll deep-link (QR) or other intended page.
           const current = window.location.hash;
@@ -204,7 +209,10 @@ export async function start() {
   startCloudSync();
   if (!window.location.hash) window.location.hash = '#/ringkasan';
   const user = sessionUser(store.db.users);
-  if (user) store.setUi({ role: user.role }, { rerender: false });
+  if (user) {
+    const companyWarehouse = store.db.warehouses.find((w) => w.companyId === (user.companyId ?? 'co-jkt') && w.active !== false);
+    store.setUi({ role: user.role, warehouseId: companyWarehouse?.id ?? store.ui.warehouseId }, { rerender: false });
+  }
   store.subscribe(() => renderApp());
   window.addEventListener('hashchange', () => {
     renderApp();

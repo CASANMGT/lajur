@@ -5,8 +5,9 @@ import {
 } from '../dom.js';
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
-  SAMPLE_MODE, createSample, deleteSampleStock, depositBalance, linkSampleToInvoice, procureSampleStock,
-  refundDeposit, sampleCollectionStats, sampleCustomerStats, updateSampleStock,
+  SAMPLE_MODE, createSample, createSampleRequest, decideSampleRequest, deleteSampleStock, depositBalance,
+  linkSampleToInvoice, procureSampleStock, refundDeposit, sampleCollectionStats, sampleCustomerStats,
+  updateSampleStock,
 } from '../../domain/crm.js';
 import { settingsOf } from '../../domain/settings.js';
 import { pageHead, statCard, can, warehouseOf, warehouseOptions } from './common.js';
@@ -34,6 +35,9 @@ export function render(ctx) {
     || (filter.stock === 'available' && s.qty > 0)
     || (filter.stock === 'unavailable' && s.qty <= 0));
   const stockTotal = stocks.reduce((a, s) => a + (Number(s.qty) || 0), 0);
+  const requests = (db.sampleRequests ?? [])
+    .filter((r) => r.fromCompanyId === ctx.companyId || r.toCompanyId === ctx.companyId)
+    .sort((a, b) => String(b.date).localeCompare(String(a.date)));
 
   return `
     ${pageHead({
@@ -62,6 +66,7 @@ export function render(ctx) {
         <tbody>${filteredStocks.map((s) => {
           const collection = byId(db.collections, s.collectionId);
           const warehouse = warehouseOf(db, s.warehouseId);
+          const stockCompany = byId(db.companies, s.companyId ?? warehouse?.companyId);
           return `<tr>
             <td><div class="cell-main">
               ${s.photo
@@ -73,15 +78,38 @@ export function render(ctx) {
             <td class="num">${fmt.money(s.sampleDeposit ?? collection?.sampleDeposit ?? 0)}<div class="xs muted">refundable</div></td>
             <td class="num strong">${s.qty}</td>
             <td class="num">${s.minQty ?? 1}</td>
-            <td class="small">${esc(warehouse?.name ?? s.location ?? '—')}<div class="xs muted">${esc(s.location || '')}</div></td>
+            <td class="small">${esc(warehouse?.name ?? s.location ?? '—')}<div class="xs muted">${esc(stockCompany?.name ?? '—')} · ${esc(s.location || '')}</div></td>
             <td>${s.qty <= 0 ? badge('Habis', 'danger') : s.qty <= (s.minQty ?? 1) ? badge('Menipis', 'warn') : badge('Tersedia', 'ok')}</td>
             <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
+              ${s.qty > 0 && can(role, 'sample.create') && (s.companyId ?? warehouse?.companyId) !== ctx.companyId ? `<button class="btn btn-sm" type="button" data-request-sample="${s.id}">${icon('transfer')} Minta sample</button>` : ''}
               ${s.qty > 0 && can(role, 'sample.create') ? `<button class="btn btn-sm btn-primary" type="button" data-give-stock="${s.id}">Beri buku sample</button>` : ''}
               ${role === 'manager' ? `<button class="btn btn-sm" type="button" data-edit-stock="${s.id}">Edit</button><button class="btn btn-sm btn-danger" type="button" data-delete-stock="${s.id}">Hapus</button>` : ''}
               <button class="btn btn-sm" type="button" data-procurement="${s.id}">Riwayat</button>
             </div></td>
           </tr>`;
         }).join('') || `<tr><td colspan="8"><div class="empty">${icon('layers')}<strong>Belum ada stok buku sample</strong><p>Tambah buku sample koleksi dari pabrik.</p></div></td></tr>`}</tbody>
+      </table></div>
+    </section>
+
+    <section class="card" style="margin-bottom:16px">
+      <div class="card-head"><div><h2>Permintaan sample antar-PT</h2><p>Bali dapat meminta stok sample Jakarta, gratis atau berbayar. PT pemilik menyetujui, lalu stok berpindah ke Bali.</p></div><span class="badge no-dot">${requests.length}</span></div>
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Tanggal</th><th>Dari</th><th>Ke</th><th>Koleksi</th><th class="num">Qty</th><th>Harga</th><th>Status</th><th><span class="sr-only">Aksi</span></th></tr></thead>
+        <tbody>${requests.map((r) => {
+          const from = byId(db.companies, r.fromCompanyId);
+          const to = byId(db.companies, r.toCompanyId);
+          const collection = byId(db.collections, r.collectionId);
+          return `<tr>
+            <td class="small">${esc(r.date)}<div class="xs muted">${esc(r.requestedByName || '')}</div></td>
+            <td class="small">${esc(from?.name ?? r.fromCompanyId)}</td>
+            <td class="small">${esc(to?.name ?? r.toCompanyId)}</td>
+            <td class="small">${esc(collection?.name ?? r.collectionId)}</td>
+            <td class="num">${r.qty} pcs</td>
+            <td class="small">${r.pricing === 'paid' ? fmt.money(r.amount) : 'Gratis'}</td>
+            <td>${badge(r.status === 'approved' ? 'Disetujui' : r.status === 'rejected' ? 'Ditolak' : 'Menunggu', r.status === 'approved' ? 'ok' : r.status === 'rejected' ? 'danger' : 'warn')}</td>
+            <td class="right">${r.status === 'requested' && r.fromCompanyId === ctx.companyId && role === 'manager' ? `<div class="row" style="justify-content:flex-end"><button class="btn btn-sm btn-primary" data-approve-sample="${r.id}">Setujui</button><button class="btn btn-sm btn-danger" data-reject-sample="${r.id}">Tolak</button></div>` : ''}</td>
+          </tr>`;
+        }).join('') || `<tr><td colspan="8"><div class="empty">${icon('transfer')}<strong>Belum ada permintaan sample</strong><p>Gunakan tombol Minta sample pada stok PT lain.</p></div></td></tr>`}</tbody>
       </table></div>
     </section>
 
@@ -319,6 +347,40 @@ function openEditStock(ctx, stock) {
   });
 }
 
+function openSampleRequest(ctx, stock) {
+  const collection = byId(ctx.db.collections, stock.collectionId);
+  const source = byId(ctx.db.companies, stock.companyId ?? warehouseOf(ctx.db, stock.warehouseId)?.companyId);
+  openModal({
+    title: `Minta sample ${collection?.name ?? ''}`,
+    description: `Stok ${source?.name ?? 'PT lain'} akan dikirim ke gudang PT Anda setelah disetujui.`,
+    submitLabel: 'Kirim permintaan',
+    body: `
+      ${field('Jumlah (pcs)', `<input class="input" name="qty" inputmode="numeric" value="1" />`, { hint: `Tersedia ${stock.qty} pcs.` })}
+      ${field('Harga', `<select class="select" name="pricing"><option value="free">Gratis</option><option value="paid">Berbayar</option></select>`)}
+      ${field('Nominal berbayar (Rp)', `<input class="input" name="amount" inputmode="numeric" value="0" />`)}
+      ${field('Catatan', `<input class="input" name="note" placeholder="Kebutuhan sample / customer" />`, { full: true })}
+    `,
+    onMount(form) {
+      form.pricing.addEventListener('change', () => {
+        form.amount.disabled = form.pricing.value !== 'paid';
+      });
+      form.amount.disabled = true;
+    },
+    onSubmit(form, close) {
+      ctx.store.update((db) => createSampleRequest(db, {
+        stockId: stock.id,
+        qty: Number(form.qty.value || 0),
+        pricing: form.pricing.value,
+        amount: Number(String(form.amount.value).replace(/\D/g, '')) || 0,
+        note: form.note.value,
+        user: ctx.user,
+      }));
+      close();
+      toast('Permintaan sample dikirim ke PT pemilik stok.', { tone: 'success' });
+    },
+  });
+}
+
 function openGiveStock(ctx, stock) {
   const collection = byId(ctx.db.collections, stock.collectionId);
   const customers = ctx.db.customers.filter((c) => c.stage !== 'dormant');
@@ -399,6 +461,18 @@ export function mount(ctx) {
   document.querySelectorAll('[data-give-stock]').forEach((btn) => btn.addEventListener('click', () => {
     const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.giveStock);
     if (stock) openGiveStock(ctx, stock);
+  }));
+  document.querySelectorAll('[data-request-sample]').forEach((btn) => btn.addEventListener('click', () => {
+    const stock = (ctx.db.sampleStocks ?? []).find((s) => s.id === btn.dataset.requestSample);
+    if (stock) openSampleRequest(ctx, stock);
+  }));
+  document.querySelectorAll('[data-approve-sample]').forEach((btn) => btn.addEventListener('click', () => {
+    ctx.store.update((db) => decideSampleRequest(db, { id: btn.dataset.approveSample, approve: true, user: ctx.user }));
+    toast('Permintaan sample disetujui; stok berpindah ke PT peminta.', { tone: 'success' });
+  }));
+  document.querySelectorAll('[data-reject-sample]').forEach((btn) => btn.addEventListener('click', () => {
+    ctx.store.update((db) => decideSampleRequest(db, { id: btn.dataset.rejectSample, approve: false, user: ctx.user }));
+    toast('Permintaan sample ditolak.', { tone: 'success' });
   }));
   document.querySelectorAll('[data-link]').forEach((btn) => btn.addEventListener('click', () => {
     const sample = ctx.db.samples.find((s) => s.id === btn.dataset.link);

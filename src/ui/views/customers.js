@@ -6,7 +6,7 @@ import {
 import { byId, todayJakarta } from '../../domain/core.js';
 import {
   CRM_STAGE, SAMPLE_MODE, createCustomer, createDeposit, createSample, customerReceivable,
-  depositBalance, linkSampleToInvoice, logActivity, refundDeposit, updateCustomer,
+  customersForCompany, depositBalance, linkSampleToInvoice, logActivity, refundDeposit, updateCustomer,
 } from '../../domain/crm.js';
 import { invoiceOutstanding, invoiceStatusLabel } from '../../domain/sales.js';
 import { openStockShare } from './inventory.js';
@@ -20,7 +20,8 @@ export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
 
   const { db, role } = ctx;
-  const rows = db.customers.map((c) => {
+  const visible = customersForCompany(db, ctx.companyId);
+  const rows = visible.map((c) => {
     const projects = db.projects.filter((p) => p.customerId === c.id && p.status !== 'cancelled');
     const samples = db.samples.filter((s) => s.customerId === c.id);
     const receivable = customerReceivable(db, c.id);
@@ -38,7 +39,7 @@ export function render(ctx) {
       actions: `${can(role, 'customer.create') ? `<button class="btn btn-primary" type="button" data-act="new-customer">${icon('plus')} Pelanggan baru</button><button class="btn" type="button" data-act="import-customers">${icon('upload')} Impor Excel</button>` : ''}`,
     })}
     <div class="kpi-strip" style="margin-bottom:16px">
-      ${statCard({ label: 'Total pelanggan', value: String(db.customers.length), meta: `${pipeline.length} dalam pipeline`, iconName: 'users' })}
+      ${statCard({ label: 'Total pelanggan', value: String(visible.length), meta: `${pipeline.length} dalam pipeline · ${visible.filter((c) => c.shared).length} dibagi antar-PT`, iconName: 'users' })}
       ${statCard({ label: 'Piutang', value: fmt.money(rows.reduce((a, r) => a + r.receivable, 0)), meta: 'Saldo faktur terbit', tone: 'warn' })}
       ${statCard({ label: 'Deposit terbuka', value: fmt.money(rows.reduce((a, r) => a + r.deposit, 0)), meta: 'Kewajiban ke pelanggan', tone: 'warn' })}
       ${statCard({ label: 'Buku sample aktif', value: String(db.samples.filter((s) => s.status === 'active').length), meta: `${db.samples.filter((s) => s.status === 'converted').length} terkonversi`, iconName: 'spark' })}
@@ -73,7 +74,7 @@ export function render(ctx) {
 
 function renderDetail(ctx) {
   const { db, role, route } = ctx;
-  const c = db.customers.find((x) => x.id === route.id);
+  const c = customersForCompany(db, ctx.companyId).find((x) => x.id === route.id);
   if (!c) return `${pageHead({ title: 'Tidak ditemukan' })}<div class="notice notice-danger">${icon('alert')}<div>Pelanggan ${esc(route.id)} tidak ada.</div></div>`;
 
   const projects = db.projects.filter((p) => p.customerId === c.id);
@@ -433,6 +434,7 @@ export function openCreate(ctx) {
       const customer = ctx.store.update((db) => createCustomer(db, {
         name: form.name.value,
         company: form.company.value,
+        companyId: ctx.companyId,
         contactName: form.contactName.value,
         npwp: form.npwp.value,
         phone: form.phone.value,
@@ -481,8 +483,9 @@ function openCustomerImport(ctx) {
           return;
         }
         const duplicates = plan.customers.filter((item) => ctx.db.customers.some((customer) => (
-          (item.phone && String(customer.phone ?? '').replace(/\D/g, '') === item.phone)
-          || String(customer.name).trim().toLowerCase() === item.name.toLowerCase()
+          (customer.companyId ?? 'co-jkt') === ctx.companyId
+          && ((item.phone && String(customer.phone ?? '').replace(/\D/g, '') === item.phone)
+            || String(customer.name).trim().toLowerCase() === item.name.toLowerCase())
         ))).length;
         summary.innerHTML = `<div class="grid grid-3" style="margin:8px 0">
           ${statCard({ label: 'Pelanggan', value: String(plan.customers.length), meta: `${plan.customers.length - duplicates} baru` })}

@@ -2,6 +2,30 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.31.0] — 2026-11-20
+
+**Release name: Dua PT, Internal Sales & Driver Master.** Jakarta and Bali are now separate PTs with scoped customers, internal sales/purchases, sample requests, and driver master data without login accounts.
+
+### Added
+
+- **Two PTs:** PT Lavishome Tekstil Nusantara (Jakarta, `co-jkt`) and PT Lavishome Bali (`co-bali`), each with its own warehouse and manager.
+- **Four named users:** Henry Martin (Admin/Owner, Jakarta), Henny (Sales/Owner, Jakarta), Fauzi (Operation, Jakarta), Nicolas (Owner Bali). No driver login accounts.
+- **Customer isolation and sharing:** customers carry `companyId`; each PT sees its own customers plus shared/internal counterparts. Matching phone or name across PTs marks both records `shared`.
+- **Internal sales Jakarta→Bali:** Penjualan → **Jual ke PT lain** creates an internal invoice. Posting moves rolls/parts to the Bali warehouse and keeps them available.
+- **Bali internal purchase:** Pembelian → **Pembelian internal** lists purchases from Jakarta and lets Bali create a draft request. Only the seller PT may post it.
+- **Sample requests:** Bali can request Jakarta sample stock free or paid; the owning PT approves and stock moves to the Bali sample warehouse.
+- **Driver master:** name, phone and company vehicle; no driver account. Internal surat jalan snapshots driver/vehicle.
+- **Third-party surat jalan:** driver and vehicle fields are hidden/cleared; the notes say the driver is determined by the expedition. Print layouts omit the driver row.
+- **Schema 21 / backup v21:** migrations add companies, PT ownership, internal customers, sample requests and shared-customer links.
+
+### Verification
+
+- `node --test`: **96 passed** (new tests for PT users, customer sharing, internal sale stock move, sample request transfer).
+- Module import check: **59 modules**; render check passes.
+- Browser QA: 4 login cards; Jakarta internal sale moved `RL-0001` from `wh-jkt` to `wh-bali`; Bali saw the same invoice under Pembelian internal; Bali sample request `SMR-0001` approved and moved 1 pc to `wh-bali`; Bali customer list hid Jakarta-only customers; zero console errors.
+
+---
+
 ## [2.30.1] — 2026-11-20
 
 **Release name: Build Statis Vercel & Neon.** Fixes the Vercel deploy after adding `npm run build`.

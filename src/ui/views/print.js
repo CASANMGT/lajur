@@ -254,7 +254,7 @@ export function printDeliveryHtml(db, delivery) {
       <div><span>Ongkir / asuransi</span><strong>${fmt.money(delivery.shippingCost || 0)} / ${fmt.money(delivery.insurance || 0)}</strong></div>
       <div><span>COD</span><strong>${delivery.codAmount ? fmt.money(delivery.codAmount) : '—'}</strong></div>
       <div><span>Transport / armada</span><strong>${esc(delivery.transportName || '—')}</strong></div>
-      <div><span>Driver / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>
+      ${delivery.courier === 'internal' ? `<div><span>Driver / kendaraan</span><strong>${esc(delivery.driver || '—')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</strong></div>` : ''}
       <div><span>Status</span><strong>${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</strong></div>
     </div>
     <table>
@@ -317,14 +317,14 @@ export function printDeliveryCopiesHtml(db, delivery) {
     </div>
     <div class="sj-awb-row"><span>${esc(d.resiLabel)}</span><strong>${esc(d.resiValue)}</strong><span>${delivery.eta ? `ETA ${esc(delivery.eta)}` : ''}</span></div>
     <div class="sj-grid">
-      <div class="sj-box"><span class="sj-k">PENGIRIM</span><strong>PT Lavishome Tekstil Nusantara</strong><div>Gudang Jakarta / Bali</div><div>PIC: ${esc(delivery.pic)}</div></div>
+      <div class="sj-box"><span class="sj-k">PENGIRIM</span><strong>${esc(byId(db.companies, byId(db.invoices, delivery.invoiceId)?.companyId)?.name ?? 'PT Lavishome Tekstil Nusantara')}</strong><div>Gudang ${esc(byId(db.warehouses, delivery.lines?.[0]?.warehouseId)?.name?.replace('Gudang ', '') ?? 'Jakarta / Bali')}</div><div>PIC: ${esc(delivery.pic)}</div></div>
       <div class="sj-box"><span class="sj-k">PENERIMA</span><strong>${esc(d.recipient)}</strong><div>${esc(d.recipientPhone)}</div><div>${esc(d.address)}</div></div>
     </div>
     <table class="sj-lines"><thead><tr><th>Barang</th><th class="num">Qty</th><th>Catatan</th></tr></thead><tbody>${delivery.lines.map((line) => `<tr><td>${esc(line.description)}</td><td class="num">${deliveryQty(line)}</td><td>${esc(line.note || '—')}</td></tr>`).join('')}</tbody></table>
-    <div class="sj-meta">Faktur ${esc(delivery.invoiceId)} · ${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli · ${esc(delivery.driver || '—')}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
+    <div class="sj-meta">Faktur ${esc(delivery.invoiceId)} · ${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli · ${delivery.courier === 'internal' ? `${esc(delivery.driver || '—')}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}` : 'Driver ditentukan ekspedisi'} · ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
     <div class="sj-foot">
       <div class="sj-sign">PIC pengiriman<strong>${esc(delivery.pic)}</strong></div>
-      <div class="sj-sign">Driver${delivery.courier === 'internal' ? ' (internal)' : ''}<strong>${esc(delivery.driver || '&nbsp;')}</strong></div>
+      <div class="sj-sign">${delivery.courier === 'internal' ? 'Driver (internal)' : 'Driver ekspedisi'}<strong>${esc(delivery.courier === 'internal' ? (delivery.driver || '&nbsp;') : '&nbsp;')}</strong></div>
       <div class="sj-sign">Penerima<strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div>
       <div class="sj-note">Bukan faktur · stok keluar saat faktur terbit${d.trackUrl ? `<br>Lacak: ${esc(d.trackUrl)}` : ''}</div>
     </div>
@@ -405,10 +405,10 @@ export function printDeliveryDotMatrixHtml(db, delivery) {
       <div>Faktur: ${esc(delivery.invoiceId)}</div><div>Status: ${esc(DELIVERY_STATUS[delivery.status]?.label ?? delivery.status)}</div>
       <div>Berat / koli: ${delivery.weightKg ? `${delivery.weightKg} kg` : '-'} / ${delivery.pieces || '-'}</div><div>ETA: ${esc(delivery.eta || '-')}</div>
       <div>Ongkir: ${fmt.money(delivery.shippingCost || 0)}</div><div>Asuransi: ${fmt.money(delivery.insurance || 0)}</div>
-      <div>Driver: ${esc(delivery.driver || '-')}</div><div>Kendaraan: ${esc(delivery.plateNumber || '-')}</div>
+      ${delivery.courier === 'internal' ? `<div>Driver: ${esc(delivery.driver || '-')}</div><div>Kendaraan: ${esc(delivery.plateNumber || '-')}</div>` : '<div>Driver: ditentukan ekspedisi</div><div>Kurir: lihat header</div>'}
     </div>
     ${delivery.instructions || delivery.notes ? `<div class="dm-note">${esc([delivery.instructions, delivery.notes].filter(Boolean).join(' · '))}</div>` : ''}
-    <div class="dm-sign"><div>PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div><div>Driver${delivery.courier === 'internal' ? ' (internal)' : ''}<br><strong>${esc(delivery.driver || '&nbsp;')}</strong></div><div>Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div></div>
+    <div class="dm-sign"><div>PIC pengiriman<br><strong>${esc(delivery.pic)}</strong></div><div>${delivery.courier === 'internal' ? 'Driver (internal)' : 'Driver ekspedisi'}<br><strong>${esc(delivery.courier === 'internal' ? (delivery.driver || '&nbsp;') : '&nbsp;')}</strong></div><div>Penerima<br><strong>${delivery.receivedBy ? esc(delivery.receivedBy) : '&nbsp;'}</strong></div></div>
     ${d.trackUrl ? `<div class="dm-track">Lacak: ${esc(d.trackUrl)}</div>` : ''}
     <div class="dm-track">Bukan faktur · stok keluar saat faktur ${esc(delivery.invoiceId)} terbit.</div>
   </div>`;

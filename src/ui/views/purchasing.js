@@ -18,6 +18,7 @@ import { auditTrail } from '../../domain/master.js';
 import { isAdvancedMode } from '../../domain/features.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { latestFxRate, latestSupplierPrice } from '../../domain/pricing.js';
+import { openInvoice } from './sales.js';
 import { printPoHtml } from './print.js';
 
 let tab = 'po';
@@ -34,6 +35,7 @@ export function render(ctx) {
   const showFinance = role === 'manager';
   const tabs = [
     ['po', 'Purchase order'], ['penerimaan', 'Penerimaan'],
+    ...((db.companies ?? []).some((c) => c.id !== ctx.companyId && c.active !== false) ? [['internal', 'Pembelian internal']] : []),
     ...(advanced ? [['pengiriman', 'Pengiriman impor']] : []),
     ...(showFinance && advanced ? [['tagihan', 'Tagihan & pembayaran'], ['pemasok', 'Pemasok']] : []),
   ];
@@ -58,7 +60,7 @@ export function render(ctx) {
       ${tabs.map(([k, label]) => `<button class="tab" role="tab" aria-selected="${tab === k}" data-tab="${k}">${esc(label)}</button>`).join('')}
     </div>
 
-    ${tab === 'po' ? renderPoTab(ctx) : tab === 'penerimaan' ? renderReceiptTab(ctx) : tab === 'pengiriman' ? renderShipmentTab(ctx) : tab === 'tagihan' ? renderBillTab(ctx) : renderSupplierTab(ctx)}`;
+    ${tab === 'po' ? renderPoTab(ctx) : tab === 'penerimaan' ? renderReceiptTab(ctx) : tab === 'internal' ? renderInternalPurchases(ctx) : tab === 'pengiriman' ? renderShipmentTab(ctx) : tab === 'tagihan' ? renderBillTab(ctx) : renderSupplierTab(ctx)}`;
 }
 
 function renderPoTab(ctx) {
@@ -115,6 +117,35 @@ function renderReceiptTab(ctx) {
             <td class="num">${fmt.money(r.total)}</td>
           </tr>`;
         }).join('') || `<tr><td colspan="6"><div class="empty">${icon('box')}<strong>Belum ada penerimaan</strong></div></td></tr>`}</tbody>
+      </table></div>
+    </section>`;
+}
+
+function renderInternalPurchases(ctx) {
+  const { db, role } = ctx;
+  const purchases = db.invoices
+    .filter((inv) => inv.internalCompanyId === ctx.companyId)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
+  const source = (db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
+  return `<div class="notice notice-info" style="margin-bottom:12px">${icon('transfer')}<div><strong>Pembelian antar-PT.</strong> Buat permintaan ke PT penjual. Setelah PT penjual menerbitkan faktur internal, stok berpindah ke gudang PT ini. Bukan transfer gudang biasa.</div></div>
+    <div class="row" style="margin-bottom:12px">
+      ${can(role, 'invoice.create') && source ? `<button class="btn btn-primary" type="button" data-act="new-internal-purchase">${icon('plus')} Buat pembelian internal</button>` : ''}
+      <span class="small muted">${purchases.length} dokumen</span>
+    </div>
+    <section class="card">
+      <div class="table-wrap"><table class="data">
+        <thead><tr><th>Faktur internal</th><th>PT penjual</th><th>Tanggal</th><th class="num">Total</th><th>Status</th><th>Baris</th></tr></thead>
+        <tbody>${purchases.map((inv) => {
+          const seller = byId(db.companies, inv.companyId);
+          return `<tr data-href="#/penjualan/${inv.id}" tabindex="0" role="link">
+            <td class="mono strong">${esc(inv.id)}</td>
+            <td>${esc(seller?.name ?? inv.companyId ?? '—')}</td>
+            <td>${esc(inv.date)}<div class="xs muted">due ${esc(inv.dueDate)}</div></td>
+            <td class="num">${fmt.money(inv.total)}</td>
+            <td>${badge(inv.status === 'posted' ? 'Diterima' : inv.status === 'draft' ? 'Menunggu PT penjual' : inv.status, inv.status === 'posted' ? 'ok' : 'warn')}</td>
+            <td class="num">${inv.lines.length}</td>
+          </tr>`;
+        }).join('') || `<tr><td colspan="6"><div class="empty">${icon('transfer')}<strong>Belum ada pembelian internal</strong><p>Buat permintaan pembelian dari PT lain.</p></div></td></tr>`}</tbody>
       </table></div>
     </section>`;
 }
@@ -820,6 +851,11 @@ export function mount(ctx) {
     ctx.store.emit();
   }));
   document.querySelector('[data-act="new-po"]')?.addEventListener('click', () => openCreatePo(ctx));
+  document.querySelector('[data-act="new-internal-purchase"]')?.addEventListener('click', () => {
+    const source = (ctx.db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
+    if (!source) return;
+    openInvoice(ctx, null, 'invoice', { internalCompanyId: ctx.companyId, sellerCompanyId: source.id });
+  });
   document.querySelectorAll('tr[data-href]').forEach((tr) => tr.addEventListener('click', () => {
     window.location.hash = tr.dataset.href.replace('#', '');
   }));
@@ -834,7 +870,7 @@ export function mount(ctx) {
   document.querySelector('[data-act="new-supplier"]')?.addEventListener('click', () => openSupplier(ctx));
 
   if (ctx.route.query?.tab) {
-    const allowed = ['po', 'penerimaan', 'pengiriman', 'tagihan', 'pemasok'];
+    const allowed = ['po', 'penerimaan', 'internal', 'pengiriman', 'tagihan', 'pemasok'];
     if (allowed.includes(ctx.route.query.tab)) tab = ctx.route.query.tab;
     history.replaceState(null, '', '#/pembelian');
     ctx.store.emit();

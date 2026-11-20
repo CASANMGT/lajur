@@ -53,16 +53,16 @@ test('surat jalan stores a user PIC, tracking link and notifies arrival', () => 
   const invoice = postedInvoice(db);
   const delivery = createDelivery(db, {
     invoiceId: invoice.id,
-    picUserId: 'u-drv1',
+    picUserId: 'u-op',
     courier: 'jne',
     service: 'REG',
     trackingRef: 'CGK1234567890',
     trackingUrl: 'https://grab.com/share/abc123',
     user: SALES,
   });
-  assert.equal(delivery.pic, 'Asep');
-  assert.equal(delivery.picUserId, 'u-drv1');
-  assert.equal(delivery.picRole, 'driver');
+  assert.equal(delivery.pic, 'Fauzi');
+  assert.equal(delivery.picUserId, 'u-op');
+  assert.equal(delivery.picRole, 'operator');
   assert.equal(delivery.trackingUrl, 'https://grab.com/share/abc123');
   assert.equal(deliveryTrackingUrl(delivery), 'https://grab.com/share/abc123');
   assert.equal(trackingLabel(delivery), 'Buka link dari aplikasi');
@@ -80,7 +80,7 @@ test('surat jalan stores a user PIC, tracking link and notifies arrival', () => 
     trackingUrl: '',
     user: SALES,
   });
-  assert.equal(delivery.pic, 'Henny');
+  assert.equal(delivery.pic, 'Fauzi');
   assert.equal(delivery.picRole, 'operator');
   assert.equal(delivery.trackingUrl, '');
   assert.equal(deliveryTrackingUrl(delivery), 'https://www.jne.co.id/id/tracking/trace');

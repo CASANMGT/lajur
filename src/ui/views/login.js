@@ -58,8 +58,8 @@ export function render({ users = [] } = {}) {
                 <span class="avatar avatar-lg">${esc(initials(u.name))}</span>
                 <span class="auth-user-text">
                   <strong>${esc(u.name)}</strong>
-                  <span>${esc(ROLE_TEXT[u.role] ?? u.role)}</span>
-                  <small>${esc(ROLE_NOTE[u.role] ?? 'Akses sesuai peran')}</small>
+                  <span>${esc(u.jobTitle || ROLE_TEXT[u.role] || u.role)}</span>
+                  <small>${esc(u.companyId === 'co-bali' ? 'PT Lavishome Bali' : 'PT Lavishome Jakarta')} · ${esc(ROLE_NOTE[u.role] ?? 'Akses sesuai peran')}</small>
                 </span>
                 <span class="auth-check">${icon('check')}</span>
               </button>`).join('') || `<div class="notice notice-warn">${icon('alert')}<div>Tidak ada akun aktif. Hubungi manajer.</div></div>`}

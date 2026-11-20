@@ -28,12 +28,13 @@ export function statCard({ label, value, meta = '', tone = '', iconName = '' }) 
   </div>`;
 }
 
-export function warehouseOptions(db, selected, { includeAll = false, includeInactive = false } = {}) {
+export function warehouseOptions(db, selected, { includeAll = false, includeInactive = false, companyId = null } = {}) {
   const all = includeAll
     ? `<option value="all" ${selected === 'all' ? 'selected' : ''}>Semua gudang</option>`
     : '';
   return `${all}${db.warehouses
     .filter((w) => includeInactive || w.active !== false)
+    .filter((w) => !companyId || (w.companyId ?? 'co-jkt') === companyId)
     .map((w) => `<option value="${w.id}" ${selected === w.id ? 'selected' : ''}>${esc(w.code)} · ${esc(w.name)}</option>`)
     .join('')}`;
 }

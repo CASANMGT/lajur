@@ -97,9 +97,10 @@ test('surat jalan snapshots driver and transport master data', () => {
   const jnt = createDelivery(db, {
     invoiceId: inv.id, pic: 'Henny', courier: 'jnt', driverId: 'DRV-002', user: SALES,
   });
-  assert.equal(jnt.driver, 'Rudi');
-  assert.equal(jnt.vehicleType, 'mobil');
-  assert.equal(jnt.plateNumber, 'B 9876 EF');
+  assert.equal(jnt.driver, '');
+  assert.equal(jnt.vehicleType, '');
+  assert.equal(jnt.plateNumber, '');
+  assert.match(jnt.notes, /ekspedisi pihak ketiga/i);
   assert.equal(jnt.transportId, 'TRP-005');
   assert.equal(jnt.transportName, 'J&T Express');
   assert.equal(jnt.fleetAssetId, null);
@@ -133,9 +134,10 @@ test('surat jalan tracks PIC and confirmation without moving stock again', () =>
     invoiceId: inv.id, pic: 'Rani', driverId: 'DRV-001', courier: 'gosend', trackingRef: 'GOSEND-123', user: OP,
   });
   assert.equal(delivery.status, 'draft');
-  assert.equal(delivery.driver, 'Asep');
-  assert.equal(delivery.vehicleType, 'motor');
-  assert.equal(delivery.plateNumber, 'B 1234 CD');
+  assert.equal(delivery.driver, '');
+  assert.equal(delivery.vehicleType, '');
+  assert.equal(delivery.plateNumber, '');
+  assert.match(delivery.notes, /ekspedisi pihak ketiga/i);
   assert.equal(delivery.courier, 'gosend');
   assert.equal(delivery.trackingRef, 'GOSEND-123');
   assert.equal(inv.deliveryId, delivery.id);

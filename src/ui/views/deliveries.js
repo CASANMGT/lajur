@@ -28,7 +28,11 @@ function statusFilter(delivery) {
 export function render(ctx) {
   const { db, role, user } = ctx;
   const driver = role === 'driver' ? driverForUser(db, user) : null;
+  const companyInvoiceIds = new Set((db.invoices ?? [])
+    .filter((inv) => (inv.companyId ?? 'co-jkt') === ctx.companyId || inv.internalCompanyId === ctx.companyId)
+    .map((inv) => inv.id));
   const all = (db.deliveries ?? [])
+    .filter((d) => companyInvoiceIds.has(d.invoiceId))
     .filter((d) => role !== 'driver' || d.driverId === driver?.id)
     .filter(statusFilter)
     .sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(b.id).localeCompare(String(a.id)));
@@ -38,7 +42,8 @@ export function render(ctx) {
   const confirmed = all.filter((d) => d.status === 'confirmed').length;
   const todayCount = all.filter((d) => d.date === today).length;
   const arrived = all.filter((d) => d.status === 'delivered');
-  const missing = role === 'driver' ? [] : invoicesWithoutDelivery(db);
+  const missing = role === 'driver' ? [] : invoicesWithoutDelivery(db)
+    .filter((inv) => (inv.companyId ?? 'co-jkt') === ctx.companyId || inv.internalCompanyId === ctx.companyId);
 
   return `
     ${pageHead({
@@ -82,7 +87,7 @@ export function render(ctx) {
           <td class="mono strong">${esc(d.id)}<div class="xs muted">${esc(d.invoiceId)}</div></td>
           <td><strong class="small">${esc(d.customerName)}</strong><div class="xs muted">PIC ${esc(d.pic)} · ${esc(d.recipientName || '—')}</div></td>
           <td>${esc(weekdayName(d.date))}${d.eta ? `<div class="xs muted">ETA ${esc(d.eta)}</div>` : ''}</td>
-          <td><strong class="small">${esc(d.driver || '—')}</strong><div class="xs muted">${esc(d.vehicleName || VEHICLE_TYPES[d.vehicleType]?.label || d.vehicleType || '—')}${d.plateNumber ? ` · ${esc(d.plateNumber)}` : ''}</div><div class="xs muted">${esc(d.transportName || '—')}</div></td>
+          <td>${d.courier === 'internal' ? `<strong class="small">${esc(d.driver || '—')}</strong><div class="xs muted">${esc(d.vehicleName || VEHICLE_TYPES[d.vehicleType]?.label || d.vehicleType || '—')}${d.plateNumber ? ` · ${esc(d.plateNumber)}` : ''}</div><div class="xs muted">${esc(d.transportName || '—')}</div>` : `<strong class="small">Ekspedisi</strong><div class="xs muted">Driver ditentukan kurir</div>`}</td>
           <td class="small">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.service || 'REG')}${d.trackingRef ? `<div class="row" style="gap:4px"><span class="xs muted mono">${esc(d.trackingRef)}</span><button class="btn btn-sm btn-ghost" type="button" data-copy-resi="${d.id}" title="Salin no. resi">${icon('copy')}</button>${cekResiUrl(d) ? `<a class="btn btn-sm btn-ghost" href="${esc(cekResiUrl(d))}" target="_blank" rel="noopener">Cek resi</a>` : ''}</div>` : d.courier === 'internal' ? `<div class="xs muted mono">No. SJ ${esc(d.id)}</div>` : ''}<div class="xs muted">${d.weightKg ? `${d.weightKg} kg` : '—'} · ${d.pieces || '—'} koli</div></td>
           <td>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}${d.receivedBy ? `<div class="xs muted">oleh ${esc(d.receivedBy)}</div>` : ''}</td>
           <td class="right"><div class="row" style="justify-content:flex-end;flex-wrap:wrap">
@@ -99,7 +104,7 @@ export function render(ctx) {
         ${all.map((d) => `<div class="roll-card">
           <div class="top"><span class="id mono">${esc(d.id)}</span>${badge(DELIVERY_STATUS[d.status]?.label ?? d.status, DELIVERY_STATUS[d.status]?.tone ?? 'muted')}</div>
           <div class="small strong">${esc(d.customerName)}</div>
-          <div class="xs muted">Hari ${esc(weekdayName(d.date))} · ${esc(d.driver || '—')} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? '')} ${esc(d.plateNumber || '')}</div>
+          <div class="xs muted">Hari ${esc(weekdayName(d.date))} · ${d.courier === 'internal' ? `${esc(d.driver || '—')} · ${esc(VEHICLE_TYPES[d.vehicleType]?.label ?? '')} ${esc(d.plateNumber || '')}` : 'Ekspedisi · driver ditentukan kurir'}</div>
           <div class="xs muted">${courierMark(d.courier, { small: true })} ${esc(COURIERS[d.courier]?.label ?? d.courier ?? 'Internal')} · ${esc(d.invoiceId)}${d.trackingRef ? ` · <span class="mono">${esc(d.trackingRef)}</span> <button class="btn btn-sm btn-ghost" type="button" data-copy-resi="${d.id}" title="Salin no. resi">${icon('copy')}</button>` : ''}</div>
           <div class="row" style="margin-top:4px;flex-wrap:wrap">
             <button class="btn btn-sm" data-print-delivery="${d.id}">Cetak</button>

@@ -5,6 +5,19 @@
 
 export const CHANGELOG = [
   {
+    version: '2.31.0',
+    date: '2026-11-20',
+    name: 'Dua PT, Internal Sales & Driver Master',
+    items: [
+      'PT Jakarta dan PT Bali terpisah; pelanggan dibatasi per PT dan bisa dibagi jika mirip.',
+      'Jakarta bisa menjual internal ke Bali; stok berpindah ke gudang Bali.',
+      'Bali bisa membuat pembelian internal dan meminta sample gratis/berbayar.',
+      'Driver hanya master nama, telepon, kendaraan; tanpa akun login.',
+      'Ekspedisi pihak ketiga tidak menampilkan driver dan menambah catatan otomatis.',
+      'Akun: Henry (Admin/Owner), Henny (Sales/Owner), Fauzi (Operation), Nicolas (Owner Bali).',
+    ],
+  },
+  {
     version: '2.30.1',
     date: '2026-11-20',
     name: 'Build Statis Vercel & Neon',

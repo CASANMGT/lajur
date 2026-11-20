@@ -16,7 +16,7 @@ export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
 
   const { db, role } = ctx;
-  const rows = db.projects.map((p) => ({
+  const rows = db.projects.filter((p) => (p.companyId ?? 'co-jkt') === ctx.companyId).map((p) => ({
     p,
     customer: byId(db.customers, p.customerId),
     short: projectShortage(db, p),
@@ -333,7 +333,7 @@ export function mount(ctx) {
       const file = e.target.files?.[0];
       if (!file) return;
       ctx.store.update((db) => {
-        const project = db.projects.find((x) => x.id === p.id);
+        const project = db.projects.find((x) => x.id === p.id && (x.companyId ?? 'co-jkt') === ctx.companyId);
         project.attachments = project.attachments ?? [];
         project.attachments.push({ name: file.name, type: file.type, size: file.size, at: new Date().toISOString() });
       });

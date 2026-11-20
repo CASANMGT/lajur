@@ -4,7 +4,7 @@
  */
 
 import { clone } from '../domain/core.js';
-import { buildSeed } from '../domain/seed.js';
+import { buildSeed, COMPANIES } from '../domain/seed.js';
 import { DEFAULT_SETTINGS } from '../domain/settings.js';
 import { SCHEMA_VERSION } from '../version.js';
 import { exportBackup, importBackup as restoreBackup } from './backup.js';
@@ -94,9 +94,91 @@ export function migrate(db) {
     }
   };
   remapWarehouse(db);
+  if (!Array.isArray(db.companies) || !db.companies.length) {
+    db.companies = COMPANIES.map((company) => ({ ...company }));
+  }
   for (const wh of db.warehouses) {
     if (wh.active === undefined) wh.active = true;
+    wh.companyId = wh.companyId ?? (wh.id === 'wh-bali' ? 'co-bali' : 'co-jkt');
   }
+
+  // Two PTs, four named accounts. Drivers are master data, not login accounts.
+  db.users = (db.users ?? []).filter((u) => u.role !== 'driver');
+  const userDefaults = {
+    'u-mgr': { name: 'Henry Martin', role: 'manager', companyId: 'co-jkt', jobTitle: 'Admin / Owner' },
+    'u-sales': { name: 'Henny', role: 'sales', companyId: 'co-jkt', jobTitle: 'Sales / Owner' },
+    'u-op': { name: 'Fauzi', role: 'operator', companyId: 'co-jkt', jobTitle: 'Operation' },
+    'u-bali': { name: 'Nicolas', role: 'manager', companyId: 'co-bali', jobTitle: 'Owner Bali' },
+  };
+  for (const [id, defaults] of Object.entries(userDefaults)) {
+    const user = db.users.find((u) => u.id === id);
+    if (user) Object.assign(user, defaults, { active: user.active !== false });
+    else db.users.push({ id, ...defaults, active: true });
+  }
+
+  db.customers = db.customers ?? [];
+  for (const customer of db.customers) {
+    customer.companyId = customer.companyId ?? 'co-jkt';
+  }
+  const internalGroups = new Map();
+  for (const customer of db.customers) {
+    if (!customer.internal) continue;
+    const key = `${customer.companyId}:${customer.linkedCompanyId}`;
+    const current = internalGroups.get(key);
+    if (!current || customer.id.startsWith('CUS-INT')) internalGroups.set(key, customer);
+  }
+  db.customers = db.customers.filter((customer) => !customer.internal || internalGroups.get(`${customer.companyId}:${customer.linkedCompanyId}`) === customer);
+  const internalCustomer = (id, companyId, linkedCompanyId, name, city, phone) => {
+    if (db.customers.some((c) => c.id === id)) return;
+    const company = (db.companies ?? []).find((c) => c.id === companyId);
+    db.customers.push({
+      id,
+      name,
+      company: company?.name ?? name,
+      companyId,
+      linkedCompanyId,
+      internal: true,
+      shared: false,
+      sharedWith: [],
+      npwp: '',
+      phone,
+      whatsapp: phone,
+      email: '',
+      address: '',
+      city,
+      salespersonId: companyId === 'co-bali' ? 'u-bali' : 'u-sales',
+      stage: 'pelanggan',
+      nextAction: '',
+      followUpDate: '',
+      notes: 'Pelanggan internal antar-PT.',
+      createdAt: new Date().toISOString(),
+      activities: [],
+    });
+  };
+  internalCustomer('CUS-INT-BALI', 'co-jkt', 'co-bali', 'PT Lavishome Bali (Internal)', 'Denpasar', '0361-555-0202');
+  internalCustomer('CUS-INT-JKT', 'co-bali', 'co-jkt', 'PT Lavishome Tekstil Nusantara (Internal)', 'Jakarta', '021-555-0101');
+
+  for (const invoice of db.invoices ?? []) {
+    invoice.companyId = invoice.companyId ?? 'co-jkt';
+    invoice.internalCompanyId = invoice.internalCompanyId ?? null;
+  }
+  for (const project of db.projects ?? []) project.companyId = project.companyId ?? 'co-jkt';
+  for (const order of db.orders ?? []) order.companyId = order.companyId ?? 'co-jkt';
+  for (const stock of db.sampleStocks ?? []) {
+    stock.companyId = stock.companyId ?? (stock.warehouseId === 'wh-bali' ? 'co-bali' : 'co-jkt');
+  }
+  for (const sample of db.samples ?? []) {
+    const customer = db.customers.find((c) => c.id === sample.customerId);
+    sample.companyId = sample.companyId ?? customer?.companyId ?? 'co-jkt';
+  }
+  for (const driver of db.drivers ?? []) {
+    driver.userId = null;
+    driver.companyId = driver.companyId ?? 'co-jkt';
+  }
+  for (const asset of db.fleetAssets ?? []) asset.companyId = asset.companyId ?? 'co-jkt';
+  if (!Array.isArray(db.sampleRequests)) db.sampleRequests = [];
+  db.sequences = db.sequences ?? {};
+  db.sequences.sampleRequest = Math.max(Number(db.sequences.sampleRequest) || 0, db.sampleRequests.length);
   for (const key of ['goodsReceipts', 'supplierInvoices', 'shipments', 'tasks', 'orders', 'deliveries', 'drivers', 'transportCompanies', 'fleetAssets', 'sampleStocks', 'sampleBooks', 'productionOrders', 'productionPieces', 'payrollEntries', 'returns', 'opnameSessions', 'audit', 'supplierPrices', 'sellPriceHistory', 'fxRates']) {
     if (!Array.isArray(db[key])) db[key] = [];
   }

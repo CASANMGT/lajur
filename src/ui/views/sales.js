@@ -6,8 +6,8 @@ import {
 } from '../dom.js';
 import { MM_PER_M, byId, daysBetween, parseM, todayJakarta, weekdayName } from '../../domain/core.js';
 import {
-  INVOICE_STATUS, createCustomerReturn, createInvoice, invoiceMargin, invoiceOutstanding,
-  invoiceStatusLabel, issueTaxInvoice, postCustomerReturn, postInvoice, recordPayment, returnedQty,
+  INVOICE_STATUS, createCustomerReturn, createInternalPurchase, createInvoice, invoiceMargin, invoiceOutstanding,
+  invoiceStatusLabel, invoicesForCompany, issueTaxInvoice, postCustomerReturn, postInvoice, recordPayment, returnedQty,
   taxBreakdown,
 } from '../../domain/sales.js';
 import {
@@ -16,7 +16,7 @@ import {
   trackingLabel, updateDelivery,
 } from '../../domain/deliveries.js';
 import { driversForFleetAsset, fleetAssetsForDriver, VEHICLE_TYPES } from '../../domain/master.js';
-import { applyDepositToInvoice, depositBalance } from '../../domain/crm.js';
+import { applyDepositToInvoice, customersForCompany, depositBalance } from '../../domain/crm.js';
 import { createSalesOrder } from '../../domain/orders.js';
 import { settingsOf } from '../../domain/settings.js';
 import { isAdvancedMode } from '../../domain/features.js';
@@ -37,10 +37,11 @@ export function render(ctx) {
 
   const { db, ui, role } = ctx;
   const advanced = isAdvancedMode(db);
-  const invoices = db.invoices
+  const companyInvoices = invoicesForCompany(db, ctx.companyId);
+  const invoices = companyInvoices
     .filter((i) => statusFilter === 'all' || (statusFilter === 'outstanding' ? i.status === 'posted' && invoiceOutstanding(i) > 0 : i.status === statusFilter))
     .sort((a, b) => (a.date < b.date ? 1 : -1));
-  const posted = db.invoices.filter((i) => i.status === 'posted');
+  const posted = companyInvoices.filter((i) => i.status === 'posted');
   const outstanding = posted.reduce((a, i) => a + invoiceOutstanding(i), 0);
   const overdue = posted.reduce((a, i) => {
     const days = daysBetween(i.dueDate, todayJakarta());
@@ -57,6 +58,8 @@ export function render(ctx) {
       sub: 'Kain dipotong dari roll tertentu; spare part memakai pcs. Stok keluar satu kali saat faktur diterbitkan.',
       actions: `${advanced && settingsOf(db).salesOrderEnabled ? `<a class="btn" href="#/pesanan">${icon('clipboard')} Pesanan</a>` : ''}
         ${advanced ? `<a class="btn" href="#/pengiriman">${icon('truck')} Surat jalan</a>` : ''}
+        ${can(role, 'invoice.create') && (db.companies ?? []).some((c) => c.id !== ctx.companyId && c.active !== false)
+          ? `<button class="btn" type="button" data-act="internal-sale">${icon('transfer')} Jual ke PT lain</button>` : ''}
         ${can(role, 'invoice.create') ? `<button class="btn btn-primary" type="button" data-act="new-invoice">${icon('plus')} Buat faktur</button>` : ''}`,
     })}
     ${roleHint(role, 'invoice.create', 'Membuat faktur adalah wewenang sales/CS atau manajer.')}
@@ -64,7 +67,7 @@ export function render(ctx) {
       ${statCard({ label: 'Piutang', value: fmt.money(outstanding), meta: `${posted.filter((i) => invoiceOutstanding(i) > 0).length} faktur terbuka`, tone: 'warn', iconName: 'wallet' })}
       ${statCard({ label: 'Lewat jatuh tempo', value: fmt.money(overdue), meta: 'Perlu tindakan penagihan', tone: 'warn' })}
       ${statCard({ label: 'Penjualan bulan ini', value: fmt.money(monthTotal), meta: 'Faktur terbit' })}
-      ${statCard({ label: 'Draf', value: String(db.invoices.filter((i) => i.status === 'draft').length), meta: 'Belum mengeluarkan stok' })}
+      ${statCard({ label: 'Draf', value: String(companyInvoices.filter((i) => i.status === 'draft').length), meta: 'Belum mengeluarkan stok' })}
     </div>
 
     <div class="row" style="margin-bottom:12px">
@@ -130,7 +133,7 @@ export function render(ctx) {
 function renderDetail(ctx) {
   const { db, role, route } = ctx;
   const advanced = isAdvancedMode(db);
-  const inv = db.invoices.find((i) => i.id === route.id);
+  const inv = invoicesForCompany(db, ctx.companyId).find((i) => i.id === route.id);
   if (!inv) return `${pageHead({ title: 'Tidak ditemukan' })}<div class="notice notice-danger">${icon('alert')}<div>Faktur ${esc(route.id)} tidak ada.</div></div>`;
   const out = invoiceOutstanding(inv);
   const customer = byId(db.customers, inv.customerId);
@@ -143,7 +146,7 @@ function renderDetail(ctx) {
   const days = daysBetween(inv.dueDate, todayJakarta());
 
   const actions = [];
-  if (inv.status === 'draft' && can(role, 'invoice.post')) actions.push(`<button class="btn btn-primary" data-act="post">${icon('check')} Terbitkan & keluarkan stok</button>`);
+  if (inv.status === 'draft' && can(role, 'invoice.post') && (!inv.internalCompanyId || inv.companyId === ctx.companyId)) actions.push(`<button class="btn btn-primary" data-act="post">${icon('check')} ${inv.internalCompanyId ? 'Terbitkan faktur internal' : 'Terbitkan & keluarkan stok'}</button>`);
   if (inv.status === 'posted' && out > 0 && can(role, 'invoice.pay')) actions.push(`<button class="btn btn-primary" data-act="pay">${icon('wallet')} Terima pembayaran</button>`);
   if (inv.status === 'posted' && out > 0 && applicableDeposits.length && can(role, 'deposit.apply')) actions.push(`<button class="btn" data-act="apply-deposit">${icon('layers')} Pakai deposit</button>`);
   if (inv.status === 'posted' && can(role, 'return.create')) actions.push(`<button class="btn" data-act="return">${icon('refresh')} Retur</button>`);
@@ -166,7 +169,7 @@ function renderDetail(ctx) {
       </div>
       <div class="page-actions">${actions.join('')}</div>
     </div>
-    ${inv.status === 'draft' ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('clock')}<div><strong>Draf.</strong> Stok belum berkurang. Penerbitan faktur adalah satu-satunya peristiwa pengeluaran stok.</div></div>` : ''}
+    ${inv.status === 'draft' ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('clock')}<div><strong>${inv.internalCompanyId && inv.companyId !== ctx.companyId ? 'Menunggu PT penjual.' : 'Draf.'}</strong> ${inv.internalCompanyId && inv.companyId !== ctx.companyId ? `Pembelian internal ini diterbitkan oleh ${esc((db.companies ?? []).find((c) => c.id === inv.companyId)?.name ?? 'PT penjual')}. Stok baru berpindah setelah faktur terbit.` : 'Stok belum berkurang. Penerbitan faktur adalah satu-satunya peristiwa pengeluaran stok.'}</div></div>` : ''}
     ${inv.status === 'posted' && days > 0 && out > 0 ? `<div class="notice notice-danger" style="margin-bottom:14px">${icon('alert')}<div><strong>${days} hari lewat jatuh tempo.</strong> Sisa ${fmt.money(out)}.</div></div>` : ''}
 
     <div class="grid grid-main">
@@ -296,7 +299,7 @@ function deliveryCard(inv, delivery, role) {
         ${delivery.awbImage ? `<div class="reward"><img src="${esc(delivery.awbImage)}" alt="Foto resi ${esc(delivery.trackingRef || delivery.id)}" style="width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid #e4ded2" /></div>` : ''}
         <div class="row-between"><span class="small muted">Transport / armada</span><span class="small">${esc(delivery.transportName || '—')}</span></div>
         <div class="row-between"><span class="small muted">Berat / koli</span><span class="small">${delivery.weightKg ? `${delivery.weightKg} kg` : '—'} · ${delivery.pieces || '—'} koli</span></div>
-        <div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '—')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>
+        ${delivery.courier === 'internal' ? `<div class="row-between"><span class="small muted">Pengemudi / kendaraan</span><span class="small">${esc(delivery.driver || '-')}${delivery.vehicleName ? ` · ${esc(delivery.vehicleName)}` : delivery.vehicleType ? ` · ${esc(VEHICLE_TYPES[delivery.vehicleType]?.label ?? delivery.vehicleType)}` : ''}${delivery.plateNumber ? ` · ${esc(delivery.plateNumber)}` : ''}</span></div>` : `<div class="row-between"><span class="small muted">Driver</span><span class="small">Ditentukan ekspedisi pihak ketiga</span></div>`}
         <div class="row-between"><span class="small muted">Alamat</span><span class="small right">${esc(delivery.address || '—')}</span></div>
         ${delivery.receivedBy ? `<div class="row-between"><span class="small muted">Diterima oleh</span><span class="small">${esc(delivery.receivedBy)}</span></div>` : ''}
       </div>
@@ -319,14 +322,22 @@ function deliveryCard(inv, delivery, role) {
 /* Create invoice                                                             */
 /* -------------------------------------------------------------------------- */
 
-export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
+export function openInvoice(ctx, presetRollId = null, docType = 'invoice', options = {}) {
   const isOrder = docType === 'order';
   const { db } = ctx;
+  const buyerCompanyId = options.internalCompanyId ?? null;
+  const sellerCompanyId = options.sellerCompanyId ?? ctx.companyId ?? 'co-jkt';
+  const internal = Boolean(buyerCompanyId);
+  const buyerCompany = (db.companies ?? []).find((c) => c.id === buyerCompanyId);
+  const sellerCompany = (db.companies ?? []).find((c) => c.id === sellerCompanyId);
+  const companyWarehouses = (db.warehouses ?? []).filter((w) => (
+    (w.companyId ?? 'co-jkt') === sellerCompanyId && w.active !== false
+  ));
   const presetRoll = presetRollId ? db.rolls.find((r) => r.id === presetRollId) : null;
-  const defaultWh = presetRoll?.warehouseId ?? (ctx.ui.warehouseId === 'all' ? 'wh-jkt' : ctx.ui.warehouseId);
+  const defaultWh = presetRoll?.warehouseId ?? companyWarehouses[0]?.id ?? (ctx.ui.warehouseId === 'all' ? 'wh-jkt' : ctx.ui.warehouseId);
   const rolls = db.rolls
-    .filter((r) => r.status === 'available' && !r.transit && availableMm(r) > 0 && (!presetRollId || true))
-    .filter((r) => defaultWh === 'all' || r.warehouseId === defaultWh)
+    .filter((r) => r.status === 'available' && !r.transit && availableMm(r) > 0)
+    .filter((r) => companyWarehouses.some((w) => w.id === r.warehouseId))
     .sort((a, b) => a.id.localeCompare(b.id));
   const sku = presetRollId ? byId(db.skus, db.rolls.find((r) => r.id === presetRollId)?.skuId) : null;
 
@@ -347,7 +358,7 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
     .map((c) => `<option value="${c.id}" ${selectedId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
   const motifOptions = (collectionId, selectedId) => motifsForCollection(collectionId)
     .map((s) => `<option value="${s.id}" ${selectedId === s.id ? 'selected' : ''}>${esc(s.colourName || s.colourCode || s.code)} · ${esc(s.widthCm)} cm</option>`).join('');
-  const defaultFabricRoll = presetRoll ?? rolls[0] ?? null;
+  const defaultFabricRoll = presetRoll ?? rolls.find((r) => (r.reservedMm || 0) === 0) ?? rolls[0] ?? null;
   const defaultFabricSku = defaultFabricRoll ? byId(db.skus, defaultFabricRoll.skuId) : null;
   const defaultFabricCollection = defaultFabricSku?.collectionId ?? fabricCollections[0]?.id ?? '';
 
@@ -380,23 +391,30 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
     <button class="icon-btn" type="button" data-remove aria-label="Hapus baris">${icon('x')}</button>
   </div>`;
 
-  const customerOptions = db.customers
-    .filter((c) => c.stage !== 'dormant')
+  const customerList = internal
+    ? db.customers.filter((c) => c.internal && c.companyId === sellerCompanyId && c.linkedCompanyId === buyerCompanyId)
+    : customersForCompany(db, sellerCompanyId).filter((c) => !c.internal && c.stage !== 'dormant');
+  const customerOptions = customerList
     .map((c) => `<option value="${c.id}" ${sku && c.id === 'CUS-0002' ? 'selected' : ''}>${esc(c.name)}${c.company ? ` — ${esc(c.company)}` : ''}</option>`)
     .join('');
+  const isPurchase = internal && buyerCompanyId === ctx.companyId;
 
   const modal = openModal({
-    title: isOrder ? 'Buat pesanan penjualan' : 'Buat faktur',
+    title: isOrder ? 'Buat pesanan penjualan'
+      : internal ? `${isPurchase ? 'Pembelian internal dari' : 'Penjualan internal ke'} ${esc(isPurchase ? sellerCompany?.name ?? 'PT lain' : buyerCompany?.name ?? 'PT lain')}`
+        : 'Buat faktur',
     description: isOrder
       ? 'Pesanan tidak mengeluarkan stok. Stok keluar saat pesanan dikonversi menjadi faktur.'
-      : 'Kain dipotong dari roll tertentu; spare part memakai pcs. Total dihitung dari baris yang sama dengan stok.',
+      : internal
+        ? 'Dokumen antar-PT. Stok berpindah ke gudang PT pembeli saat faktur diterbitkan; bukan transfer gudang biasa.'
+        : 'Kain dipotong dari roll tertentu; spare part memakai pcs. Total dihitung dari baris yang sama dengan stok.',
     wide: true,
-    submitLabel: isOrder ? 'Simpan pesanan' : 'Terbitkan faktur',
-    extraFooter: isOrder ? '' : `<button class="btn" type="button" data-draft>Simpan draf</button>`,
+    submitLabel: isOrder ? 'Simpan pesanan' : internal ? (isPurchase ? 'Ajukan pembelian' : 'Terbitkan faktur internal') : 'Terbitkan faktur',
+    extraFooter: isOrder || internal ? '' : `<button class="btn" type="button" data-draft>Simpan draf</button>`,
     body: `
       <div class="form-grid">
         ${field('Pelanggan', `<select class="select" name="customer">${customerOptions}</select>`)}
-        ${field('Gudang pengeluaran part', `<select class="select" name="warehouse">${warehouseOptions(db, defaultWh)}</select>`)}
+        ${field('Gudang pengeluaran part', `<select class="select" name="warehouse">${warehouseOptions(db, defaultWh, { companyId: sellerCompanyId })}</select>`)}
         ${!isOrder ? field('Jatuh tempo (hari)', `<input class="input" type="number" name="dueDays" min="0" max="120" value="14" />`) : ''}
         ${!isOrder ? field('Tipe diskon', `<select class="select" name="discountType"><option value="amount">Nominal (Rp)</option><option value="percent">Persentase (%)</option></select>`) : ''}
         ${!isOrder ? field('Diskon', `<input class="input" name="discountValue" inputmode="decimal" value="0" />`, { hint: 'Nominal rupiah atau persen dari subtotal.' }) : ''}
@@ -580,6 +598,26 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
             toast(`Pesanan ${order.id} disimpan. Stok belum keluar.`, { tone: 'success' });
             return;
           }
+          if (internal) {
+            const created = ctx.store.update((db) => {
+              const inv = createInternalPurchase(db, {
+                buyerCompanyId,
+                sourceCompanyId: sellerCompanyId,
+                lines,
+                dueDays: Number(form.dueDays.value || 14),
+                notes: form.notes.value,
+                user: ctx.user,
+              });
+              if (!isPurchase && post) postInvoice(db, { id: inv.id, user: ctx.user });
+              return inv;
+            });
+            close();
+            window.location.hash = `#/penjualan/${created.id}`;
+            toast(isPurchase
+              ? 'Pembelian internal diajukan. Menunggu persetujuan PT penjual.'
+              : 'Faktur internal diterbitkan. Stok berpindah ke gudang PT pembeli.', { tone: 'success' });
+            return;
+          }
           const created = ctx.store.update((db) => {
             const inv = createInvoice(db, {
               customerId: form.customer.value,
@@ -589,6 +627,7 @@ export function openInvoice(ctx, presetRollId = null, docType = 'invoice') {
               dueDays: Number(form.dueDays.value || 14),
               notes: form.notes.value,
               user: ctx.user,
+              companyId: sellerCompanyId,
             });
             if (post) postInvoice(db, { id: inv.id, user: ctx.user });
             return inv;
@@ -783,7 +822,7 @@ function deliveryFields(db, delivery, customer, user = null) {
   const selectedFleetId = delivery?.fleetAssetId ?? assignedFleet(delivery?.driverId)?.id ?? '';
   const address = delivery?.address ?? customer?.address ?? '';
   const chosenCustomerId = delivery?.recipientCustomerId ?? delivery?.customerId ?? customer?.id ?? '';
-  const customers = [...(db.customers ?? [])].sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const customers = [...customersForCompany(db, user?.companyId ?? 'co-jkt')].sort((a, b) => String(a.name).localeCompare(String(b.name)));
   const picUsers = (db.users ?? []).filter((u) => u.active !== false);
   const selectedPicId = delivery?.picUserId ?? picUsers.find((u) => u.name === delivery?.pic)?.id ?? user?.id ?? '';
   const picValue = delivery?.pic ?? picUsers.find((u) => u.id === selectedPicId)?.name ?? user?.name ?? '';
@@ -819,10 +858,10 @@ function deliveryFields(db, delivery, customer, user = null) {
       </div>
     </div>
     <div class="span-2" data-third-party hidden>
-      <div class="notice notice-info">${icon('alert')}<div>Pengiriman pihak ketiga memakai kurir di atas. Armada internal tidak dipakai; isi nama driver kurir bila diketahui.</div></div>
+      <div class="notice notice-info">${icon('alert')}<div><strong>Ekspedisi pihak ketiga.</strong> Driver tidak diisi karena ditentukan oleh ekspedisi. Catatan otomatis ditambahkan ke surat jalan.</div></div>
     </div>
     <div class="span-2" data-manual-driver>
-      ${field('Nama driver (manual)', `<input class="input" name="driverName" value="${esc(delivery?.driverId ? '' : (delivery?.driver ?? ''))}" placeholder="Nama driver jika tidak ada di master" />`, { hint: 'Internal: isi jika driver tidak ada di master. Kurir: nama driver kurir.' })}
+      ${field('Nama driver (manual)', `<input class="input" name="driverName" value="${esc(delivery?.driverId ? '' : (delivery?.driver ?? ''))}" placeholder="Nama driver jika tidak ada di master" />`, { hint: 'Isi hanya untuk pengiriman internal yang drivernya belum ada di master.' })}
     </div>
     <div class="span-2" data-internal-resi hidden>
       ${field('No. surat jalan internal', `<input class="input" value="${esc(delivery?.id ?? 'Otomatis saat disimpan (SJ-xxxx)')}" disabled />`, { hint: 'Pengiriman internal memakai nomor surat jalan, bukan resi kurir.' })}
@@ -926,6 +965,7 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
     if (preview) preview.innerHTML = courierMark(courier);
     setHidden('[data-internal-fleet]', !internal);
     setHidden('[data-third-party]', internal);
+    setHidden('[data-manual-driver]', !internal);
     setHidden('[data-link-block]', !appCourier);
     setHidden('[data-awb-block]', !logistics);
     setHidden('[data-internal-resi]', !internal);
@@ -935,6 +975,7 @@ function bindDeliveryFields(form, db, currentDelivery = null) {
       form.driverPhone.value = '';
       form.vehicleType.value = '';
       form.plateNumber.value = '';
+      if (form.driverName) form.driverName.value = '';
     } else if (form.driver.value && form.fleetAsset && !form.fleetAsset.value) {
       syncDriver();
     }
@@ -1062,7 +1103,7 @@ function openCreateDelivery(ctx, inv) {
         service: form.service.value,
         driverId: internal ? form.driver.value || null : null,
         fleetAssetId: internal ? form.fleetAsset.value || null : null,
-        driver: internal ? (form.driver.value ? '' : manualDriver) : manualDriver,
+        driver: internal ? (form.driver.value ? '' : manualDriver) : '',
         driverPhone: internal ? form.driverPhone.value : '',
         vehicleType: internal ? form.vehicleType.value : '',
         plateNumber: internal ? form.plateNumber.value : '',
@@ -1118,7 +1159,7 @@ export function openEditDelivery(ctx, delivery) {
         service: form.service.value,
         driverId: internal ? form.driver.value || null : null,
         fleetAssetId: internal ? form.fleetAsset.value || null : null,
-        driver: internal ? (form.driver.value ? '' : manualDriver) : manualDriver,
+        driver: internal ? (form.driver.value ? '' : manualDriver) : '',
         driverPhone: internal ? form.driverPhone.value : '',
         vehicleType: internal ? form.vehicleType.value : '',
         plateNumber: internal ? form.plateNumber.value : '',
@@ -1272,6 +1313,11 @@ export function mount(ctx) {
     window.location.hash = tr.dataset.href.replace('#', '');
   }));
   document.querySelector('[data-act="new-invoice"]')?.addEventListener('click', () => openInvoice(ctx));
+  document.querySelector('[data-act="internal-sale"]')?.addEventListener('click', () => {
+    const other = (ctx.db.companies ?? []).find((c) => c.id !== ctx.companyId && c.active !== false);
+    if (!other) return;
+    openInvoice(ctx, null, 'invoice', { internalCompanyId: other.id, sellerCompanyId: ctx.companyId });
+  });
 
   if (ctx.route.query?.new) {
     const roll = ctx.route.query.roll ?? null;

@@ -33,6 +33,38 @@ export function getInvoice(db, id) {
   return db.invoices.find((i) => i.id === id) ?? null;
 }
 
+/**
+ * Buyer-side internal purchase: Bali creates a draft invoice owned by the
+ * seller PT. The seller posts it; stock moves to the buyer's warehouse.
+ */
+export function createInternalPurchase(db, { buyerCompanyId, sourceCompanyId, lines, date, dueDays = 14, notes = '', user }) {
+  const customer = (db.customers ?? []).find((c) => (
+    c.internal === true
+    && c.companyId === sourceCompanyId
+    && c.linkedCompanyId === buyerCompanyId
+  ));
+  assert(customer, 'INTERNAL_CUSTOMER_NOT_FOUND', 'Pelanggan internal antar-PT belum tersedia.');
+  return createInvoice(db, {
+    customerId: customer.id,
+    lines,
+    date,
+    dueDays,
+    notes,
+    user,
+    companyId: sourceCompanyId,
+    internalCompanyId: buyerCompanyId,
+    salespersonId: user?.id ?? null,
+  });
+}
+
+/** Invoices owned by a PT plus internal purchases received by that PT. */
+export function invoicesForCompany(db, companyId) {
+  if (!companyId) return [...db.invoices];
+  return db.invoices.filter((invoice) => (
+    (invoice.companyId ?? 'co-jkt') === companyId || invoice.internalCompanyId === companyId
+  ));
+}
+
 export function requireInvoice(db, id) {
   const inv = getInvoice(db, id);
   if (!inv) throw new DomainError('INVOICE_NOT_FOUND', 'Faktur tidak ditemukan.');
@@ -178,6 +210,7 @@ function buildServiceLine(db, input) {
 export function createInvoice(db, {
   customerId, projectId = null, lines, discount = 0, discountType = 'amount', discountValue = null,
   date = todayJakarta(), dueDays = 14, notes = '', user, salespersonId = null, reservationRef = null,
+  companyId = null, internalCompanyId = null,
 }) {
   const customer = byId(db.customers, customerId);
   assert(customer, 'CUSTOMER_NOT_FOUND', 'Pelanggan tidak ditemukan.');
@@ -194,8 +227,11 @@ export function createInvoice(db, {
   const disc = type === 'percent'
     ? Math.min(money((subtotal * normalized) / 100), subtotal)
     : Math.min(money(normalized), subtotal);
+  const sellerCompanyId = companyId ?? customer.companyId ?? user?.companyId ?? 'co-jkt';
   const invoice = {
     id: nextId(db, 'invoice', 'INV', 4),
+    companyId: sellerCompanyId,
+    internalCompanyId: internalCompanyId || null,
     customerId,
     projectId,
     customerName: customer.name,
@@ -236,6 +272,122 @@ export function addBusinessDays(dateStr, days) {
 /* -------------------------------------------------------------------------- */
 
 /**
+ * Internal sale between PTs. The invoice stays a real receivable for the seller,
+ * but stock moves to the buyer's warehouse instead of being sold to a customer.
+ */
+function postInternalInvoice(db, inv, { user }) {
+  assert(!user?.companyId || user.companyId === inv.companyId, 'INTERNAL_SELLER_ONLY',
+    'Faktur internal hanya dapat diterbitkan oleh PT penjual.');
+  const destination = (db.warehouses ?? []).find((w) => (
+    (w.companyId ?? 'co-jkt') === inv.internalCompanyId && w.active !== false
+  ));
+  const destinationCompany = (db.companies ?? []).find((c) => c.id === inv.internalCompanyId);
+  assert(destinationCompany, 'COMPANY_NOT_FOUND', 'PT tujuan tidak ditemukan.');
+  assert(destination, 'WAREHOUSE_NOT_FOUND', `Gudang ${destinationCompany.name} belum tersedia.`);
+
+  for (const line of inv.lines) {
+    if (line.kind === 'service') continue;
+    if (line.kind === 'fabric') {
+      const roll = requireRoll(db, line.rollId);
+      assert(roll.warehouseId === line.warehouseId, 'ROLL_MOVED', `Roll ${roll.id} sudah berpindah gudang.`);
+      assertWarehouseOpen(db, roll.warehouseId, 'Penjualan internal');
+      assert(roll.status === 'available' && !roll.transit, 'ROLL_NOT_AVAILABLE', `Roll ${roll.id} tidak tersedia.`);
+      if (line.mode === 'whole') {
+        assert((roll.reservedMm || 0) === 0, 'ROLL_RESERVED', `Roll ${roll.id} memiliki reservasi aktif.`);
+        assert(roll.currentMm === line.qtyMm, 'ROLL_CHANGED', `Panjang ${roll.id} berubah sejak draf.`);
+      } else {
+        assert(line.qtyMm <= availableMm(roll), 'INSUFFICIENT_AVAILABLE',
+          `Roll ${roll.id}: tersedia ${availableMm(roll) / MM_PER_M} m, diminta ${line.qtyMm / MM_PER_M} m.`);
+      }
+    } else {
+      const row = partStockRow(db, line.partId, line.warehouseId);
+      assert(row && row.qty - (row.reserved || 0) >= line.qtyPcs, 'INSUFFICIENT_PART',
+        `Stok ${line.description} tidak cukup di gudang asal.`);
+    }
+  }
+
+  for (const line of inv.lines) {
+    if (line.kind === 'service') continue;
+    if (line.kind === 'fabric') {
+      const roll = requireRoll(db, line.rollId);
+      let moved = roll;
+      if (line.mode !== 'whole') {
+        const before = roll.currentMm;
+        roll.currentMm = before - line.qtyMm;
+        moved = createRoll(db, {
+          skuId: roll.skuId,
+          lot: roll.lot,
+          receivedAt: roll.receivedAt,
+          receiptRef: roll.receiptRef,
+          originalMm: line.qtyMm,
+          currentMm: line.qtyMm,
+          warehouseId: destination.id,
+          bin: '',
+          status: 'available',
+          condition: roll.condition,
+          costPerM: roll.costPerM,
+          parentRollId: roll.id,
+          rootRollId: roll.rootRollId || roll.id,
+          user,
+        });
+        recordMovement(db, {
+          type: 'internal_sale',
+          ref: inv.id,
+          warehouseId: destination.id,
+          skuId: roll.skuId,
+          rollId: moved.id,
+          parentRollId: roll.id,
+          qtyMm: line.qtyMm,
+          beforeMm: before,
+          afterMm: roll.currentMm,
+          unitCost: roll.costPerM,
+          value: line.unitCost * (line.qtyMm / MM_PER_M),
+          user,
+          note: `${inv.id} · ${destinationCompany.name}`,
+        });
+      } else {
+        const before = roll.currentMm;
+        roll.warehouseId = destination.id;
+        roll.bin = '';
+        roll.transit = null;
+        roll.status = 'available';
+        roll.reservedMm = 0;
+        roll.reservations = [];
+        recordMovement(db, {
+          type: 'internal_sale',
+          ref: inv.id,
+          warehouseId: destination.id,
+          skuId: roll.skuId,
+          rollId: roll.id,
+          qtyMm: line.qtyMm,
+          beforeMm: before,
+          afterMm: before,
+          unitCost: roll.costPerM,
+          value: line.unitCost * (line.qtyMm / MM_PER_M),
+          user,
+          note: `${inv.id} · ${destinationCompany.name}`,
+        });
+      }
+    } else {
+      const source = partStockRow(db, line.partId, line.warehouseId);
+      source.qty -= line.qtyPcs;
+      const target = partStockRow(db, line.partId, destination.id);
+      if (target) target.qty += line.qtyPcs;
+      else db.partStock.push({ partId: line.partId, warehouseId: destination.id, qty: line.qtyPcs, reserved: 0 });
+    }
+  }
+
+  inv.status = 'posted';
+  inv.postedAt = isoNow();
+  inv.postedBy = user?.name ?? 'Sistem';
+  inv.paidAmount = 0;
+  inv.payments = [];
+  inv.internalReceivedAt = isoNow();
+  audit(db, user, 'terbitkan_faktur_internal', 'invoice', inv.id, `${destinationCompany.name} · total ${inv.total}`);
+  return inv;
+}
+
+/**
  * Post the invoice: validates every line, issues stock exactly once, snapshots
  * costs, and freezes the document. Partial issue is not allowed.
  */
@@ -244,6 +396,7 @@ export function postInvoice(db, { id, user, warehouseId = null, reservationRef =
   assert(inv.status === 'draft', 'INVALID_STATUS', 'Hanya draf faktur yang dapat diterbitkan.');
   assert(inv.lines.length > 0, 'EMPTY_LINES', 'Faktur tanpa baris.');
   assert(new Set(inv.lines.map((l) => l.id)).size === inv.lines.length, 'DUPLICATE_LINE', 'Baris faktur duplikat.');
+  if (inv.internalCompanyId) return postInternalInvoice(db, inv, { user });
 
   // Validate before mutating anything.
   for (const line of inv.lines) {
@@ -521,10 +674,11 @@ export function postCustomerReturn(db, { id, user, disposition = 'quarantine' })
 /* Queries                                                                    */
 /* -------------------------------------------------------------------------- */
 
-export function receivablesAging(db, today = todayJakarta()) {
+export function receivablesAging(db, today = todayJakarta(), companyId = null) {
   const buckets = { current: 0, d1_30: 0, d31_60: 0, d61_90: 0, over90: 0 };
   const items = [];
-  for (const inv of db.invoices.filter((i) => i.status === 'posted')) {
+  for (const inv of db.invoices.filter((i) => i.status === 'posted'
+    && (!companyId || (i.companyId ?? 'co-jkt') === companyId || i.internalCompanyId === companyId))) {
     const outstanding = invoiceOutstanding(inv);
     if (outstanding <= 0) continue;
     const age = Math.max(0, daysBetween(inv.dueDate, today));
