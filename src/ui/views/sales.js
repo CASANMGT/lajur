@@ -25,6 +25,7 @@ import { scanAwbImage } from '../awb.js';
 import { enableArrivalNotifications, notifyArrival } from '../notify.js';
 import { courierMark, pageHead, statCard, warehouseOf, can, roleHint, warehouseOptions } from './common.js';
 import { printInvoiceHtml, printTaxInvoiceHtml } from './print.js';
+import { BANKS, bankById, bankMarkHtml } from '../../data/banks.js';
 import { openDeliveryPrint } from './delivery-print.js';
 
 let statusFilter = 'all';
@@ -213,7 +214,7 @@ function renderDetail(ctx) {
             <tbody>${inv.payments.map((p) => `<tr>
               <td class="mono">${esc(p.id)}<div>${badge(PAYMENT_KIND[p.kind]?.label ?? 'Angsuran', PAYMENT_KIND[p.kind]?.tone ?? 'muted')}</div></td>
               <td>${esc(p.date)}</td>
-              <td>${esc(p.method)}</td>
+              <td><div class="row" style="gap:6px;align-items:center">${p.bank ? bankMarkHtml(bankById(p.bank), { small: true }) : ''}<span>${esc(p.method)}</span></div></td>
               <td>${esc(p.reference || '—')}</td>
               <td>${p.proofImage ? `<img src="${esc(p.proofImage)}" alt="Bukti ${esc(p.id)}" class="thumb zoomable" data-zoom="${esc(p.proofImage)}" data-zoom-title="Bukti ${esc(p.id)}" role="button" tabindex="0" style="width:48px;height:48px;object-fit:cover" />` : '<span class="muted xs">—</span>'}</td>
               <td class="num">${fmt.money(p.amount)}</td>
@@ -700,7 +701,7 @@ function openPaymentLedger(ctx) {
         <td class="small">${esc(payment.date)}<div class="xs muted">${esc(payment.at ? new Date(payment.at).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '')}</div></td>
         <td><strong class="small">${esc(invoice?.customerName ?? payment.customerId ?? '—')}</strong><div class="xs muted mono">${esc(payment.invoiceId)}</div></td>
         <td>${badge(PAYMENT_KIND[payment.kind]?.label ?? 'Angsuran', PAYMENT_KIND[payment.kind]?.tone ?? 'muted')}</td>
-        <td class="small">${esc(payment.method || '—')}<div class="xs muted">${esc(payment.reference || 'tanpa no. transfer')}</div><div class="xs muted">${esc(payment.by || '')}</div></td>
+        <td class="small"><div class="row" style="gap:6px;align-items:center">${payment.bank ? bankMarkHtml(bankById(payment.bank), { small: true }) : ''}<span>${esc(payment.method || '—')}</span></div><div class="xs muted">${esc(payment.reference || 'tanpa no. transfer')}</div><div class="xs muted">${esc(payment.by || '')}</div></td>
         <td>${payment.proofImage ? `<img src="${esc(payment.proofImage)}" alt="Bukti ${esc(payment.id)}" class="thumb zoomable" data-zoom="${esc(payment.proofImage)}" data-zoom-title="Bukti ${esc(payment.id)} · ${esc(invoice?.customerName ?? '')}" role="button" tabindex="0" style="width:56px;height:56px;object-fit:cover" />` : '<span class="xs muted">Belum ada bukti</span>'}</td>
         <td class="num strong">${fmt.money(payment.amount)}</td>
       </tr>`).join('') || `<tr><td colspan="6"><div class="empty">${icon('wallet')}<strong>Belum ada pembayaran</strong><p>Pembayaran muncul di sini setelah dicatat dari faktur.</p></div></td></tr>`}</tbody>
@@ -720,7 +721,9 @@ function openPayment(ctx, inv) {
     body: `
       ${field('Jenis pembayaran', `<select class="select" name="kind">${Object.entries(PAYMENT_KIND).map(([k, v]) => `<option value="${k}" ${k === 'installment' ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`, { hint: 'Pelunasan otomatis membayar seluruh sisa tagihan.' })}
       ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="${formatAmount(out)}" />`, { hint: 'Boleh sebagian untuk deposit atau angsuran.' })}
+      <div class="span-2 small" data-pay-remaining style="margin-top:-4px;margin-bottom:8px">Sisa setelah bayar: <strong>Rp 0</strong></div>
       ${field('Metode', `<select class="select" name="method"><option value="transfer">Transfer bank</option><option value="tunai">Tunai</option><option value="qris">QRIS</option><option value="giro">Giro</option></select>`)}
+      ${field('Bank pengirim', `<div class="row" style="gap:8px;flex-wrap:nowrap"><select class="select" name="bank" style="flex:1">${BANKS.map((bank) => `<option value="${bank.id}">${esc(bank.name)}</option>`).join('')}</select><span data-bank-preview>${bankMarkHtml(BANKS[0])}</span></div>`, { hint: 'Logo bank membantu membedakan bukti transfer.' })}
       ${field('No. transfer / referensi', `<input class="input" name="reference" placeholder="Contoh: TRF-20261120-001" />`)}
       ${field('Tanggal bayar', `<input class="input" type="date" name="date" value="${todayJakarta()}" />`)}
       ${field('Bukti transfer (foto)', `<input class="input" type="file" name="proof" accept="image/*" />`, { hint: 'Pilih file, atau tempel screenshot dengan Ctrl+V.', full: true })}
@@ -728,15 +731,33 @@ function openPayment(ctx, inv) {
       ${field('Catatan', `<input class="input" name="note" placeholder="Keterangan penerimaan" />`, { full: true })}
     `,
     onMount(form) {
+      const remainingEl = form.querySelector('[data-pay-remaining]');
+      const updateRemaining = () => {
+        const full = form.kind.value === 'full';
+        const paid = full ? out : Number(String(form.amount.value).replace(/\D/g, ''));
+        const sisa = Math.max(0, out - paid);
+        if (remainingEl) {
+          remainingEl.innerHTML = sisa > 0
+            ? `Sisa setelah bayar: <strong>${fmt.money(sisa)}</strong>`
+            : '<strong class="ok">Lunas setelah pembayaran ini.</strong>';
+        }
+      };
       const syncKind = () => {
         const full = form.kind.value === 'full';
         form.amount.disabled = full;
         if (full) form.amount.value = formatAmount(out);
+        updateRemaining();
+      };
+      const syncBank = () => {
+        const preview = form.querySelector('[data-bank-preview]');
+        if (preview) preview.innerHTML = bankMarkHtml(bankById(form.bank.value));
       };
       form.kind.addEventListener('change', syncKind);
+      form.bank.addEventListener('change', syncBank);
       form.amount.addEventListener('input', () => {
         const digits = String(form.amount.value).replace(/\D/g, '');
         form.amount.value = digits ? Number(digits).toLocaleString('id-ID') : '';
+        updateRemaining();
       });
       const preview = form.querySelector('[data-proof-preview]');
       const previewImg = preview?.querySelector('img');
@@ -759,6 +780,7 @@ function openPayment(ctx, inv) {
         showFile(file);
       });
       syncKind();
+      syncBank();
     },
     async onSubmit(form, close) {
       const kind = form.kind.value;
@@ -770,6 +792,7 @@ function openPayment(ctx, inv) {
         amount,
         kind,
         method: form.method.value,
+        bank: form.bank.value,
         reference: form.reference.value,
         date: form.date.value,
         proofImage,

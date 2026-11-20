@@ -895,6 +895,7 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   border: 0;
   padding: 0;
 }
+[hidden] { display: none !important; }
 .drawer-scrim[hidden] { display: none; }
 
 .drawer {
@@ -2060,6 +2061,22 @@ tr.group-row .xs { margin-left: 8px; }
 }
 
 /* ------------------------------------------------------------ delivery map */
+.bank-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.bank-mark-sm { min-width: 34px; height: 20px; font-size: 9px; padding: 0 5px; }
+
 .version-link {
   display: inline-block;
   margin-top: 6px;

@@ -2,6 +2,25 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.38.0] — 2026-11-20
+
+**Release name: Pembayaran Sebagian & Logo Bank.** Partial payments now show the remaining balance live, with Indonesian bank marks, transfer numbers and method stats.
+
+### Added
+
+- **Live remaining balance:** under the amount, the form shows “Sisa setelah bayar” and turns green when the payment settles the invoice.
+- **Bank sender:** BCA, Mandiri, BNI, BRI, BSI, Permata, CIMB Niaga, Danamon, BTN, Jago, SeaBank or other, with brand-colour marks.
+- **Payment method stats:** Pembayaran page summarises banks/methods used, count and total collected.
+- **Receipt display:** bank mark + method + transfer number on the invoice and payment history.
+- **Hidden-box fix:** `[hidden]` elements (empty modal error, proof preview) no longer show as an empty pink bar.
+
+### Verification
+
+- `node --test`: **100 passed**; module check **62/62**; render check passes.
+- Browser QA: Rp 812.000 outstanding → input Rp 500.000 showed “Sisa Rp 312.000”; Mandiri mark selected; receipt stored `bank: mandiri`; method stats showed transfer receipts.
+
+---
+
 ## [2.37.0] — 2026-11-20
 
 **Release name: Tag A4 Multi-Katalog & Multi-Warna.** Several catalogs and several motif/colours can be printed in one A4 run.

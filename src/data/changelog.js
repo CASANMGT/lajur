@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.38.0',
+    date: '2026-11-20',
+    name: 'Pembayaran Sebagian & Logo Bank',
+    items: [
+      'Input pembayaran menampilkan sisa setelah bayar secara langsung.',
+      'Bank pengirim bisa dipilih dengan logo/marka bank Indonesia.',
+      'Halaman Pembayaran menampilkan statistik bank/metode yang dipakai.',
+      'Baris pembayaran menampilkan bank, metode, dan no. transfer.',
+    ],
+  },
+  {
     version: '2.37.0',
     date: '2026-11-20',
     name: 'Tag A4 Multi-Katalog & Multi-Warna',

@@ -514,7 +514,7 @@ export const PAYMENT_KIND = {
 };
 
 export function recordPayment(db, {
-  invoiceId, amount, method = 'transfer', reference = '', date = todayJakarta(), user, note = '',
+  invoiceId, amount, method = 'transfer', bank = '', reference = '', date = todayJakarta(), user, note = '',
   kind = 'installment', proofImage = '',
 }) {
   const inv = requireInvoice(db, invoiceId);
@@ -533,6 +533,7 @@ export function recordPayment(db, {
     kind: paymentKind,
     amount: value,
     method,
+    bank: String(bank ?? ''),
     reference,
     proofImage: String(proofImage ?? ''),
     note,
@@ -560,6 +561,7 @@ export function updatePayment(db, { id, patch = {}, user }) {
     amount,
     kind: ['deposit', 'installment', 'full'].includes(patch.kind) ? patch.kind : payment.kind,
     method: patch.method ?? payment.method,
+    bank: patch.bank ?? payment.bank,
     reference: patch.reference ?? payment.reference,
     date: patch.date ?? payment.date,
     note: patch.note ?? payment.note,

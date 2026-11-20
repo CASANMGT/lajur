@@ -6,6 +6,7 @@ import {
   PAYMENT_KIND, deletePayment, invoiceOutstanding, invoicePaid, invoicesForCompany, updatePayment,
 } from '../../domain/sales.js';
 import { pageHead, statCard, can } from './common.js';
+import { BANKS, bankById, bankMarkHtml } from '../../data/banks.js';
 
 const state = { filter: 'all', sort: 'dateDesc' };
 
@@ -64,6 +65,23 @@ export function render(ctx) {
     return String(b.invoice.date).localeCompare(String(a.invoice.date));
   });
   const receipts = paymentRows(ctx);
+  const methodMap = new Map();
+  for (const { payment } of receipts) {
+    const key = payment.bank || payment.method || 'other';
+    const bank = payment.bank ? bankById(payment.bank) : null;
+    const row = methodMap.get(key) ?? {
+      key,
+      label: bank?.name ?? String(payment.method || 'Lainnya').toUpperCase(),
+      bank,
+      method: payment.method,
+      count: 0,
+      amount: 0,
+    };
+    row.count += 1;
+    row.amount += Number(payment.amount || 0);
+    methodMap.set(key, row);
+  }
+  const methods = [...methodMap.values()].sort((a, b) => b.amount - a.amount);
 
   return `
     ${pageHead({
@@ -79,6 +97,10 @@ export function render(ctx) {
       ${statCard({ label: 'Total sisa', value: fmt.money(totalOutstanding), meta: `dari ${fmt.money(totalBilled)}`, tone: totalOutstanding ? 'warn' : 'ok' })}
       ${statCard({ label: 'Terkumpul', value: fmt.money(totalPaid), meta: `${receipts.length} penerimaan` })}
     </div>
+    ${methods.length ? `<section class="card card-pad" style="margin-bottom:16px">
+      <div class="row-between"><div><h2>Metode pembayaran</h2><p class="xs muted">Bank dan metode yang sudah dipakai, beserta jumlah penerimaan.</p></div><span class="badge no-dot">${methods.length} metode</span></div>
+      <div class="row" style="margin-top:12px;gap:10px;flex-wrap:wrap">${methods.map((row) => `<div class="row" style="gap:7px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 9px;background:var(--ivory-50)">${row.bank ? bankMarkHtml(row.bank, { small: true }) : ''}<span class="small"><strong>${esc(row.label)}</strong> · ${row.count}×<div class="xs muted">${fmt.money(row.amount)}</div></span></div>`).join('')}</div>
+    </section>` : ''}
 
     <div class="row-between" style="margin-bottom:12px;gap:12px;flex-wrap:wrap">
       <div class="row" style="flex-wrap:wrap">
@@ -125,7 +147,7 @@ export function render(ctx) {
           <td class="small">${esc(payment.date)}<div class="xs muted">${esc(payment.updatedAt ? 'diedit ' + new Date(payment.updatedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) : '')}</div></td>
           <td><strong class="small">${esc(invoice?.customerName ?? '—')}</strong><div class="xs muted mono">${esc(payment.invoiceId)}</div></td>
           <td>${badge(PAYMENT_KIND[payment.kind]?.label ?? 'Angsuran', PAYMENT_KIND[payment.kind]?.tone ?? 'muted')}</td>
-          <td class="small">${esc(payment.method || '—')}<div class="xs muted">${esc(payment.reference || 'tanpa no. transfer')}</div></td>
+          <td class="small"><div class="row" style="gap:6px;align-items:center">${payment.bank ? bankMarkHtml(bankById(payment.bank), { small: true }) : ''}<span>${esc(payment.method || '—')}</span></div><div class="xs muted">${esc(payment.reference || 'tanpa no. transfer')}</div></td>
           <td>${payment.proofImage ? `<img src="${esc(payment.proofImage)}" alt="Bukti ${esc(payment.id)}" class="thumb zoomable" data-zoom="${esc(payment.proofImage)}" data-zoom-title="Bukti ${esc(payment.id)}" role="button" tabindex="0" style="width:52px;height:52px;object-fit:cover" />` : '<span class="xs muted">—</span>'}</td>
           <td class="num strong">${fmt.money(payment.amount)}</td>
           <td class="right"><div class="row" style="justify-content:flex-end"><button class="btn btn-sm" type="button" data-edit-payment="${payment.id}" data-invoice="${payment.invoiceId}">Edit</button>${can(ctx.role, 'invoice.pay') ? `<button class="btn btn-sm btn-danger" type="button" data-delete-payment="${payment.id}" data-invoice="${payment.invoiceId}">Hapus</button>` : ''}</div></td>
@@ -143,7 +165,9 @@ function openEditPayment(ctx, payment, invoice) {
     body: `
       ${field('Jenis', `<select class="select" name="kind">${Object.entries(PAYMENT_KIND).map(([k, v]) => `<option value="${k}" ${payment.kind === k ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select>`)}
       ${field('Nominal (Rp)', `<input class="input" name="amount" inputmode="numeric" value="${formatAmount(payment.amount)}" />`)}
+      <div class="span-2 small" data-edit-remaining style="margin-top:-4px;margin-bottom:8px"></div>
       ${field('Metode', `<select class="select" name="method">${['transfer', 'tunai', 'qris', 'giro'].map((m) => `<option value="${m}" ${payment.method === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select>`)}
+      ${field('Bank pengirim', `<select class="select" name="bank">${BANKS.map((bank) => `<option value="${bank.id}" ${payment.bank === bank.id ? 'selected' : ''}>${esc(bank.name)}</option>`).join('')}</select>`)}
       ${field('No. transfer / referensi', `<input class="input" name="reference" value="${esc(payment.reference ?? '')}" />`)}
       ${field('Tanggal', `<input class="input" type="date" name="date" value="${esc(payment.date)}" />`)}
       ${field('Bukti baru (opsional)', `<input class="input" type="file" name="proof" accept="image/*" />`, { hint: 'Kosongkan untuk mempertahankan bukti lama.', full: true })}
@@ -151,10 +175,22 @@ function openEditPayment(ctx, payment, invoice) {
       ${payment.proofImage ? `<div class="span-2"><div class="xs muted" style="margin-bottom:4px">Bukti saat ini</div><img src="${esc(payment.proofImage)}" alt="Bukti ${esc(payment.id)}" style="max-width:100%;max-height:200px;object-fit:contain;border:1px solid var(--line);border-radius:8px" /></div>` : ''}
     `,
     onMount(form) {
+      const remainingEl = form.querySelector('[data-edit-remaining]');
+      const updateRemaining = () => {
+        const paid = Number(String(form.amount.value).replace(/\D/g, ''));
+        const sisa = Math.max(0, invoiceOutstanding(invoice) + Number(payment.amount || 0) - paid);
+        if (remainingEl) {
+          remainingEl.innerHTML = sisa > 0
+            ? `Sisa setelah pembayaran ini: <strong>${fmt.money(sisa)}</strong>`
+            : '<strong class="ok">Lunas setelah pembayaran ini.</strong>';
+        }
+      };
       form.amount.addEventListener('input', () => {
         const digits = String(form.amount.value).replace(/\D/g, '');
         form.amount.value = digits ? Number(digits).toLocaleString('id-ID') : '';
+        updateRemaining();
       });
+      updateRemaining();
     },
     async onSubmit(form, close) {
       const file = form.proof?.files?.[0];
@@ -165,6 +201,7 @@ function openEditPayment(ctx, payment, invoice) {
           kind: form.kind.value,
           amount: Number(String(form.amount.value).replace(/\D/g, '')),
           method: form.method.value,
+          bank: form.bank.value,
           reference: form.reference.value,
           date: form.date.value,
           note: form.note.value,

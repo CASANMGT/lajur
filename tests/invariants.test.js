@@ -1103,10 +1103,11 @@ test('payments can be deposit, installment and full with proof photo', () => {
   const db = buildSeed();
   const inv = db.invoices.find((invoice) => invoice.status === 'posted' && invoiceOutstanding(invoice) > 0);
   const first = recordPayment(db, {
-    invoiceId: inv.id, amount: 100000, kind: 'deposit', reference: 'TRF-001',
+    invoiceId: inv.id, amount: 100000, kind: 'deposit', bank: 'bca', reference: 'TRF-001',
     proofImage: 'data:image/png;base64,proof', user: MGR,
   });
   assert.equal(first.kind, 'deposit');
+  assert.equal(first.bank, 'bca');
   assert.match(first.proofImage, /^data:image/);
   assert.equal(first.reference, 'TRF-001');
   updatePayment(db, { id: first.id, patch: { amount: 120000, kind: 'installment', reference: 'TRF-EDIT' }, user: MGR });
