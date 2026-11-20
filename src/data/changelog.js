@@ -5,6 +5,14 @@
 
 export const CHANGELOG = [
   {
+    version: '2.39.1',
+    date: '2026-11-21',
+    name: 'Label PT. Dalam',
+    items: [
+      'Tombol penjualan internal sekarang berbunyi "Jual ke PT. Dalam".',
+    ],
+  },
+  {
     version: '2.39.0',
     date: '2026-11-21',
     name: 'Opname per Koleksi, Motif & Scan QR',

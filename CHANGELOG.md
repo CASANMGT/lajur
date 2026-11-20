@@ -2,6 +2,16 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.39.1] — 2026-11-21
+
+**Release name: Label PT. Dalam.** Renamed the internal-sale label from “PT lain” to **PT. Dalam** in Penjualan and the internal-PO notice.
+
+### Verification
+
+- Module check **62/62**; render check passes; no domain behavior changed.
+
+---
+
 ## [2.39.0] — 2026-11-21
 
 **Release name: Opname per Koleksi, Motif & Scan QR.** Stock opname is now sorted by collection → motif → roll, with live ada/meter status and mobile QR scanning.
