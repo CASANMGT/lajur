@@ -5,6 +5,15 @@
 
 export const CHANGELOG = [
   {
+    version: '2.32.1',
+    date: '2026-11-20',
+    name: 'Harga Internal Manual & PO Bali',
+    items: [
+      'Harga jual luar bisa diisi manual saat PO internal; harga internal otomatis 10% lebih murah.',
+      'Cocok untuk stok 13 Nov yang belum punya harga master.',
+    ],
+  },
+  {
     version: '2.32.0',
     date: '2026-11-20',
     name: 'PO Internal Bali & Harga Internal',

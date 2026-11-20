@@ -2,6 +2,23 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.32.1] — 2026-11-20
+
+**Release name: Harga Internal Manual & PO Bali.** Handles imported stock where master sell prices are still zero.
+
+### Fixed
+
+- PO internal now has an editable **Harga luar/m** per row. The internal price is recalculated at the configured discount even when the SKU master price is 0.
+- Domain rejects a PO line when both list price and internal price are missing.
+- Imported 13 Nov stock can now be used for a real internal PO once the outside price is entered.
+
+### Verification
+
+- `node --test`: **98 passed**; module check **60/60**; render check passes.
+- Example: 125.000 outside → 112.500 internal (10% discount).
+
+---
+
 ## [2.32.0] — 2026-11-20
 
 **Release name: PO Internal Bali & Harga Internal.** Bali now initiates its own PO to Jakarta from Jakarta stock, at a cheaper internal price, with full shipment tracking.

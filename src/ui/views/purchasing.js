@@ -409,14 +409,15 @@ function openInternalPO(ctx) {
     const roll = rolls.find((r) => r.id === selectedId) ?? defaultRoll;
     const price = roll ? priceOf(roll) : { list: 0, internal: 0 };
     const whole = Number(roll?.reservedMm || 0) === 0;
-    return `<div class="alloc-row" data-ipo-row style="grid-template-columns:1.6fr .75fr .7fr .9fr 34px">
+    return `<div class="alloc-row" data-ipo-row style="grid-template-columns:1.35fr .65fr .55fr .7fr .8fr 34px">
       <select class="select ipo-roll" aria-label="Roll">${rolls.map((r) => {
         const p = priceOf(r);
         return `<option value="${r.id}" data-list="${p.list}" data-internal="${p.internal}" data-current="${r.currentMm}" data-reserved="${r.reservedMm || 0}" ${r.id === roll?.id ? 'selected' : ''}>${esc(r.id)} · ${esc(byId(db.skus, r.skuId)?.collectionName ?? '')} · ${fmt.m(availableMm(r))}</option>`;
       }).join('')}</select>
       <select class="select ipo-mode" aria-label="Mode"><option value="whole" ${whole ? 'selected' : ''} ${whole ? '' : 'disabled'}>Roll utuh</option><option value="cut" ${whole ? '' : 'selected'}>Potong</option></select>
       <input class="input ipo-qty" inputmode="decimal" aria-label="Meter" value="${whole && roll ? (roll.currentMm / 1000).toLocaleString('id-ID') : ''}" ${whole ? 'disabled' : ''} />
-      <div class="small num"><strong class="ipo-price">${fmt.money(price.internal)}</strong><div class="xs muted"><s>${fmt.money(price.list)}</s></div></div>
+      <input class="input ipo-list" inputmode="numeric" aria-label="Harga jual luar" placeholder="harga luar/m" value="${price.list > 0 ? price.list : ''}" />
+      <div class="small num"><strong class="ipo-price">${fmt.money(price.internal)}</strong><div class="xs muted">internal/m</div></div>
       <button class="icon-btn" type="button" data-remove aria-label="Hapus">${icon('x')}</button>
     </div>`;
   };
@@ -429,8 +430,8 @@ function openInternalPO(ctx) {
     body: `
       ${field('PT penjual', `<input class="input" value="${esc(source.name)}" disabled />`)}
       ${field('Perkiraan tiba', `<input class="input" type="date" name="expectedDate" value="${todayJakarta()}" />`)}
-      <div class="span-2 xs muted" style="display:grid;grid-template-columns:1.6fr .75fr .7fr .9fr 34px;gap:8px;margin:14px 0 4px">
-        <span>Roll Jakarta</span><span>Mode</span><span>Meter</span><span>Harga internal</span><span></span>
+      <div class="span-2 xs muted" style="display:grid;grid-template-columns:1.35fr .65fr .55fr .7fr .8fr 34px;gap:8px;margin:14px 0 4px">
+        <span>Roll Jakarta</span><span>Mode</span><span>Meter</span><span>Harga luar/m</span><span>Harga internal</span><span></span>
       </div>
       <div class="span-2" id="ipo-rows">${rolls.length ? row() : '<p class="small muted">Tidak ada stok Jakarta yang tersedia.</p>'}</div>
       <div class="span-2 row" style="margin-top:8px"><button class="btn btn-sm" type="button" data-add-ipo ${rolls.length ? '' : 'disabled'}>${icon('plus')} Tambah roll</button></div>
@@ -446,8 +447,9 @@ function openInternalPO(ctx) {
           const opt = r.querySelector('.ipo-roll').selectedOptions[0];
           const mode = r.querySelector('.ipo-mode').value;
           const qty = mode === 'whole' ? Number(opt?.dataset.current || 0) : Number(String(r.querySelector('.ipo-qty').value).replace(',', '.')) * 1000 || 0;
-          const internalPrice = Number(opt?.dataset.internal || 0);
-          const listPrice = Number(opt?.dataset.list || 0);
+          const listInput = Number(String(r.querySelector('.ipo-list')?.value ?? '').replace(/\D/g, '')) || 0;
+          const listPrice = listInput || Number(opt?.dataset.list || 0);
+          const internalPrice = internalPriceOf(db, listPrice);
           internal += internalPrice * (qty / 1000);
           list += listPrice * (qty / 1000);
           r.querySelector('.ipo-price').textContent = fmt.money(internalPrice);
@@ -458,7 +460,12 @@ function openInternalPO(ctx) {
       };
       const bind = (r) => {
         r.querySelectorAll('select,input').forEach((el) => el.addEventListener('input', recalc));
-        r.querySelector('.ipo-roll')?.addEventListener('change', recalc);
+        r.querySelector('.ipo-roll')?.addEventListener('change', () => {
+          const opt = r.querySelector('.ipo-roll').selectedOptions[0];
+          const list = Number(opt?.dataset.list || 0);
+          if (list > 0) r.querySelector('.ipo-list').value = list;
+          recalc();
+        });
         r.querySelector('.ipo-mode')?.addEventListener('change', () => {
           const whole = r.querySelector('.ipo-mode').value === 'whole';
           r.querySelector('.ipo-qty').disabled = whole;
@@ -485,7 +492,8 @@ function openInternalPO(ctx) {
             const rollId = r.querySelector('.ipo-roll').value;
             const mode = r.querySelector('.ipo-mode').value;
             const qtyMm = mode === 'whole' ? null : Number(String(r.querySelector('.ipo-qty').value).replace(',', '.')) * 1000;
-            if (mode === 'whole' || qtyMm > 0) lines.push({ kind: 'fabric', rollId, mode, qtyMm: qtyMm ?? 0 });
+            const listPrice = Number(String(r.querySelector('.ipo-list').value).replace(/\D/g, '')) || 0;
+            if (mode === 'whole' || qtyMm > 0) lines.push({ kind: 'fabric', rollId, mode, qtyMm: qtyMm ?? 0, listPrice });
           });
           if (!lines.length) throw new Error('Tambahkan minimal satu roll.');
           ctx.store.update((db) => createInternalPO(db, {

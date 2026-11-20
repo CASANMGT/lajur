@@ -65,8 +65,9 @@ export function createInternalPO(db, {
         : [...warehouseIds][0];
       const row = partStockRow(db, part.id, warehouseId);
       assert(row && row.qty - (row.reserved || 0) >= qtyPcs, 'INSUFFICIENT_PART', `Stok ${part.name} tidak cukup di ${seller.name}.`);
-      const listPrice = Number(part.sellPrice || 0);
-      const unitPrice = internalPriceOf(db, listPrice);
+      const listPrice = Number(line.listPrice) > 0 ? Number(line.listPrice) : Number(part.sellPrice || 0);
+      const unitPrice = Number(line.unitPrice) > 0 ? Number(line.unitPrice) : internalPriceOf(db, listPrice);
+      assert(listPrice > 0 || unitPrice > 0, 'PRICE_REQUIRED', `Harga jual luar ${part.name} belum diisi.`);
       return {
         kind: 'part',
         partId: part.id,
@@ -88,8 +89,9 @@ export function createInternalPO(db, {
     assert(qtyMm > 0, 'INVALID_QTY', 'Panjang potong harus lebih dari 0.');
     if (mode === 'whole') assert((roll.reservedMm || 0) === 0, 'ROLL_RESERVED', `Roll ${roll.id} terpesan.`);
     else assert(qtyMm <= availableMm(roll), 'INSUFFICIENT_AVAILABLE', `Roll ${roll.id} tersedia ${availableMm(roll) / MM_PER_M} m.`);
-    const listPrice = Number(sku.sellPrice || 0);
-    const unitPrice = internalPriceOf(db, listPrice);
+    const listPrice = Number(line.listPrice) > 0 ? Number(line.listPrice) : Number(sku.sellPrice || 0);
+    const unitPrice = Number(line.unitPrice) > 0 ? Number(line.unitPrice) : internalPriceOf(db, listPrice);
+    assert(listPrice > 0 || unitPrice > 0, 'PRICE_REQUIRED', `Harga jual luar ${sku.code} belum diisi.`);
     return {
       kind: 'fabric',
       rollId: roll.id,
