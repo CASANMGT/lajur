@@ -1397,6 +1397,14 @@ table.data .cell-main span { display: block; font-size: 11px; color: var(--muted
   border-radius: var(--r-md);
 }
 .bottom-nav .ico { width: 20px; height: 20px; }
+.bottom-nav .bottom-nav-qr {
+  color: var(--teal-700);
+  background: var(--teal-50);
+  border: 1px solid color-mix(in srgb, var(--teal-500) 35%, transparent);
+  border-radius: 12px;
+  margin: 0 3px;
+}
+.bottom-nav .bottom-nav-qr .ico { width: 24px; height: 24px; }
 .bottom-nav a[aria-current="page"] { color: var(--teal-700); background: var(--teal-50); }
 .bottom-nav button:hover { color: var(--ink); }
 

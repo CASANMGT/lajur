@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.43.0',
+    date: '2026-11-21',
+    name: 'QR Kamera, Konfirmasi Opname & Meter Default',
+    items: [
+      'QR di tengah bottom nav langsung membuka kamera tanpa keyboard.',
+      'Setelah scan tampil halaman konfirmasi roll, lot, lokasi, dan meter default.',
+      'Meter fisik selalu bisa diedit; kosongkan untuk menandai Ada tanpa meter.',
+      'Pilih Tidak ada untuk roll yang hilang.',
+    ],
+  },
+  {
     version: '2.42.0',
     date: '2026-11-21',
     name: 'QR Mobile di Bottom Nav & Opname Cepat',

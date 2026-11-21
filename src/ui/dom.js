@@ -186,6 +186,7 @@ export function openModal({
   wide = false,
   danger = false,
   extraFooter = '',
+  autoFocus = true,
 }) {
   const root = document.getElementById('modal-root');
   if (!root) return null;
@@ -255,8 +256,10 @@ export function openModal({
   activeKeyHandler = onKey;
 
   const firstField = modal.querySelector('input:not([type=hidden]), select, textarea');
-  if (firstField) window.setTimeout(() => firstField.focus(), 30);
-  else modal.querySelector('button')?.focus();
+  if (autoFocus) {
+    if (firstField) window.setTimeout(() => firstField.focus(), 30);
+    else modal.querySelector('button')?.focus();
+  }
 
   if (onMount) onMount(form, close);
 

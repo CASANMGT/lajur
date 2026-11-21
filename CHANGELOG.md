@@ -2,6 +2,26 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.43.0] — 2026-11-21
+
+**Release name: QR Kamera, Konfirmasi Opname & Meter Default.** Opens the camera immediately, removes forced keyboard focus, and shows a roll/lot confirmation with editable default metres.
+
+### Changed
+
+- **No keyboard on open:** scanner and opname confirmation no longer auto-focus the first input (`autoFocus: false`).
+- **Central QR:** the bottom-nav QR is now the middle item and highlighted; it opens the camera directly.
+- **Confirmation page:** after scanning, show roll, lot, collection/motif, location, and system/default metres.
+- **Editable default metres:** the physical metre field is prefilled from the system metre and always editable.
+- **Present without metres:** clear the metre field and save to mark Ada without a count.
+- **Missing:** choose Tidak ada; the metre value is ignored.
+
+### Verification
+
+- `node --test`: **103 passed**; module check **63/63**; render check passes.
+- Browser QA: bottom QR opened `Scan opname OPN-003`; no input focused (`activeElement = MAIN`); manual scan `RL-0012` opened confirmation with 45 m default; editing to 44,5 saved `44500 mm` with countedBy Henry Martin.
+
+---
+
 ## [2.42.0] — 2026-11-21
 
 **Release name: QR Mobile di Bottom Nav & Opname Cepat.** QR is now mobile-first: a bottom-nav button scans stock or updates opname, while desktop hides the camera action.

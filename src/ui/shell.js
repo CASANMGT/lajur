@@ -196,10 +196,10 @@ export function renderShell(ctx, contentHtml) {
         <nav class="bottom-nav" aria-label="Navigasi cepat">
           <a href="#/ringkasan" ${ctx.route.name === 'ringkasan' ? 'aria-current="page"' : ''}>${icon('home')}<span>Beranda</span></a>
           <a href="#/tugas" ${ctx.route.name === 'tugas' ? 'aria-current="page"' : ''}>${icon('listCheck')}<span>Tugas</span></a>
+          <button class="bottom-nav-qr" type="button" data-action="mobile-qr" aria-label="Scan QR">${icon('scan')}<span>QR</span></button>
           ${role === 'driver'
             ? `<a href="#/pengiriman" ${ctx.route.name === 'pengiriman' ? 'aria-current="page"' : ''}>${icon('truck')}<span>Kirim</span></a>`
             : `<a href="#/stok" ${ctx.route.name === 'stok' ? 'aria-current="page"' : ''}>${icon('box')}<span>Stok</span></a>`}
-          <button type="button" data-action="mobile-qr">${icon('scan')}<span>QR</span></button>
           <button type="button" data-action="account">${icon('users')}<span>Akun</span></button>
         </nav>
       </div>
@@ -282,39 +282,41 @@ function openMobileQr(ctx) {
 function openQuickOpname(ctx, session, line) {
   const roll = byId(ctx.db.rolls, line.rollId);
   const sku = byId(ctx.db.skus, line.skuId);
+  const warehouse = byId(ctx.db.warehouses, roll?.warehouseId);
+  const defaultMm = line.countedMm ?? line.expectedMm;
   openModal({
-    title: `Opname ${line.rollId}`,
-    description: `${sku?.collectionName ?? ''} · ${sku?.colourName || sku?.colourCode || ''} · lot ${line.lot}`,
+    title: `Konfirmasi opname ${line.rollId}`,
+    description: 'Periksa roll/lot, lalu sesuaikan meter bila perlu.',
     submitLabel: 'Simpan ke opname',
+    autoFocus: false,
     body: `
-      ${field('Hasil scan', `<select class="select" name="mode">
-        <option value="present" ${line.present === true && line.countedMm === null ? 'selected' : ''}>Ada (meter belum diisi)</option>
-        <option value="meter" ${line.countedMm !== null ? 'selected' : ''}>Ada dengan meter</option>
+      <div class="card card-pad" style="background:var(--ivory-50);margin-bottom:12px">
+        <div class="row-between"><span class="muted">Roll</span><strong class="mono">${esc(line.rollId)}</strong></div>
+        <div class="row-between"><span class="muted">Lot</span><strong class="mono">${esc(line.lot)}</strong></div>
+        <div class="row-between"><span class="muted">Koleksi / motif</span><strong>${esc(sku?.collectionName ?? '—')} · ${esc(sku?.colourName || sku?.colourCode || '—')}</strong></div>
+        <div class="row-between"><span class="muted">Lokasi</span><strong>${esc(warehouse?.code ?? '—')} / ${esc(roll?.bin || '—')}</strong></div>
+        <div class="row-between"><span class="muted">Meter sistem / default</span><strong>${fmtMetres(line.expectedMm)}</strong></div>
+      </div>
+      ${field('Hasil', `<select class="select" name="mode">
+        <option value="present" ${line.present === false ? '' : 'selected'}>Ada</option>
         <option value="absent" ${line.present === false ? 'selected' : ''}>Tidak ada</option>
       </select>`)}
-      ${field('Meter fisik', `<input class="input" name="meter" inputmode="decimal" value="${line.countedMm ? esc(String(line.countedMm / 1000).replace('.', ',')) : ''}" placeholder="Contoh: 58,5" />`)}
+      ${field('Meter fisik (bisa diubah)', `<input class="input" name="meter" inputmode="decimal" value="${defaultMm > 0 ? esc(String(defaultMm / 1000).replace('.', ',')) : ''}" placeholder="Contoh: 58,5" />`, { hint: 'Default dari meter sistem. Ubah kapan saja sebelum menyimpan.' })}
       <div class="notice notice-info">${icon('alert')}<div>Sesi ${esc(session.id)} · putaran ${session.countRound ?? 1}. Penghitung: ${esc(ctx.user.name)}. Opname tidak membuat RL/lot baru.</div></div>
       <div class="row" style="margin-top:10px"><a class="btn btn-sm" href="#/opname/${session.id}">Buka sesi opname</a></div>
     `,
-    onMount(form) {
-      const sync = () => {
-        form.meter.disabled = form.mode.value !== 'meter';
-        if (form.mode.value !== 'meter') form.meter.value = '';
-      };
-      form.mode.addEventListener('change', sync);
-      sync();
-    },
     onSubmit(form, close) {
-      const mode = form.mode.value;
-      const countedMm = mode === 'meter' ? parseM(form.meter.value) : null;
-      if (mode === 'meter' && !(countedMm > 0)) throw new Error('Isi meter fisik lebih dari 0.');
+      const absent = form.mode.value === 'absent';
+      const raw = String(form.meter.value ?? '').trim();
+      const countedMm = absent ? 0 : (raw ? parseM(raw) : null);
+      if (!absent && raw && !(countedMm > 0)) throw new Error('Meter fisik harus lebih dari 0, atau kosongkan untuk menandai ada tanpa meter.');
       ctx.store.update((db) => saveCounts(db, {
         sessionId: session.id,
-        counts: [{ rollId: line.rollId, countedMm, present: mode === 'absent' ? false : true }],
+        counts: [{ rollId: line.rollId, countedMm, present: absent ? false : true }],
         user: ctx.user,
       }));
       close();
-      toast(`${line.rollId} ${mode === 'absent' ? 'ditandai tidak ada' : countedMm ? `= ${fmtMetres(countedMm)}` : 'ditandai ada'}.`, { tone: 'success' });
+      toast(`${line.rollId} ${absent ? 'ditandai tidak ada' : countedMm ? `= ${fmtMetres(countedMm)}` : 'ditandai ada'}.`, { tone: 'success' });
       if (ctx.route.name !== 'opname') window.location.hash = `#/opname/${session.id}`;
     },
   });
@@ -331,6 +333,7 @@ function openRollLookup(ctx, roll) {
     title: `Stok ${roll.id}`,
     description: `${sku?.collectionName ?? ''} · ${sku?.colourName || sku?.colourCode || ''}`,
     submitLabel: 'Buka detail roll',
+    autoFocus: false,
     body: `
       <div class="stack-sm">
         <div class="row-between"><span class="muted">Lot</span><strong class="mono">${esc(roll.lot)}</strong></div>

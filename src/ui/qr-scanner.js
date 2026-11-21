@@ -41,6 +41,7 @@ export function openQrScanner({ title = 'Scan QR', description = 'Arahkan kamera
     description,
     submitLabel: 'Tutup',
     wide: true,
+    autoFocus: false,
     body: `<div class="stack">
       <video data-qr-video autoplay muted playsinline style="width:100%;max-height:320px;border-radius:10px;background:#172b3a;object-fit:cover"></video>
       <p class="small" data-qr-status>Meminta izin kamera…</p>

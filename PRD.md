@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.42.0
+# PRD - Lavishome v2.43.0
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.42.0 (schema 21)
+**Version:** 2.43.0 (schema 21)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.42.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
+Role scope in v2.43.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -558,7 +558,8 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-112 | Presence-only counts are valid and keep the system metres; “Tidak ada” counts as 0. Each checked line stores countedBy/countedAt. The result shows participants, duration, measured/presence-only/missing counts and variance. |
 | BR-114 | Review compares Sebelum (sistem) and Hitungan fisik side by side with Selisih. The counter/submitter cannot approve their own session. A supervisor may recount (archiving the previous round), open an investigation, then approve the final adjustment. Opname updates the same RL/lot; it never creates a new RL or lot. |
 | BR-115 | Mobile QR scanning uses BarcodeDetector when available and a bundled jsQR canvas decoder otherwise; QR image upload is also decoded with jsQR. |
-| BR-116 | A QR action lives in the mobile bottom navigation. If a counting opname is active, a scan opens a quick mark modal (Ada / Ada dengan meter / Tidak ada) and saves to the session. Without opname it shows stock, lot, location and available metres. The desktop opname page hides the camera QR action. |
+| BR-116 | A QR action lives in the centre of the mobile bottom navigation and opens the camera directly. It must not auto-focus a text field or open the keyboard. After a scan, show a confirmation page with roll, lot, collection/motif, location and default system metres; the physical metre field is always editable. Empty metre + Ada = presence only; Tidak ada = missing. |
+| BR-117 | The desktop opname page hides the camera QR action; mobile is the primary QR experience. |
 | BR-113 | Internal-company naming is **Perusahaan Internal**, not PT. Dalam. |
 | BR-94 | Stock sorting applies to collections, motifs, roll rows and mobile cards. Options are most available metres, name A–Z and name Z–A; the default is most metres. |
 
@@ -568,7 +569,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.42.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.43.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -783,6 +784,8 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-157 | Mobile QR works via BarcodeDetector or jsQR fallback | Pass |
 | AC-158 | QR action is in the mobile bottom nav and updates opname presence/metres | Pass |
 | AC-159 | Desktop hides the opname camera QR action | Pass |
+| AC-160 | Mobile QR opens camera without forcing keyboard focus | Pass |
+| AC-161 | Scan confirmation shows roll/lot and editable default metres | Pass |
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 
