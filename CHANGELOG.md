@@ -2,6 +2,25 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.42.0] — 2026-11-21
+
+**Release name: QR Mobile di Bottom Nav & Opname Cepat.** QR is now mobile-first: a bottom-nav button scans stock or updates opname, while desktop hides the camera action.
+
+### Added
+
+- **Mobile QR in bottom navigation:** Beranda, Tugas, Stok/Kirim, **QR**, Akun. Visible on mobile only.
+- **Context-aware QR:** if an active counting opname exists, scanning a roll opens a quick-opname modal to mark Ada / Ada dengan meter / Tidak ada and save immediately.
+- **Stock lookup without opname:** scanning shows roll, lot, location, current and available metres, then links to the roll detail.
+- **Desktop rule:** the opname page Scan QR button is mobile-only (`qr-mobile-only`).
+- **Shared scanner:** one `qr-scanner.js` used by opname and bottom nav, with BarcodeDetector and jsQR fallback.
+
+### Verification
+
+- `node --test`: **103 passed**; module check **63/63**; render check passes.
+- Browser QA: jsQR loads; QR button is in the mobile bottom nav; desktop camera button is hidden; scanning during a session saves presence/metres via `saveCounts`.
+
+---
+
 ## [2.41.0] — 2026-11-21
 
 **Release name: QR Mobile, Review Berdampingan & Investigasi.** Fixes iPhone/Safari QR scanning with jsQR and completes the supervisor → recount → investigation → adjustment workflow.

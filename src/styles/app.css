@@ -2061,6 +2061,10 @@ tr.group-row .xs { margin-left: 8px; }
 }
 
 /* ------------------------------------------------------------ delivery map */
+.qr-mobile-only { display: none !important; }
+@media (max-width: 700px) {
+  .qr-mobile-only { display: inline-flex !important; }
+}
 .scan-hit {
   outline: 3px solid var(--copper-500, #b8753b);
   outline-offset: 2px;

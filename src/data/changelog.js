@@ -5,6 +5,17 @@
 
 export const CHANGELOG = [
   {
+    version: '2.42.0',
+    date: '2026-11-21',
+    name: 'QR Mobile di Bottom Nav & Opname Cepat',
+    items: [
+      'Tombol QR ada di bottom navbar khusus mobile.',
+      'Saat opname aktif, scan langsung menandai Ada / Ada dengan meter / Tidak ada dan menyimpan ke sesi.',
+      'Tanpa opname, scan menampilkan stok, lot, lokasi, dan sisa meter.',
+      'Tombol Scan QR di halaman opname disembunyikan di desktop.',
+    ],
+  },
+  {
     version: '2.41.0',
     date: '2026-11-21',
     name: 'QR Mobile, Review Berdampingan & Investigasi',

@@ -9,7 +9,7 @@ const modules = [
   '../src/domain/stock-sync.js', '../src/domain/stock-plan.js', '../src/domain/customer-plan.js', '../src/domain/internal-po.js', '../src/ui/excel.js',
   '../src/data/store.js', '../src/data/backup.js', '../src/data/auth.js',
   '../src/data/cloud.js', '../src/data/cloud-sync.js', '../src/data/changelog.js', '../src/data/banks.js', '../src/ui/changelog.js',
-  '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js', '../src/ui/awb.js', '../src/ui/notify.js',
+  '../src/data/simulation.js', '../src/ui/dom.js', '../src/ui/shell.js', '../src/ui/awb.js', '../src/ui/notify.js', '../src/ui/qr-scanner.js',
   '../src/ui/views/common.js', '../src/ui/views/print.js', '../src/ui/views/dashboard.js',
   '../src/ui/views/inventory.js', '../src/ui/views/transfers.js', '../src/ui/views/purchasing.js',
   '../src/ui/views/sales.js', '../src/ui/views/payments.js', '../src/ui/views/projects.js', '../src/ui/views/customers.js',

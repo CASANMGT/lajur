@@ -8,6 +8,7 @@ import {
 } from '../../domain/opname.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { printOpnameHtml } from './print.js';
+import { openQrScanner } from '../qr-scanner.js';
 
 export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
@@ -125,7 +126,7 @@ function renderDetail(ctx) {
         <p class="sub">${esc(wh?.name)} · mulai ${esc(s.startedDate)} · dihitung ${esc(s.countedBy)}</p>
       </div>
       <div class="page-actions">
-        ${counting && can(role, 'opname.count') ? `<button class="btn" type="button" data-act="scan">${icon('scan')} Scan QR</button><button class="btn" type="button" data-act="save">${icon('download')} Simpan draf</button><button class="btn btn-primary" type="button" data-act="submit">${icon('arrow')} Ajukan review</button>` : ''}
+        ${counting && can(role, 'opname.count') ? `<button class="btn qr-mobile-only" type="button" data-act="scan">${icon('scan')} Scan QR</button><button class="btn" type="button" data-act="save">${icon('download')} Simpan draf</button><button class="btn btn-primary" type="button" data-act="submit">${icon('arrow')} Ajukan review</button>` : ''}
         ${reviewing && can(role, 'opname.approve') ? `<button class="btn btn-primary" type="button" data-act="approve">${icon('check')} Setujui & posting</button>${sum.varianceMm ? `<button class="btn btn-danger" type="button" data-act="investigate">${icon('alert')} Investigasi selisih</button>` : ''}<button class="btn" type="button" data-act="recount">${icon('refresh')} Hitung ulang</button>` : ''}
         ${investigating && can(role, 'opname.approve') ? `<button class="btn btn-primary" type="button" data-act="approve">${icon('check')} Selesaikan & posting</button><button class="btn" type="button" data-act="recount">${icon('refresh')} Hitung ulang</button>` : ''}
         ${['counting', 'review', 'investigation'].includes(s.status) ? `<button class="btn btn-ghost" type="button" data-act="cancel">Batalkan sesi</button>` : ''}
@@ -230,140 +231,20 @@ export function openStart(ctx) {
   });
 }
 
-let jsQrPromise = null;
-function ensureJsQr() {
-  if (window.jsQR) return Promise.resolve(window.jsQR);
-  if (!jsQrPromise) {
-    jsQrPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = '/src/vendor/jsqr.js';
-      script.onload = () => (window.jsQR ? resolve(window.jsQR) : reject(new Error('jsQR tidak termuat.')));
-      script.onerror = () => reject(new Error('Gagal memuat decoder QR.'));
-      document.head.appendChild(script);
-    });
-  }
-  return jsQrPromise;
-}
-
 function openQrScan(ctx, session, onFound) {
-  let stopCamera = () => {};
-  openModal({
+  openQrScanner({
     title: 'Scan QR roll',
-    description: 'Arahkan kamera ke QR tag roll. Setelah ditemukan, masukkan panjang fisik dalam meter.',
-    submitLabel: 'Tutup',
-    wide: true,
-    body: `<div class="stack">
-      <video data-qr-video autoplay muted playsinline style="width:100%;max-height:320px;border-radius:10px;background:#172b3a;object-fit:cover"></video>
-      <p class="small" data-qr-status>Meminta izin kamera…</p>
-      ${field('Atau ketik roll ID', `<div class="row"><input class="input" name="manual" placeholder="RL-0029" /><button class="btn" type="button" data-scan-manual>${icon('scan')} Cari</button></div>`)}
-      ${field('Atau upload foto QR', `<input class="input" type="file" name="qrFile" accept="image/*" />`, { hint: 'Berguna bila kamera tidak tersedia.' })}
-      <div class="notice notice-info">${icon('alert')}<div>QR tag berisi URL <span class="mono">#/scan/ROLL-ID</span>. Roll yang tidak ada di sesi ini akan ditolak.</div></div>
-    </div>`,
-    onMount(form, close) {
-      const video = form.querySelector('[data-qr-video]');
-      const status = form.querySelector('[data-qr-status]');
-      const handle = (raw) => {
-        const text = String(raw ?? '').trim();
-        if (!text) return;
-        const id = text.match(/\/scan\/([^/?#]+)/)?.[1] ?? text.toUpperCase();
-        const line = session.lines.find((row) => row.rollId.toUpperCase() === id.toUpperCase());
-        if (!line) {
-          status.textContent = `Roll ${id} tidak ada di sesi opname ini.`;
-          status.className = 'small danger';
-          return;
-        }
-        stopCamera();
-        close();
-        onFound(line);
-      };
-      form.querySelector('[data-scan-manual]')?.addEventListener('click', () => handle(form.manual.value));
-      form.manual?.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') { event.preventDefault(); handle(form.manual.value); }
-      });
-      form.qrFile?.addEventListener('change', async () => {
-        const file = form.qrFile.files?.[0];
-        if (!file) return;
-        status.textContent = 'Membaca QR…';
-        status.className = 'small';
-        try {
-          const jsQR = await ensureJsQr();
-          const url = URL.createObjectURL(file);
-          const image = new Image();
-          image.src = url;
-          await image.decode();
-          const canvas = document.createElement('canvas');
-          canvas.width = image.naturalWidth;
-          canvas.height = image.naturalHeight;
-          const context = canvas.getContext('2d', { willReadFrequently: true });
-          context.drawImage(image, 0, 0);
-          const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-          URL.revokeObjectURL(url);
-          const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'attemptBoth' });
-          if (code?.data) handle(code.data);
-          else status.textContent = 'QR tidak terbaca dari foto. Coba foto lebih dekat atau ketik roll ID.';
-        } catch (err) {
-          status.textContent = err.message;
-          status.className = 'small danger';
-        }
-      });
-      if (!navigator.mediaDevices?.getUserMedia) {
-        status.textContent = 'Kamera tidak tersedia di browser ini. Gunakan input manual atau upload foto QR.';
-        status.className = 'small warn';
-        return;
-      }
-      let stream;
-      let raf = 0;
-      let detector = null;
-      let jsQR = null;
-      let canvas = null;
-      let context = null;
-      (async () => {
-        try {
-          if (typeof window.BarcodeDetector === 'function') {
-            detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-          } else {
-            jsQR = await ensureJsQr();
-            canvas = document.createElement('canvas');
-            context = canvas.getContext('2d', { willReadFrequently: true });
-          }
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
-          });
-          video.srcObject = stream;
-          await video.play();
-          status.textContent = 'Arahkan kamera ke QR tag roll…';
-          const tick = async () => {
-            try {
-              if (detector) {
-                const codes = await detector.detect(video);
-                if (codes.length) { handle(codes[0].rawValue); return; }
-              } else if (jsQR && video.videoWidth) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'dontInvert' });
-                if (code?.data) { handle(code.data); return; }
-              }
-            } catch { /* keep scanning */ }
-            raf = requestAnimationFrame(tick);
-          };
-          tick();
-        } catch (err) {
-          status.textContent = `Kamera tidak dapat dibuka: ${err.message}. Gunakan input manual atau upload foto QR.`;
-          status.className = 'small warn';
-        }
-      })();
-      stopCamera = () => {
-        cancelAnimationFrame(raf);
-        if (stream) stream.getTracks().forEach((track) => track.stop());
-        if (video) video.srcObject = null;
-      };
+    description: 'Arahkan kamera ke QR tag roll. Roll ditandai ada; meter opsional.',
+    onResult(raw) {
+      const id = String(raw).match(/\/scan\/([^/?#]+)/)?.[1] ?? String(raw).trim().toUpperCase();
+      const line = session.lines.find((row) => row.rollId.toUpperCase() === id.toUpperCase());
+      if (!line) return { ok: false, message: `Roll ${id} tidak ada di sesi opname ini.` };
+      onFound(line);
+      return { ok: true };
     },
-    onClose() { stopCamera(); },
-    onSubmit(form, close) { close(); },
   });
 }
+
 
 function collectCounts() {
   return [...document.querySelectorAll('[data-count]')].map((input) => {
