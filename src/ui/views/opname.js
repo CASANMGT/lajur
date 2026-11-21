@@ -3,18 +3,17 @@
 import { esc, icon, fmt, badge, toast, openModal, field, confirmAction, printDocument, promptText } from '../dom.js';
 import { byId, parseM, todayJakarta } from '../../domain/core.js';
 import {
-  OPNAME_STATUS, approveOpname, cancelOpname, getSession, opnameResult, opnameSummary, saveCounts, startOpname,
-  submitOpname,
+  OPNAME_STATUS, approveOpname, cancelOpname, getSession, opnameResult, opnameSummary, saveCounts,
+  startOpname, startOpnameInvestigation, submitOpname,
 } from '../../domain/opname.js';
 import { pageHead, statCard, warehouseOf, can, warehouseOptions, roleHint } from './common.js';
 import { printOpnameHtml } from './print.js';
-import { scanAwbImage } from '../awb.js';
 
 export function render(ctx) {
   if (ctx.route.id) return renderDetail(ctx);
 
   const { db, role } = ctx;
-  const active = db.opnameSessions.filter((s) => ['counting', 'review'].includes(s.status));
+  const active = db.opnameSessions.filter((s) => ['counting', 'review', 'investigation'].includes(s.status));
   const history = db.opnameSessions.filter((s) => ['posted', 'cancelled'].includes(s.status));
   const lastPosted = history.find((s) => s.status === 'posted');
 
@@ -79,8 +78,10 @@ function renderDetail(ctx) {
   const sum = opnameSummary(s);
   const result = opnameResult(s);
   const reviewing = s.status === 'review';
+  const investigating = s.status === 'investigation';
   const counting = s.status === 'counting';
   const posted = s.status === 'posted';
+  const comparison = reviewing || investigating || posted;
 
   const sortedLines = [...s.lines].sort((a, b) => {
     const skuA = byId(db.skus, a.skuId);
@@ -109,9 +110,10 @@ function renderDetail(ctx) {
     return `<tr data-opname-row data-roll="${esc(line.rollId)}" data-collection="${esc(collectionName)}" data-motif="${esc(motifName)}" data-present="${line.present === true ? 'true' : line.present === false ? 'false' : ''}">
       <td><span class="mono strong">${esc(line.rollId)}</span><div class="xs muted">${esc(line.lot)}</div></td>
       <td>${esc(collectionName)} · ${esc(motifName)}<div class="xs muted">${esc(sku?.code)}${roll?.bin ? ` · Rak ${esc(roll.bin)}` : ''}</div></td>
-      ${counting ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null || line.countedMm === 0 ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="meter" aria-label="Hitungan ${esc(line.rollId)}" /></td>` : `<td class="num">${line.countedMm === null ? (line.present === true ? 'Ada' : '—') : fmt.m(line.countedMm)}</td>`}
+      ${counting
+        ? `<td class="num" style="width:140px"><input class="input" style="min-height:38px;text-align:right" inputmode="decimal" data-count="${line.rollId}" value="${line.countedMm === null || line.countedMm === 0 ? '' : esc(String(line.countedMm / 1000).replace('.', ','))}" placeholder="meter" aria-label="Hitungan ${esc(line.rollId)}" /></td>`
+        : `<td class="num muted">${fmt.m(line.expectedMm)}</td><td class="num strong">${line.countedMm === null ? (line.present === true ? 'Ada' : '—') : fmt.m(line.countedMm)}</td><td class="num ${variance ? 'strong' : ''}">${variance === null ? '—' : fmt.m(variance, { signed: true })}</td>`}
       <td data-opname-status>${status}${line.countedBy ? `<div class="xs muted">oleh ${esc(line.countedBy)}</div>` : ''}${counting ? `<div class="row" style="gap:4px;margin-top:4px"><button class="btn btn-sm btn-ghost" type="button" data-mark-present="${line.rollId}">Ada</button><button class="btn btn-sm btn-ghost" type="button" data-mark-absent="${line.rollId}">Tidak ada</button></div>` : ''}</td>
-      ${reviewing || posted ? `<td class="num muted">${fmt.m(line.expectedMm)}</td><td class="num ${variance ? 'strong' : ''}">${variance === null ? '—' : fmt.m(variance, { signed: true })}</td>` : ''}
     </tr>`;
   }).join('');
 
@@ -124,13 +126,16 @@ function renderDetail(ctx) {
       </div>
       <div class="page-actions">
         ${counting && can(role, 'opname.count') ? `<button class="btn" type="button" data-act="scan">${icon('scan')} Scan QR</button><button class="btn" type="button" data-act="save">${icon('download')} Simpan draf</button><button class="btn btn-primary" type="button" data-act="submit">${icon('arrow')} Ajukan review</button>` : ''}
-        ${reviewing && can(role, 'opname.approve') ? `<button class="btn btn-primary" type="button" data-act="approve">${icon('check')} Setujui & posting</button><button class="btn" type="button" data-act="recount">${icon('refresh')} Hitung ulang</button>` : ''}
-        ${['counting', 'review'].includes(s.status) ? `<button class="btn btn-ghost" type="button" data-act="cancel">Batalkan sesi</button>` : ''}
+        ${reviewing && can(role, 'opname.approve') ? `<button class="btn btn-primary" type="button" data-act="approve">${icon('check')} Setujui & posting</button>${sum.varianceMm ? `<button class="btn btn-danger" type="button" data-act="investigate">${icon('alert')} Investigasi selisih</button>` : ''}<button class="btn" type="button" data-act="recount">${icon('refresh')} Hitung ulang</button>` : ''}
+        ${investigating && can(role, 'opname.approve') ? `<button class="btn btn-primary" type="button" data-act="approve">${icon('check')} Selesaikan & posting</button><button class="btn" type="button" data-act="recount">${icon('refresh')} Hitung ulang</button>` : ''}
+        ${['counting', 'review', 'investigation'].includes(s.status) ? `<button class="btn btn-ghost" type="button" data-act="cancel">Batalkan sesi</button>` : ''}
         ${posted ? `<button class="btn" type="button" data-act="print">${icon('printer')} Berita acara</button>` : ''}
       </div>
     </div>
 
-    ${counting || reviewing ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('alert')}<div><strong>Gudang ${esc(wh?.code)} dibekukan.</strong> Penjualan, penerimaan, transfer keluar/masuk, dan retur diblokir sampai sesi selesai. ${reviewing ? 'Operator tidak melihat saldo sistem saat menghitung.' : ''}</div></div>` : ''}
+    ${counting || reviewing || investigating ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('alert')}<div><strong>Gudang ${esc(wh?.code)} dibekukan.</strong> Penjualan, penerimaan, transfer keluar/masuk, dan retur diblokir sampai sesi selesai. ${reviewing || investigating ? 'Penghitung tidak melihat saldo sistem; supervisor membandingkan sebelum menyetujui.' : ''}</div></div>` : ''}
+    ${investigating ? `<div class="notice notice-danger" style="margin-bottom:14px">${icon('alert')}<div><strong>Investigasi selisih · putaran ${s.countRound ?? 1}.</strong> ${esc(s.investigation?.note ?? '')}<br>Lakukan hitung ulang bila perlu. Penyesuaian akhir baru terjadi setelah supervisor menyetujui.</div></div>` : ''}
+    ${reviewing && sum.varianceMm ? `<div class="notice notice-warn" style="margin-bottom:14px">${icon('alert')}<div><strong>Ada selisih ${fmt.m(sum.varianceMm, { signed: true })}.</strong> Supervisor dapat meminta hitung ulang, membuka investigasi, atau langsung menyetujui penyesuaian akhir.</div></div>` : ''}
     ${posted ? `<div class="notice notice-teal" style="margin-bottom:14px">${icon('check')}<div><strong>Diposting ${esc(new Date(s.postedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }))}.</strong> ${esc(s.approveReason)}</div></div>` : ''}
 
     <div class="kpi-strip" style="margin-bottom:16px">
@@ -140,7 +145,7 @@ function renderDetail(ctx) {
       ${statCard({ label: 'Penyesuaian', value: String(s.adjustments?.length ?? 0), meta: 'Baris diposting' })}
     </div>
 
-    ${reviewing || posted ? `<section class="card card-pad" style="margin-bottom:16px">
+    ${comparison ? `<section class="card card-pad" style="margin-bottom:16px">
       <div class="row-between"><div><h2>Hasil opname</h2><p class="xs muted">Siapa yang menghitung, berapa lama, dan apa yang hilang.</p></div>${badge(result.complete ? 'Lengkap' : 'Belum lengkap', result.complete ? 'ok' : 'warn')}</div>
       <div class="grid grid-3" style="margin-top:12px">
         <div class="kv"><span>Peserta</span><strong class="small">${result.participants.length ? result.participants.map((name) => `<span class="badge no-dot">${esc(name)}</span>`).join(' ') : '—'}</strong></div>
@@ -154,6 +159,7 @@ function renderDetail(ctx) {
         <div class="kv"><span>Sistem</span><strong>${fmt.m(result.expectedMm)}</strong></div>
       </div>
       ${result.missingRolls.length ? `<div class="notice notice-warn" style="margin-top:12px">${icon('alert')}<div><strong>Roll tidak ada:</strong> ${result.missingRolls.map((id) => `<span class="mono">${esc(id)}</span>`).join(', ')}</div></div>` : '<div class="notice notice-teal" style="margin-top:12px">' + icon('check') + '<div>Semua roll yang dicek ditemukan.</div></div>'}
+      <div class="notice notice-info" style="margin-top:10px">${icon('alert')}<div><strong>Putaran ${s.countRound ?? 1}.</strong> Opname tidak membuat nomor RL atau lot baru. Penyesuaian hanya mengubah panjang/status roll yang sama; ID dan lot tetap.</div></div>
     </section>` : ''}
 
     <section class="card">
@@ -175,7 +181,7 @@ function renderDetail(ctx) {
       </div>
       <div class="table-wrap">
         <table class="data">
-          <thead><tr><th>Roll / lot</th><th>Koleksi · motif</th><th class="num">Hitungan</th><th>Status</th>${reviewing || posted ? '<th class="num">Sistem</th><th class="num">Selisih</th>' : ''}</tr></thead>
+          <thead><tr><th>Roll / lot</th><th>Koleksi · motif</th>${counting ? '<th class="num">Hitungan (meter)</th>' : '<th class="num">Sebelum (sistem)</th><th class="num">Hitungan fisik</th><th class="num">Selisih</th>'}<th>Status / oleh</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
       </div>
@@ -204,7 +210,7 @@ export function openStart(ctx) {
     toast('Tidak ada gudang aktif. Aktifkan gudang di Master Data.', { tone: 'error' });
     return;
   }
-  const frozen = db.opnameSessions.filter((s) => ['counting', 'review'].includes(s.status)).map((s) => s.warehouseId);
+  const frozen = db.opnameSessions.filter((s) => ['counting', 'review', 'investigation'].includes(s.status)).map((s) => s.warehouseId);
   const options = db.warehouses.filter((w) => w.active !== false).map((w) => `<option value="${w.id}" ${frozen.includes(w.id) ? 'disabled' : ''}>${esc(w.name)}${frozen.includes(w.id) ? ' — sesi aktif' : ''}</option>`).join('');
   openModal({
     title: 'Mulai stock opname',
@@ -222,6 +228,21 @@ export function openStart(ctx) {
       toast('Sesi dimulai; gudang dibekukan.', { tone: 'success' });
     },
   });
+}
+
+let jsQrPromise = null;
+function ensureJsQr() {
+  if (window.jsQR) return Promise.resolve(window.jsQR);
+  if (!jsQrPromise) {
+    jsQrPromise = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = '/src/vendor/jsqr.js';
+      script.onload = () => (window.jsQR ? resolve(window.jsQR) : reject(new Error('jsQR tidak termuat.')));
+      script.onerror = () => reject(new Error('Gagal memuat decoder QR.'));
+      document.head.appendChild(script);
+    });
+  }
+  return jsQrPromise;
 }
 
 function openQrScan(ctx, session, onFound) {
@@ -263,9 +284,23 @@ function openQrScan(ctx, session, onFound) {
         const file = form.qrFile.files?.[0];
         if (!file) return;
         status.textContent = 'Membaca QR…';
+        status.className = 'small';
         try {
-          const result = await scanAwbImage(file);
-          handle(result.text || result.trackingRef);
+          const jsQR = await ensureJsQr();
+          const url = URL.createObjectURL(file);
+          const image = new Image();
+          image.src = url;
+          await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          const context = canvas.getContext('2d', { willReadFrequently: true });
+          context.drawImage(image, 0, 0);
+          const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'attemptBoth' });
+          if (code?.data) handle(code.data);
+          else status.textContent = 'QR tidak terbaca dari foto. Coba foto lebih dekat atau ketik roll ID.';
         } catch (err) {
           status.textContent = err.message;
           status.className = 'small danger';
@@ -276,25 +311,40 @@ function openQrScan(ctx, session, onFound) {
         status.className = 'small warn';
         return;
       }
-      if (typeof window.BarcodeDetector !== 'function') {
-        status.textContent = 'Browser ini belum mendukung pemindaian kamera. Gunakan input manual atau upload foto QR.';
-        status.className = 'small warn';
-        return;
-      }
       let stream;
       let raf = 0;
-      let detector;
+      let detector = null;
+      let jsQR = null;
+      let canvas = null;
+      let context = null;
       (async () => {
         try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } } });
+          if (typeof window.BarcodeDetector === 'function') {
+            detector = new window.BarcodeDetector({ formats: ['qr_code'] });
+          } else {
+            jsQR = await ensureJsQr();
+            canvas = document.createElement('canvas');
+            context = canvas.getContext('2d', { willReadFrequently: true });
+          }
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+          });
           video.srcObject = stream;
           await video.play();
-          detector = new window.BarcodeDetector({ formats: ['qr_code'] });
           status.textContent = 'Arahkan kamera ke QR tag roll…';
           const tick = async () => {
             try {
-              const codes = await detector.detect(video);
-              if (codes.length) { handle(codes[0].rawValue); return; }
+              if (detector) {
+                const codes = await detector.detect(video);
+                if (codes.length) { handle(codes[0].rawValue); return; }
+              } else if (jsQR && video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(pixels.data, pixels.width, pixels.height, { inversionAttempts: 'dontInvert' });
+                if (code?.data) { handle(code.data); return; }
+              }
             } catch { /* keep scanning */ }
             raf = requestAnimationFrame(tick);
           };
@@ -466,6 +516,21 @@ export function mount(ctx) {
       } catch (err) {
         toast(err.message, { tone: 'error' });
       }
+    });
+    document.querySelector('[data-act="investigate"]')?.addEventListener('click', async () => {
+      const note = await promptText({
+        title: 'Buka investigasi selisih',
+        label: 'Temuan / rencana investigasi',
+        value: 'Selisih perlu dicek ulang ke rak dan riwayat mutasi.',
+        hint: 'Investigasi membekukan sesi. Setelah selesai, supervisor dapat hitung ulang atau memposting penyesuaian akhir.',
+        submitLabel: 'Buka investigasi',
+        tone: 'danger',
+      });
+      if (!note) return;
+      try {
+        ctx.store.update((db) => startOpnameInvestigation(db, { sessionId: s.id, user: ctx.user, note }));
+        toast('Investigasi dibuka. Lakukan hitung ulang atau selesaikan penyesuaian.', { tone: 'success' });
+      } catch (err) { toast(err.message, { tone: 'error' }); }
     });
     document.querySelector('[data-act="recount"]')?.addEventListener('click', async () => {
       const ok = await confirmAction({ title: 'Minta hitung ulang?', message: 'Semua hitungan akan dikosongkan dan status kembali ke penghitungan. Gudang tetap dibekukan.', confirmLabel: 'Hitung ulang' });

@@ -2,6 +2,27 @@
 
 All notable changes to Lajur. Dates use Asia/Jakarta.
 
+## [2.41.0] — 2026-11-21
+
+**Release name: QR Mobile, Review Berdampingan & Investigasi.** Fixes iPhone/Safari QR scanning with jsQR and completes the supervisor → recount → investigation → adjustment workflow.
+
+### Added
+
+- **Mobile QR fallback:** when BarcodeDetector is unavailable, the camera uses the bundled jsQR decoder on canvas frames. QR image upload also uses jsQR.
+- **Side-by-side review:** columns are now **Sebelum (sistem) | Hitungan fisik | Selisih**, with counted-by under the status.
+- **Separate supervisor approval:** the person who counted/submitted cannot approve their own opname (`SELF_APPROVAL`). A different manager/supervisor is required.
+- **Second count:** recount archives the prior round in `countRounds`, increments `countRound`, and resets counts.
+- **Investigation:** supervisor can open an investigation from review; status becomes **Investigasi selisih**, then final approval posts adjustments.
+- **Clear data rule:** opname never creates a new RL or lot. It updates the existing roll length/status; ID and lot stay.
+
+### Verification
+
+- `node --test`: **103 passed**; module check **62/62**; render check passes.
+- Browser QA: review header showed Sebelum/Hitungan/Selisih; jsQR loaded (`typeof window.jsQR === 'function'`); camera absent in headless falls back with a clear message.
+- Domain test: self-approval rejected; recount created round 2; investigation → posted.
+
+---
+
 ## [2.40.0] — 2026-11-21
 
 **Release name: Opname QR, Ada/Tidak Ada & Hasil.** Opname now separates counted and uncounted rolls, allows presence-only marks, records who counted, and reports participants/duration/missing metres.

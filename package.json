@@ -1,6 +1,6 @@
 {
   "name": "lajur",
-  "version": "2.40.0",
+  "version": "2.41.0",
   "private": true,
   "type": "module",
   "description": "Lajur — sistem inventori dan operasi bisnis gorden (demo interaktif).",
@@ -19,6 +19,7 @@
     "@neon/config": "^1.14.5",
     "@neon/env": "^2.1.8",
     "@vercel/functions": "^3.11.3",
+    "jsqr": "^1.4.0",
     "pg": "^8.13.1",
     "qrcode-generator": "^1.4.4"
   }

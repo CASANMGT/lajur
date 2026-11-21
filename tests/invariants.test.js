@@ -14,7 +14,7 @@ import { createDelivery } from '../src/domain/deliveries.js';
 import { printDeliveryHtml, printLabelHtml } from '../src/ui/views/print.js';
 import { createTransfer, approveTransfer, dispatchLine, receiveLine, submitTransfer, transferTotals, transitRollsFor } from '../src/domain/transfers.js';
 import { createPO, receivePO } from '../src/domain/purchasing.js';
-import { approveOpname, opnameResult, saveCounts, startOpname, submitOpname, cancelOpname } from '../src/domain/opname.js';
+import { approveOpname, opnameResult, saveCounts, startOpname, startOpnameInvestigation, submitOpname, cancelOpname } from '../src/domain/opname.js';
 import { createProject, handoverProject, issueProject, reserveProject } from '../src/domain/projects.js';
 import {
   applyDepositToInvoice, createSample, createSampleBook, createCustomer, createSampleRequest,
@@ -449,6 +449,27 @@ test('stock opname freezes the warehouse and blocks conflicting adjustments', ()
   approveOpname(db, { sessionId: session.id, user: MGR, reason: 'Uji opname tanpa selisih' });
   assert.equal(session.status, 'posted');
   assert.equal(session.adjustments.length, 0);
+});
+
+test('opname requires a different supervisor and supports recount + investigation', () => {
+  const db = buildSeed();
+  const session = startOpname(db, { warehouseId: 'wh-bali', user: MGR });
+  const counts = session.lines.map((l) => ({ rollId: l.rollId, countedMm: l.expectedMm }));
+  saveCounts(db, { sessionId: session.id, counts, user: MGR });
+  submitOpname(db, { sessionId: session.id, user: MGR });
+  expectError(() => approveOpname(db, { sessionId: session.id, user: MGR, reason: 'Coba setujui sendiri' }), 'SELF_APPROVAL');
+
+  approveOpname(db, { sessionId: session.id, user: { id: 'u-mgr2', name: 'Supervisor Lain', role: 'manager' }, reason: 'Hitung ulang', recount: true });
+  assert.equal(session.status, 'counting');
+  assert.equal(session.countRound, 2);
+  assert.equal(session.countRounds.length, 1);
+
+  saveCounts(db, { sessionId: session.id, counts, user: OP });
+  submitOpname(db, { sessionId: session.id, user: OP });
+  startOpnameInvestigation(db, { sessionId: session.id, user: MGR, note: 'Cek selisih rak.' });
+  assert.equal(session.status, 'investigation');
+  approveOpname(db, { sessionId: session.id, user: MGR, reason: 'Investigasi selesai, tidak ada selisih.' });
+  assert.equal(session.status, 'posted');
 });
 
 test('opname adjustment cannot push stock below reservations', () => {

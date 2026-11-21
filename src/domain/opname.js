@@ -14,12 +14,13 @@ import { availableMm, recordMovement, requireRoll } from './inventory.js';
 export const OPNAME_STATUS = {
   counting: { label: 'Penghitungan', tone: 'warn' },
   review: { label: 'Menunggu review', tone: 'info' },
+  investigation: { label: 'Investigasi selisih', tone: 'danger' },
   posted: { label: 'Diposting', tone: 'ok' },
   cancelled: { label: 'Dibatalkan', tone: 'muted' },
 };
 
 export function activeSessions(db) {
-  return db.opnameSessions.filter((s) => s.status === 'counting' || s.status === 'review');
+  return db.opnameSessions.filter((s) => ['counting', 'review', 'investigation'].includes(s.status));
 }
 
 export function getSession(db, id) {
@@ -30,7 +31,7 @@ export function startOpname(db, { warehouseId, user, note = '' }) {
   const wh = byId(db.warehouses, warehouseId);
   assert(wh, 'WAREHOUSE_NOT_FOUND', 'Gudang tidak ditemukan.');
   const existing = db.opnameSessions.find(
-    (s) => s.warehouseId === warehouseId && (s.status === 'counting' || s.status === 'review'),
+    (s) => s.warehouseId === warehouseId && ['counting', 'review', 'investigation'].includes(s.status),
   );
   assert(!existing, 'OPNAME_ACTIVE', `Sudah ada opname aktif di ${wh.name} (${existing?.id}).`);
 
@@ -68,6 +69,10 @@ export function startOpname(db, { warehouseId, user, note = '' }) {
       || String(a.motifName).localeCompare(String(b.motifName))
       || String(a.rollId).localeCompare(String(b.rollId))),
     submittedAt: null,
+    submittedBy: null,
+    countRound: 1,
+    countRounds: [],
+    investigation: null,
     postedAt: null,
     postedBy: null,
     approveReason: '',
@@ -137,6 +142,7 @@ export function submitOpname(db, { sessionId, user }) {
     `Masih ada ${missing.length} roll yang belum dicek.`);
   session.status = 'review';
   session.submittedAt = isoNow();
+  session.submittedBy = user?.name ?? 'Sistem';
   session.history.push({ at: isoNow(), by: user?.name ?? 'Sistem', action: 'Diajukan untuk review' });
   audit(db, user, 'ajukan_opname', 'opname', session.id, '');
   return session;
@@ -191,8 +197,14 @@ export function opnameSummary(session) {
 /** Result summary used by the UI and berita acara. */
 export function opnameResult(session) {
   const summary = opnameSummary(session);
-  const participants = [...new Set(session.lines.map((l) => l.countedBy).filter(Boolean))];
-  if (!participants.length && session.countedBy) participants.push(session.countedBy);
+  const participantSet = new Set(session.lines.map((l) => l.countedBy).filter(Boolean));
+  for (const round of session.countRounds ?? []) {
+    for (const line of round.lines ?? []) if (line.countedBy) participantSet.add(line.countedBy);
+    if (round.submittedBy) participantSet.add(round.submittedBy);
+  }
+  if (session.submittedBy) participantSet.add(session.submittedBy);
+  if (!participantSet.size && session.countedBy) participantSet.add(session.countedBy);
+  const participants = [...participantSet];
   const start = session.startedAt ? new Date(session.startedAt).getTime() : null;
   const end = session.postedAt || session.submittedAt;
   const endTime = end ? new Date(end).getTime() : null;
@@ -206,24 +218,59 @@ export function opnameResult(session) {
   };
 }
 
+/** Supervisor flags a discrepancy for investigation before final adjustment. */
+export function startOpnameInvestigation(db, { sessionId, user, note }) {
+  const session = getSession(db, sessionId);
+  assert(session, 'OPNAME_NOT_FOUND', 'Sesi opname tidak ditemukan.');
+  assert(user?.role === 'manager', 'FORBIDDEN', 'Hanya supervisor/manajer yang dapat membuka investigasi.');
+  assert(session.status === 'review', 'INVALID_STATUS', 'Investigasi hanya dari status review.');
+  assert(note && note.trim().length >= 3, 'REASON_REQUIRED', 'Catatan investigasi wajib diisi.');
+  session.status = 'investigation';
+  session.investigation = {
+    by: user.name,
+    at: isoNow(),
+    note: note.trim(),
+    round: session.countRound ?? 1,
+  };
+  session.history.push({ at: isoNow(), by: user.name, action: 'Investigasi selisih dibuka', note: note.trim() });
+  audit(db, user, 'investigasi_opname', 'opname', session.id, note.trim());
+  return session;
+}
+
 /** Manager review: recount or approve. Approval posts adjustments atomically. */
 export function approveOpname(db, { sessionId, user, reason, recount = false }) {
   const session = getSession(db, sessionId);
   assert(session, 'OPNAME_NOT_FOUND', 'Sesi opname tidak ditemukan.');
-  assert(user?.role === 'manager', 'FORBIDDEN', 'Hanya manajer yang dapat menyetujui opname.');
-  assert(session.status === 'review', 'INVALID_STATUS', 'Sesi belum diajukan.');
+  assert(user?.role === 'manager', 'FORBIDDEN', 'Hanya supervisor/manajer yang dapat menyetujui opname.');
+  assert(['review', 'investigation'].includes(session.status), 'INVALID_STATUS', 'Sesi belum siap disetujui.');
   assert(session.lines.every((l) => opnameLineDone(l)), 'INCOMPLETE_COUNT', 'Pemeriksaan belum lengkap.');
   assert(reason && reason.trim().length >= 3, 'REASON_REQUIRED', 'Alasan persetujuan / selisih wajib diisi.');
+  const counters = new Set(session.lines.map((l) => l.countedBy).filter(Boolean));
+  if (session.submittedBy) counters.add(session.submittedBy);
+  assert(!counters.has(user.name), 'SELF_APPROVAL',
+    'Penghitung tidak boleh menyetujui opname sendiri. Minta supervisor lain.');
 
   if (recount) {
+    session.countRounds = session.countRounds ?? [];
+    session.countRounds.push({
+      round: session.countRound ?? 1,
+      at: isoNow(),
+      submittedBy: session.submittedBy,
+      lines: session.lines.map((l) => ({
+        rollId: l.rollId, expectedMm: l.expectedMm, countedMm: l.countedMm, present: l.present, countedBy: l.countedBy,
+      })),
+    });
+    session.countRound = (session.countRound ?? 1) + 1;
     session.status = 'counting';
+    session.submittedBy = null;
+    session.submittedAt = null;
     for (const l of session.lines) {
       l.countedMm = null;
       l.present = null;
       l.countedBy = null;
       l.countedAt = null;
     }
-    session.history.push({ at: isoNow(), by: user.name, action: 'Hitung ulang diminta', note: reason });
+    session.history.push({ at: isoNow(), by: user.name, action: `Hitung ulang putaran ${session.countRound}`, note: reason });
     audit(db, user, 'hitung_ulang_opname', 'opname', session.id, reason);
     return session;
   }
@@ -282,6 +329,7 @@ export function approveOpname(db, { sessionId, user, reason, recount = false }) 
   session.status = 'posted';
   session.postedAt = isoNow();
   session.postedBy = user.name;
+  session.approvedBy = user.name;
   session.approveReason = reason.trim();
   session.adjustments = adjustments;
   session.history.push({ at: isoNow(), by: user.name, action: 'Disetujui & diposting', note: reason.trim() });

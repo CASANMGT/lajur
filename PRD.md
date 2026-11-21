@@ -1,9 +1,9 @@
-# PRD - Lavishome v2.40.0
+# PRD - Lavishome v2.41.0
 
 **Product:** Lavishome - curtain & textile inventory management
 **Company model:** one company, two warehouses (Jakarta and Bali)
 **Locale:** Indonesian UI, IDR, Asia/Jakarta
-**Version:** 2.40.0 (schema 21)
+**Version:** 2.41.0 (schema 21)
 **Status:** interactive demo complete (browser-only); reference API with optional PostgreSQL store built, UI not yet wired
 **Date:** 9 November 2026
 **Related:** [DESIGN-SYSTEM.md](./DESIGN-SYSTEM.md) · [README.md](./README.md) · [CHANGELOG.md](./CHANGELOG.md)
@@ -67,7 +67,7 @@ and one consistent set of quantities:
 
 Each persona signs in with their own account and PIN; the session determines the role. There is no role switcher. Demo PINs are `2468` (manager), `1357` (operator), `8642` (sales) until changed. This is a local gate, not server security.
 
-Role scope in v2.40.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
+Role scope in v2.41.0: **operator** (Fauzi) can reach summary, tasks, production WIP (Advanced + enabled), stock, internal requests, supplier receiving, opname and simulation (Advanced); **sales** (Henny, Sales/Owner) can reach summary, tasks, read-only stock, invoices, internal sales, deliveries, catalog, projects, customers, samples and simulation (Advanced); **manager** (Henry admin/owner in Jakarta, Nicolas owner in Bali) can reach everything, with Simple/Advanced switching, reports, master data, drivers/transport/fleet assets and settings. Drivers are master data only and have no login account.
 
 ### 3.1 Warehouse operator ("Operator Gudang")
 
@@ -556,6 +556,8 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 | BR-110 | Payment entry shows the live remaining balance after the entered amount. Bank sender uses Indonesian bank marks; each receipt stores bank, method, transfer number and proof. The payment page keeps bank/method on each receipt but does not show a separate method-summary card. |
 | BR-111 | Stock opname lines are ordered by collection, then motif/colour, then roll A–Z. The count row shows Belum dicek / Ada tanpa meter / Tidak ada / Ada · X m live. Sudah/Belum dicek chips, plus collection and motif filters, narrow the list. Mobile QR scan marks the roll Ada and focuses its metre input. |
 | BR-112 | Presence-only counts are valid and keep the system metres; “Tidak ada” counts as 0. Each checked line stores countedBy/countedAt. The result shows participants, duration, measured/presence-only/missing counts and variance. |
+| BR-114 | Review compares Sebelum (sistem) and Hitungan fisik side by side with Selisih. The counter/submitter cannot approve their own session. A supervisor may recount (archiving the previous round), open an investigation, then approve the final adjustment. Opname updates the same RL/lot; it never creates a new RL or lot. |
+| BR-115 | Mobile QR scanning uses BarcodeDetector when available and a bundled jsQR canvas decoder otherwise; QR image upload is also decoded with jsQR. |
 | BR-113 | Internal-company naming is **Perusahaan Internal**, not PT. Dalam. |
 | BR-94 | Stock sorting applies to collections, motifs, roll rows and mobile cards. Options are most available metres, name A–Z and name Z–A; the default is most metres. |
 
@@ -565,7 +567,7 @@ Outstanding dispatch is **never** derived from received quantity; doing so cause
 
 Demo role switching is a **UX simulation**. Production must enforce the following on the server for every mutation and query.
 
-In v2.40.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
+In v2.41.0 the role comes from a PIN session (PBKDF2 hash, 8-hour session, 60-second lockout after five failures). This improves the demo flow but remains client-side: clearing storage resets it, and a user with devtools can bypass it. Server-side permission checks are still mandatory.
 
 | Capability | Operator | Sales | Manager |
 |-----------|:--------:|:-----:|:-------:|
@@ -775,6 +777,9 @@ Statuses refer to the automated suite in `tests/` and browser verification on 7 
 | AC-152 | Opname splits counted/uncounted and supports presence-only marks | Pass |
 | AC-153 | Opname result lists participants, duration, missing rolls and metres | Pass |
 | AC-154 | Internal company label uses Perusahaan Internal | Pass |
+| AC-155 | Review shows before/after/selisih side by side | Pass |
+| AC-156 | Counter cannot self-approve; recount and investigation are available | Pass |
+| AC-157 | Mobile QR works via BarcodeDetector or jsQR fallback | Pass |
 | AC-93 | JNE accepts REG/YES/OKS only; an invalid service is rejected on create and update; AWB photo and ETA persist | Pass |
 | AC-94 | Stock hierarchy/list groups available above sold and sorts colour groups by most available metres | Pass |
 

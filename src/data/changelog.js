@@ -5,6 +5,18 @@
 
 export const CHANGELOG = [
   {
+    version: '2.41.0',
+    date: '2026-11-21',
+    name: 'QR Mobile, Review Berdampingan & Investigasi',
+    items: [
+      'QR mobile memakai jsQR saat BarcodeDetector tidak tersedia (Safari/iPhone).',
+      'Review menampilkan Sebelum (sistem) | Hitungan fisik | Selisih berdampingan.',
+      'Penghitung tidak bisa menyetujui opname sendiri; butuh supervisor lain.',
+      'Hitung ulang menyimpan putaran sebelumnya; investigasi lalu penyesuaian akhir.',
+      'Opname tidak membuat RL/lot baru; roll dan lot yang sama diperbarui.',
+    ],
+  },
+  {
     version: '2.40.0',
     date: '2026-11-21',
     name: 'Opname QR, Ada/Tidak Ada & Hasil',
